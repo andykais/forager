@@ -1,0 +1,41 @@
+{
+  "name": "forager",
+  "version": "0.1.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "typecheck:watch": "tsc --noEmit --watch",
+    "test:migrations": "ava test/**/*test.ts",
+    "test:migrations:watch": "ava test/**/*test.ts --watch"
+  },
+  "keywords": [],
+  "author": "Andrew Kaiser",
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^7.4.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^5.4.3",
+    "@types/mocha": "^8.2.3",
+    "@types/node": "^15.14.2",
+    "ava": "^3.15.0",
+    "date-fns": "^2.22.1",
+    "mocha": "^8.4.0",
+    "source-map-support": "^0.5.19",
+    "ts-node": "^10.1.0",
+    "typescript": "^4.3.5"
+  },
+  "ava": {
+    "extensions": [
+      "ts"
+    ],
+    "require": [
+      "ts-node/register"
+    ],
+    "ignoredByWatcher": [
+      "scratchwork/*"
+    ]
+  }
+}
