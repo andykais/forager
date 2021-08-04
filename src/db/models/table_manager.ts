@@ -32,8 +32,8 @@ class TableManager extends Model {
     return this.get_table_definitions()
       .filter(row => row.sql !== null) // skip the builtin auto definitions
       .map(row => row.sql)
-      .map(sql => sql.replace(/^\s+/mg, ''))
-      .map(sql => sql.replace(/CREATE TABLE "(.*?)"/g, (_, name) => `CREATE TABLE ${name}`))
+      .map(sql => sql.replace(/^\s+/mg, '')) // remove excess whitespace
+      .map(sql => sql.replace(/CREATE TABLE "(.*?)"/g, (_, name) => `CREATE TABLE ${name}`)) // remove optional quotes around table name
       .join('\n')
   }
 }
@@ -110,7 +110,7 @@ class CreateTables extends Statement {
     CREATE TABLE media_file (
       id INTEGER PRIMARY KEY NOT NULL,
       filename TEXT NOT NULL,
-      mime_type TEXT NOT NULL,
+      -- mime_type TEXT NOT NULL,
       file_size_bytes INTEGER NOT NULL,
       md5checksum TEXT NOT NULL,
 
@@ -121,7 +121,7 @@ class CreateTables extends Statement {
       height INTEGER CHECK (media_type IN ('IMAGE', 'VIDEO') AND height IS NOT NULL),
       -- audio/video/gif specific
       animated BOOLEAN NOT NULL,
-      duration_ms INTEGER NOT NULL CHECK (IIF(animated == 0, duration_ms == 0, 1)),
+      duration INTEGER NOT NULL CHECK (IIF(animated == 0, duration == 0, 1)),
 
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -137,7 +137,7 @@ class CreateTables extends Statement {
 
 
     -- Polymorphic table referenced by either media files or media sequences
-    -- NOTE we do not enforce that a media_reference is only referenced by either media_sequence or media_file
+    -- NOTE we do not enforce that a media_reference is only referenced by either media_sequence or media_file, nor do we constrain it to always reference one
     CREATE TABLE media_reference (
       id INTEGER PRIMARY KEY NOT NULL,
 
@@ -187,7 +187,7 @@ class CreateTables extends Statement {
 
     CREATE TABLE tag_group (
       id INTEGER PRIMARY KEY NOT NULL,
-      name TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL UNIQUE, -- TODO we should check this at the database level CHECK(name REGEXP '^[a-z_]+$'),
       color TEXT NOT NULL UNIQUE,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     );

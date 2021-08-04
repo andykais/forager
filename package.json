@@ -8,18 +8,20 @@
     "typecheck": "tsc --noEmit",
     "typecheck:watch": "tsc --noEmit --watch",
     "test:migrations": "ava test/**/*test.ts",
-    "test:migrations:watch": "ava test/**/*test.ts --watch"
+    "test:watch": "ava test/**/*test.ts --watch"
   },
   "keywords": [],
   "author": "Andrew Kaiser",
   "license": "MIT",
   "dependencies": {
-    "better-sqlite3": "^7.4.1"
+    "better-sqlite3": "^7.4.1",
+    "sharp": "^0.28.3"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^5.4.3",
     "@types/mocha": "^8.2.3",
     "@types/node": "^15.14.2",
+    "@types/sharp": "^0.28.5",
     "ava": "^3.15.0",
     "date-fns": "^2.22.1",
     "mocha": "^8.4.0",
@@ -35,7 +37,8 @@
       "ts-node/register"
     ],
     "ignoredByWatcher": [
-      "scratchwork/*"
+      "scratchwork/*",
+      "test/fixtures/*"
     ]
   }
 }

@@ -2,16 +2,20 @@ import Sqlite3 from 'better-sqlite3'
 import { version } from '../../package.json'
 import { Context } from '../context'
 import { init_migration_map } from './migrations/index'
+import type { Model } from './queries'
 // import model definitions
 import { TableManager } from './models/table_manager'
+import { MediaFile } from './models/media_file'
 
 
 class Database {
   private db: Sqlite3.Database = new Sqlite3(this.context.config.database_path)
+  private registered_models: Model[] = []
   public migration_map = init_migration_map(this.db)
 
   // model definitions
-  public table_manager = new TableManager(this.db)
+  public table_manager = this.register(TableManager)
+  public media_file = this.register(MediaFile)
 
 
   public constructor(private context: Context) {}
@@ -28,10 +32,14 @@ class Database {
         this.context.logger.info('new database initialized.')
       })()
     }
-    this.table_manager.init()
+    for (const model of this.registered_models) {
+      model.init()
+    }
   }
 
-  public wipe() {}
+  public wipe() {
+    throw new Error('unimplemented')
+  }
 
   public migrate() {
     const migration_versions = [...this.migration_map.keys()].sort((a, b) => a.localeCompare(b))
@@ -51,6 +59,12 @@ class Database {
         }
       }
     }
+  }
+
+  private register<T extends Model>(model_class: new (db: Sqlite3.Database) => T) {
+    const model = new model_class(this.db)
+    this.registered_models.push(model)
+    return model
   }
 }
 

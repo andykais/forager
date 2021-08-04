@@ -23,3 +23,4 @@ class Context {
 }
 
 export { Context }
+export type { ContextConfig }
