@@ -2,7 +2,7 @@ import { Model, Statement } from '../db/base'
 
 /* --============= Table Row Definitions =============-- */
 
-interface MediaReferenceTR {
+type MediaReferenceTR = {
   id: number
   media_sequence_id: number | null
   media_sequence_index: number
@@ -15,6 +15,13 @@ interface MediaReferenceTR {
 
   created_at: Date
 }
+
+interface SqliteRow {
+  [column: string]: string | null | number | Buffer | boolean | {}
+}
+type InsertRow<TR extends SqliteRow> = Omit<{
+  [K in keyof TR]: TR[K]
+}, 'id' | 'created_at'>
 
 /* --================ Model Definition ================-- */
 
@@ -45,7 +52,7 @@ class InsertMediaReference extends Statement {
   `
   stmt = this.register(this.sql)
 
-  call(media_reference_data: Omit<MediaReferenceTR, 'id' | 'created_at'>) {
+  call(media_reference_data: InsertRow<MediaReferenceTR>) {
     const sql_data = {...media_reference_data }
     const info = this.stmt.ref.run(sql_data)
     return info.lastInsertRowid

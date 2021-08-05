@@ -102,6 +102,7 @@ class CreateTables extends Statement {
       media_file_id INTEGER NOT NULL,
       -- 1MiB chunks
       chunk BLOB NOT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
       FOREIGN KEY (media_file_id) REFERENCES media_file(id)
     );
@@ -137,6 +138,8 @@ class CreateTables extends Statement {
     CREATE TABLE media_sequence (
       id INTEGER PRIMARY KEY NOT NULL,
       media_reference_id INTEGER NOT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
       FOREIGN KEY (media_reference_id) REFERENCES media_reference(id)
     );
 
@@ -164,6 +167,7 @@ class CreateTables extends Statement {
     CREATE TABLE media_reference_tag (
       media_reference_id INTEGER NOT NULL,
       tag_id INTEGER NOT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
       PRIMARY KEY (media_reference_id, tag_id),
       FOREIGN KEY (media_reference_id) REFERENCES media_reference(id),
@@ -179,6 +183,7 @@ class CreateTables extends Statement {
       tag_group_id INTEGER NOT NULL,
       -- some tags will just be aliases for others. We have to be careful not to have cyclical references here
       alias_tag_id INTEGER,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
       FOREIGN KEY (alias_tag_id) REFERENCES tag(id),
       FOREIGN KEY (tag_group_id) REFERENCES tag_group(id)
@@ -189,6 +194,7 @@ class CreateTables extends Statement {
       id INTEGER PRIMARY KEY NOT NULL,
       name TEXT NOT NULL UNIQUE, -- TODO we should check this at the database level CHECK(name REGEXP '^[a-z_]+$'),
       color TEXT NOT NULL UNIQUE,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 

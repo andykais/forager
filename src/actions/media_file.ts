@@ -25,17 +25,17 @@ class MediaFileAction extends Action {
     ])
     const thumbnail_md5checksum = get_buffer_checksum(thumbnail)
 
+    const media_reference_data = {
+      title: null,
+      source_url: null,
+      source_created_at: null,
+      description: null,
+      metadata: null,
+      media_sequence_id: null,
+      media_sequence_index: 0,
+      ...media_info,
+    }
     return this.context.db.db.transaction(() => {
-      const media_reference_data = {
-        title: null,
-        source_url: null,
-        source_created_at: null,
-        description: null,
-        metadata: null,
-        media_sequence_id: null,
-        media_sequence_index: 0,
-        ...media_info,
-      }
       const media_reference_id = this.context.db.media_reference.insert(media_reference_data)
 
       const media_file_data = {
