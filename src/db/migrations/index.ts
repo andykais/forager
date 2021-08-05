@@ -1,7 +1,7 @@
 import { Migration as Migration_000 } from './000_initial'
 import { Migration as Migration_001 } from './001_tag'
 import type { Database } from 'better-sqlite3'
-import type { MigrationStatement } from '../queries'
+import type { MigrationStatement } from '../base'
 
 const m = Migration_000.call
 const MIGRATIONS = [

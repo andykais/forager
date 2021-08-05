@@ -23,9 +23,9 @@ test('add media', async t => {
   const forager = new Forager({ database_path })
   forager.init()
 
-  const tags = [{ group: '', name: 'crop_top' }]
-  const media_info = { title: 'I look so hot!' }
-  const media_file = await forager.media_file.create('/media/veracrypt7/scrapers/likee.video/beib1/2021-07-27_19-35-43_UTC.mp4', media_info, tags)
+  const tags = [{ group: '', name: 'procedural_generation' }]
+  const media_info = { title: 'Generated Art' }
+  const media_file = await forager.media_file.create('test/resources/kock.tif', media_info, tags)
 
   t.pass()
   } catch(e) {

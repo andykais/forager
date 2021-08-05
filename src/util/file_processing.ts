@@ -13,8 +13,8 @@ interface FileInfo {
   filename: string
   media_type: 'VIDEO' | 'AUDIO' | 'IMAGE'
   // image/video fields
-  width?: number
-  height?: number
+  width: number | null
+  height: number | null
   // video/gif/audio fields
   animated: boolean
   duration: number
@@ -68,6 +68,12 @@ async function get_file_checksum(filepath: string): Promise<string> {
   return hash.digest('hex')
 }
 
+async function get_buffer_checksum(buffer: Buffer): Promise<string> {
+  const hash = createHash('md5')
+  hash.update(buffer)
+  return hash.digest('hex')
+}
+
 async function get_file_thumbnail(filepath: string, file_info: FileInfo): Promise<Buffer> {
   if (['VIDEO', 'IMAGE'].includes(file_info.media_type)) {
     const width = file_info.width!
@@ -87,4 +93,4 @@ async function get_file_thumbnail(filepath: string, file_info: FileInfo): Promis
   }
 }
 
-export { get_file_size, get_file_info, get_file_checksum, get_file_thumbnail }
+export { get_file_size, get_file_info, get_file_checksum, get_buffer_checksum, get_file_thumbnail }

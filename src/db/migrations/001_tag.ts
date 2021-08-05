@@ -1,4 +1,4 @@
-import { MigrationStatement } from '../queries'
+import { MigrationStatement } from '../base'
 
 export class Migration extends MigrationStatement {
   static VERSION = '0.1.1' as const

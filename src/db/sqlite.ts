@@ -2,10 +2,11 @@ import Sqlite3 from 'better-sqlite3'
 import { version } from '../../package.json'
 import { Context } from '../context'
 import { init_migration_map } from './migrations/index'
-import type { Model } from './queries'
+import type { Model } from './base'
 // import model definitions
-import { TableManager } from './models/table_manager'
-import { MediaFile } from './models/media_file'
+import { TableManager } from '../models/table_manager'
+import { MediaFile } from '../models/media_file'
+import { MediaReference } from '../models/media_reference'
 
 
 class Database {
@@ -16,6 +17,7 @@ class Database {
   // model definitions
   public table_manager = this.register(TableManager)
   public media_file = this.register(MediaFile)
+  public media_reference = this.register(MediaReference)
 
 
   public constructor(private context: Context) {}

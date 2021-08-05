@@ -1,4 +1,4 @@
-import { MigrationStatement } from '../queries'
+import { MigrationStatement } from '../base'
 
 export class Migration extends MigrationStatement {
   // only used for testing purposes
