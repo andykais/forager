@@ -2,27 +2,26 @@ import { Model, Statement } from '../db/base'
 
 /* --============= Table Row Definitions =============-- */
 
-interface TagTR {
+interface MediaReferenceTagTR {
   id: number
-  tag_group_id: number
-  name: string
-  alias_tag_id: number | null
+  media_reference_id: number
+  tag_id: number
   created_at: Date
 }
 
 /* --================ Model Definition ================-- */
 
-class Tag extends Model {
-  insert = this.register(InsertTag)
+class MediaReferenceTag extends Model {
+  insert = this.register(InsertMediaReferenceTag)
 }
 
 /* --=================== Statements ===================-- */
 
-class InsertTag extends Statement {
-  sql = `INSERT INTO tag (tag_group_id, name, alias_tag_id) VALUES (@tag_group_id, @name, @alias_tag_id)`
+class InsertMediaReferenceTag extends Statement {
+  sql = `INSERT INTO media_reference_tag (media_reference_id, tag_id) VALUES (@media_reference_id, @tag_id)`
   stmt = this.register(this.sql)
 
-  call(tag_data: Omit<TagTR, 'id' | 'created_at'>) {
+  call(tag_data: Omit<MediaReferenceTagTR, 'id' | 'created_at'>) {
     const sql_data = {...tag_data }
     const info = this.stmt.ref.run(sql_data)
     return info.lastInsertRowid
@@ -30,4 +29,4 @@ class InsertTag extends Statement {
 }
 
 
-export { Tag }
+export { MediaReferenceTag }

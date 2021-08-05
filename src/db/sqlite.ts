@@ -7,10 +7,13 @@ import type { Model } from './base'
 import { TableManager } from '../models/table_manager'
 import { MediaFile } from '../models/media_file'
 import { MediaReference } from '../models/media_reference'
+import { MediaReferenceTag } from '../models/media_reference_tag'
+import { TagGroup } from '../models/tag_group'
+import { Tag } from '../models/tag'
 
 
 class Database {
-  private db: Sqlite3.Database = new Sqlite3(this.context.config.database_path)
+  public db: Sqlite3.Database = new Sqlite3(this.context.config.database_path)
   private registered_models: Model[] = []
   public migration_map = init_migration_map(this.db)
 
@@ -18,6 +21,9 @@ class Database {
   public table_manager = this.register(TableManager)
   public media_file = this.register(MediaFile)
   public media_reference = this.register(MediaReference)
+  public media_reference_tag = this.register(MediaReferenceTag)
+  public tag_group = this.register(TagGroup)
+  public tag = this.register(Tag)
 
 
   public constructor(private context: Context) {}

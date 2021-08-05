@@ -23,7 +23,7 @@ test('add media', async t => {
   const forager = new Forager({ database_path })
   forager.init()
 
-  const tags = [{ group: '', name: 'procedural_generation' }]
+  const tags = [{ group: '', name: 'procedural_generation' }, { group: 'colors', name: 'black' }]
   const media_info = { title: 'Generated Art' }
   const media_file = await forager.media_file.create('test/resources/kock.tif', media_info, tags)
 

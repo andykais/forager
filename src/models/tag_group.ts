@@ -2,27 +2,26 @@ import { Model, Statement } from '../db/base'
 
 /* --============= Table Row Definitions =============-- */
 
-interface TagTR {
+interface TagGroupTR {
   id: number
-  tag_group_id: number
   name: string
-  alias_tag_id: number | null
+  color: string
   created_at: Date
 }
 
 /* --================ Model Definition ================-- */
 
-class Tag extends Model {
-  insert = this.register(InsertTag)
+class TagGroup extends Model {
+  insert = this.register(InsertTagGroup)
 }
 
 /* --=================== Statements ===================-- */
 
-class InsertTag extends Statement {
-  sql = `INSERT INTO tag (tag_group_id, name, alias_tag_id) VALUES (@tag_group_id, @name, @alias_tag_id)`
+class InsertTagGroup extends Statement {
+  sql = `INSERT INTO tag_group (name, color) VALUES (@name, @color)`
   stmt = this.register(this.sql)
 
-  call(tag_data: Omit<TagTR, 'id' | 'created_at'>) {
+  call(tag_data: Omit<TagGroupTR, 'id' | 'created_at'>) {
     const sql_data = {...tag_data }
     const info = this.stmt.ref.run(sql_data)
     return info.lastInsertRowid
@@ -30,4 +29,4 @@ class InsertTag extends Statement {
 }
 
 
-export { Tag }
+export { TagGroup }

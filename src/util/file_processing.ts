@@ -68,9 +68,15 @@ async function get_file_checksum(filepath: string): Promise<string> {
   return hash.digest('hex')
 }
 
-async function get_buffer_checksum(buffer: Buffer): Promise<string> {
+function get_buffer_checksum(buffer: Buffer): string {
   const hash = createHash('md5')
   hash.update(buffer)
+  return hash.digest('hex')
+}
+
+function get_string_checksum(str: string): string {
+  const hash = createHash('md5')
+  hash.update(str)
   return hash.digest('hex')
 }
 
@@ -93,4 +99,4 @@ async function get_file_thumbnail(filepath: string, file_info: FileInfo): Promis
   }
 }
 
-export { get_file_size, get_file_info, get_file_checksum, get_buffer_checksum, get_file_thumbnail }
+export { get_file_size, get_file_info, get_file_checksum, get_buffer_checksum, get_string_checksum, get_file_thumbnail }
