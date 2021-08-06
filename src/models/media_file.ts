@@ -1,4 +1,6 @@
 import { Model, Statement } from '../db/base'
+import type { InsertRow } from '../db/base'
+import type { MediaReferenceTR } from './media_reference'
 
 /* --============= Table Row Definitions =============-- */
 
@@ -12,8 +14,9 @@ interface MediaFileTR {
   height: number | null
   animated: boolean
   duration: number
+  updated_at: Date
   created_at: Date
-  media_reference_id: number
+  media_reference_id: MediaReferenceTR['id']
 
   thumbnail: Buffer
   thumbnail_file_size_bytes: number
@@ -25,6 +28,7 @@ interface MediaFileTR {
 
 class MediaFile extends Model {
   insert = this.register(InsertMediaFile)
+  select_one = this.register(SelectOneMediaFile)
 }
 
 /* --=================== Statements ===================-- */
@@ -47,10 +51,24 @@ class InsertMediaFile extends Statement {
 
   stmt = this.register(this.sql)
 
-  call(media_file_data: Omit<MediaFileTR, 'id' | 'created_at'>) {
+  call(media_file_data: InsertRow<MediaFileTR>) {
     const sql_data = {...media_file_data, animated: media_file_data.animated ? 1 : 0 }
     const info = this.stmt.ref.run(sql_data)
     return info.lastInsertRowid
+  }
+}
+
+
+class SelectOneMediaFile extends Statement {
+  sql = `SELECT * FROM media_file
+    INNER JOIN media_reference ON media_reference.id = @media_reference_id
+    WHERE media_file.id = media_reference.id
+  `
+  stmt = this.register(this.sql)
+
+  call(query_data: {media_reference_id: MediaReferenceTR['id']}): MediaFileTR | null {
+    const row = this.stmt.ref.get(query_data)
+    return row
   }
 }
 

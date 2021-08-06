@@ -11,7 +11,11 @@
     "sourceMap": true,
 
     "strictNullChecks": true,
-    "noImplicitAny": true
+    "noImplicitAny": true,
+    "baseUrl": ".",
+    "paths": {
+      "@src/*": ["src/*"]
+    }
   },
 
   "include": ["src/**/*.ts", "test/**/*.ts"]

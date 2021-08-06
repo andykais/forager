@@ -1,9 +1,12 @@
 import 'source-map-support/register'
 import test from 'ava'
 import * as fs from 'fs'
-import { Forager } from '../src/index'
+import { Forager } from '../../src/index'
+import { get_file_checksum } from '../../src/util/file_processing'
 
 const database_path = 'test/fixtures/forager.db'
+const media_input_path = 'test/resources/koch.tif'
+const media_output_path = 'test/fixtures/koch-export.tif'
 
 async function rmf(filepath: string) {
   try {
@@ -16,6 +19,7 @@ async function rmf(filepath: string) {
 test.beforeEach(async () => {
   await fs.promises.mkdir('test/fixtures', { recursive: true })
   await rmf(database_path)
+  await rmf(media_output_path)
 })
 test('add media', async t => {
   try {
@@ -25,7 +29,11 @@ test('add media', async t => {
 
   const tags = [{ group: '', name: 'procedural_generation' }, { group: 'colors', name: 'black' }]
   const media_info = { title: 'Generated Art' }
-  const media_file = await forager.media_file.create('test/resources/kock.tif', media_info, tags)
+  const { media_reference_id, media_file_id } = await forager.media.create(media_input_path, media_info, tags)
+
+  await forager.media.export(media_reference_id, media_output_path)
+  const input_md5checksum = await get_file_checksum(media_input_path)
+  const output_md5checksum = await get_file_checksum(media_output_path)
 
   t.pass()
   } catch(e) {

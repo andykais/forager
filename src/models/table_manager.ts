@@ -102,6 +102,7 @@ class CreateTables extends Statement {
       media_file_id INTEGER NOT NULL,
       -- 1MiB chunks
       chunk BLOB NOT NULL,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
       FOREIGN KEY (media_file_id) REFERENCES media_file(id)
@@ -129,6 +130,7 @@ class CreateTables extends Statement {
       thumbnail_file_size_bytes INTEGER NOT NULL,
       thumbnail_md5checksum TEXT NOT NULL,
 
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
       media_reference_id INTEGER NOT NULL,
@@ -138,6 +140,7 @@ class CreateTables extends Statement {
     CREATE TABLE media_sequence (
       id INTEGER PRIMARY KEY NOT NULL,
       media_reference_id INTEGER NOT NULL,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
       FOREIGN KEY (media_reference_id) REFERENCES media_reference(id)
@@ -158,6 +161,7 @@ class CreateTables extends Statement {
       description TEXT,
       metadata JSON,
 
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
       FOREIGN KEY (media_sequence_id) REFERENCES media_sequence(id)
@@ -167,6 +171,7 @@ class CreateTables extends Statement {
     CREATE TABLE media_reference_tag (
       media_reference_id INTEGER NOT NULL,
       tag_id INTEGER NOT NULL,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
       PRIMARY KEY (media_reference_id, tag_id),
@@ -183,6 +188,7 @@ class CreateTables extends Statement {
       tag_group_id INTEGER NOT NULL,
       -- some tags will just be aliases for others. We have to be careful not to have cyclical references here
       alias_tag_id INTEGER,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
       FOREIGN KEY (alias_tag_id) REFERENCES tag(id),
@@ -200,12 +206,25 @@ class CreateTables extends Statement {
 
 
     CREATE TABLE forager (
+      -- id INTEGER PRIMARY KEY NOT NULL,
       singleton INTEGER NOT NULL UNIQUE DEFAULT 1 CHECK (singleton = 1), -- ensure only a single row can be inserted
       version FLOAT NOT NULL,
       name TEXT NOT NULL,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 
+
+    -- triggers --
+    -- NOTE these do not have their schema checked for some odd reason. Its up to tests and devs to make sure these arent out of sync
+    CREATE TRIGGER media_chunk_update_trigger AFTER UPDATE ON media_chunk BEGIN UPDATE media_chunk SET updated_at = CURRENT_TIMESTAMP WHERE new.id = id; END;
+    CREATE TRIGGER media_file_update_trigger AFTER UPDATE ON media_file BEGIN UPDATE media_file SET updated_at = CURRENT_TIMESTAMP WHERE new.id = id; END;
+    CREATE TRIGGER media_sequence_update_trigger AFTER UPDATE ON media_sequence BEGIN UPDATE media_sequence SET updated_at = CURRENT_TIMESTAMP WHERE new.id = id; END;
+    CREATE TRIGGER media_reference_update_trigger AFTER UPDATE ON media_reference BEGIN UPDATE media_reference SET updated_at = CURRENT_TIMESTAMP WHERE new.id = id; END;
+    CREATE TRIGGER media_reference_tag_update_trigger AFTER UPDATE ON media_reference_tag BEGIN UPDATE media_reference_tag SET updated_at = CURRENT_TIMESTAMP WHERE new.id = id; END;
+    CREATE TRIGGER tag_update_trigger AFTER UPDATE ON tag BEGIN UPDATE tag SET updated_at = CURRENT_TIMESTAMP WHERE new.id = id; END;
+    CREATE TRIGGER tag_group_update_trigger AFTER UPDATE ON tag_group BEGIN UPDATE tag_group SET updated_at = CURRENT_TIMESTAMP WHERE id = new.id; END;
+    CREATE TRIGGER forager_update_trigger AFTER INSERT ON forager BEGIN UPDATE forager SET updated_at = CURRENT_TIMESTAMP WHERE new.name = name; END;
 
     -- NOTES: lets use the "INDEXED BY <index_name>" clause to hardcode indexes to look things up with
     -- It will be cool and way easier to determine what queries are used

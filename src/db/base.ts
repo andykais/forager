@@ -85,4 +85,24 @@ class TestModel extends Model {
   }
 }
 
+/** represents a returned, decoded row */
+type BaseTR = {
+  id: number
+  updated_at: Date
+  created_at: Date
+}
+
+
+/** represents a retreieved, encoded row */
+type SelectRow<TR extends BaseTR> = {
+  [K in keyof TR]: TR[K] extends Date ? string : TR[K]
+}
+
+/** represents insert data, decoded */
+type NullableKeys<TR extends BaseTR> = {
+  [K in keyof TR]: null extends TR[K] ? K : never
+}[keyof TR]
+type InsertRow<TR extends BaseTR> = Partial<Pick<TR, NullableKeys<TR>>> & Omit<TR, NullableKeys<TR> | 'id' | 'created_at' | 'updated_at'>
+
 export { Model, Statement, MigrationStatement }
+export type { SelectRow, InsertRow }

@@ -1,4 +1,5 @@
 import { Action } from './base'
+import { MediaChunk } from '../models/media_chunk'
 import { get_file_size, get_file_info, get_file_checksum, get_buffer_checksum, get_string_checksum, get_file_thumbnail } from '../util/file_processing'
 
 import fs from 'fs'
@@ -17,7 +18,7 @@ interface MediaInfo {
   source_created_at?: string
 }
 
-class MediaFileAction extends Action {
+class MediaAction extends Action {
   async create(filepath: string, media_info: MediaInfo, tags: Tag[]) {
     const media_file_info = await get_file_info(filepath)
     const [file_size_bytes, thumbnail, md5checksum] = await Promise.all([
@@ -28,33 +29,25 @@ class MediaFileAction extends Action {
     const thumbnail_md5checksum = get_buffer_checksum(thumbnail)
 
     const media_reference_data = {
-      title: null,
-      source_url: null,
-      source_created_at: null,
-      description: null,
-      metadata: null,
-      media_sequence_id: null,
       media_sequence_index: 0,
       ...media_info,
+    }
+    const media_file_data = {
+      ...media_file_info,
+      file_size_bytes,
+      md5checksum,
+
+      thumbnail,
+      thumbnail_file_size_bytes: thumbnail.length,
+      thumbnail_md5checksum,
     }
     return this.db.db.transaction(async () => {
       const media_reference_id = this.db.media_reference.insert(media_reference_data)
 
-      const media_file_data = {
-        ...media_file_info,
-        file_size_bytes,
-        md5checksum,
-        media_reference_id,
-
-        thumbnail,
-        thumbnail_file_size_bytes: thumbnail.length,
-        thumbnail_md5checksum,
-      }
-      const media_file_id = this.db.media_file.insert(media_file_data)
+      const media_file_id = this.db.media_file.insert({ ...media_file_data, media_reference_id })
 
       await new Promise((resolve, reject) => {
-        const CHUNK_SIZE = 1024 * 1024 * 2 // (2MB)
-        const stream = fs.createReadStream(filepath, { highWaterMark: CHUNK_SIZE })
+        const stream = fs.createReadStream(filepath, { highWaterMark: MediaChunk.CHUNK_SIZE })
         stream.on('data', (chunk: Buffer) => this.db.media_chunk.insert({ media_file_id, chunk }))
         stream.on('end', resolve)
         stream.on('error', reject)
@@ -71,9 +64,19 @@ class MediaFileAction extends Action {
     })()
   }
 
-  // export(media_reference_id: number, output_filepath: string) {}
+  export(media_reference_id: number, output_filepath: string) {
+      const media_file = this.db.media_file.select_one({ media_reference_id })
+      if (!media_file) throw new Error(`Media reference ${media_reference_id} does not exist`)
+
+      const stream = fs.createWriteStream(output_filepath)
+      for (const media_chunk of this.db.media_chunk.iterate({ media_file_id: media_file.id })) {
+        stream.write(media_chunk.chunk)
+      }
+      stream.close()
+  }
+
   //
   // search(tags: Tag[]): Paginated<MediaReference> {}
 }
 
-export { MediaFileAction }
+export { MediaAction }

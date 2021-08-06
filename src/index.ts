@@ -1,5 +1,5 @@
 import { Context } from './context'
-import { MediaFileAction } from './actions/media_file'
+import { MediaAction } from './actions/media'
 import type { ContextConfig } from './context'
 
 class Forager {
@@ -12,7 +12,7 @@ class Forager {
   }
 
   // available actions
-  media_file = new MediaFileAction(this.context)
+  media = new MediaAction(this.context)
 }
 
 export { Forager }

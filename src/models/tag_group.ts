@@ -1,4 +1,5 @@
 import { Model, Statement } from '../db/base'
+import type { InsertRow } from '../db/base'
 
 /* --============= Table Row Definitions =============-- */
 
@@ -6,6 +7,7 @@ interface TagGroupTR {
   id: number
   name: string
   color: string
+  updated_at: Date
   created_at: Date
 }
 
@@ -21,7 +23,7 @@ class InsertTagGroup extends Statement {
   sql = `INSERT INTO tag_group (name, color) VALUES (@name, @color)`
   stmt = this.register(this.sql)
 
-  call(tag_data: Omit<TagGroupTR, 'id' | 'created_at'>) {
+  call(tag_data: InsertRow<TagGroupTR>) {
     const sql_data = {...tag_data }
     const info = this.stmt.ref.run(sql_data)
     return info.lastInsertRowid
@@ -30,3 +32,4 @@ class InsertTagGroup extends Statement {
 
 
 export { TagGroup }
+export type { TagGroupTR }
