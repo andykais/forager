@@ -5,6 +5,7 @@ import { init_migration_map } from './migrations/index'
 import type { Model } from './base'
 // import model definitions
 import { TableManager } from '../models/table_manager'
+import { MediaChunk } from '../models/media_chunk'
 import { MediaFile } from '../models/media_file'
 import { MediaReference } from '../models/media_reference'
 import { MediaReferenceTag } from '../models/media_reference_tag'
@@ -19,6 +20,7 @@ class Database {
 
   // model definitions
   public table_manager = this.register(TableManager)
+  public media_chunk = this.register(MediaChunk)
   public media_file = this.register(MediaFile)
   public media_reference = this.register(MediaReference)
   public media_reference_tag = this.register(MediaReferenceTag)

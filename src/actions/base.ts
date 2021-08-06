@@ -1,7 +1,12 @@
 import type { Context } from '../context'
+import type { Database } from '../db/sqlite'
 
 class Action {
-  public constructor(protected context: Context) {}
+  protected db: Database
+
+  public constructor(protected context: Context) {
+    this.db = context.db
+  }
 }
 
 

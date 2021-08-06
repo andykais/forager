@@ -76,7 +76,7 @@ class GetTableDefinitions extends Statement {
 
 class DropTables extends Statement {
   sql = `
-    DROP TABLE IF EXISTS media_chunks;
+    DROP TABLE IF EXISTS media_chunk;
     DROP TABLE IF EXISTS media_file;
     DROP TABLE IF EXISTS media_sequence;
     DROP TABLE IF EXISTS media_reference;
@@ -97,7 +97,7 @@ class DropTables extends Statement {
 
 class CreateTables extends Statement {
   sql = `
-    CREATE TABLE media_chunks (
+    CREATE TABLE media_chunk (
       id INTEGER PRIMARY KEY NOT NULL,
       media_file_id INTEGER NOT NULL,
       -- 1MiB chunks
@@ -194,7 +194,7 @@ class CreateTables extends Statement {
       id INTEGER PRIMARY KEY NOT NULL,
       name TEXT NOT NULL UNIQUE, -- TODO we should check this at the database level CHECK(name REGEXP '^[a-z_]+$'),
       color TEXT NOT NULL UNIQUE,
-      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 

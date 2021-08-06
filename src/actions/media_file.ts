@@ -1,6 +1,8 @@
 import { Action } from './base'
 import { get_file_size, get_file_info, get_file_checksum, get_buffer_checksum, get_string_checksum, get_file_thumbnail } from '../util/file_processing'
 
+import fs from 'fs'
+
 
 interface Tag {
   group?: string
@@ -35,8 +37,8 @@ class MediaFileAction extends Action {
       media_sequence_index: 0,
       ...media_info,
     }
-    return this.context.db.db.transaction(() => {
-      const media_reference_id = this.context.db.media_reference.insert(media_reference_data)
+    return this.db.db.transaction(async () => {
+      const media_reference_id = this.db.media_reference.insert(media_reference_data)
 
       const media_file_data = {
         ...media_file_info,
@@ -48,18 +50,30 @@ class MediaFileAction extends Action {
         thumbnail_file_size_bytes: thumbnail.length,
         thumbnail_md5checksum,
       }
-      const media_file_id = this.context.db.media_file.insert(media_file_data)
+      const media_file_id = this.db.media_file.insert(media_file_data)
+
+      await new Promise((resolve, reject) => {
+        const CHUNK_SIZE = 1024 * 1024 * 2 // (2MB)
+        const stream = fs.createReadStream(filepath, { highWaterMark: CHUNK_SIZE })
+        stream.on('data', (chunk: Buffer) => this.db.media_chunk.insert({ media_file_id, chunk }))
+        stream.on('end', resolve)
+        stream.on('error', reject)
+      })
 
       for (const tag of tags) {
         const group = tag.group ?? ''
-        const tag_group_id = this.context.db.tag_group.insert({ name: group, color: get_string_checksum(group).substr(0, 6) })
-        const tag_id = this.context.db.tag.insert({ alias_tag_id: null, name: tag.name, tag_group_id })
+        const tag_group_id = this.db.tag_group.insert({ name: group, color: get_string_checksum(group).substr(0, 6) })
+        const tag_id = this.db.tag.insert({ alias_tag_id: null, name: tag.name, tag_group_id })
 
-        this.context.db.media_reference_tag.insert({ media_reference_id, tag_id })
+        this.db.media_reference_tag.insert({ media_reference_id, tag_id })
       }
       return { media_reference_id, media_file_id }
     })()
   }
+
+  // export(media_reference_id: number, output_filepath: string) {}
+  //
+  // search(tags: Tag[]): Paginated<MediaReference> {}
 }
 
 export { MediaFileAction }

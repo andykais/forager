@@ -56,3 +56,4 @@ class InsertMediaFile extends Statement {
 
 
 export { MediaFile }
+export type { MediaFileTR }
