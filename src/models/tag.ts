@@ -17,6 +17,7 @@ interface TagTR {
 
 class Tag extends Model {
   insert = this.register(InsertTag)
+  select_one_by_name = this.register(SelectOneTagByName)
 }
 
 /* --=================== Statements ===================-- */
@@ -29,6 +30,16 @@ class InsertTag extends Statement {
     const sql_data = {...tag_data }
     const info = this.stmt.ref.run(sql_data)
     return info.lastInsertRowid
+  }
+}
+
+class SelectOneTagByName extends Statement {
+  stmt = this.register(`SELECT * FROM tag
+    INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
+    WHERE tag.name = @name AND tag_group.name = @group`)
+
+  call(query_data: { name: TagTR['name']; group: TagGroupTR['name']}): TagTR | null {
+    return this.stmt.ref.get(query_data)
   }
 }
 

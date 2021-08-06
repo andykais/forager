@@ -1,5 +1,6 @@
 import { Model, Statement } from '../db/base'
 import type { InsertRow } from '../db/base'
+import type { TagTR } from './tag'
 
 /* --============= Table Row Definitions =============-- */
 
@@ -22,6 +23,7 @@ type MediaReferenceTR = {
 
 class MediaReference extends Model {
   insert = this.register(InsertMediaReference)
+  select_many_by_tags = this.register(SelectManyMediaReferenceByTags)
 }
 
 /* --=================== Statements ===================-- */
@@ -59,6 +61,18 @@ class InsertMediaReference extends Statement {
     }
     const info = this.stmt.ref.run(sql_data)
     return info.lastInsertRowid
+  }
+}
+
+class SelectManyMediaReferenceByTags extends Statement {
+  call(query_data: { tag_ids: TagTR['id'][] }): MediaReferenceTR[] {
+    const tag_ids_str = query_data.tag_ids.join(',')
+    const sql = `SELECT * FROM media_reference
+      INNER JOIN media_reference_tag ON media_reference_tag.media_reference_id = media_reference.id
+      INNER JOIN tag ON media_reference_tag.tag_id = tag.id
+      WHERE tag.id IN (${tag_ids_str})
+    `
+    return this.db.prepare(sql).all()
   }
 }
 

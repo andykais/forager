@@ -22,8 +22,6 @@ test.beforeEach(async () => {
   await rmf(media_output_path)
 })
 test('add media', async t => {
-  try {
-
   const forager = new Forager({ database_path })
   forager.init()
 
@@ -31,13 +29,14 @@ test('add media', async t => {
   const media_info = { title: 'Generated Art' }
   const { media_reference_id, media_file_id } = await forager.media.create(media_input_path, media_info, tags)
 
-  await forager.media.export(media_reference_id, media_output_path)
+  forager.media.export(media_reference_id, media_output_path)
   const input_md5checksum = await get_file_checksum(media_input_path)
   const output_md5checksum = await get_file_checksum(media_output_path)
 
-  t.pass()
-  } catch(e) {
-    console.log(e)
-    throw e
-  }
+  const media_references = forager.media.search({ tags: [{ name: 'black', group: 'colors' }]})
+  t.assert(media_references.length === 1)
+  t.assert(media_references[0].id === media_reference_id)
+
+  const no_media_references = forager.media.search({ tags: [{ name: 'nonexistent_tag' }]})
+  t.assert(media_references.length === 0)
 })
