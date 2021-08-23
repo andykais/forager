@@ -1,4 +1,5 @@
 import { Action } from './base'
+import { NotFoundError } from '../util/errors'
 import { MediaChunk } from '../models/media_chunk'
 import { MediaReference } from '../models/media_reference'
 import { get_file_size, get_file_info, get_file_checksum, get_buffer_checksum, get_string_checksum, get_file_thumbnail } from '../util/file_processing'
@@ -17,7 +18,7 @@ interface MediaInfo {
   description?: string
   metadata?: any
   source_url?: string
-  source_created_at?: string
+  source_created_at?: Date
 }
 
 class MediaAction extends Action {
@@ -68,7 +69,7 @@ class MediaAction extends Action {
 
   export(media_reference_id: number, output_filepath: string) {
       const media_file = this.db.media_file.select_one({ media_reference_id })
-      if (!media_file) throw new Error(`MediaReference ${media_reference_id} does not exist`)
+      if (!media_file) throw new NotFoundError('MediaReference', media_reference_id)
 
       const stream = fs.createWriteStream(output_filepath)
       for (const media_chunk of this.db.media_chunk.iterate({ media_file_id: media_file.id })) {
@@ -77,17 +78,22 @@ class MediaAction extends Action {
       stream.close()
   }
 
-  search(params: {tags: Tag[]}): MediaReferenceTR[] {
+  search(params: {tags: Tag[]; limit?: number; offset?: number }) {
+    console.log({ params })
+    const { limit = 1000, offset = 0 } = params
     const tag_ids = params.tags.map(tag => {
       const query_data = { group: '', ...tag }
       const tag_row = this.db.tag.select_one_by_name(query_data)
-      if (!tag_row) throw new Error(`Tag "${query_data.group}:${query_data.name}" does not exist`)
+      if (!tag_row) throw new NotFoundError('Tag', `${query_data.group}:${query_data.name}`)
       return tag_row
     }).map(tag => tag.id)
 
-    const media_references = this.db.media_reference.select_many_by_tags({ tag_ids })
+    console.log(this.db.media_reference.select_many({ offset, limit }))
+
+    const media_references = this.db.media_reference.select_many_by_tags({ tag_ids, limit, offset })
     return media_references
   }
 }
 
+export type { MediaInfo, Tag }
 export { MediaAction }

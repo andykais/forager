@@ -37,27 +37,23 @@ abstract class Model {
 
 
 abstract class Statement<A extends any[] = any[], R = any> {
-  // static placeholder_stmt = new UninitializedStmt()
-  // protected stmt = new UninitializedStmt()
-  private unprepared_sql: string | undefined
-  private stmt_pointer: { ref: Sqlite3.Statement }
+  private stmt_pointers: { ref: Sqlite3.Statement; sql: string }[]
 
 
   public constructor(protected db: Sqlite3.Database) {
     this.call = this.call.bind(this)
+    this.stmt_pointers = []
   }
 
   public init() {
-    if (this.unprepared_sql) {
-      const sql = this.unprepared_sql
-      this.stmt_pointer.ref = this.db.prepare(sql)
+    for (const stmt_pointer of this.stmt_pointers) {
+      stmt_pointer.ref = this.db.prepare(stmt_pointer.sql)
     }
   }
 
   protected register(sql: string) {
-    const pointer = { ref: new UninitializedStmt() }
-    this.unprepared_sql = sql
-    this.stmt_pointer = pointer
+    const pointer = { ref: new UninitializedStmt(), sql }
+    this.stmt_pointers.push(pointer)
     return pointer
   }
 
@@ -103,6 +99,17 @@ type NullableKeys<TR extends BaseTR> = {
   [K in keyof TR]: null extends TR[K] ? K : never
 }[keyof TR]
 type InsertRow<TR extends BaseTR> = Partial<Pick<TR, NullableKeys<TR>>> & Omit<TR, NullableKeys<TR> | 'id' | 'created_at' | 'updated_at'>
+type InsertRowEncoded<TR extends BaseTR, TB = InsertRow<TR>> = Required<{
+  [K in keyof TB]: Date extends TB[K] ? null extends TB[K] ? string | null : string : TB[K]
+}>
+
+
+type Paginated<TR extends BaseTR> = {
+  total: number
+  limit: number
+  offset: number
+  result: TR[]
+}
 
 export { Model, Statement, MigrationStatement }
-export type { SelectRow, InsertRow }
+export type { SelectRow, InsertRow, InsertRowEncoded, Paginated }

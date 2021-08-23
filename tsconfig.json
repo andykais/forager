@@ -9,6 +9,8 @@
     "resolveJsonModule": true,
 
     "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
 
     "strictNullChecks": true,
     "noImplicitAny": true,

@@ -1,4 +1,4 @@
-import 'source-map-support/register'
+// import 'source-map-support/register'
 import test from 'ava'
 import * as fs from 'fs'
 import { Forager } from '../../src/index'
@@ -22,6 +22,8 @@ test.beforeEach(async () => {
   await rmf(media_output_path)
 })
 test('add media', async t => {
+  try{
+
   const forager = new Forager({ database_path })
   forager.init()
 
@@ -33,10 +35,11 @@ test('add media', async t => {
   const input_md5checksum = await get_file_checksum(media_input_path)
   const output_md5checksum = await get_file_checksum(media_output_path)
 
-  const media_references = forager.media.search({ tags: [{ name: 'black', group: 'colors' }]})
-  t.assert(media_references.length === 1)
-  t.assert(media_references[0].id === media_reference_id)
+  const media_references = forager.media.search({ tags})
+  console.log(media_references)
+  t.is(media_references.total, 1)
+  t.assert(media_references.result[0].id === media_reference_id)
 
-  const no_media_references = forager.media.search({ tags: [{ name: 'nonexistent_tag' }]})
-  t.assert(media_references.length === 0)
+  t.throws(() => forager.media.search({ tags: [{ name: 'nonexistent_tag' }]}))
+  }catch(e){console.log(e);throw e}
 })

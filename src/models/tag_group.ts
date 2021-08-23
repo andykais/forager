@@ -25,6 +25,7 @@ class InsertTagGroup extends Statement {
 
   call(tag_data: InsertRow<TagGroupTR>) {
     const sql_data = {...tag_data }
+    console.log('insert tag group', sql_data)
     const info = this.stmt.ref.run(sql_data)
     return info.lastInsertRowid
   }
