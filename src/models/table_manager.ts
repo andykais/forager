@@ -217,14 +217,15 @@ class CreateTables extends Statement {
 
     -- triggers --
     -- NOTE these do not have their schema checked for some odd reason. Its up to tests and devs to make sure these arent out of sync
-    CREATE TRIGGER media_chunk_update_trigger AFTER UPDATE ON media_chunk BEGIN UPDATE media_chunk SET updated_at = CURRENT_TIMESTAMP WHERE new.id = id; END;
-    CREATE TRIGGER media_file_update_trigger AFTER UPDATE ON media_file BEGIN UPDATE media_file SET updated_at = CURRENT_TIMESTAMP WHERE new.id = id; END;
-    CREATE TRIGGER media_sequence_update_trigger AFTER UPDATE ON media_sequence BEGIN UPDATE media_sequence SET updated_at = CURRENT_TIMESTAMP WHERE new.id = id; END;
-    CREATE TRIGGER media_reference_update_trigger AFTER UPDATE ON media_reference BEGIN UPDATE media_reference SET updated_at = CURRENT_TIMESTAMP WHERE new.id = id; END;
-    CREATE TRIGGER media_reference_tag_update_trigger AFTER UPDATE ON media_reference_tag BEGIN UPDATE media_reference_tag SET updated_at = CURRENT_TIMESTAMP WHERE new.id = id; END;
-    CREATE TRIGGER tag_update_trigger AFTER UPDATE ON tag BEGIN UPDATE tag SET updated_at = CURRENT_TIMESTAMP WHERE new.id = id; END;
-    CREATE TRIGGER tag_group_update_trigger AFTER UPDATE ON tag_group BEGIN UPDATE tag_group SET updated_at = CURRENT_TIMESTAMP WHERE id = new.id; END;
-    CREATE TRIGGER forager_update_trigger AFTER INSERT ON forager BEGIN UPDATE forager SET updated_at = CURRENT_TIMESTAMP WHERE new.name = name; END;
+    -- follow up note: this is a bad idea. Lets just add some serialization helpers to these babys
+    -- CREATE TRIGGER media_chunk_update_trigger AFTER UPDATE ON media_chunk BEGIN UPDATE media_chunk SET updated_at = CURRENT_TIMESTAMP WHERE new.id = id; END;
+    -- CREATE TRIGGER media_file_update_trigger AFTER UPDATE ON media_file BEGIN UPDATE media_file SET updated_at = CURRENT_TIMESTAMP WHERE new.id = id; END;
+    -- CREATE TRIGGER media_sequence_update_trigger AFTER UPDATE ON media_sequence BEGIN UPDATE media_sequence SET updated_at = CURRENT_TIMESTAMP WHERE new.id = id; END;
+    -- CREATE TRIGGER media_reference_update_trigger AFTER UPDATE ON media_reference BEGIN UPDATE media_reference SET updated_at = CURRENT_TIMESTAMP WHERE new.id = id; END;
+    -- CREATE TRIGGER media_reference_tag_update_trigger AFTER UPDATE ON media_reference_tag BEGIN UPDATE media_reference_tag SET updated_at = CURRENT_TIMESTAMP WHERE new.id = id; END;
+    -- CREATE TRIGGER tag_update_trigger AFTER UPDATE ON tag BEGIN UPDATE tag SET updated_at = CURRENT_TIMESTAMP WHERE new.id = id; END;
+    -- CREATE TRIGGER tag_group_update_trigger AFTER UPDATE ON tag_group BEGIN UPDATE tag_group SET updated_at = CURRENT_TIMESTAMP WHERE id = new.id; END;
+    -- CREATE TRIGGER forager_update_trigger AFTER INSERT ON forager BEGIN UPDATE forager SET updated_at = CURRENT_TIMESTAMP WHERE new.name = name; END;
 
     -- NOTES: lets use the "INDEXED BY <index_name>" clause to hardcode indexes to look things up with
     -- It will be cool and way easier to determine what queries are used

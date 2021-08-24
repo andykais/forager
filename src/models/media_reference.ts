@@ -81,6 +81,7 @@ class SelectManyMediaReference extends Statement {
       r.source_created_at = new Date(r.source_created_at)
       r.created_at = new Date(r.created_at)
       r.updated_at = new Date(r.updated_at)
+      return r
     })
     return {
       total,
@@ -100,9 +101,10 @@ class SelectManyMediaReferenceByTags extends Statement {
       INNER JOIN tag ON media_reference_tag.tag_id = tag.id
       WHERE tag.id IN (${tag_ids_str})
       GROUP BY media_reference.id
+      HAVING COUNT(tag.id) >= ${tag_ids.length}
     `
 
-    const count_sql = `SELECT COUNT(*) as total FROM media_reference ${shared_sql}`
+    const count_sql = `SELECT COUNT(*) as total FROM (SELECT * FROM media_reference ${shared_sql})`
     const data_sql = `SELECT media_reference.* FROM media_reference
       ${shared_sql}
       LIMIT @limit OFFSET @offset

@@ -79,7 +79,6 @@ class MediaAction extends Action {
   }
 
   search(params: {tags: Tag[]; limit?: number; offset?: number }) {
-    console.log({ params })
     const { limit = 1000, offset = 0 } = params
     const tag_ids = params.tags.map(tag => {
       const query_data = { group: '', ...tag }
@@ -87,8 +86,6 @@ class MediaAction extends Action {
       if (!tag_row) throw new NotFoundError('Tag', `${query_data.group}:${query_data.name}`)
       return tag_row
     }).map(tag => tag.id)
-
-    console.log(this.db.media_reference.select_many({ offset, limit }))
 
     const media_references = this.db.media_reference.select_many_by_tags({ tag_ids, limit, offset })
     return media_references

@@ -8,6 +8,7 @@ const VIDEO_CODECS: string[] = [
 
 const IMAGE_CODECS: string[] = [
   'tiff',
+  'png',
 ]
 
 const AUDIO_CODECS: string[] = [

@@ -23,13 +23,15 @@ class Tag extends Model {
 /* --=================== Statements ===================-- */
 
 class InsertTag extends Statement {
-  sql = `INSERT INTO tag (tag_group_id, name, alias_tag_id) VALUES (@tag_group_id, @name, @alias_tag_id)`
+  sql = `INSERT INTO tag (tag_group_id, name, alias_tag_id) VALUES (@tag_group_id, @name, @alias_tag_id)
+  ON CONFLICT DO UPDATE SET name = name
+  RETURNING id`
   stmt = this.register(this.sql)
 
   call(tag_data: InsertRow<TagTR>) {
     const sql_data = {...tag_data }
-    const info = this.stmt.ref.run(sql_data)
-    return info.lastInsertRowid
+    const { id } = this.stmt.ref.get(sql_data)
+    return id
   }
 }
 

@@ -20,14 +20,15 @@ class TagGroup extends Model {
 /* --=================== Statements ===================-- */
 
 class InsertTagGroup extends Statement {
-  sql = `INSERT INTO tag_group (name, color) VALUES (@name, @color)`
+  sql = `INSERT INTO tag_group (name, color) VALUES (@name, @color)
+  ON CONFLICT DO UPDATE SET name = name
+  RETURNING id`
   stmt = this.register(this.sql)
 
   call(tag_data: InsertRow<TagGroupTR>) {
     const sql_data = {...tag_data }
-    console.log('insert tag group', sql_data)
-    const info = this.stmt.ref.run(sql_data)
-    return info.lastInsertRowid
+    const { id } = this.stmt.ref.get(sql_data)
+    return id
   }
 }
 

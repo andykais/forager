@@ -36,10 +36,17 @@ test('add media', async t => {
   const output_md5checksum = await get_file_checksum(media_output_path)
 
   const media_references = forager.media.search({ tags})
-  console.log(media_references)
   t.is(media_references.total, 1)
   t.assert(media_references.result[0].id === media_reference_id)
 
   t.throws(() => forager.media.search({ tags: [{ name: 'nonexistent_tag' }]}))
+
+  // add a second media file
+  const ed_edd_eddy = await forager.media.create('test/resources/ed-edd-eddy.png', {}, [{ group: 'colors', name: 'black' }])
+
+  const search_results = forager.media.search({tags})
+  t.is(search_results.total, 1)
+  t.assert(search_results.result[0].id === media_reference_id)
+
   }catch(e){console.log(e);throw e}
 })
