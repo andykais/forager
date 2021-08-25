@@ -1,6 +1,7 @@
 import { Model, Statement } from '../db/base'
 import type { InsertRow, InsertRowEncoded, Paginated } from '../db/base'
 import type { TagTR } from './tag'
+import type { TagGroupTR } from './tag_group'
 
 /* --============= Table Row Definitions =============-- */
 
@@ -91,6 +92,7 @@ class SelectManyMediaReference extends Statement {
     }
   }
 }
+
 class SelectManyMediaReferenceByTags extends Statement {
   // TODO we may be able to speed this up if we pass in media_tag_reference ids instead of tag ids
   call(query_data: { tag_ids: TagTR['id'][]; limit: number; offset: number }): Paginated<MediaReferenceTR> {

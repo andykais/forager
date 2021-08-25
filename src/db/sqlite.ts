@@ -28,7 +28,9 @@ class Database {
   public tag = this.register(Tag)
 
 
-  public constructor(private context: Context) {}
+  public constructor(private context: Context) {
+    this.context.logger.debug('opened database at', this.context.config.database_path)
+  }
 
   public init() {
     if (this.table_manager.tables_exist()) {
@@ -58,6 +60,7 @@ class Database {
       const current_version = this.table_manager.get_forager_metadata().version
 
       if (version > current_version) {
+        this.context.logger.info(`migrating ${current_version} to ${version}`)
         try {
           this.db.transaction(() => {
             const migration = this.migration_map.get(version)
@@ -69,6 +72,7 @@ class Database {
         }
       }
     }
+    this.context.logger.info(`database is up to date. (version ${this.table_manager.get_forager_metadata().version})`)
   }
 
   private register<T extends Model>(model_class: new (db: Sqlite3.Database) => T) {

@@ -1,3 +1,4 @@
+import { SqliteError } from 'better-sqlite3'
 import type Sqlite3 from 'better-sqlite3'
 
 class UninitializedStmt implements Sqlite3.Statement {
@@ -55,6 +56,10 @@ abstract class Statement<A extends any[] = any[], R = any> {
     const pointer = { ref: new UninitializedStmt(), sql }
     this.stmt_pointers.push(pointer)
     return pointer
+  }
+
+  protected is_unique_constaint_error(e: Error) {
+    return e instanceof SqliteError && e.code === 'SQLITE_CONSTRAINT_UNIQUE'
   }
 
   public abstract call(...args: A): R

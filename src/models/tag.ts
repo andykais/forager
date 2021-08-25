@@ -16,22 +16,24 @@ interface TagTR {
 /* --================ Model Definition ================-- */
 
 class Tag extends Model {
-  insert = this.register(InsertTag)
+  create = this.register(CreateTag)
   select_one_by_name = this.register(SelectOneTagByName)
+  select_all = this.register(SelectAllTags)
 }
 
 /* --=================== Statements ===================-- */
 
-class InsertTag extends Statement {
-  sql = `INSERT INTO tag (tag_group_id, name, alias_tag_id) VALUES (@tag_group_id, @name, @alias_tag_id)
-  ON CONFLICT DO UPDATE SET name = name
-  RETURNING id`
-  stmt = this.register(this.sql)
+class CreateTag extends Statement {
+  insert_stmt = this.register('INSERT INTO tag (tag_group_id, name, alias_tag_id) VALUES (@tag_group_id, @name, @alias_tag_id)')
+  select_stmt = this.register('SELECT id FROM tag WHERE name = @name AND tag_group_id = @tag_group_id')
 
-  call(tag_data: InsertRow<TagTR>) {
-    const sql_data = {...tag_data }
-    const { id } = this.stmt.ref.get(sql_data)
-    return id
+  call(tag_data: InsertRow<TagTR>): TagTR['id'] {
+    try {
+      return this.insert_stmt.ref.run(tag_data).lastInsertRowid
+    } catch(e) {
+      if (this.is_unique_constaint_error(e)) return this.select_stmt.ref.get(tag_data).id
+      else throw e
+    }
   }
 }
 
@@ -42,6 +44,16 @@ class SelectOneTagByName extends Statement {
 
   call(query_data: { name: TagTR['name']; group: TagGroupTR['name']}): TagTR | null {
     return this.stmt.ref.get(query_data)
+  }
+}
+
+type SelectAllTagsTR = { id: TagTR['id']; name: TagTR['name']; group: TagGroupTR['name']; color: TagGroupTR['color'] }
+class SelectAllTags extends Statement {
+  stmt = this.register(`SELECT tag.id, tag.name, tag_group.name as 'group', tag_group.color FROM tag
+    INNER JOIN tag_group ON tag_group.id = tag.tag_group_id`)
+
+  call(): SelectAllTagsTR[] {
+    return this.stmt.ref.all()
   }
 }
 

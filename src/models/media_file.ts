@@ -29,6 +29,7 @@ interface MediaFileTR {
 class MediaFile extends Model {
   insert = this.register(InsertMediaFile)
   select_one = this.register(SelectOneMediaFile)
+  select_thumbnail = this.register(SelectThumbnail)
 }
 
 /* --=================== Statements ===================-- */
@@ -69,6 +70,14 @@ class SelectOneMediaFile extends Statement {
   call(query_data: {media_reference_id: MediaReferenceTR['id']}): MediaFileTR | null {
     const row = this.stmt.ref.get(query_data)
     return row
+  }
+}
+
+class SelectThumbnail extends Statement {
+  stmt = this.register('SELECT thumbnail FROM media_file WHERE media_reference_id = ?')
+
+  call(media_reference_id: MediaReferenceTR['id']): Buffer {
+    return this.stmt.ref.get(media_reference_id).thumbnail
   }
 }
 

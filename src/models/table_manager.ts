@@ -184,7 +184,7 @@ class CreateTables extends Statement {
     /* CREATE VIRTUAL TABLE tag USING FTS5(name); */
     CREATE TABLE tag (
       id INTEGER PRIMARY KEY NOT NULL,
-      name TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
       tag_group_id INTEGER NOT NULL,
       -- some tags will just be aliases for others. We have to be careful not to have cyclical references here
       alias_tag_id INTEGER,

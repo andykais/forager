@@ -14,24 +14,23 @@ interface TagGroupTR {
 /* --================ Model Definition ================-- */
 
 class TagGroup extends Model {
-  insert = this.register(InsertTagGroup)
+  create = this.register(CreateTagGroup)
 }
 
 /* --=================== Statements ===================-- */
 
-class InsertTagGroup extends Statement {
-  sql = `INSERT INTO tag_group (name, color) VALUES (@name, @color)
-  ON CONFLICT DO UPDATE SET name = name
-  RETURNING id`
-  stmt = this.register(this.sql)
-
-  call(tag_data: InsertRow<TagGroupTR>) {
-    const sql_data = {...tag_data }
-    const { id } = this.stmt.ref.get(sql_data)
-    return id
+class CreateTagGroup extends Statement {
+  insert_stmt = this.register(`INSERT INTO tag_group (name, color) VALUES (@name, @color)`)
+  select_stmt = this.register(`SELECT id FROM tag_group WHERE name = @name`)
+  call(tag_data: InsertRow<TagGroupTR>): TagGroupTR['id'] {
+    try {
+      return this.insert_stmt.ref.run(tag_data).lastInsertRowid
+    } catch(e) {
+      if (this.is_unique_constaint_error(e)) return this.select_stmt.ref.get(tag_data).id
+      else throw e
+    }
   }
 }
-
 
 export { TagGroup }
 export type { TagGroupTR }

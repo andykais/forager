@@ -1,5 +1,6 @@
 import { Context } from './context'
 import { MediaAction } from './actions/media'
+import { TagAction } from './actions/tag'
 import type { ContextConfig } from './context'
 
 class Forager {
@@ -13,6 +14,7 @@ class Forager {
 
   // available actions
   media = new MediaAction(this.context)
+  tag = new TagAction(this.context)
 }
 
 export { Forager }

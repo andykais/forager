@@ -42,11 +42,17 @@ test('add media', async t => {
   t.throws(() => forager.media.search({ tags: [{ name: 'nonexistent_tag' }]}))
 
   // add a second media file
-  const ed_edd_eddy = await forager.media.create('test/resources/ed-edd-eddy.png', {}, [{ group: 'colors', name: 'black' }])
+  const cartoon_tags = [{ group: 'colors', name: 'black' }, { group: 'genre', name: 'cartoon' }]
+  const ed_edd_eddy = await forager.media.create('test/resources/ed-edd-eddy.png', {}, cartoon_tags)
 
   const search_results = forager.media.search({tags})
   t.is(search_results.total, 1)
   t.assert(search_results.result[0].id === media_reference_id)
+
+  const listed_tags = forager.tag.list()
+  t.assert(listed_tags.length === 3)
+  const tag_names = listed_tags.map(t => t.name).sort((a,b) => a.localeCompare(b))
+  t.deepEqual(tag_names, ['black', 'cartoon', 'procedural_generation'])
 
   }catch(e){console.log(e);throw e}
 })

@@ -91,6 +91,7 @@ async function get_file_thumbnail(filepath: string, file_info: FileInfo): Promis
     const preview_position = file_info.duration * 0.25 // assuming that 1/4 of the way into a video is a good preview position
     const tmpdir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'thumbnail-'))
     const thumbnail_filepath = path.join(tmpdir, 'thumbnail.jpg')
+    console.log({ thumbnail_filepath })
     await exec(`ffmpeg -v error -i '${filepath}' -an -s ${max_width_or_height} -frames:v 1 -ss ${preview_position} '${thumbnail_filepath}'`)
     const buffer = fs.promises.readFile(thumbnail_filepath)
     return buffer
