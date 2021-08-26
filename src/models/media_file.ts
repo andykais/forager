@@ -1,4 +1,5 @@
 import { Model, Statement } from '../db/base'
+import { TagInput } from '../inputs/tag'
 import type { InsertRow } from '../db/base'
 import type { MediaReferenceTR } from './media_reference'
 

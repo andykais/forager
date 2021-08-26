@@ -42,7 +42,7 @@ abstract class Statement<A extends any[] = any[], R = any> {
 
 
   public constructor(protected db: Sqlite3.Database) {
-    this.call = this.call.bind(this)
+    this.call = this.call.bind(this as any)
     this.stmt_pointers = []
   }
 

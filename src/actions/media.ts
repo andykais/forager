@@ -3,15 +3,12 @@ import { NotFoundError } from '../util/errors'
 import { MediaChunk } from '../models/media_chunk'
 import { MediaReference } from '../models/media_reference'
 import { get_file_size, get_file_info, get_file_checksum, get_buffer_checksum, get_string_checksum, get_file_thumbnail } from '../util/file_processing'
+import { TagInput } from '../inputs/tag'
 import type { MediaReferenceTR } from '../models/media_reference'
+import type { Tag } from '../inputs'
 
 import fs from 'fs'
 
-
-interface Tag {
-  group?: string
-  name: string
-}
 
 interface MediaInfo {
   title?: string
@@ -73,7 +70,7 @@ class MediaAction extends Action {
   search(params: {tags: Tag[]; limit?: number; offset?: number }) {
     const { limit = 1000, offset = 0 } = params
     const tag_ids = params.tags.map(tag => {
-      const query_data = { group: '', ...tag }
+      const query_data = TagInput.parse(tag)
       const tag_row = this.db.tag.select_one_by_name(query_data)
       if (!tag_row) throw new NotFoundError('Tag', `${query_data.group}:${query_data.name}`)
       return tag_row
@@ -83,10 +80,16 @@ class MediaAction extends Action {
     return media_references
   }
 
+  // TODO offset needs to be replaces w/ a cursor. The cursor will be source_created_at + created_at
+  list(params: {limit?: number; offset?: number} = {}) {
+    const { limit = 1000, offset = 0 } = params
+    return this.db.media_reference.select_many({ limit, offset })
+  }
+
   get_thumbnail(media_reference_id: number) {
     return this.db.media_file.select_thumbnail(media_reference_id)
   }
 }
 
-export type { MediaInfo, Tag }
+export type { MediaInfo }
 export { MediaAction }

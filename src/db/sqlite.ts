@@ -34,7 +34,6 @@ class Database {
 
   public init() {
     if (this.table_manager.tables_exist()) {
-      this.context.logger.info('migrating database...')
       this.migrate()
     } else {
       this.db.transaction(() => {
