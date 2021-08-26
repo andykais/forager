@@ -18,3 +18,4 @@ class Forager {
 }
 
 export { Forager }
+export * from './util/errors'

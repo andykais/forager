@@ -1,12 +1,15 @@
 import { SqliteError } from 'better-sqlite3'
 import type Sqlite3 from 'better-sqlite3'
 
+// NOTE the real Sqlite3.RunResult rowid can be either number or bigint.
+// I dont see us ever inserting more than 2^53 rows, and since we use integer primary keys, this should never happen
+type RunResult = { lastInsertRowid: number }
 class UninitializedStmt implements Sqlite3.Statement {
   database: any
   source: any
   reader: any
 
-  run(...params: any[]): any { throw new Error('UninitializedStmt: This is a placeholder. You must use an initialized statement') }
+  run(...params: any[]): Sqlite3.RunResult { throw new Error('UninitializedStmt: This is a placeholder. You must use an initialized statement') }
   get(...params: any[]): any { throw new Error('UninitializedStmt: This is a placeholder. You must use an initialized statement') }
   all(...params: any[]): any { throw new Error('UninitializedStmt: This is a placeholder. You must use an initialized statement') }
   pluck(...params: any[]): any { throw new Error('UninitializedStmt: This is a placeholder. You must use an initialized statement') }
@@ -58,9 +61,10 @@ abstract class Statement<A extends any[] = any[], R = any> {
     return pointer
   }
 
-  protected is_unique_constaint_error(e: Error) {
+  public static is_unique_constaint_error(e: Error) {
     return e instanceof SqliteError && e.code === 'SQLITE_CONSTRAINT_UNIQUE'
   }
+  protected is_unique_constaint_error = Statement.is_unique_constaint_error
 
   public abstract call(...args: A): R
 

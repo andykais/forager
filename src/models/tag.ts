@@ -29,7 +29,7 @@ class CreateTag extends Statement {
 
   call(tag_data: InsertRow<TagTR>): TagTR['id'] {
     try {
-      return this.insert_stmt.ref.run(tag_data).lastInsertRowid
+      return this.insert_stmt.ref.run(tag_data).lastInsertRowid as number
     } catch(e) {
       if (this.is_unique_constaint_error(e)) return this.select_stmt.ref.get(tag_data).id
       else throw e

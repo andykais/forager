@@ -1,7 +1,7 @@
 lockfileVersion: 5.3
 
 specifiers:
-  '@types/better-sqlite3': ^5.4.3
+  '@types/better-sqlite3': ^7.4.0
   '@types/mocha': ^8.2.3
   '@types/node': ^15.14.2
   '@types/sharp': ^0.28.5
@@ -21,7 +21,7 @@ dependencies:
   zod: 3.8.1
 
 devDependencies:
-  '@types/better-sqlite3': 5.4.3
+  '@types/better-sqlite3': 7.4.0
   '@types/mocha': 8.2.3
   '@types/node': 15.14.2
   '@types/sharp': 0.28.5
@@ -111,14 +111,8 @@ packages:
     resolution: {integrity: sha512-FTgBI767POY/lKNDNbIzgAX6miIDBs6NTCbdlDb8TrWovHsSvaVIZDlTqym29C6UqhzwcJx4CYr+AlrMywA0cA==}
     dev: true
 
-  /@types/better-sqlite3/5.4.3:
-    resolution: {integrity: sha512-d4T8Htgz3sQL3u5oVwkWipZLBYUooKEA4fhU9Sp4F6VDIhifQo1NR/IDtnAIID0Y9IXV3TQnNhv6S+m8TnkEdg==}
-    dependencies:
-      '@types/integer': 4.0.1
-    dev: true
-
-  /@types/integer/4.0.1:
-    resolution: {integrity: sha512-QQojPymFcV1hrvWXA1h0pP9RmFBFNuWikZcUEjjVsS19IyKO+jqOX24lp2ZHF4A21EmkosJhJDX7CLG67F2s7A==}
+  /@types/better-sqlite3/7.4.0:
+    resolution: {integrity: sha512-tmSORlztb2cdWZDy4V81mRDgL+q7bd+ext4pI+Wj8EtJ5EHIZ6v7yiWbJ6A5eKVtoz77EsBEm7amwAzfqR/kAw==}
     dev: true
 
   /@types/mocha/8.2.3:

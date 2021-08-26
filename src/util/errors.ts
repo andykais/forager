@@ -4,4 +4,10 @@ class NotFoundError extends Error {
   }
 }
 
-export { NotFoundError }
+class DuplicateMediaError extends Error {
+  constructor(filepath: string, checksum: string) {
+    super(`file '${filepath}' checksum ${checksum} already exists`)
+  }
+}
+
+export { NotFoundError, DuplicateMediaError }

@@ -56,7 +56,7 @@ class InsertMediaFile extends Statement {
   call(media_file_data: InsertRow<MediaFileTR>) {
     const sql_data = {...media_file_data, animated: media_file_data.animated ? 1 : 0 }
     const info = this.stmt.ref.run(sql_data)
-    return info.lastInsertRowid
+    return info.lastInsertRowid as number
   }
 }
 

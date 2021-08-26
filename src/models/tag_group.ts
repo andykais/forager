@@ -24,7 +24,7 @@ class CreateTagGroup extends Statement {
   select_stmt = this.register(`SELECT id FROM tag_group WHERE name = @name`)
   call(tag_data: InsertRow<TagGroupTR>): TagGroupTR['id'] {
     try {
-      return this.insert_stmt.ref.run(tag_data).lastInsertRowid
+      return this.insert_stmt.ref.run(tag_data).lastInsertRowid as number
     } catch(e) {
       if (this.is_unique_constaint_error(e)) return this.select_stmt.ref.get(tag_data).id
       else throw e

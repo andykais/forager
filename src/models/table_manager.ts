@@ -88,7 +88,8 @@ class DropTables extends Statement {
     DROP INDEX IF EXISTS media_tag;
     DROP INDEX IF EXISTS tag_name;
     DROP INDEX IF EXISTS media_file_text_search ;
-    DROP INDEX IF EXISTS media_file_type;`
+    DROP INDEX IF EXISTS media_file_type;
+    DROP INDEX IF EXISTS duplicate_log;`
 
   call() {
     this.db.exec(this.sql)
@@ -114,7 +115,7 @@ class CreateTables extends Statement {
       filename TEXT NOT NULL,
       -- mime_type TEXT NOT NULL,
       file_size_bytes INTEGER NOT NULL,
-      md5checksum TEXT NOT NULL,
+      md5checksum TEXT NOT NULL UNIQUE,
 
       -- image,video,audio
       media_type TEXT NOT NULL CHECK( media_type IN ('IMAGE', 'VIDEO', 'AUDIO') ),
@@ -198,7 +199,7 @@ class CreateTables extends Statement {
 
     CREATE TABLE tag_group (
       id INTEGER PRIMARY KEY NOT NULL,
-      name TEXT NOT NULL UNIQUE, -- TODO we should check this at the database level CHECK(name REGEXP '^[a-z_]+$'),
+      name TEXT NOT NULL UNIQUE,
       color TEXT NOT NULL UNIQUE,
       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -210,6 +211,13 @@ class CreateTables extends Statement {
       singleton INTEGER NOT NULL UNIQUE DEFAULT 1 CHECK (singleton = 1), -- ensure only a single row can be inserted
       version FLOAT NOT NULL,
       name TEXT NOT NULL,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE duplicate_log (
+      filepath TEXT NOT NULL,
+      md5checksum TEXT NOT NULL,
       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     );

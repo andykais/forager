@@ -1,5 +1,5 @@
 import { Action } from './base'
-import { NotFoundError } from '../util/errors'
+import { NotFoundError, DuplicateMediaError } from '../util/errors'
 import { MediaChunk } from '../models/media_chunk'
 import { MediaReference } from '../models/media_reference'
 import { get_file_size, get_file_info, get_file_checksum, get_buffer_checksum, get_string_checksum, get_file_thumbnail } from '../util/file_processing'
@@ -20,6 +20,7 @@ interface MediaInfo {
 
 class MediaAction extends Action {
   async create(filepath: string, media_info: MediaInfo, tags: Tag[]) {
+    const tags_input = tags.map(t => TagInput.parse(t))
     const media_file_info = await get_file_info(filepath)
     const [file_size_bytes, thumbnail, md5checksum] = await Promise.all([
       get_file_size(filepath),
@@ -35,7 +36,7 @@ class MediaAction extends Action {
       thumbnail_file_size_bytes: thumbnail.length,
       thumbnail_md5checksum: get_buffer_checksum(thumbnail),
     }
-    return this.db.db.transaction(async () => {
+    const transaction = this.db.transaction_async(async () => {
       const media_reference_id = this.db.media_reference.insert(media_reference_data)
       const media_file_id = this.db.media_file.insert({ ...media_file_data, media_reference_id })
       await new Promise((resolve, reject) => {
@@ -45,7 +46,7 @@ class MediaAction extends Action {
         stream.on('error', reject)
       })
 
-      for (const tag of tags) {
+      for (const tag of tags_input) {
         const group = tag.group ?? ''
         const color = get_string_checksum(group).substr(0, 6)
         const tag_group_id = this.db.tag_group.create({ name: group, color })
@@ -53,7 +54,17 @@ class MediaAction extends Action {
         this.db.media_reference_tag.insert({ media_reference_id, tag_id })
       }
       return { media_reference_id, media_file_id }
-    })()
+    })
+
+    try {
+      return await transaction()
+    } catch(e) {
+      // TODO this can be handled more robustly if we do a full buffer comparison upon getting a DuplicateMediaError
+      // a larger checksum would also be helpful
+      // possibly we would put expensive buffer comparisons behind a config flag, opting to just use the duplicate_log otherwise
+      if (this.is_unique_constaint_error(e)) throw new DuplicateMediaError(filepath, md5checksum)
+      else throw e
+    }
   }
 
   export(media_reference_id: number, output_filepath: string) {

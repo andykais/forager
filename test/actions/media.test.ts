@@ -1,7 +1,7 @@
 // import 'source-map-support/register'
 import test from 'ava'
 import * as fs from 'fs'
-import { Forager } from '../../src/index'
+import { Forager, DuplicateMediaError } from '../../src/index'
 import { get_file_checksum } from '../../src/util/file_processing'
 
 const database_path = 'test/fixtures/forager.db'
@@ -27,9 +27,11 @@ test('add media', async t => {
   const forager = new Forager({ database_path })
   forager.init()
 
-  const tags = [{ group: '', name: 'procedural_generation' }, { group: 'colors', name: 'black' }]
+  const tags = [{ group: '', name: 'Procedural Generation' }, { group: 'colors', name: 'black' }]
   const media_info = { title: 'Generated Art' }
   const { media_reference_id, media_file_id } = await forager.media.create(media_input_path, media_info, tags)
+  await t.throwsAsync(() => forager.media.create(media_input_path, media_info, tags), {instanceOf: DuplicateMediaError})
+  t.is(forager.media.list().total, 1)
 
   forager.media.export(media_reference_id, media_output_path)
   const input_md5checksum = await get_file_checksum(media_input_path)

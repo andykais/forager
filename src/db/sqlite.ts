@@ -11,6 +11,7 @@ import { MediaReference } from '../models/media_reference'
 import { MediaReferenceTag } from '../models/media_reference_tag'
 import { TagGroup } from '../models/tag_group'
 import { Tag } from '../models/tag'
+import { DuplicateLog } from '../models/duplicate_logs'
 
 
 class Database {
@@ -26,6 +27,7 @@ class Database {
   public media_reference_tag = this.register(MediaReferenceTag)
   public tag_group = this.register(TagGroup)
   public tag = this.register(Tag)
+  public duplicate_log = this.register(DuplicateLog)
 
 
   public constructor(private context: Context) {
@@ -78,6 +80,18 @@ class Database {
     const model = new model_class(this.db)
     this.registered_models.push(model)
     return model
+  }
+
+  public transaction_async = <T>(fn: () => Promise<T>) => async () => {
+    try {
+      this.db.exec('BEGIN TRANSACTION')
+      const result = await fn()
+      this.db.exec('COMMIT')
+      return result
+    } catch(e) {
+      this.db.exec('ROLLBACK')
+      throw e
+    }
   }
 }
 

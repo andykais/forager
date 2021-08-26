@@ -32,7 +32,7 @@ class InsertMediaChunk extends Statement {
   call(media_chunk_data: InsertRow<MediaChunkTR>) {
     const sql_data = {...media_chunk_data }
     const info = this.stmt.ref.run(sql_data)
-    return info.lastInsertRowid
+    return info.lastInsertRowid as number
   }
 }
 

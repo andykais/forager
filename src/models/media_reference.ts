@@ -64,7 +64,7 @@ class InsertMediaReference extends Statement {
       metadata: metadata ? JSON.stringify(metadata) : null,
     }
     const info = this.stmt.ref.run(sql_data)
-    return info.lastInsertRowid
+    return info.lastInsertRowid as number
   }
 }
 
