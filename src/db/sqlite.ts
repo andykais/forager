@@ -42,7 +42,7 @@ class Database {
         this.context.logger.info('initializing database...')
         this.table_manager.create_tables()
         this.table_manager.set_forager_metadata(version)
-        this.context.logger.info('new database initialized.')
+        this.context.logger.info(`new database initialized. (version ${version})`)
       })()
     }
     for (const model of this.registered_models) {

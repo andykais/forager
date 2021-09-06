@@ -1,1 +1,2 @@
-export type { Tag } from './tag'
+export * from './tag'
+export * from './media_reference'

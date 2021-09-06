@@ -96,6 +96,8 @@ class DropTables extends Statement {
   }
 }
 
+const TIMESTAMP_SQLITE = `TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'NOW'))`
+
 class CreateTables extends Statement {
   sql = `
     CREATE TABLE media_chunk (
@@ -103,8 +105,8 @@ class CreateTables extends Statement {
       media_file_id INTEGER NOT NULL,
       -- 1MiB chunks
       chunk BLOB NOT NULL,
-      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at ${TIMESTAMP_SQLITE},
+      created_at ${TIMESTAMP_SQLITE},
 
       FOREIGN KEY (media_file_id) REFERENCES media_file(id)
     );
@@ -131,8 +133,8 @@ class CreateTables extends Statement {
       thumbnail_file_size_bytes INTEGER NOT NULL,
       thumbnail_md5checksum TEXT NOT NULL,
 
-      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at ${TIMESTAMP_SQLITE},
+      created_at ${TIMESTAMP_SQLITE},
 
       media_reference_id INTEGER NOT NULL,
       FOREIGN KEY (media_reference_id) REFERENCES media_reference(id)
@@ -141,8 +143,8 @@ class CreateTables extends Statement {
     CREATE TABLE media_sequence (
       id INTEGER PRIMARY KEY NOT NULL,
       media_reference_id INTEGER NOT NULL,
-      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at ${TIMESTAMP_SQLITE},
+      created_at ${TIMESTAMP_SQLITE},
 
       FOREIGN KEY (media_reference_id) REFERENCES media_reference(id)
     );
@@ -162,8 +164,8 @@ class CreateTables extends Statement {
       description TEXT,
       metadata JSON,
 
-      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at ${TIMESTAMP_SQLITE},
+      created_at ${TIMESTAMP_SQLITE},
 
       FOREIGN KEY (media_sequence_id) REFERENCES media_sequence(id)
     );
@@ -172,8 +174,8 @@ class CreateTables extends Statement {
     CREATE TABLE media_reference_tag (
       media_reference_id INTEGER NOT NULL,
       tag_id INTEGER NOT NULL,
-      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
+      created_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
 
       PRIMARY KEY (media_reference_id, tag_id),
       FOREIGN KEY (media_reference_id) REFERENCES media_reference(id),
@@ -189,8 +191,8 @@ class CreateTables extends Statement {
       tag_group_id INTEGER NOT NULL,
       -- some tags will just be aliases for others. We have to be careful not to have cyclical references here
       alias_tag_id INTEGER,
-      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
+      created_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
 
       FOREIGN KEY (alias_tag_id) REFERENCES tag(id),
       FOREIGN KEY (tag_group_id) REFERENCES tag_group(id)
@@ -201,8 +203,8 @@ class CreateTables extends Statement {
       id INTEGER PRIMARY KEY NOT NULL,
       name TEXT NOT NULL UNIQUE,
       color TEXT NOT NULL UNIQUE,
-      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      updated_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
+      created_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW'))
     );
 
 
@@ -211,15 +213,15 @@ class CreateTables extends Statement {
       singleton INTEGER NOT NULL UNIQUE DEFAULT 1 CHECK (singleton = 1), -- ensure only a single row can be inserted
       version FLOAT NOT NULL,
       name TEXT NOT NULL,
-      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      updated_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
+      created_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW'))
     );
 
     CREATE TABLE duplicate_log (
       filepath TEXT NOT NULL,
       md5checksum TEXT NOT NULL,
-      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      updated_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
+      created_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW'))
     );
 
 

@@ -20,6 +20,7 @@ class MediaChunk extends Model {
 
   insert = this.register(InsertMediaChunk)
   iterate = this.register(IterateMediaChunk)
+  all = this.register(SelectAllMediaChunks)
 }
 
 /* --=================== Statements ===================-- */
@@ -43,6 +44,17 @@ class IterateMediaChunk extends Statement {
 
   call(query_data: { media_file_id: number }): Iterable<MediaChunkTR> {
     return this.stmt.ref.iterate(query_data)
+  }
+}
+
+class SelectAllMediaChunks extends Statement {
+  sql = `SELECT chunk FROM media_chunk 
+    INNER JOIN media_file ON media_chunk.media_file_id = media_file.id
+    WHERE media_file.id = @media_reference_id`
+  stmt = this.register(this.sql)
+
+  call(query_data: { media_reference_id: number }): Pick<MediaChunkTR, 'chunk'>[] {
+    return this.stmt.ref.all(query_data)
   }
 }
 

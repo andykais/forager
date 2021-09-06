@@ -19,6 +19,7 @@ class Tag extends Model {
   create = this.register(CreateTag)
   select_one_by_name = this.register(SelectOneTagByName)
   select_all = this.register(SelectAllTags)
+  select_many_by_media_reference = this.register(SelectManyTagsByMediaReferenceId)
 }
 
 /* --=================== Statements ===================-- */
@@ -47,16 +48,27 @@ class SelectOneTagByName extends Statement {
   }
 }
 
-type SelectAllTagsTR = { id: TagTR['id']; name: TagTR['name']; group: TagGroupTR['name']; color: TagGroupTR['color'] }
+type TagDataTR = { id: TagTR['id']; name: TagTR['name']; group: TagGroupTR['name']; color: TagGroupTR['color'] }
 class SelectAllTags extends Statement {
   stmt = this.register(`SELECT tag.id, tag.name, tag_group.name as 'group', tag_group.color FROM tag
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id`)
 
-  call(): SelectAllTagsTR[] {
+  call(): TagDataTR[] {
     return this.stmt.ref.all()
   }
 }
 
+
+class SelectManyTagsByMediaReferenceId extends Statement {
+  stmt = this.register(`SELECT tag.id, tag.name, tag_group.name as 'group', tag_group.color FROM tag
+    INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
+    INNER JOIN media_reference_tag ON media_reference_tag.tag_id = tag.id
+    WHERE media_reference_tag.media_reference_id = ?`)
+
+    call(query_data: { media_reference_id: number }): TagDataTR {
+      return this.stmt.ref.all(query_data.media_reference_id)
+    }
+}
 
 export { Tag }
 export type { TagTR }

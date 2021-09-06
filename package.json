@@ -4,6 +4,9 @@
   "description": "",
   "type": "commonjs",
   "main": "index.js",
+  "bin": {
+    "forager": "cli.js"
+  },
   "scripts": {
     "build": "tsc && cp package.json build/src",
     "build:watch": "mkdir -p build/src && cp package.json build/src && tsc --watch",
@@ -16,6 +19,7 @@
   "author": "Andrew Kaiser",
   "license": "MIT",
   "dependencies": {
+    "arg": "^5.0.1",
     "better-sqlite3": "^7.4.3",
     "sharp": "^0.28.3",
     "zod": "^3.8.1"

@@ -116,7 +116,7 @@ type InsertRowEncoded<TR extends BaseTR, TB = InsertRow<TR>> = Required<{
 type Paginated<TR extends BaseTR> = {
   total: number
   limit: number
-  offset: number
+  cursor: Date
   result: TR[]
 }
 

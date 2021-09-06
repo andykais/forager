@@ -4,9 +4,7 @@ import * as fs from 'fs'
 import { Forager, DuplicateMediaError } from '../../src/index'
 import { get_file_checksum } from '../../src/util/file_processing'
 
-const database_path = 'test/fixtures/forager.db'
 const media_input_path = 'test/resources/koch.tif'
-const media_output_path = 'test/fixtures/koch-export.tif'
 
 async function rmf(filepath: string) {
   try {
@@ -16,13 +14,13 @@ async function rmf(filepath: string) {
   }
 }
 
-test.beforeEach(async () => {
+test.only('add media', async t => {
+  try{
+  const database_path = 'test/fixtures/forager.db'
+  const media_output_path = 'test/fixtures/koch-export.tif'
   await fs.promises.mkdir('test/fixtures', { recursive: true })
   await rmf(database_path)
   await rmf(media_output_path)
-})
-test('add media', async t => {
-  try{
 
   const forager = new Forager({ database_path })
   forager.init()
@@ -57,4 +55,39 @@ test('add media', async t => {
   t.deepEqual(tag_names, ['black', 'cartoon', 'procedural_generation'])
 
   }catch(e){console.log(e);throw e}
+})
+
+test('cursor', async t => {
+  try{
+  const database_path = 'test/fixtures/forager-cursor-test.db'
+  await rmf(database_path)
+
+  const forager = new Forager({ database_path })
+  forager.init()
+
+  const procedural_media = await forager.media.create('test/resources/koch.tif', {}, [{ name: 'same' }])
+  t.is(forager.media.list().total, 1)
+  const ed_edd_eddy = await forager.media.create('test/resources/ed-edd-eddy.png', {}, [{ name: 'same' }])
+  t.is(forager.media.list().total, 2)
+
+  const list_1st = forager.media.list({ limit: 1 })
+  t.is(list_1st.total, 2)
+  t.is(list_1st.result.length, 1)
+  t.is(list_1st.result[0].id, ed_edd_eddy.media_reference_id)
+
+  const list_2nd = forager.media.list({ limit: 100, cursor: list_1st.cursor })
+  t.is(list_2nd.total, 2)
+  t.is(list_2nd.result.length, 1)
+  t.is(list_2nd.result[0].id, procedural_media.media_reference_id)
+
+  const search_1st = forager.media.search({ limit: 1, tags: [{ name: 'same' }] })
+  t.is(search_1st.total, 2)
+  t.is(search_1st.result.length, 1)
+  t.is(search_1st.result[0].id, ed_edd_eddy.media_reference_id)
+
+  const search_2nd = forager.media.search({ limit: 100, cursor: search_1st.cursor, tags: [{ name: 'same' }] })
+  t.is(search_2nd.total, 2)
+  t.is(search_2nd.result.length, 1)
+  t.is(search_2nd.result[0].id, procedural_media.media_reference_id)
+  }catch(e){console.error(e);throw e}
 })

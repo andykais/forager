@@ -62,7 +62,7 @@ class InsertMediaFile extends Statement {
 
 
 class SelectOneMediaFile extends Statement {
-  sql = `SELECT * FROM media_file
+  sql = `SELECT media_file.* FROM media_file
     INNER JOIN media_reference ON media_reference.id = @media_reference_id
     WHERE media_file.id = media_reference.id
   `
