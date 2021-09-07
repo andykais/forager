@@ -89,7 +89,7 @@ class SelectManyMediaReference extends Statement {
     // TODO we need to create a sort of typelevel & runtime insert/select date serializer/deserializer
     const serialized_query = { ...query_data, cursor: query_data.cursor.toISOString() }
     const result = this.stmt.ref.all(serialized_query).map((r: any) => {
-      r.source_created_at = new Date(r.source_created_at)
+      r.source_created_at = r.source_created_at ? new Date(r.source_created_at) : null,
       r.created_at = new Date(r.created_at)
       r.updated_at = new Date(r.updated_at)
       return r
@@ -131,6 +131,7 @@ class SelectManyMediaReferenceByTags extends Statement {
 
     const serialized_query = { limit: query_data.limit, cursor: query_data.cursor.toISOString() }
     const result = this.db.prepare(data_sql).all(serialized_query).map((r: any) => {
+      r.source_created_at = r.source_created_at ? new Date(r.source_created_at) : null,
       r.created_at = new Date(r.created_at)
       r.updated_at = new Date(r.updated_at)
       return r

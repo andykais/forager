@@ -94,7 +94,6 @@ class MediaAction extends Action {
   // TODO offset needs to be replaces w/ a cursor. The cursor will be source_created_at + created_at
   list(params: inputs.PaginatedQuery = {}) {
     const { limit, cursor } = inputs.PaginatedQueryInput.parse(params)
-    // const { limit = 100, cursor = new Date().toString() } = params
     return this.db.media_reference.select_many({ limit, cursor })
   }
 
