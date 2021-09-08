@@ -14,7 +14,7 @@ async function rmf(filepath: string) {
   }
 }
 
-test.only('add media', async t => {
+test('add media', async t => {
   try{
   const database_path = 'test/fixtures/forager.db'
   const media_output_path = 'test/fixtures/koch-export.tif'
@@ -35,9 +35,10 @@ test.only('add media', async t => {
   const input_md5checksum = await get_file_checksum(media_input_path)
   const output_md5checksum = await get_file_checksum(media_output_path)
 
-  const media_references = forager.media.search({ tags})
+  const media_references = forager.media.search({ tags })
   t.is(media_references.total, 1)
-  t.assert(media_references.result[0].id === media_reference_id)
+  t.is(media_references.result[0].id, media_reference_id)
+  t.is(media_references.result[0].tag_count, 2)
 
   t.throws(() => forager.media.search({ tags: [{ name: 'nonexistent_tag' }]}))
 
@@ -47,12 +48,17 @@ test.only('add media', async t => {
 
   const search_results = forager.media.search({tags})
   t.is(search_results.total, 1)
-  t.assert(search_results.result[0].id === media_reference_id)
+  t.is(search_results.result[0].id, media_reference_id)
+  t.is(search_results.result[0].tag_count, 2)
 
   const listed_tags = forager.tag.list()
   t.assert(listed_tags.length === 3)
-  const tag_names = listed_tags.map(t => t.name).sort((a,b) => a.localeCompare(b))
+  listed_tags.sort((a,b) => a.name.localeCompare(b.name))
+  const tag_names = listed_tags.map(t => t.name)
   t.deepEqual(tag_names, ['black', 'cartoon', 'procedural_generation'])
+  t.is(listed_tags[0].media_reference_count, 2)
+  t.is(listed_tags[1].media_reference_count, 1)
+  t.is(listed_tags[2].media_reference_count, 1)
 
   }catch(e){console.log(e);throw e}
 })
