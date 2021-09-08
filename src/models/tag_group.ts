@@ -7,6 +7,8 @@ interface TagGroupTR {
   id: number
   name: string
   color: string
+  // auto generated fields
+  tag_count: number
   updated_at: Date
   created_at: Date
 }

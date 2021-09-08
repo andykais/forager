@@ -132,7 +132,6 @@ class CreateTables extends Statement {
       thumbnail BLOB NOT NULL,
       thumbnail_file_size_bytes INTEGER NOT NULL,
       thumbnail_md5checksum TEXT NOT NULL,
-
       updated_at ${TIMESTAMP_SQLITE},
       created_at ${TIMESTAMP_SQLITE},
 
@@ -167,6 +166,9 @@ class CreateTables extends Statement {
       updated_at ${TIMESTAMP_SQLITE},
       created_at ${TIMESTAMP_SQLITE},
 
+      -- denormalized fields
+      tag_count INTEGER NOT NULL DEFAULT 0,
+
       FOREIGN KEY (media_sequence_id) REFERENCES media_sequence(id)
     );
 
@@ -193,6 +195,8 @@ class CreateTables extends Statement {
       alias_tag_id INTEGER,
       updated_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
       created_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
+      -- denormalized fields
+      media_reference_count INTEGER NOT NULL DEFAULT 0,
 
       FOREIGN KEY (alias_tag_id) REFERENCES tag(id),
       FOREIGN KEY (tag_group_id) REFERENCES tag_group(id)
@@ -204,7 +208,9 @@ class CreateTables extends Statement {
       name TEXT NOT NULL UNIQUE,
       color TEXT NOT NULL UNIQUE,
       updated_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
-      created_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW'))
+      created_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
+      -- denormalized fields
+      tag_count INTEGER NOT NULL DEFAULT 0
     );
 
 
@@ -226,16 +232,20 @@ class CreateTables extends Statement {
 
 
     -- triggers --
-    -- NOTE these do not have their schema checked for some odd reason. Its up to tests and devs to make sure these arent out of sync
-    -- follow up note: this is a bad idea. Lets just add some serialization helpers to these babys
-    -- CREATE TRIGGER media_chunk_update_trigger AFTER UPDATE ON media_chunk BEGIN UPDATE media_chunk SET updated_at = CURRENT_TIMESTAMP WHERE new.id = id; END;
-    -- CREATE TRIGGER media_file_update_trigger AFTER UPDATE ON media_file BEGIN UPDATE media_file SET updated_at = CURRENT_TIMESTAMP WHERE new.id = id; END;
-    -- CREATE TRIGGER media_sequence_update_trigger AFTER UPDATE ON media_sequence BEGIN UPDATE media_sequence SET updated_at = CURRENT_TIMESTAMP WHERE new.id = id; END;
-    -- CREATE TRIGGER media_reference_update_trigger AFTER UPDATE ON media_reference BEGIN UPDATE media_reference SET updated_at = CURRENT_TIMESTAMP WHERE new.id = id; END;
-    -- CREATE TRIGGER media_reference_tag_update_trigger AFTER UPDATE ON media_reference_tag BEGIN UPDATE media_reference_tag SET updated_at = CURRENT_TIMESTAMP WHERE new.id = id; END;
-    -- CREATE TRIGGER tag_update_trigger AFTER UPDATE ON tag BEGIN UPDATE tag SET updated_at = CURRENT_TIMESTAMP WHERE new.id = id; END;
-    -- CREATE TRIGGER tag_group_update_trigger AFTER UPDATE ON tag_group BEGIN UPDATE tag_group SET updated_at = CURRENT_TIMESTAMP WHERE id = new.id; END;
-    -- CREATE TRIGGER forager_update_trigger AFTER INSERT ON forager BEGIN UPDATE forager SET updated_at = CURRENT_TIMESTAMP WHERE new.name = name; END;
+    CREATE TRIGGER media_reference_tag_count_inc AFTER INSERT ON media_reference_tag BEGIN
+      UPDATE media_reference SET tag_count = tag_count + 1 WHERE new.media_reference_id = id;
+      UPDATE tag SET media_reference_count = media_reference_count + 1 WHERE new.tag_id = id;
+    END;
+    CREATE TRIGGER media_reference_tag_count_dec AFTER DELETE ON media_reference_tag BEGIN
+      UPDATE media_reference SET tag_count = tag_count - 1 WHERE new.media_reference_id = id;
+      UPDATE tag SET media_reference_count = media_reference_count - 1 WHERE new.tag_id = id;
+    END;
+    CREATE TRIGGER tag_group_count_inc AFTER INSERT ON tag BEGIN
+      UPDATE tag_group SET tag_count = tag_count + 1 WHERE new.tag_group_id = id;
+    END;
+    CREATE TRIGGER tag_group_count_dec AFTER DELETE ON tag BEGIN
+      UPDATE tag_group SET tag_count = tag_count - 1 WHERE new.tag_group_id = id;
+    END;
 
     -- NOTES: lets use the "INDEXED BY <index_name>" clause to hardcode indexes to look things up with
     -- It will be cool and way easier to determine what queries are used

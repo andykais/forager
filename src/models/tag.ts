@@ -9,6 +9,8 @@ interface TagTR {
   tag_group_id: TagGroupTR['id']
   name: string
   alias_tag_id: TagTR['id'] | null
+  // auto generated fields
+  media_reference_count: number
   updated_at: Date
   created_at: Date
 }
@@ -48,9 +50,9 @@ class SelectOneTagByName extends Statement {
   }
 }
 
-type TagDataTR = { id: TagTR['id']; name: TagTR['name']; group: TagGroupTR['name']; color: TagGroupTR['color'] }
+type TagDataTR = { id: TagTR['id']; name: TagTR['name']; group: TagGroupTR['name']; color: TagGroupTR['color']; media_reference_count: TagTR['media_reference_count'] }
 class SelectAllTags extends Statement {
-  stmt = this.register(`SELECT tag.id, tag.name, tag_group.name as 'group', tag_group.color FROM tag
+  stmt = this.register(`SELECT tag.id, tag.name, tag_group.name as 'group', tag_group.color, media_reference_count FROM tag
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id`)
 
   call(): TagDataTR[] {
