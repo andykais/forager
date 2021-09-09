@@ -17,6 +17,7 @@ interface MediaInfo {
   source_url?: string
   source_created_at?: Date
   stars?: number
+  view_count?: number
 }
 
 class MediaAction extends Action {
@@ -28,7 +29,7 @@ class MediaAction extends Action {
       get_file_thumbnail(filepath, media_file_info),
       get_file_checksum(filepath),
     ])
-    const media_reference_data = { media_sequence_index: 0, stars: 0, ...media_info }
+    const media_reference_data = { media_sequence_index: 0, stars: 0, view_count: 0, ...media_info }
     const media_file_data = {
       ...media_file_info,
       file_size_bytes,
@@ -70,6 +71,10 @@ class MediaAction extends Action {
 
   update(media_reference_id: number, media_info: MediaInfo) {
     this.db.media_reference.update(media_reference_id, media_info)
+  }
+
+  add_view(media_reference_id: number) {
+    this.db.media_reference.inc_view_count(media_reference_id)
   }
 
   export(media_reference_id: number, output_filepath: string) {

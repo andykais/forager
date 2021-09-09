@@ -28,6 +28,7 @@ type MediaReferenceTR = {
 class MediaReference extends Model {
   insert = this.register(InsertMediaReference)
   update = this.register(UpdateMediaReference)
+  inc_view_count = this.register(IncrementViewCount)
   select_one = this.register(SelectOneMediaReference)
   select_many = this.register(SelectManyMediaReference)
   select_many_by_tags = this.register(SelectManyMediaReferenceByTags)
@@ -44,7 +45,8 @@ class InsertMediaReference extends Statement {
     title,
     description,
     metadata,
-    stars
+    stars,
+    view_count
   ) VALUES (
     @media_sequence_id,
     @media_sequence_index,
@@ -53,7 +55,8 @@ class InsertMediaReference extends Statement {
     @title,
     @description,
     @metadata,
-    @stars
+    @stars,
+    @view_count
   )
   `
   stmt = this.register(this.sql)
@@ -85,7 +88,8 @@ class UpdateMediaReference extends Statement {
       title = CASE WHEN @title = -1 THEN title ELSE @title END,
       description = CASE WHEN @description = -1 THEN description ELSE @description END,
       metadata = CASE WHEN @metadata = -1 THEN metadata ELSE @metadata END,
-      stars = CASE WHEN @stars = -1 THEN stars ELSE @stars END
+      stars = CASE WHEN @stars = -1 THEN stars ELSE @stars END,
+      view_count = CASE WHEN @view_count = -1 THEN view_count ELSE @stars END
     WHERE id = @media_reference_id`
 
   stmt = this.register(this.sql)
@@ -98,12 +102,23 @@ class UpdateMediaReference extends Statement {
       description: null,
       source_url: -1,
       stars: null,
+      view_count: -1,
       ...rest,
       source_created_at: source_created_at ? source_created_at.toISOString() : null,
       // remove any Date types. TODO if theres a better way to serialize these and preserve that information
       metadata: metadata ? JSON.stringify(metadata) : null,
     }
     const info = this.stmt.ref.run(sql_data)
+    if (info.changes !== 1) throw new Error(`Attempted to update a row that doesnt exist for media_reference id ${media_reference_id}`)
+  }
+}
+
+class IncrementViewCount extends Statement {
+  sql = `UPDATE media_reference SET view_count = view_count + 1 WHERE id = ?`
+  stmt = this.register(this.sql)
+
+  call(media_reference_id: number) {
+    const info = this.stmt.ref.run(media_reference_id)
     if (info.changes !== 1) throw new Error(`Attempted to update a row that doesnt exist for media_reference id ${media_reference_id}`)
   }
 }
