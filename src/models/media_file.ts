@@ -32,6 +32,7 @@ interface MediaFileTR {
 class MediaFile extends Model {
   insert = this.register(InsertMediaFile)
   select_one = this.register(SelectOneMediaFile)
+  select_one_content_type = this.register(SelectOneContentType)
   select_thumbnail = this.register(SelectThumbnail)
 }
 
@@ -65,10 +66,22 @@ class InsertMediaFile extends Statement {
 }
 
 
+class SelectOneContentType extends Statement {
+  sql = `SELECT content_type FROM media_file
+    INNER JOIN media_reference ON media_reference.id = @media_reference_id
+    WHERE media_file.media_reference_id = media_reference.id`
+  stmt = this.register(this.sql)
+
+  call(query_data: {media_reference_id: MediaReferenceTR['id']}): MediaFileTR['content_type'] | null {
+    const row = this.stmt.ref.get(query_data)
+    return row ? row.content_type : null
+  }
+}
+
 class SelectOneMediaFile extends Statement {
   sql = `SELECT media_file.* FROM media_file
     INNER JOIN media_reference ON media_reference.id = @media_reference_id
-    WHERE media_file.id = media_reference.id
+    WHERE media_file.media_reference_id = media_reference.id
   `
   stmt = this.register(this.sql)
 

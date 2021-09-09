@@ -35,7 +35,7 @@ test('add media', async t => {
   // test that file info was properly probed
   const file_info = forager.media.get_file_info(media_reference_id)
   t.is(file_info.media_file.codec, 'tiff')
-  t.is(file_info.media_file.content_type, 'image/tiff')
+  t.is(forager.media.get_content_type(media_reference_id), 'image/tiff')
 
   // test that exported files are the same as imported files
   forager.media.export(media_reference_id, media_output_path)

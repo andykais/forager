@@ -116,6 +116,13 @@ class MediaAction extends Action {
 
     return { media_file, media_reference, tags }
   }
+
+  // methods like these make me nervous because its super granular, which makes it fast,
+  // but an orm would avoid the need for a statement, model method, etc
+  get_content_type(media_reference_id: number) {
+    const content_type = this.db.media_file.select_one_content_type({ media_reference_id },)
+    return content_type
+  }
 }
 
 export type { MediaInfo }
