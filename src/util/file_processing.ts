@@ -3,8 +3,9 @@ import child_process from 'child_process'
 import os from 'os'
 import path from 'path'
 import fs from 'fs'
-import { get_media_type } from './codecs'
+import { get_codec_info } from './codecs'
 import { createHash } from 'crypto'
+import type { CodecInfo } from './codecs'
 
 const exec = promisify(child_process.exec)
 
@@ -12,6 +13,8 @@ const exec = promisify(child_process.exec)
 interface FileInfo {
   filename: string
   media_type: 'VIDEO' | 'AUDIO' | 'IMAGE'
+  codec: string
+  content_type: string
   // image/video fields
   width: number | null
   height: number | null
@@ -27,8 +30,10 @@ async function get_file_size(filepath: string) {
 async function get_file_info(filepath: string) {
   const { stdout, stderr } = await exec(`ffprobe -v error -print_format json -show_streams -i '${filepath}'`)
   const ffprobe_data = JSON.parse(stdout)
-  const stream_media_types = ffprobe_data.streams.map((s: any) => get_media_type(s.codec_name))
-  const media_type = stream_media_types.length === 1 ? stream_media_types[0] : 'VIDEO'
+  const stream_codec_info = ffprobe_data.streams.map((s: any) => get_codec_info(s.codec_name))
+  const codec_info = stream_codec_info.length === 1 ? stream_codec_info[0] : stream_codec_info.find((s: CodecInfo) => s.media_type === 'VIDEO')
+  if (codec_info === undefined) throw new Error('Error parsing codecs. Received multi-stream file without video codec')
+  const media_type = codec_info.media_type
 
   let width = undefined
   let height = undefined
@@ -53,7 +58,7 @@ async function get_file_info(filepath: string) {
     }
   }
   const filename = path.basename(filepath)
-  const file_info: FileInfo = { filename, media_type, width, height, animated, duration }
+  const file_info: FileInfo = { filename, ...codec_info, width, height, animated, duration }
   return file_info
 }
 

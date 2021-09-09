@@ -108,7 +108,10 @@ class MediaAction extends Action {
 
   get_file_info(media_reference_id: number) {
     const media_file = this.db.media_file.select_one({ media_reference_id })
+    // TODO these should be a get_or_raise helper or something
+    if (!media_file) throw new Error(`media_file does not exist for media_refernce_id ${media_reference_id}`)
     const media_reference = this.db.media_reference.select_one({ media_reference_id })
+    if (!media_reference) throw new Error(`media_file does not exist for media_refernce_id ${media_reference_id}`)
     const tags = this.db.tag.select_many_by_media_reference({ media_reference_id })
 
     return { media_file, media_reference, tags }

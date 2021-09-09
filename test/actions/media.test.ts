@@ -25,21 +25,30 @@ test('add media', async t => {
   const forager = new Forager({ database_path })
   forager.init()
 
+  // test file importing
   const tags = [{ group: '', name: 'Procedural Generation' }, { group: 'colors', name: 'black' }]
   const media_info = { title: 'Generated Art' }
   const { media_reference_id, media_file_id } = await forager.media.create(media_input_path, media_info, tags)
   await t.throwsAsync(() => forager.media.create(media_input_path, media_info, tags), {instanceOf: DuplicateMediaError})
   t.is(forager.media.list().total, 1)
 
+  // test that file info was properly probed
+  const file_info = forager.media.get_file_info(media_reference_id)
+  t.is(file_info.media_file.codec, 'tiff')
+  t.is(file_info.media_file.content_type, 'image/tiff')
+
+  // test that exported files are the same as imported files
   forager.media.export(media_reference_id, media_output_path)
   const input_md5checksum = await get_file_checksum(media_input_path)
   const output_md5checksum = await get_file_checksum(media_output_path)
 
+  // test that tag searching works
   const media_references = forager.media.search({ tags })
   t.is(media_references.total, 1)
   t.is(media_references.result[0].id, media_reference_id)
   t.is(media_references.result[0].tag_count, 2)
 
+  // test that searching using non existent tags fails
   t.throws(() => forager.media.search({ tags: [{ name: 'nonexistent_tag' }]}))
 
   // add a second media file

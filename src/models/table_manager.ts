@@ -121,6 +121,8 @@ class CreateTables extends Statement {
 
       -- image,video,audio
       media_type TEXT NOT NULL CHECK( media_type IN ('IMAGE', 'VIDEO', 'AUDIO') ),
+      codec TEXT NOT NULL,
+      content_type TEXT NOT NULL,
       -- image/video
       width  INTEGER CHECK (media_type IN ('IMAGE', 'VIDEO') AND width  IS NOT NULL),
       height INTEGER CHECK (media_type IN ('IMAGE', 'VIDEO') AND height IS NOT NULL),

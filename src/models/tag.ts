@@ -67,7 +67,7 @@ class SelectManyTagsByMediaReferenceId extends Statement {
     INNER JOIN media_reference_tag ON media_reference_tag.tag_id = tag.id
     WHERE media_reference_tag.media_reference_id = ?`)
 
-    call(query_data: { media_reference_id: number }): TagDataTR {
+    call(query_data: { media_reference_id: number }): TagDataTR[] {
       return this.stmt.ref.all(query_data.media_reference_id)
     }
 }

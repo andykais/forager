@@ -11,6 +11,8 @@ interface MediaFileTR {
   file_size_bytes: number
   md5checksum: string
   media_type: 'VIDEO' | 'IMAGE' | 'AUDIO'
+  codec: string
+  content_type: string
   width: number | null
   height: number | null
   animated: boolean
@@ -41,6 +43,8 @@ class InsertMediaFile extends Statement {
     file_size_bytes,
     md5checksum,
     media_type,
+    content_type,
+    codec,
     width,
     height,
     animated,
@@ -49,7 +53,7 @@ class InsertMediaFile extends Statement {
     thumbnail,
     thumbnail_file_size_bytes,
     thumbnail_md5checksum
-  ) VALUES (@filename, @file_size_bytes, @md5checksum, @media_type, @width, @height, @animated, @duration, @media_reference_id, @thumbnail, @thumbnail_file_size_bytes, @thumbnail_md5checksum)`
+  ) VALUES (@filename, @file_size_bytes, @md5checksum, @media_type, @content_type, @codec, @width, @height, @animated, @duration, @media_reference_id, @thumbnail, @thumbnail_file_size_bytes, @thumbnail_md5checksum)`
 
   stmt = this.register(this.sql)
 
