@@ -62,7 +62,7 @@ class SelectAllTags extends Statement {
 
 
 class SelectManyTagsByMediaReferenceId extends Statement {
-  stmt = this.register(`SELECT tag.id, tag.name, tag_group.name as 'group', tag_group.color FROM tag
+  stmt = this.register(`SELECT tag.id, tag.name, tag_group.name as 'group', tag_group.color, media_reference_count  FROM tag
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
     INNER JOIN media_reference_tag ON media_reference_tag.tag_id = tag.id
     WHERE media_reference_tag.media_reference_id = ?`)
