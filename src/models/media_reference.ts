@@ -27,6 +27,7 @@ type MediaReferenceTR = {
 
 class MediaReference extends Model {
   insert = this.register(InsertMediaReference)
+  update = this.register(UpdateMediaReference)
   select_one = this.register(SelectOneMediaReference)
   select_many = this.register(SelectManyMediaReference)
   select_many_by_tags = this.register(SelectManyMediaReferenceByTags)
@@ -71,6 +72,39 @@ class InsertMediaReference extends Statement {
     }
     const info = this.stmt.ref.run(sql_data)
     return info.lastInsertRowid as number
+  }
+}
+
+// unsure if this is a bad idea, we are assuming -1 is a value users will never want to input
+// the whole idea here is to have a single prepared statement that can handle updates where some fields are missing.
+// the alternative is to dynamically create statements, probably with a cache
+class UpdateMediaReference extends Statement {
+  sql = `UPDATE media_reference SET
+      source_url = CASE WHEN @source_url = -1 THEN source_url ELSE @source_url END,
+      source_created_at = CASE WHEN @source_created_at = -1 THEN source_created_at ELSE @source_created_at END,
+      title = CASE WHEN @title = -1 THEN title ELSE @title END,
+      description = CASE WHEN @description = -1 THEN description ELSE @description END,
+      metadata = CASE WHEN @metadata = -1 THEN metadata ELSE @metadata END,
+      stars = CASE WHEN @stars = -1 THEN stars ELSE @stars END
+    WHERE id = @media_reference_id`
+
+  stmt = this.register(this.sql)
+
+  call(media_reference_id: number, update_data: Partial<Pick<InsertRow<MediaReferenceTR>, 'source_url' | 'source_created_at' | 'title' | 'description' | 'metadata' | 'stars'>>) {
+    const { source_created_at, metadata, ...rest } = update_data
+    const sql_data = {
+      media_reference_id,
+      title: null,
+      description: null,
+      source_url: -1,
+      stars: null,
+      ...rest,
+      source_created_at: source_created_at ? source_created_at.toISOString() : null,
+      // remove any Date types. TODO if theres a better way to serialize these and preserve that information
+      metadata: metadata ? JSON.stringify(metadata) : null,
+    }
+    const info = this.stmt.ref.run(sql_data)
+    if (info.changes !== 1) throw new Error(`Attempted to update a row that doesnt exist for media_reference id ${media_reference_id}`)
   }
 }
 

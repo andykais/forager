@@ -68,6 +68,10 @@ class MediaAction extends Action {
     }
   }
 
+  update(media_reference_id: number, media_info: MediaInfo) {
+    this.db.media_reference.update(media_reference_id, media_info)
+  }
+
   export(media_reference_id: number, output_filepath: string) {
       const media_file = this.db.media_file.select_one({ media_reference_id })
       if (!media_file) throw new NotFoundError('MediaReference', media_reference_id)
