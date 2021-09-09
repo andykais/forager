@@ -16,6 +16,7 @@ interface MediaInfo {
   metadata?: any
   source_url?: string
   source_created_at?: Date
+  stars?: number
 }
 
 class MediaAction extends Action {
@@ -27,7 +28,7 @@ class MediaAction extends Action {
       get_file_thumbnail(filepath, media_file_info),
       get_file_checksum(filepath),
     ])
-    const media_reference_data = { media_sequence_index: 0, ...media_info }
+    const media_reference_data = { media_sequence_index: 0, stars: 0, ...media_info }
     const media_file_data = {
       ...media_file_info,
       file_size_bytes,
@@ -92,8 +93,9 @@ class MediaAction extends Action {
     if (params.query.tag_ids) {
       tag_ids.push(...params.query.tag_ids)
     }
+    const { stars } = params.query
 
-    const media_references = this.db.media_reference.select_many_by_tags({ tag_ids, limit, cursor })
+    const media_references = this.db.media_reference.select_many_by_tags({ tag_ids, stars, limit, cursor })
     return media_references
   }
 

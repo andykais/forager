@@ -14,7 +14,7 @@ async function rmf(filepath: string) {
   }
 }
 
-test('add media', async t => {
+test.only('add media', async t => {
   try{
   const database_path = 'test/fixtures/forager.db'
   const media_output_path = 'test/fixtures/koch-export.tif'
@@ -27,7 +27,7 @@ test('add media', async t => {
 
   // test file importing
   const tags = [{ group: '', name: 'Procedural Generation' }, { group: 'colors', name: 'black' }]
-  const media_info = { title: 'Generated Art' }
+  const media_info = { title: 'Generated Art', stars: 2 }
   const { media_reference_id, media_file_id } = await forager.media.create(media_input_path, media_info, tags)
   await t.throwsAsync(() => forager.media.create(media_input_path, media_info, tags), {instanceOf: DuplicateMediaError})
   t.is(forager.media.list().total, 1)
@@ -59,6 +59,11 @@ test('add media', async t => {
   t.is(search_results.total, 1)
   t.is(search_results.result[0].id, media_reference_id)
   t.is(search_results.result[0].tag_count, 2)
+
+  const starred_media = forager.media.search({ query: { stars: 1 } })
+  t.is(starred_media.total, 1)
+  t.is(starred_media.result[0].id, media_reference_id)
+  t.is(starred_media.result[0].tag_count, 2)
 
   const listed_tags = forager.tag.list()
   t.assert(listed_tags.length === 3)

@@ -16,6 +16,7 @@ type MediaReferenceTR = {
   title: string | null
   description: string | null
   metadata: string | null
+  stars: number
   // auto generated fields
   tag_count: number
   updated_at: Date
@@ -41,7 +42,8 @@ class InsertMediaReference extends Statement {
     source_created_at,
     title,
     description,
-    metadata
+    metadata,
+    stars
   ) VALUES (
     @media_sequence_id,
     @media_sequence_index,
@@ -49,7 +51,8 @@ class InsertMediaReference extends Statement {
     @source_created_at,
     @title,
     @description,
-    @metadata
+    @metadata,
+    @stars
   )
   `
   stmt = this.register(this.sql)
@@ -106,27 +109,37 @@ class SelectManyMediaReference extends Statement {
 
 class SelectManyMediaReferenceByTags extends Statement {
   // TODO we may be able to speed this up if we pass in media_tag_reference ids instead of tag ids
-  call(query_data: { tag_ids: TagTR['id'][]; limit: number; cursor: Date }): Paginated<MediaReferenceTR> {
-    const { tag_ids, limit, cursor } = query_data
-    const tag_ids_str = query_data.tag_ids.join(',')
+  call(query_data: { tag_ids: TagTR['id'][]; stars?: number; limit: number; cursor: Date }): Paginated<MediaReferenceTR> {
+    const { tag_ids, stars, limit, cursor } = query_data
 
-    // TODO replace count w/ denormalized table that counts num media_references
-    const count_sql = `SELECT COUNT(*) as total FROM (SELECT * FROM media_reference
-      INNER JOIN media_reference_tag ON media_reference_tag.media_reference_id = media_reference.id
-      INNER JOIN tag ON media_reference_tag.tag_id = tag.id
-      WHERE tag.id IN (${tag_ids_str})
-      GROUP BY media_reference.id
-      HAVING COUNT(tag.id) >= ${tag_ids.length}
+    const joins_clauses = []
+    const where_clauses = []
+    const group_clauses = []
+    if (tag_ids.length) {
+      const tag_ids_str = query_data.tag_ids.join(',')
+      joins_clauses.push(`INNER JOIN media_reference_tag ON media_reference_tag.media_reference_id = media_reference.id`)
+      joins_clauses.push(`INNER JOIN tag ON media_reference_tag.tag_id = tag.id`)
+      where_clauses.push(`tag.id IN (${tag_ids_str})`)
+      group_clauses.push('GROUP BY media_reference.id')
+      group_clauses.push(`HAVING COUNT(tag.id) >= ${tag_ids.length}`)
+    }
+    if (stars !== undefined) {
+      where_clauses.push(`media_reference.stars >= ${query_data.stars}`)
+    }
+
+    const count_sql = `SELECT COUNT(0) as total FROM (SELECT * FROM media_reference
+      ${joins_clauses.join('\n      ')}
+      WHERE ${where_clauses.join(' AND ')}
+      ${group_clauses.join('\n      ')}
     )`
     const data_sql = `SELECT media_reference.* FROM media_reference
-      INNER JOIN media_reference_tag ON media_reference_tag.media_reference_id = media_reference.id
-      INNER JOIN tag ON media_reference_tag.tag_id = tag.id
-      WHERE tag.id IN (${tag_ids_str}) AND media_reference.created_at < @cursor
-      GROUP BY media_reference.id
-      HAVING COUNT(tag.id) >= ${tag_ids.length}
+      ${joins_clauses.join('\n      ')}
+      WHERE ${where_clauses.join(' AND ')} AND media_reference.created_at < @cursor
+      ${group_clauses.join('\n      ')}
       ORDER BY media_reference.created_at DESC
       LIMIT @limit
     `
+
     const { total } = this.db.prepare(count_sql).get()
     const stmt = this.db.prepare(data_sql)
 

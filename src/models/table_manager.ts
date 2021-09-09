@@ -165,6 +165,8 @@ class CreateTables extends Statement {
       description TEXT,
       metadata JSON,
 
+      stars INTEGER NOT NULL,
+
       updated_at ${TIMESTAMP_SQLITE},
       created_at ${TIMESTAMP_SQLITE},
 

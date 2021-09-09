@@ -10,15 +10,16 @@ export const PaginatedQueryInput = z.object({
     .union([StringDateTime, z.date()])
     .optional()
     .transform((d) => d ?? new Date()),
-})
+}).strict()
 export type PaginatedQuery = z.input<typeof PaginatedQueryInput>
 
 export const PaginatedSearchInput = PaginatedQueryInput.extend({
   query: z.object({
     tag_ids: z.array(z.number()).optional(),
     tags: z.array(TagInput).optional(),
-  })
-})
+    stars: z.number().optional(),
+  }).strict()
+}).strict()
 // export const TagSearchInput = PaginatedQueryInput.extend({
 //   tags: z.array(TagInput),
 // })
