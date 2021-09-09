@@ -13,7 +13,14 @@ export const PaginatedQueryInput = z.object({
 })
 export type PaginatedQuery = z.input<typeof PaginatedQueryInput>
 
-export const TagSearchInput = PaginatedQueryInput.extend({
-  tags: z.array(TagInput),
+export const PaginatedSearchInput = PaginatedQueryInput.extend({
+  query: z.object({
+    tag_ids: z.array(z.number()).optional(),
+    tags: z.array(TagInput).optional(),
+  })
 })
-export type TagSearch = z.input<typeof TagSearchInput>
+// export const TagSearchInput = PaginatedQueryInput.extend({
+//   tags: z.array(TagInput),
+// })
+
+export type PaginatedSearch = z.input<typeof PaginatedSearchInput>

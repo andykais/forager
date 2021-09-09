@@ -138,7 +138,12 @@ class SelectManyMediaReferenceByTags extends Statement {
       return r
     })
 
-    return { total, limit, cursor: result[result.length - 1].created_at, result }
+    return {
+      total,
+      limit,
+      cursor: result.length ? result[result.length - 1].created_at : new Date(),
+      result
+    }
   }
 }
 

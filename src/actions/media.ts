@@ -78,14 +78,20 @@ class MediaAction extends Action {
       stream.close()
   }
 
-  search(params: inputs.TagSearch) {
-    const { limit, cursor } = inputs.TagSearchInput.parse(params)
-    const tag_ids = params.tags.map(tag => {
-      const query_data = inputs.TagInput.parse(tag)
-      const tag_row = this.db.tag.select_one_by_name(query_data)
-      if (!tag_row) throw new NotFoundError('Tag', `${query_data.group}:${query_data.name}`)
-      return tag_row
-    }).map(tag => tag.id)
+  search(params: inputs.PaginatedSearch) {
+    const { limit, cursor } = inputs.PaginatedSearchInput.parse(params)
+    const tag_ids: number[] = []
+    if (params.query.tags) {
+      for (const tag of params.query.tags) {
+        const query_data = inputs.TagInput.parse(tag)
+        const tag_row = this.db.tag.select_one_by_name(query_data)
+        if (!tag_row) throw new NotFoundError('Tag', `${query_data.group}:${query_data.name}`)
+        tag_ids.push(tag_row.id)
+      }
+    }
+    if (params.query.tag_ids) {
+      tag_ids.push(...params.query.tag_ids)
+    }
 
     const media_references = this.db.media_reference.select_many_by_tags({ tag_ids, limit, cursor })
     return media_references

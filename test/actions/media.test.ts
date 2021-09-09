@@ -43,19 +43,19 @@ test('add media', async t => {
   const output_md5checksum = await get_file_checksum(media_output_path)
 
   // test that tag searching works
-  const media_references = forager.media.search({ tags })
+  const media_references = forager.media.search({ query: { tags } })
   t.is(media_references.total, 1)
   t.is(media_references.result[0].id, media_reference_id)
   t.is(media_references.result[0].tag_count, 2)
 
   // test that searching using non existent tags fails
-  t.throws(() => forager.media.search({ tags: [{ name: 'nonexistent_tag' }]}))
+  t.throws(() => forager.media.search({ query: { tags: [{ name: 'nonexistent_tag' }] } }))
 
   // add a second media file
   const cartoon_tags = [{ group: 'colors', name: 'black' }, { group: 'genre', name: 'cartoon' }]
   const ed_edd_eddy = await forager.media.create('test/resources/ed-edd-eddy.png', {}, cartoon_tags)
 
-  const search_results = forager.media.search({tags})
+  const search_results = forager.media.search({ query: { tags } })
   t.is(search_results.total, 1)
   t.is(search_results.result[0].id, media_reference_id)
   t.is(search_results.result[0].tag_count, 2)
@@ -95,12 +95,12 @@ test('cursor', async t => {
   t.is(list_2nd.result.length, 1)
   t.is(list_2nd.result[0].id, procedural_media.media_reference_id)
 
-  const search_1st = forager.media.search({ limit: 1, tags: [{ name: 'same' }] })
+  const search_1st = forager.media.search({ limit: 1, query: { tags: [{ name: 'same' }] } })
   t.is(search_1st.total, 2)
   t.is(search_1st.result.length, 1)
   t.is(search_1st.result[0].id, ed_edd_eddy.media_reference_id)
 
-  const search_2nd = forager.media.search({ limit: 100, cursor: search_1st.cursor, tags: [{ name: 'same' }] })
+  const search_2nd = forager.media.search({ limit: 100, cursor: search_1st.cursor, query: { tags: [{ name: 'same' }] } })
   t.is(search_2nd.total, 2)
   t.is(search_2nd.result.length, 1)
   t.is(search_2nd.result[0].id, procedural_media.media_reference_id)
