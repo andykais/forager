@@ -242,14 +242,14 @@ class CreateTables extends Statement {
       UPDATE tag SET media_reference_count = media_reference_count + 1 WHERE new.tag_id = id;
     END;
     CREATE TRIGGER media_reference_tag_count_dec AFTER DELETE ON media_reference_tag BEGIN
-      UPDATE media_reference SET tag_count = tag_count - 1 WHERE new.media_reference_id = id;
-      UPDATE tag SET media_reference_count = media_reference_count - 1 WHERE new.tag_id = id;
+      UPDATE media_reference SET tag_count = tag_count - 1 WHERE old.media_reference_id = id;
+      UPDATE tag SET media_reference_count = media_reference_count - 1 WHERE old.tag_id = id;
     END;
     CREATE TRIGGER tag_group_count_inc AFTER INSERT ON tag BEGIN
       UPDATE tag_group SET tag_count = tag_count + 1 WHERE new.tag_group_id = id;
     END;
     CREATE TRIGGER tag_group_count_dec AFTER DELETE ON tag BEGIN
-      UPDATE tag_group SET tag_count = tag_count - 1 WHERE new.tag_group_id = id;
+      UPDATE tag_group SET tag_count = tag_count - 1 WHERE old.tag_group_id = id;
     END;
 
     -- NOTES: lets use the "INDEXED BY <index_name>" clause to hardcode indexes to look things up with

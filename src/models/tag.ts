@@ -41,7 +41,7 @@ class CreateTag extends Statement {
 }
 
 class SelectOneTagByName extends Statement {
-  stmt = this.register(`SELECT * FROM tag
+  stmt = this.register(`SELECT tag.* FROM tag
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
     WHERE tag.name = @name AND tag_group.name = @group`)
 
