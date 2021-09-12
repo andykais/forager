@@ -24,7 +24,7 @@ class MediaAction extends Action {
   async create(filepath: string, media_info: MediaInfo, tags: inputs.Tag[]) {
     const tags_input = tags.map(t => inputs.TagInput.parse(t))
     const media_file_info = await get_file_info(filepath)
-    const [file_size_bytes, thumbnail, md5checksum] = await Promise.all([
+    const [file_size_bytes, thumbnail, sha512checksum] = await Promise.all([
       get_file_size(filepath),
       get_file_thumbnail(filepath, media_file_info),
       get_file_checksum(filepath),
@@ -33,10 +33,10 @@ class MediaAction extends Action {
     const media_file_data = {
       ...media_file_info,
       file_size_bytes,
-      md5checksum,
+      sha512checksum,
       thumbnail,
       thumbnail_file_size_bytes: thumbnail.length,
-      thumbnail_md5checksum: get_buffer_checksum(thumbnail),
+      thumbnail_sha512checksum: get_buffer_checksum(thumbnail),
     }
     const transaction = this.db.transaction_async(async () => {
       const media_reference_id = this.db.media_reference.insert(media_reference_data)
@@ -64,7 +64,7 @@ class MediaAction extends Action {
       // TODO this can be handled more robustly if we do a full buffer comparison upon getting a DuplicateMediaError
       // a larger checksum would also be helpful
       // possibly we would put expensive buffer comparisons behind a config flag, opting to just use the duplicate_log otherwise
-      if (this.is_unique_constaint_error(e)) throw new DuplicateMediaError(filepath, md5checksum)
+      if (this.is_unique_constaint_error(e)) throw new DuplicateMediaError(filepath, sha512checksum)
       else throw e
     }
   }

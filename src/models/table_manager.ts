@@ -117,7 +117,7 @@ class CreateTables extends Statement {
       filename TEXT NOT NULL,
       -- mime_type TEXT NOT NULL,
       file_size_bytes INTEGER NOT NULL,
-      md5checksum TEXT NOT NULL UNIQUE,
+      sha512checksum TEXT NOT NULL UNIQUE,
 
       -- image,video,audio
       media_type TEXT NOT NULL CHECK( media_type IN ('IMAGE', 'VIDEO', 'AUDIO') ),
@@ -133,7 +133,7 @@ class CreateTables extends Statement {
       -- TODO should we use a separate table for thumbnails?
       thumbnail BLOB NOT NULL,
       thumbnail_file_size_bytes INTEGER NOT NULL,
-      thumbnail_md5checksum TEXT NOT NULL,
+      thumbnail_sha512checksum TEXT NOT NULL,
       updated_at ${TIMESTAMP_SQLITE},
       created_at ${TIMESTAMP_SQLITE},
 
@@ -230,7 +230,7 @@ class CreateTables extends Statement {
 
     CREATE TABLE duplicate_log (
       filepath TEXT NOT NULL,
-      md5checksum TEXT NOT NULL,
+      sha512checksum TEXT NOT NULL,
       updated_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
       created_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW'))
     );

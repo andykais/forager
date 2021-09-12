@@ -6,7 +6,7 @@ import type { InsertRow } from '../db/base'
 interface DuplicateLogTR {
   id: number
   filepath: string
-  md5checksum: string
+  sha512checksum: string
   created_at: Date
   updated_at: Date
 }
@@ -20,7 +20,7 @@ class DuplicateLog extends Model {
 /* --=================== Statements ===================-- */
 
 class InsertDuplicateLog extends Statement {
-  stmt = this.register('INSERT INTO duplicate_log (filepath, md5checksum) VALUES (@filepath, @md5checksum)')
+  stmt = this.register('INSERT INTO duplicate_log (filepath, sha512checksum) VALUES (@filepath, @sha512checksum)')
   call(duplicate_data: InsertRow<DuplicateLogTR>) {
     this.stmt.ref.run(duplicate_data)
   }

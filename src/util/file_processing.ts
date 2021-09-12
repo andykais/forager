@@ -74,7 +74,7 @@ async function get_file_checksum(filepath: string): Promise<string> {
 }
 
 function get_buffer_checksum(buffer: Buffer): string {
-  const hash = createHash('md5')
+  const hash = createHash('sha512')
   hash.update(buffer)
   return hash.digest('hex')
 }

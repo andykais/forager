@@ -9,7 +9,7 @@ interface MediaFileTR {
   id: number
   filename: string
   file_size_bytes: number
-  md5checksum: string
+  sha512checksum: string
   media_type: 'VIDEO' | 'IMAGE' | 'AUDIO'
   codec: string
   content_type: string
@@ -23,7 +23,7 @@ interface MediaFileTR {
 
   thumbnail: Buffer
   thumbnail_file_size_bytes: number
-  thumbnail_md5checksum: string
+  thumbnail_sha512checksum: string
 
 }
 
@@ -42,7 +42,7 @@ class InsertMediaFile extends Statement {
   sql = `INSERT INTO media_file (
     filename,
     file_size_bytes,
-    md5checksum,
+    sha512checksum,
     media_type,
     content_type,
     codec,
@@ -53,8 +53,8 @@ class InsertMediaFile extends Statement {
     media_reference_id,
     thumbnail,
     thumbnail_file_size_bytes,
-    thumbnail_md5checksum
-  ) VALUES (@filename, @file_size_bytes, @md5checksum, @media_type, @content_type, @codec, @width, @height, @animated, @duration, @media_reference_id, @thumbnail, @thumbnail_file_size_bytes, @thumbnail_md5checksum)`
+    thumbnail_sha512checksum
+  ) VALUES (@filename, @file_size_bytes, @sha512checksum, @media_type, @content_type, @codec, @width, @height, @animated, @duration, @media_reference_id, @thumbnail, @thumbnail_file_size_bytes, @thumbnail_sha512checksum)`
 
   stmt = this.register(this.sql)
 

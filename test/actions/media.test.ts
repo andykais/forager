@@ -14,7 +14,7 @@ async function rmf(filepath: string) {
   }
 }
 
-test.only('add media', async t => {
+test('add media', async t => {
   try{
   const database_path = 'test/fixtures/forager.db'
   const media_output_path = 'test/fixtures/koch-export.tif'
@@ -39,8 +39,8 @@ test.only('add media', async t => {
 
   // test that exported files are the same as imported files
   forager.media.export(media_reference_id, media_output_path)
-  const input_md5checksum = await get_file_checksum(media_input_path)
-  const output_md5checksum = await get_file_checksum(media_output_path)
+  const input_sha512checksum = await get_file_checksum(media_input_path)
+  const output_sha512checksum = await get_file_checksum(media_output_path)
 
   // test that tag searching works
   const media_references = forager.media.search({ query: { tags } })
