@@ -2,7 +2,7 @@ import { Action } from './base'
 import { NotFoundError, DuplicateMediaError } from '../util/errors'
 import { MediaChunk } from '../models/media_chunk'
 import { MediaReference } from '../models/media_reference'
-import { get_file_size, get_file_info, get_file_checksum, get_buffer_checksum, get_file_thumbnail } from '../util/file_processing'
+import { get_file_size, get_file_info, get_video_preview , get_file_checksum, get_buffer_checksum, get_file_thumbnail } from '../util/file_processing'
 import { get_hash_color } from '../util/text_processing'
 import * as inputs from '../inputs'
 import type { MediaReferenceTR } from '../models/media_reference'
@@ -24,10 +24,11 @@ class MediaAction extends Action {
   async create(filepath: string, media_info: MediaInfo, tags: inputs.Tag[]) {
     const tags_input = tags.map(t => inputs.TagInput.parse(t))
     const media_file_info = await get_file_info(filepath)
-    const [file_size_bytes, thumbnail, sha512checksum] = await Promise.all([
+    const [file_size_bytes, thumbnail, sha512checksum, video_preview] = await Promise.all([
       get_file_size(filepath),
       get_file_thumbnail(filepath, media_file_info),
       get_file_checksum(filepath),
+      media_file_info.media_type === 'VIDEO' ? get_video_preview(filepath, media_file_info) : null,
     ])
     const media_reference_data = { media_sequence_index: 0, stars: 0, view_count: 0, ...media_info }
     const media_file_data = {
@@ -37,6 +38,7 @@ class MediaAction extends Action {
       thumbnail,
       thumbnail_file_size_bytes: thumbnail.length,
       thumbnail_sha512checksum: get_buffer_checksum(thumbnail),
+      video_preview,
     }
     const transaction = this.db.transaction_async(async () => {
       const media_reference_id = this.db.media_reference.insert(media_reference_data)
@@ -116,6 +118,10 @@ class MediaAction extends Action {
 
   get_thumbnail(media_reference_id: number) {
     return this.db.media_file.select_thumbnail(media_reference_id)
+  }
+
+  get_video_preview(media_reference_id: number) {
+    return this.db.media_file.select_video_preview(media_reference_id)
   }
 
   get_file(media_reference_id: number) {

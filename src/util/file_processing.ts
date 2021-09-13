@@ -63,7 +63,7 @@ async function get_file_info(filepath: string) {
 }
 
 async function get_file_checksum(filepath: string): Promise<string> {
-  const hash = createHash('md5')
+  const hash = createHash('sha512')
   await new Promise((resolve, reject) => {
     const file = fs.createReadStream(filepath)
     file.on('error', reject)
@@ -73,16 +73,59 @@ async function get_file_checksum(filepath: string): Promise<string> {
   return hash.digest('hex')
 }
 
-function get_buffer_checksum(buffer: Buffer): string {
-  const hash = createHash('sha512')
-  hash.update(buffer)
-  return hash.digest('hex')
+const num_captured_frames = 16
+const max_side_length = 500
+// const max_width = 500
+async function get_video_preview(filepath: string, file_info: FileInfo) {
+  // TODO get frame from ffprobe. If not exists, then use ffmpeg
+  const { stdout } = await exec(`ffmpeg -nostats -i '${filepath}' -vcodec copy -f rawvideo -y /dev/null 2>&1 | grep frame`)
+  const frames_str = stdout.replace(/frame=\s+(\d+)\s.*/, '$1')
+  const frames = parseInt(frames_str)
+  const frame_capture_interval = Math.ceil(frames / num_captured_frames)
+  // const preview_filepath = 'video_preview.jpg' // TODO temporary
+  const preview_filepath = await get_temp_filepath('video-preview', 'preview.jpg')
+  const full_width = file_info.width!
+  const full_height = file_info.height!
+
+  let num_cols = 1
+  let num_rows = num_captured_frames / num_cols
+  let frame_width = 100
+  let frame_height = 100
+
+  if (full_width > full_height) {
+    const ratio = full_height / full_width
+    let total_preview_height = Infinity
+
+    while (total_preview_height > max_side_length) {
+      num_cols ++
+      num_rows = Math.ceil(num_captured_frames / num_cols)
+      frame_width = max_side_length / num_cols
+      frame_height = ratio * frame_width
+      total_preview_height = num_rows * frame_height
+    }
+  } else {
+    num_rows = 1
+    num_cols = num_captured_frames / num_cols
+    const ratio = full_width / full_height
+    let total_preview_width = Infinity
+
+    while (total_preview_width > max_side_length) {
+      num_cols --
+      num_rows = Math.ceil(num_captured_frames / num_cols)
+      frame_height = max_side_length / num_rows
+      frame_width = ratio * frame_height
+      total_preview_width = num_cols * frame_height
+    }
+  }
+  await exec(`ffmpeg -loglevel error -y -i "${filepath}" -frames 1 -q:v 1 -vf "select=not(mod(n\\,${frame_capture_interval})),scale=${frame_width}:${frame_height},tile=${num_cols}x${num_rows}:padding=2" "${preview_filepath}"`)
+  const buffer = fs.promises.readFile(preview_filepath)
+  return buffer
 }
 
-function get_string_checksum(str: string): string {
-  const hash = createHash('md5')
-  hash.update(str)
-  return hash.digest('hex')
+function get_buffer_checksum(buffer: Buffer): string {
+  const hash = createHash('sha512')
+  const data = hash.update(buffer)
+  return data.digest('hex')
 }
 
 async function get_file_thumbnail(filepath: string, file_info: FileInfo): Promise<Buffer> {
@@ -94,8 +137,7 @@ async function get_file_thumbnail(filepath: string, file_info: FileInfo): Promis
       : `${Math.floor((width*500)/height)}x${500}`
 
     const preview_position = file_info.duration * 0.25 // assuming that 1/4 of the way into a video is a good preview position
-    const tmpdir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'thumbnail-'))
-    const thumbnail_filepath = path.join(tmpdir, 'thumbnail.jpg')
+    const thumbnail_filepath = await get_temp_filepath('thumbnail', 'thumbnail.jpg')
     await exec(`ffmpeg -v error -i '${filepath}' -an -s ${max_width_or_height} -frames:v 1 -ss ${preview_position} '${thumbnail_filepath}'`)
     const buffer = fs.promises.readFile(thumbnail_filepath)
     return buffer
@@ -104,4 +146,9 @@ async function get_file_thumbnail(filepath: string, file_info: FileInfo): Promis
   }
 }
 
-export { get_file_size, get_file_info, get_file_checksum, get_buffer_checksum, get_string_checksum, get_file_thumbnail }
+async function get_temp_filepath(prefix: string, filename: string) {
+  const tmpdir = await fs.promises.mkdtemp(path.join(os.tmpdir(), `${prefix}-`))
+  return path.join(tmpdir, filename)
+}
+
+export { get_file_size, get_file_info, get_video_preview, get_file_checksum, get_buffer_checksum, get_file_thumbnail }

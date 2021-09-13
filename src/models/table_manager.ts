@@ -134,6 +134,9 @@ class CreateTables extends Statement {
       thumbnail BLOB NOT NULL,
       thumbnail_file_size_bytes INTEGER NOT NULL,
       thumbnail_sha512checksum TEXT NOT NULL,
+
+      video_preview BLOB,
+
       updated_at ${TIMESTAMP_SQLITE},
       created_at ${TIMESTAMP_SQLITE},
 
