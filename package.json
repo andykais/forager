@@ -21,8 +21,9 @@
   "dependencies": {
     "arg": "^5.0.1",
     "better-sqlite3": "^7.4.3",
+    "date-fns": "^2.23.0",
     "sharp": "^0.28.3",
-    "zod": "^3.8.1"
+    "zod": "^3.8.2"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.4.0",
@@ -30,7 +31,6 @@
     "@types/node": "^15.14.2",
     "@types/sharp": "^0.28.5",
     "ava": "^3.15.0",
-    "date-fns": "^2.22.1",
     "mocha": "^8.4.0",
     "source-map-support": "^0.5.19",
     "ts-node": "^10.1.0",

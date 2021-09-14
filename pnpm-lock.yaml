@@ -8,19 +8,20 @@ specifiers:
   arg: ^5.0.1
   ava: ^3.15.0
   better-sqlite3: ^7.4.3
-  date-fns: ^2.22.1
+  date-fns: ^2.23.0
   mocha: ^8.4.0
   sharp: ^0.28.3
   source-map-support: ^0.5.19
   ts-node: ^10.1.0
   typescript: ^4.3.5
-  zod: ^3.8.1
+  zod: ^3.8.2
 
 dependencies:
   arg: 5.0.1
   better-sqlite3: 7.4.3
+  date-fns: 2.23.0
   sharp: 0.28.3
-  zod: 3.8.1
+  zod: 3.8.2
 
 devDependencies:
   '@types/better-sqlite3': 7.4.0
@@ -28,7 +29,6 @@ devDependencies:
   '@types/node': 15.14.2
   '@types/sharp': 0.28.5
   ava: 3.15.0
-  date-fns: 2.22.1
   mocha: 8.4.0
   source-map-support: 0.5.19
   ts-node: 10.1.0_4b3e444380e20028bda2290194b88dd2
@@ -689,10 +689,10 @@ packages:
       array-find-index: 1.0.2
     dev: true
 
-  /date-fns/2.22.1:
-    resolution: {integrity: sha512-yUFPQjrxEmIsMqlHhAhmxkuH769baF21Kk+nZwZGyrMoyLA+LugaQtC0+Tqf9CBUUULWwUJt6Q5ySI3LJDDCGg==}
+  /date-fns/2.23.0:
+    resolution: {integrity: sha512-5ycpauovVyAk0kXNZz6ZoB9AYMZB4DObse7P3BPWmyEjXNORTI8EJ6X0uaSAq4sCHzM1uajzrkr6HnsLQpxGXA==}
     engines: {node: '>=0.11'}
-    dev: true
+    dev: false
 
   /date-time/3.1.0:
     resolution: {integrity: sha512-uqCUKXE5q1PNBXjPqvwhwJf9SwMoAHBgWJ6DcrnS5o+W2JOiIILl0JEdVD8SGujrNS02GGxgwAg2PN2zONgtjg==}
@@ -2552,6 +2552,6 @@ packages:
     engines: {node: '>=10'}
     dev: true
 
-  /zod/3.8.1:
-    resolution: {integrity: sha512-u4Uodl7dLh8nXZwqXL1SM5FAl5b4lXYHOxMUVb9lqhlEAZhA2znX+0oW480m0emGFMxpoRHzUncAqRkc4h8ZJA==}
+  /zod/3.8.2:
+    resolution: {integrity: sha512-kpwVRACazsOhELVt5h4R2pC2OndrqaBK4+z134TWOsnzn7n2uOYnSyvx0QAn410pl28CgVtkSi5ew7e/AgO0oA==}
     dev: false
