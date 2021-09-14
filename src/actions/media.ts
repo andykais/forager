@@ -116,6 +116,11 @@ class MediaAction extends Action {
     return this.db.media_reference.select_many({ limit, cursor })
   }
 
+  get_preview(media_reference_id: number) {
+    return this.db.media_file.select_video_preview(media_reference_id)
+      ?? this.db.media_file.select_thumbnail(media_reference_id)
+  }
+
   get_thumbnail(media_reference_id: number) {
     return this.db.media_file.select_thumbnail(media_reference_id)
   }
