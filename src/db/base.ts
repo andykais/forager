@@ -6,8 +6,8 @@ import type Sqlite3 from 'better-sqlite3'
 type RunResult = { lastInsertRowid: number }
 class UninitializedStmt implements Sqlite3.Statement {
   database: any
-  source: any
   reader: any
+  constructor(public source: string) {}
 
   run(...params: any[]): Sqlite3.RunResult { throw new Error('UninitializedStmt: This is a placeholder. You must use an initialized statement') }
   get(...params: any[]): any { throw new Error('UninitializedStmt: This is a placeholder. You must use an initialized statement') }
@@ -28,7 +28,8 @@ abstract class Model {
   constructor(protected db: Sqlite3.Database) {}
 
   init() {
-    for (const statement of this.registered_statements) statement.init()
+    const model_name = this.constructor.name
+    for (const statement of this.registered_statements) statement.init(model_name)
   }
 
   register<A extends any[], R>(c: new (db: Sqlite3.Database) => Statement<A, R>) {
@@ -49,14 +50,23 @@ abstract class Statement<A extends any[] = any[], R = any> {
     this.stmt_pointers = []
   }
 
-  public init() {
+  public init(model_name: string) {
     for (const stmt_pointer of this.stmt_pointers) {
-      stmt_pointer.ref = this.db.prepare(stmt_pointer.sql)
+      try {
+        stmt_pointer.ref = this.db.prepare(stmt_pointer.sql)
+      }catch(e) {
+        if (e instanceof SqliteError) {
+          // add the statement that caused the error (we should more generally wrap sqlite errors in the future)
+          e.message = `${model_name}.${this.constructor.name} statement ${e.message}`
+          throw e
+        }
+        throw e
+      }
     }
   }
 
   protected register(sql: string) {
-    const pointer = { ref: new UninitializedStmt(), sql }
+    const pointer = { ref: new UninitializedStmt(sql), sql }
     this.stmt_pointers.push(pointer)
     return pointer
   }

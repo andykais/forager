@@ -51,6 +51,15 @@ test('tag crud', async t => {
     { name: 'procedural_generation', media_reference_count: 1},
   ])
 
+  // search tags
+  t.is(forager.tag.search({ name: 'pr' }).length, 1)
+  forager.tag.search({ name: 'pr' }).map(tag => t.like(tag, {group: '', name: 'procedural_generation'}))
+  // not passing in group will search on any groups
+  t.is(forager.tag.search({ name: 'blac' }).length, 1)
+  forager.tag.search({ name: 'blac' }).map(tag => t.like(tag, {group: 'colors', name: 'black'}))
+  // passing in a group only searches on that group (theres 'black' tag, but its under the 'colors' group)
+  t.is(forager.tag.search({ group: '', name: 'blac' }).length, 0)
+
   }catch(e){
     console.error(e)
     throw e

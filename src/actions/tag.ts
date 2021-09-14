@@ -7,12 +7,17 @@ class TagAction extends Action {
     return this.db.tag.select_all()
   }
 
+  public search(tag: inputs.TagSearch) {
+    const query = inputs.TagSearchInput.parse(tag)
+    return this.db.tag.select_many_like_name({ ...query, limit: 10 })
+  }
+
   public get_tags(media_reference_id: number) {
     return this.db.tag.select_many_by_media_reference({ media_reference_id })
   }
 
-  public add_tags(media_reference_id: number, tags: inputs.Tag[]) {
-    const tags_input = tags.map(t => inputs.TagInput.parse(t))
+  public add_tags(media_reference_id: number, tags: inputs.TagList) {
+    const tags_input = inputs.TagListInput.parse(tags)
     const transaction = this.db.db.transaction(() => {
       for (const tag of tags_input) {
         const group = tag.group ?? ''
@@ -31,8 +36,8 @@ class TagAction extends Action {
     return this.db.tag.select_many_by_media_reference({ media_reference_id })
   }
 
-  public remove_tags(media_reference_id: number, tags: inputs.Tag[]) {
-    const tags_input = tags.map(t => inputs.TagInput.parse(t))
+  public remove_tags(media_reference_id: number, tags: inputs.TagList) {
+    const tags_input = inputs.TagListInput.parse(tags)
     const transaction = this.db.db.transaction(() => {
       for (const tag of tags_input) {
         const tag_row = this.db.tag.select_one_by_name(tag)
