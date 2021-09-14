@@ -35,6 +35,7 @@ class Database {
   }
 
   public init() {
+    this.db.pragma('journal_mode = WAL')
     if (this.table_manager.tables_exist()) {
       this.migrate()
     } else {
