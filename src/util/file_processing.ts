@@ -73,16 +73,15 @@ async function get_file_checksum(filepath: string): Promise<string> {
   return hash.digest('hex')
 }
 
-const num_captured_frames = 16
-const max_side_length = 500
-// const max_width = 500
+const num_captured_frames = 18
+const max_width = 800
+const max_height = 400
 async function get_video_preview(filepath: string, file_info: FileInfo) {
   // TODO get frame from ffprobe. If not exists, then use ffmpeg
   const { stdout } = await exec(`ffmpeg -nostats -i '${filepath}' -vcodec copy -f rawvideo -y /dev/null 2>&1 | grep frame`)
   const frames_str = stdout.replace(/frame=\s+(\d+)\s.*/, '$1')
   const frames = parseInt(frames_str)
   const frame_capture_interval = Math.ceil(frames / num_captured_frames)
-  // const preview_filepath = 'video_preview.jpg' // TODO temporary
   const preview_filepath = await get_temp_filepath('video-preview', 'preview.jpg')
   const full_width = file_info.width!
   const full_height = file_info.height!
@@ -96,10 +95,10 @@ async function get_video_preview(filepath: string, file_info: FileInfo) {
     const ratio = full_height / full_width
     let total_preview_height = Infinity
 
-    while (total_preview_height > max_side_length) {
+    while (total_preview_height > max_height) {
       num_cols ++
       num_rows = Math.ceil(num_captured_frames / num_cols)
-      frame_width = max_side_length / num_cols
+      frame_width = max_width / num_cols
       frame_height = ratio * frame_width
       total_preview_height = num_rows * frame_height
     }
@@ -109,10 +108,10 @@ async function get_video_preview(filepath: string, file_info: FileInfo) {
     const ratio = full_width / full_height
     let total_preview_width = Infinity
 
-    while (total_preview_width > max_side_length) {
+    while (total_preview_width > max_width) {
       num_cols --
       num_rows = Math.ceil(num_captured_frames / num_cols)
-      frame_height = max_side_length / num_rows
+      frame_height = max_height / num_rows
       frame_width = ratio * frame_height
       total_preview_width = num_cols * frame_height
     }
