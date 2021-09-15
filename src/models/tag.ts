@@ -22,7 +22,16 @@ class Tag extends Model {
   select_one_by_name = this.register(SelectOneTagByName)
   select_all = this.register(SelectAllTags)
   select_many_by_media_reference = this.register(SelectManyTagsByMediaReferenceId)
-  select_many_like_name = this.register(SelectManyTagsLikeName)
+  private select_many_like_name_stmt = this.register(SelectManyTagsLikeName)
+  select_many_like_name(query_data: TagIdentifier & { limit: number; filter: TagIdentifier[] }) {
+    const {filter, ...rest} = query_data
+    // if this gets slow, theres lots of speedup techniques (shove it all into a single query, memoize query)
+    const filter_ids = filter
+      .map(tag_identifier => this.select_one_by_name(tag_identifier))
+      .filter(row => row !== null && row !== undefined)
+      .map(row => row!.id)
+    return this.select_many_like_name_stmt({...rest, filter_ids})
+  }
 }
 
 /* --=================== Statements ===================-- */
@@ -56,8 +65,9 @@ class SelectOneTagByName extends Statement {
     WHERE tag.name = @name AND tag_group.name = @group
     LIMIT 1`)
 
-  call(query_data: { name: TagTR['name']; group: TagGroupTR['name']}): TagDataTR | null {
-    return this.stmt.ref.get(query_data)
+  call(query_data: { name: TagTR['name']; group: TagGroupTR['name'] | null}): TagDataTR | null {
+    const { name, group = '' } = query_data
+    return this.stmt.ref.get({ name, group })
   }
 }
 
@@ -70,20 +80,19 @@ class SelectAllTags extends Statement {
   }
 }
 
+type TagIdentifier = {name: TagTR['name']; group: TagGroupTR['name'] | null;}
 class SelectManyTagsLikeName extends Statement {
-  stmt_any_group = this.register(`${SELECT_TAG_GROUP_JOIN}
-    WHERE tag.name LIKE @name || '%'
-    ORDER BY media_reference_count, tag.name DESC
-    LIMIT @limit`)
-
-  stmt_w_group = this.register(`${SELECT_TAG_GROUP_JOIN}
-    WHERE tag.name LIKE @name || '%' AND tag_group.name = @group
-    ORDER BY media_reference_count, tag.name DESC
-    LIMIT @limit`)
-
-   call(query_data: { name: TagTR['name']; group: TagGroupTR['name'] | null, limit: number}): TagDataTR[] {
-     if (query_data.group === null) return this.stmt_any_group.ref.all(query_data)
-     else return this.stmt_w_group.ref.all(query_data)
+   call(query_data: TagIdentifier & { limit: number; filter_ids: TagTR['id'][] }): TagDataTR[] {
+    const where_clauses = []
+    if (query_data.group !== null) where_clauses.push(`tag_group.name = @group`)
+    if (query_data.filter_ids.length) where_clauses.push(`tag.id NOT IN (${query_data.filter_ids.join(',')})`)
+    where_clauses.push(`tag.name LIKE @name || '%'`)
+    const sql = `${SELECT_TAG_GROUP_JOIN}
+      WHERE ${where_clauses.join(' AND ')}
+      ORDER BY media_reference_count DESC
+      LIMIT @limit`
+    const stmt = this.db.prepare(sql)
+    return stmt.all(query_data)
    }
 }
 

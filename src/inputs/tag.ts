@@ -5,13 +5,16 @@ function sanitize_name(name: string) {
 }
 
 export const TagInput = z.object({
+  name: z.string().transform(sanitize_name),
   group: z.string().optional().default('').transform(sanitize_name),
-  name: z.string().transform(sanitize_name)
 })
 export type Tag = z.input<typeof TagInput>
 
-export const TagSearchInput = TagInput.extend({
+export const TagSearchInput = z.object({
+  name: z.string().transform(sanitize_name),
   group: z.string().optional().transform(t => typeof t === 'string' ? sanitize_name(t) : null),
+  filter: z.array(TagInput).optional().transform(v => v ?? []),
+  limit: z.number().optional().default(10),
 })
 export type TagSearch = z.input<typeof TagSearchInput>
 

@@ -3,13 +3,13 @@ import * as inputs from '../inputs'
 import { get_hash_color } from '../util/text_processing'
 
 class TagAction extends Action {
-  public list() {
+  public list = () => {
     return this.db.tag.select_all()
   }
 
-  public search(tag: inputs.TagSearch) {
-    const query = inputs.TagSearchInput.parse(tag)
-    return this.db.tag.select_many_like_name({ ...query, limit: 10 })
+  public search = (data: inputs.TagSearch) => {
+    const query = inputs.TagSearchInput.parse(data)
+    return this.db.tag.select_many_like_name(query)
   }
 
   public get_tags(media_reference_id: number) {

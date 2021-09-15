@@ -59,6 +59,10 @@ test('tag crud', async t => {
   forager.tag.search({ name: 'blac' }).map(tag => t.like(tag, {group: 'colors', name: 'black'}))
   // passing in a group only searches on that group (theres 'black' tag, but its under the 'colors' group)
   t.is(forager.tag.search({ group: '', name: 'blac' }).length, 0)
+  // filtering tags out should remove them
+  t.is(forager.tag.search({ name: 'blac', filter: [{name: 'black', group:'colors'}] }).length, 0)
+  t.is(forager.tag.search({ name: 'proc', filter: [{name: 'black', group:'colors'}] }).length, 1)
+  forager.tag.search({ name: 'proc', filter: [{name: 'black', group:'colors'}] }).map(tag => t.like(tag, {name: 'procedural_generation'}))
 
   }catch(e){
     console.error(e)
