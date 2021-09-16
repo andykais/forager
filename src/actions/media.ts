@@ -21,7 +21,7 @@ interface MediaInfo {
 }
 
 class MediaAction extends Action {
-  async create(filepath: string, media_info: MediaInfo, tags: inputs.Tag[]) {
+  create = async (filepath: string, media_info: MediaInfo, tags: inputs.Tag[]) => {
     const tags_input = tags.map(t => inputs.TagInput.parse(t))
     const media_file_info = await get_file_info(filepath)
     const [file_size_bytes, thumbnail, sha512checksum, video_preview] = await Promise.all([
@@ -71,15 +71,15 @@ class MediaAction extends Action {
     }
   }
 
-  update(media_reference_id: number, media_info: MediaInfo) {
+  update = (media_reference_id: number, media_info: MediaInfo) => {
     this.db.media_reference.update(media_reference_id, media_info)
   }
 
-  add_view(media_reference_id: number) {
+  add_view = (media_reference_id: number) => {
     this.db.media_reference.inc_view_count(media_reference_id)
   }
 
-  export(media_reference_id: number, output_filepath: string) {
+  export = (media_reference_id: number, output_filepath: string) => {
       const media_file = this.db.media_file.select_one({ media_reference_id })
       if (!media_file) throw new NotFoundError('MediaReference', media_reference_id)
 
@@ -90,7 +90,7 @@ class MediaAction extends Action {
       stream.close()
   }
 
-  search(params: inputs.PaginatedSearch) {
+  search = (params: inputs.PaginatedSearch) => {
     const { limit, cursor } = inputs.PaginatedSearchInput.parse(params)
     const tag_ids: number[] = []
     if (params.query.tags) {
@@ -111,30 +111,30 @@ class MediaAction extends Action {
   }
 
   // TODO offset needs to be replaces w/ a cursor. The cursor will be source_created_at + created_at
-  list(params: inputs.PaginatedQuery = {}) {
+  list = (params: inputs.PaginatedQuery = {}) => {
     const { limit, cursor } = inputs.PaginatedQueryInput.parse(params)
     return this.db.media_reference.select_many({ limit, cursor })
   }
 
-  get_preview(media_reference_id: number) {
+  get_preview = (media_reference_id: number) => {
     return this.db.media_file.select_video_preview(media_reference_id)
       ?? this.db.media_file.select_thumbnail(media_reference_id)
   }
 
-  get_thumbnail(media_reference_id: number) {
+  get_thumbnail = (media_reference_id: number) => {
     return this.db.media_file.select_thumbnail(media_reference_id)
   }
 
-  get_video_preview(media_reference_id: number) {
+  get_video_preview = (media_reference_id: number) => {
     return this.db.media_file.select_video_preview(media_reference_id)
   }
 
-  get_file(media_reference_id: number) {
+  get_file = (media_reference_id: number) => {
     const chunks = this.db.media_chunk.all({ media_reference_id }).map(r => r.chunk)
     return Buffer.concat(chunks)
   }
 
-  get_file_info(media_reference_id: number) {
+  get_file_info = (media_reference_id: number) => {
     const media_file = this.db.media_file.select_one({ media_reference_id })
     // TODO these should be a get_or_raise helper or something
     if (!media_file) throw new Error(`media_file does not exist for media_refernce_id ${media_reference_id}`)
@@ -147,7 +147,7 @@ class MediaAction extends Action {
 
   // methods like these make me nervous because its super granular, which makes it fast,
   // but an orm would avoid the need for a statement, model method, etc
-  get_content_type(media_reference_id: number) {
+  get_content_type = (media_reference_id: number) => {
     const content_type = this.db.media_file.select_one_content_type({ media_reference_id },)
     return content_type
   }

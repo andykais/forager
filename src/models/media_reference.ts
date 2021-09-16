@@ -17,6 +17,7 @@ type MediaReferenceTR = {
   description: string | null
   metadata: string | null
   stars: number
+  view_count: number
   // auto generated fields
   tag_count: number
   updated_at: Date

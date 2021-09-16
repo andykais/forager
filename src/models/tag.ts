@@ -15,6 +15,14 @@ interface TagTR {
   created_at: Date
 }
 
+interface TagDataTR {
+  id: TagTR['id']
+  name: TagTR['name']
+  group: TagGroupTR['name']
+  color: TagGroupTR['color']
+  media_reference_count: TagTR['media_reference_count']
+}
+
 /* --================ Model Definition ================-- */
 
 class Tag extends Model {
@@ -58,7 +66,6 @@ const SELECT_TAG_GROUP_JOIN = `SELECT
   media_reference_count
 FROM tag
 INNER JOIN tag_group ON tag_group.id = tag.tag_group_id`
-type TagDataTR = { id: TagTR['id']; name: TagTR['name']; group: TagGroupTR['name']; color: TagGroupTR['color']; media_reference_count: TagTR['media_reference_count'] }
 
 class SelectOneTagByName extends Statement {
   stmt  = this.register(`${SELECT_TAG_GROUP_JOIN}
@@ -107,4 +114,4 @@ class SelectManyTagsByMediaReferenceId extends Statement {
 }
 
 export { Tag }
-export type { TagTR }
+export type { TagTR, TagDataTR }
