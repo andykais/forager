@@ -6,6 +6,7 @@ import { get_file_size, get_file_info, get_video_preview , get_file_checksum, ge
 import { get_hash_color } from '../util/text_processing'
 import * as inputs from '../inputs'
 import type { MediaReferenceTR } from '../models/media_reference'
+import type { Json } from '../util/types'
 
 import fs from 'fs'
 
@@ -13,7 +14,7 @@ import fs from 'fs'
 interface MediaInfo {
   title?: string
   description?: string
-  metadata?: any
+  metadata?: Json
   source_url?: string
   source_created_at?: Date
   stars?: number
@@ -22,6 +23,7 @@ interface MediaInfo {
 
 class MediaAction extends Action {
   create = async (filepath: string, media_info: MediaInfo, tags: inputs.Tag[]) => {
+    inputs.MediaReferenceUpdateInput.parse(media_info)
     const tags_input = tags.map(t => inputs.TagInput.parse(t))
     const media_file_info = await get_file_info(filepath)
     const [file_size_bytes, thumbnail, sha512checksum, video_preview] = await Promise.all([
@@ -72,7 +74,8 @@ class MediaAction extends Action {
   }
 
   update = (media_reference_id: number, media_info: MediaInfo) => {
-    this.db.media_reference.update(media_reference_id, media_info)
+    const parsed = inputs.MediaReferenceUpdateInput.parse(media_info)
+    this.db.media_reference.update(media_reference_id, parsed)
   }
 
   add_view = (media_reference_id: number) => {
@@ -91,7 +94,7 @@ class MediaAction extends Action {
   }
 
   search = (params: inputs.PaginatedSearch) => {
-    const { limit, cursor } = inputs.PaginatedSearchInput.parse(params)
+    const input = inputs.PaginatedSearchInput.parse(params)
     const tag_ids: number[] = []
     if (params.query.tags) {
       for (const tag of params.query.tags) {
@@ -104,9 +107,10 @@ class MediaAction extends Action {
     if (params.query.tag_ids) {
       tag_ids.push(...params.query.tag_ids)
     }
-    const { stars } = params.query
+    const { limit, cursor } = input
+    const { stars, unread, sort_by, order } = input.query
 
-    const media_references = this.db.media_reference.select_many_by_tags({ tag_ids, stars, limit, cursor })
+    const media_references = this.db.media_reference.select_many_by_tags({ tag_ids, stars, unread, sort_by, order, limit, cursor })
     return media_references
   }
 

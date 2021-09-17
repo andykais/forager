@@ -12,7 +12,7 @@ export type Tag = z.input<typeof TagInput>
 
 export const TagSearchInput = z.object({
   name: z.string().transform(sanitize_name),
-  group: z.string().optional().transform(t => typeof t === 'string' ? sanitize_name(t) : null),
+  group: z.string().optional().nullable().transform(t => typeof t === 'string' ? sanitize_name(t) : null),
   filter: z.array(TagInput).optional().transform(v => v ?? []),
   limit: z.number().optional().default(10),
 })

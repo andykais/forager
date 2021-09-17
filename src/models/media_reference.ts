@@ -1,5 +1,6 @@
 import { Model, Statement } from '../db/base'
 import * as date_fns from 'date-fns'
+import type { Json } from '../util/types'
 import type { InsertRow, InsertRowEncoded, Paginated } from '../db/base'
 import type { TagTR } from './tag'
 import type { TagGroupTR } from './tag_group'
@@ -15,7 +16,7 @@ type MediaReferenceTR = {
   source_created_at: Date | null
   title: string | null
   description: string | null
-  metadata: string | null
+  metadata: Json | null
   stars: number
   view_count: number
   // auto generated fields
@@ -99,15 +100,15 @@ class UpdateMediaReference extends Statement {
     const { source_created_at, metadata, ...rest } = update_data
     const sql_data = {
       media_reference_id,
-      title: null,
-      description: null,
+      title: -1,
+      description: -1,
       source_url: -1,
-      stars: null,
+      stars: -1,
       view_count: -1,
       ...rest,
-      source_created_at: source_created_at ? source_created_at.toISOString() : null,
+      source_created_at: source_created_at ? source_created_at.toISOString() : -1,
       // remove any Date types. TODO if theres a better way to serialize these and preserve that information
-      metadata: metadata ? JSON.stringify(metadata) : null,
+      metadata: metadata ? JSON.stringify(metadata) : -1,
     }
     const info = this.stmt.ref.run(sql_data)
     if (info.changes !== 1) throw new Error(`Attempted to update a row that doesnt exist for media_reference id ${media_reference_id}`)
@@ -127,31 +128,41 @@ class IncrementViewCount extends Statement {
 class SelectOneMediaReference extends Statement {
   stmt = this.register(`SELECT * FROM media_reference WHERE id = ?`)
   call(query_data: { media_reference_id: number }): MediaReferenceTR {
-    return this.stmt.ref.get(query_data.media_reference_id)
+    const row = this.stmt.ref.get(query_data.media_reference_id)
+    return { ...row, metadata: JSON.parse(row.metadata) }
   }
 }
 
+// TODO we can probably delete this whole statement
 class SelectManyMediaReference extends Statement {
   count_sql = `SELECT COUNT(*) as total FROM media_reference`
   count_stmt = this.register(this.count_sql)
   sql = `SELECT * FROM media_reference WHERE created_at < @cursor ORDER BY created_at DESC LIMIT @limit`
   stmt = this.register(this.sql)
+  stmt_no_cursor = this.register(`SELECT * FROM media_reference ORDER BY created_at DESC LIMIT @limit`)
 
-  call(query_data: { limit: number; cursor: Date; }): Paginated<MediaReferenceTR> {
+  call(query_data: { limit: number; cursor: Date | null; }): Paginated<MediaReferenceTR> {
     const { total } = this.count_stmt.ref.get()
+    const { limit, cursor } = query_data
 
     // TODO we need to create a sort of typelevel & runtime insert/select date serializer/deserializer
-    const serialized_query = { ...query_data, cursor: query_data.cursor.toISOString() }
-    const result = this.stmt.ref.all(serialized_query).map((r: any) => {
+    let stmt = this.stmt_no_cursor
+    const serialized_query: { limit: number; cursor?: string } = { limit }
+    if (cursor) {
+      stmt = this.stmt
+      serialized_query.cursor = cursor.toISOString()
+    }
+    const result = stmt.ref.all(serialized_query).map((r: any) => {
       r.source_created_at = r.source_created_at ? new Date(r.source_created_at) : null,
       r.created_at = new Date(r.created_at)
       r.updated_at = new Date(r.updated_at)
+      r.metadata = JSON.parse(r.metadata)
       return r
     })
     return {
       total,
       limit: query_data.limit,
-      cursor: result.length ? result[result.length - 1].created_at : new Date(),
+      cursor: result.length ? result[result.length - 1].created_at : null,
       result
     }
   }
@@ -159,8 +170,18 @@ class SelectManyMediaReference extends Statement {
 
 class SelectManyMediaReferenceByTags extends Statement {
   // TODO we may be able to speed this up if we pass in media_tag_reference ids instead of tag ids
-  call(query_data: { tag_ids: TagTR['id'][]; stars?: number; limit: number; cursor: Date }): Paginated<MediaReferenceTR> {
-    const { tag_ids, stars, limit, cursor } = query_data
+  call(query_data: {
+    tag_ids: TagTR['id'][]
+    stars?: number
+    unread?: boolean
+    sort_by?: 'created_at' | 'updated_at' | 'source_created_at' | 'view_count',
+    order?: 'desc' | 'asc'
+    limit: number
+    cursor: Date | null
+  }): Paginated<MediaReferenceTR> {
+    console.log({ query_data })
+    const { tag_ids, stars, unread, sort_by = 'created_at', order, limit, cursor } = query_data
+    const sort_direction = order === 'desc' ? 'DESC' : 'ASC'
 
     const joins_clauses = []
     const where_clauses = []
@@ -176,25 +197,35 @@ class SelectManyMediaReferenceByTags extends Statement {
     if (stars !== undefined) {
       where_clauses.push(`media_reference.stars >= ${query_data.stars}`)
     }
+    if (unread) {
+      where_clauses.push('media_reference.view_count = 0')
+    }
 
     const count_sql = `SELECT COUNT(0) as total FROM (SELECT * FROM media_reference
       ${joins_clauses.join('\n      ')}
-      WHERE ${where_clauses.join(' AND ')}
+      ${where_clauses.length ? 'WHERE ' + where_clauses.join(' AND ') : ''}
       ${group_clauses.join('\n      ')}
     )`
+
+    const serialized_query: { cursor?: string; limit: number } = { limit: query_data.limit }
+    if (cursor !== null) {
+      const cursor_op = sort_direction === 'DESC' ? '<' : '>'
+      where_clauses.push(`media_reference.created_at ${cursor_op} @cursor`)
+      serialized_query.cursor = cursor.toISOString()
+    }
     const data_sql = `SELECT media_reference.* FROM media_reference
       ${joins_clauses.join('\n      ')}
-      WHERE ${where_clauses.join(' AND ')} AND media_reference.created_at < @cursor
+      ${where_clauses.length ? 'WHERE ' + where_clauses.join(' AND ') : ''}
       ${group_clauses.join('\n      ')}
-      ORDER BY media_reference.created_at DESC
+      ORDER BY media_reference.${sort_by} ${sort_direction}, media_reference.id DESC
       LIMIT @limit
     `
 
     const { total } = this.db.prepare(count_sql).get()
+    console.log(data_sql)
     const stmt = this.db.prepare(data_sql)
 
-    const serialized_query = { limit: query_data.limit, cursor: query_data.cursor.toISOString() }
-    const result = this.db.prepare(data_sql).all(serialized_query).map((r: any) => {
+    const result = stmt.all(serialized_query).map((r: any) => {
       r.source_created_at = r.source_created_at ? new Date(r.source_created_at) : null,
       r.created_at = new Date(r.created_at)
       r.updated_at = new Date(r.updated_at)
