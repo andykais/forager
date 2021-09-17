@@ -146,7 +146,7 @@ class SelectManyMediaReference extends Statement {
   }): Paginated<MediaReferenceTR> {
     const { tag_ids = [], stars, unread, sort_by, order, limit, cursor } = query_data
     const sort_direction = order === 'desc' ? 'DESC' : 'ASC'
-    const null_direction = order === 'desc' ? 'NULLS FIRST' : 'NULLS LAST'
+    const null_direction = order === 'desc' ? 'NULLS LAST' : 'NULLS FIRST'
 
     const joins_clauses = []
     const where_clauses = []
@@ -180,7 +180,7 @@ class SelectManyMediaReference extends Statement {
       params.cursor_1 = cursor[0]
       // nullable fields are treated as -1 for consistent sorting
       // there might be performance implications, we will find out
-      if (sort_by === 'source_created_at') {
+      if (sort_by === 'source_created_at' && params.cursor_1 === null) {
         params.cursor_1 = -1
         cursor_tuple[0] = `IFNULL(${cursor_tuple[0]}, -1)`
       }
