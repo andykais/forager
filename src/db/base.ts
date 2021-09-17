@@ -143,14 +143,22 @@ type InsertRowEncoded<TR extends BaseTR, TB = InsertRow<TR>> = Required<{
         : string
       : TB[K]
 }>
+type SelectRowEncoded<TR extends BaseTR> = {
+  [K in keyof TR]:
+    Date extends TR[K]
+      ? null extends TR[K]
+        ? string | null
+        : string
+      : TR[K]
+}
 
 
 type Paginated<TR extends BaseTR> = {
   total: number
   limit: number
-  cursor: Date
+  cursor: [sort_col: string | number | null, id: number] | null
   result: TR[]
 }
 
 export { Model, Statement, MigrationStatement }
-export type { SelectRow, InsertRow, InsertRowEncoded, Paginated }
+export type { SelectRow, InsertRow, InsertRowEncoded, SelectRowEncoded, Paginated }

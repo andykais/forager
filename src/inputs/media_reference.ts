@@ -8,11 +8,10 @@ const StringDateTime = z.string().refine(parseISO).transform(parseISO)
 
 export const PaginatedQueryInput = z.object({
   limit: z.number().default(100),
-  cursor: z
-    .union([StringDateTime, z.date()])
-    .optional()
-    .nullable()
-    .transform(v => v ?? null)
+  cursor: z.tuple([
+    z.union([z.number(), z.string(), z.null()]),
+    z.number()
+  ]).optional().nullable().transform(v => v ?? null)
 }).strict()
 export type PaginatedQuery = z.input<typeof PaginatedQueryInput>
 
@@ -23,15 +22,16 @@ export const PaginatedSearchInput = PaginatedQueryInput.extend({
     stars: z.number().gte(0).lte(5).optional(),
     unread: z.boolean().default(false),
     sort_by: z.enum(['created_at', 'updated_at', 'source_created_at', 'view_count']).default('created_at'),
-    order: z.enum(['desc', 'asc']).default('desc' as const),
+    order: z.enum(['desc', 'asc']).default('desc'),
   }).strict()
 }).strict()
 export type PaginatedSearch = z.input<typeof PaginatedSearchInput>
+type O  =  z.infer<typeof PaginatedSearchInput>
 
 
-const literalSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
+const LiteralSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 const JsonSchema: z.ZodSchema<Json> = z.lazy(() =>
-  z.union([literalSchema, z.array(JsonSchema), z.record(JsonSchema)])
+  z.union([LiteralSchema, z.array(JsonSchema), z.record(JsonSchema)])
 );
 export const MediaReferenceUpdateInput: z.ZodSchema<MediaInfo> = z.object({
   title: z.string().optional(),

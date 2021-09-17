@@ -110,14 +110,13 @@ class MediaAction extends Action {
     const { limit, cursor } = input
     const { stars, unread, sort_by, order } = input.query
 
-    const media_references = this.db.media_reference.select_many_by_tags({ tag_ids, stars, unread, sort_by, order, limit, cursor })
-    return media_references
+    return this.db.media_reference.select_many({ tag_ids, stars, unread, sort_by, order, limit, cursor })
   }
 
   // TODO offset needs to be replaces w/ a cursor. The cursor will be source_created_at + created_at
   list = (params: inputs.PaginatedQuery = {}) => {
     const { limit, cursor } = inputs.PaginatedQueryInput.parse(params)
-    return this.db.media_reference.select_many({ limit, cursor })
+    return this.db.media_reference.select_many({ limit, cursor, sort_by: 'created_at', order: 'desc' })
   }
 
   get_preview = (media_reference_id: number) => {

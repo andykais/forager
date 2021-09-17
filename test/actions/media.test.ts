@@ -109,5 +109,15 @@ test('cursor', async t => {
   t.is(search_2nd.total, 2)
   t.is(search_2nd.result.length, 1)
   t.is(search_2nd.result[0].id, procedural_media.media_reference_id)
+
+  const nullish_1st = forager.media.search({ limit: 1, query: { sort_by: 'source_created_at', order: 'asc' } })
+  t.is(nullish_1st.total, 2)
+  t.is(nullish_1st.result.length, 1)
+  t.is(nullish_1st.result[0].id, procedural_media.media_reference_id)
+
+  const nullish_2nd = forager.media.search({ limit: 5, cursor: nullish_1st.cursor, query: { sort_by: 'source_created_at', order: 'asc' } })
+  t.is(nullish_2nd.total, 2)
+  t.is(nullish_2nd.result.length, 1)
+  t.is(nullish_2nd.result[0].id, ed_edd_eddy.media_reference_id)
   }catch(e){console.error(e);throw e}
 })

@@ -1,7 +1,7 @@
 import { Model, Statement } from '../db/base'
 import * as date_fns from 'date-fns'
 import type { Json } from '../util/types'
-import type { InsertRow, InsertRowEncoded, Paginated } from '../db/base'
+import type { InsertRow, InsertRowEncoded, SelectRowEncoded, Paginated } from '../db/base'
 import type { TagTR } from './tag'
 import type { TagGroupTR } from './tag_group'
 
@@ -33,7 +33,6 @@ class MediaReference extends Model {
   inc_view_count = this.register(IncrementViewCount)
   select_one = this.register(SelectOneMediaReference)
   select_many = this.register(SelectManyMediaReference)
-  select_many_by_tags = this.register(SelectManyMediaReferenceByTags)
 }
 
 /* --=================== Statements ===================-- */
@@ -133,61 +132,27 @@ class SelectOneMediaReference extends Statement {
   }
 }
 
-// TODO we can probably delete this whole statement
+// Do we care about sql injection? Not at this time, no.
 class SelectManyMediaReference extends Statement {
-  count_sql = `SELECT COUNT(*) as total FROM media_reference`
-  count_stmt = this.register(this.count_sql)
-  sql = `SELECT * FROM media_reference WHERE created_at < @cursor ORDER BY created_at DESC LIMIT @limit`
-  stmt = this.register(this.sql)
-  stmt_no_cursor = this.register(`SELECT * FROM media_reference ORDER BY created_at DESC LIMIT @limit`)
-
-  call(query_data: { limit: number; cursor: Date | null; }): Paginated<MediaReferenceTR> {
-    const { total } = this.count_stmt.ref.get()
-    const { limit, cursor } = query_data
-
-    // TODO we need to create a sort of typelevel & runtime insert/select date serializer/deserializer
-    let stmt = this.stmt_no_cursor
-    const serialized_query: { limit: number; cursor?: string } = { limit }
-    if (cursor) {
-      stmt = this.stmt
-      serialized_query.cursor = cursor.toISOString()
-    }
-    const result = stmt.ref.all(serialized_query).map((r: any) => {
-      r.source_created_at = r.source_created_at ? new Date(r.source_created_at) : null,
-      r.created_at = new Date(r.created_at)
-      r.updated_at = new Date(r.updated_at)
-      r.metadata = JSON.parse(r.metadata)
-      return r
-    })
-    return {
-      total,
-      limit: query_data.limit,
-      cursor: result.length ? result[result.length - 1].created_at : null,
-      result
-    }
-  }
-}
-
-class SelectManyMediaReferenceByTags extends Statement {
   // TODO we may be able to speed this up if we pass in media_tag_reference ids instead of tag ids
   call(query_data: {
-    tag_ids: TagTR['id'][]
+    tag_ids?: TagTR['id'][]
     stars?: number
     unread?: boolean
-    sort_by?: 'created_at' | 'updated_at' | 'source_created_at' | 'view_count',
-    order?: 'desc' | 'asc'
+    sort_by: 'created_at' | 'updated_at' | 'source_created_at' | 'view_count',
+    order: 'desc' | 'asc'
     limit: number
-    cursor: Date | null
+    cursor: [sort_col: string | number | null, id: number] | null
   }): Paginated<MediaReferenceTR> {
-    console.log({ query_data })
-    const { tag_ids, stars, unread, sort_by = 'created_at', order, limit, cursor } = query_data
+    const { tag_ids = [], stars, unread, sort_by, order, limit, cursor } = query_data
     const sort_direction = order === 'desc' ? 'DESC' : 'ASC'
+    const null_direction = order === 'desc' ? 'NULLS FIRST' : 'NULLS LAST'
 
     const joins_clauses = []
     const where_clauses = []
     const group_clauses = []
     if (tag_ids.length) {
-      const tag_ids_str = query_data.tag_ids.join(',')
+      const tag_ids_str = tag_ids.join(',')
       joins_clauses.push(`INNER JOIN media_reference_tag ON media_reference_tag.media_reference_id = media_reference.id`)
       joins_clauses.push(`INNER JOIN tag ON media_reference_tag.tag_id = tag.id`)
       where_clauses.push(`tag.id IN (${tag_ids_str})`)
@@ -207,37 +172,56 @@ class SelectManyMediaReferenceByTags extends Statement {
       ${group_clauses.join('\n      ')}
     )`
 
-    const serialized_query: { cursor?: string; limit: number } = { limit: query_data.limit }
+    const order_by = [sort_by, 'id'].map(col => `media_reference.${col} ${sort_direction} ${null_direction}`)
+    const params: { limit: number; cursor_1?: number | string | null; cursor_2?: number } = { limit }
     if (cursor !== null) {
-      const cursor_op = sort_direction === 'DESC' ? '<' : '>'
-      where_clauses.push(`media_reference.created_at ${cursor_op} @cursor`)
-      serialized_query.cursor = cursor.toISOString()
+      const cursor_op = sort_direction === 'DESC' ? '>' : '<'
+      const cursor_tuple = [sort_by, 'id'].map(col => `media_reference.${col}`)
+      params.cursor_1 = cursor[0]
+      // nullable fields are treated as -1 for consistent sorting
+      // there might be performance implications, we will find out
+      if (sort_by === 'source_created_at') {
+        params.cursor_1 = -1
+        cursor_tuple[0] = `IFNULL(${cursor_tuple[0]}, -1)`
+      }
+      params.cursor_2 = cursor[1]
+      where_clauses.push(`(@cursor_1, @cursor_2) ${cursor_op} (${cursor_tuple.join(',')})`)
     }
+
     const data_sql = `SELECT media_reference.* FROM media_reference
       ${joins_clauses.join('\n      ')}
       ${where_clauses.length ? 'WHERE ' + where_clauses.join(' AND ') : ''}
       ${group_clauses.join('\n      ')}
-      ORDER BY media_reference.${sort_by} ${sort_direction}, media_reference.id DESC
+      ORDER BY ${order_by}
       LIMIT @limit
     `
 
     const { total } = this.db.prepare(count_sql).get()
-    console.log(data_sql)
     const stmt = this.db.prepare(data_sql)
 
-    const result = stmt.all(serialized_query).map((r: any) => {
-      r.source_created_at = r.source_created_at ? new Date(r.source_created_at) : null,
-      r.created_at = new Date(r.created_at)
-      r.updated_at = new Date(r.updated_at)
-      return r
+    const raw_rows: SelectRowEncoded<MediaReferenceTR>[] = stmt.all(params)
+    const result: MediaReferenceTR[] = raw_rows.map((r): MediaReferenceTR => {
+      return {
+        ...r,
+        source_created_at: r.source_created_at ? new Date(r.source_created_at) : null,
+        created_at: new Date(r.created_at),
+        updated_at: new Date(r.updated_at),
+      }
     })
 
-    return {
-      total,
-      limit,
-      cursor: result.length ? result[result.length - 1].created_at : new Date(),
-      result
+    let new_cursor = null
+    if (raw_rows.length) {
+      const last_row = raw_rows[raw_rows.length - 1]
+      new_cursor = [last_row[sort_by], last_row.id] as Paginated<any>['cursor']
     }
+    return { total, limit, cursor: new_cursor, result }
+  }
+
+  private escape(column: string | number | null) {
+    if (typeof column === 'string') return `'${column}'`
+    else if (typeof column === 'number') return column
+    else if (column === null) return `NULL`
+    else throw new Error(`Cannot escape unexpected type ${typeof column} (${column})`)
   }
 }
 
