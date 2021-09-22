@@ -34,6 +34,7 @@ class MediaFile extends Model {
   insert = this.register(InsertMediaFile)
   select_one = this.register(SelectOneMediaFile)
   select_one_content_type = this.register(SelectOneContentType)
+  select_one_by_checksum = this.register(SelectOneByChecksum)
   select_thumbnail = this.register(SelectThumbnail)
   select_video_preview = this.register(SelectVideoPreview)
 }
@@ -78,6 +79,14 @@ class SelectOneContentType extends Statement {
   call(query_data: {media_reference_id: MediaReferenceTR['id']}): MediaFileTR['content_type'] | null {
     const row = this.stmt.ref.get(query_data)
     return row ? row.content_type : null
+  }
+}
+
+class SelectOneByChecksum extends Statement {
+  stmt = this.register(`SELECT * FROM media_file WHERE sha512checksum = ?`)
+
+  call(query_data: { sha512checksum: string }): MediaFileTR | null {
+    return this.stmt.ref.get(query_data.sha512checksum)
   }
 }
 

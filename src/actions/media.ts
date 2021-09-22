@@ -26,10 +26,15 @@ class MediaAction extends Action {
     inputs.MediaReferenceUpdateInput.parse(media_info)
     const tags_input = tags.map(t => inputs.TagInput.parse(t))
     const media_file_info = await get_file_info(filepath)
-    const [file_size_bytes, thumbnail, sha512checksum, video_preview] = await Promise.all([
+    const sha512checksum = await get_file_checksum(filepath)
+    if (this.db.media_file.select_one_by_checksum({ sha512checksum })) {
+      // an non-transactional step to exit early if we find the hash existing.
+      // this just is a way to skip the video preview early
+      throw new DuplicateMediaError(filepath, sha512checksum)
+    }
+    const [file_size_bytes, thumbnail, video_preview] = await Promise.all([
       get_file_size(filepath),
       get_file_thumbnail(filepath, media_file_info),
-      get_file_checksum(filepath),
       media_file_info.media_type === 'VIDEO' ? get_video_preview(filepath, media_file_info) : null,
     ])
     const media_reference_data = { media_sequence_index: 0, stars: 0, view_count: 0, ...media_info }
