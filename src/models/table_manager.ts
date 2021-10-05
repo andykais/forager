@@ -103,8 +103,9 @@ class CreateTables extends Statement {
     CREATE TABLE media_chunk (
       id INTEGER PRIMARY KEY NOT NULL,
       media_file_id INTEGER NOT NULL,
-      -- 1MiB chunks
       chunk BLOB NOT NULL,
+      bytes_start INTEGER NOT NULL,
+      bytes_end INTEGER NOT NULL,
       updated_at ${TIMESTAMP_SQLITE},
       created_at ${TIMESTAMP_SQLITE},
 
@@ -261,7 +262,9 @@ class CreateTables extends Statement {
     CREATE UNIQUE INDEX media_tag ON media_reference_tag (tag_id, media_reference_id);
     CREATE UNIQUE INDEX tag_name ON tag (name, tag_group_id);
     CREATE UNIQUE INDEX media_file_reference ON media_file (media_reference_id);
-    CREATE INDEX media_file_type ON media_file (media_type, animated);`
+    CREATE INDEX media_file_type ON media_file (media_type, animated);
+    CREATE INDEX media_chunk_range ON media_chunk (media_file_id, bytes_start);
+  `
 
   call() {
     this.db.exec(this.sql)

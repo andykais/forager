@@ -78,9 +78,10 @@ const max_width = 800
 const max_height = 400
 async function get_video_preview(filepath: string, file_info: FileInfo) {
   // TODO get frame from ffprobe. If not exists, then use ffmpeg
-  const { stdout } = await exec(`ffmpeg -nostats -i '${filepath}' -vcodec copy -f rawvideo -y /dev/null 2>&1 | grep frame`)
-  const frames_str = stdout.replace(/frame=\s+(\d+)\s.*/, '$1')
+  const { stderr } = await exec(`ffmpeg -nostats -i '${filepath}' -vcodec copy -f rawvideo -y /dev/null`)
+  const frames_str = stderr.substr(stderr.indexOf('frame=')).replace(/frame=\s+(\d+)\s.*/, '$1')
   const frames = parseInt(frames_str)
+  if (Number.isNaN(frames)) throw new Error(`Failed to parse frames from ffmpeg:\n${stderr}`)
   const frame_capture_interval = Math.ceil(frames / num_captured_frames)
   const preview_filepath = await get_temp_filepath('video-preview', 'preview.jpg')
   const full_width = file_info.width!
@@ -135,9 +136,10 @@ async function get_file_thumbnail(filepath: string, file_info: FileInfo): Promis
       ? `${500}x${Math.floor((height*500)/width)}`
       : `${Math.floor((width*500)/height)}x${500}`
 
-    const preview_position = file_info.duration * 0.25 // assuming that 1/4 of the way into a video is a good preview position
+    const preview_position = file_info.duration > 1 ? file_info.duration * 0.25 : 0 // assuming that 1/4 of the way into a video is a good preview position
     const thumbnail_filepath = await get_temp_filepath('thumbnail', 'thumbnail.jpg')
-    await exec(`ffmpeg -v error -i '${filepath}' -an -s ${max_width_or_height} -frames:v 1 -ss ${preview_position} '${thumbnail_filepath}'`)
+    const cmd = `ffmpeg -v error -i '${filepath}' -an -s ${max_width_or_height} -frames:v 1 -ss ${preview_position} '${thumbnail_filepath}'`
+    await exec(cmd)
     const buffer = fs.promises.readFile(thumbnail_filepath)
     return buffer
   } else {

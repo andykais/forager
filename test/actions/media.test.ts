@@ -1,8 +1,12 @@
 // import 'source-map-support/register'
 import test from 'ava'
+// import tap from 'tap'
+// import type * as Tap from 'tap'
 import * as fs from 'fs'
 import { Forager, DuplicateMediaError } from '../../src/index'
 import { get_file_checksum } from '../../src/util/file_processing'
+
+
 
 const media_input_path = 'test/resources/koch.tif'
 
@@ -13,6 +17,15 @@ async function rmf(filepath: string) {
     if (e.code !== 'ENOENT') throw e
   }
 }
+
+// const throws_async = <E extends Error>(t: test.Test, instance_of: { new(...args: any[]): E }) => async (promise: Promise<any>) => {
+//   try {
+//     await promise
+//     t.fail('promise failed to throw error')
+//   } catch(e) {
+//     t.assert(e instanceof instance_of, `Exception was not an instance of ${instance_of}`)
+//   }
+// }
 
 test('add media', async t => {
   try{
@@ -29,13 +42,14 @@ test('add media', async t => {
   const tags = [{ group: '', name: 'Procedural Generation' }, { group: 'colors', name: 'black' }]
   const media_info = { title: 'Generated Art', stars: 2 }
   const { media_reference_id, media_file_id } = await forager.media.create(media_input_path, media_info, tags)
+  // await throws_async(t, DuplicateMediaError)(forager.media.create(media_input_path, media_info, tags))
   await t.throwsAsync(() => forager.media.create(media_input_path, media_info, tags), {instanceOf: DuplicateMediaError})
   t.is(forager.media.list().total, 1)
 
   // test that file info was properly probed
-  const file_info = forager.media.get_file_info(media_reference_id)
-  t.is(file_info.media_file.codec, 'tiff')
-  t.is(forager.media.get_content_type(media_reference_id), 'image/tiff')
+  const reference = forager.media.get_reference(media_reference_id)
+  t.is(reference.media_file.codec, 'tiff')
+  t.deepEqual(forager.media.get_file_info(media_reference_id), {content_type: 'image/tiff', media_type: 'IMAGE', file_size_bytes: 4320768 })
 
   // test that exported files are the same as imported files
   forager.media.export(media_reference_id, media_output_path)
@@ -74,7 +88,7 @@ test('add media', async t => {
   t.is(listed_tags[1].media_reference_count, 1)
   t.is(listed_tags[2].media_reference_count, 1)
 
-  }catch(e){console.log(e);throw e}
+  }catch(e){console.error(e);throw e}
 })
 
 test('cursor', async t => {
@@ -119,5 +133,40 @@ test('cursor', async t => {
   t.is(nullish_2nd.total, 2)
   t.is(nullish_2nd.result.length, 1)
   t.is(nullish_2nd.result[0].id, ed_edd_eddy.media_reference_id)
+  }catch(e){console.error(e);throw e}
+})
+
+test('media chunks', async t => {
+  try {
+    const database_path = 'test/fixtures/forager-media-chunks-test.db'
+    await rmf(database_path)
+
+    const forager = new Forager({ database_path })
+    forager.init()
+
+    const video_media = await forager.media.create('test/resources/cityscape-timelapse.mp4', {}, [])
+    t.is(forager.media.list().total, 1)
+
+    const file_stats = await fs.promises.stat('test/resources/cityscape-timelapse.mp4')
+
+    const binary_data = forager.media.get_file(video_media.media_reference_id)
+    t.is(binary_data.length, file_stats.size)
+
+    const range_queries = [
+      { bytes_start: 0, bytes_end: 500 },
+      { bytes_start: 500, bytes_end: 600 },
+      { bytes_start: 0, bytes_end: file_stats.size + 100 },
+      { bytes_start: 100, bytes_end: 600 },
+      { bytes_start: 100, bytes_end: file_stats.size + 100 },
+      { bytes_start: 100, bytes_end: file_stats.size + 100 },
+      { bytes_start: 1024 * 1024 + 100, bytes_end: 1024 * 1024 * 3 },
+      { bytes_start: 1024 * 1024 * 3, bytes_end: 1024 * 1024 * 4 },
+    ]
+    for (const range of range_queries) {
+      const binary_data_chunk = forager.media.get_file(video_media.media_reference_id, range)
+      const expected_file_size = Math.min(range.bytes_end - range.bytes_start, file_stats.size - range.bytes_start)
+      t.is(binary_data_chunk.length, expected_file_size)
+      t.deepEqual(binary_data.slice(range.bytes_start, range.bytes_end), binary_data_chunk)
+    }
   }catch(e){console.error(e);throw e}
 })

@@ -51,8 +51,13 @@ class MediaAction extends Action {
       const media_reference_id = this.db.media_reference.insert(media_reference_data)
       const media_file_id = this.db.media_file.insert({ ...media_file_data, media_reference_id })
       await new Promise((resolve, reject) => {
+        let bytes_start = 0
         const stream = fs.createReadStream(filepath, { highWaterMark: MediaChunk.CHUNK_SIZE })
-        stream.on('data', (chunk: Buffer) => this.db.media_chunk.insert({ media_file_id, chunk }))
+        stream.on('data', (chunk: Buffer) => {
+          const bytes_end = bytes_start + chunk.length
+          this.db.media_chunk.insert({ media_file_id, chunk, bytes_start, bytes_end })
+          bytes_start = bytes_end + 1
+        })
         stream.on('end', resolve)
         stream.on('error', reject)
       })
@@ -137,12 +142,33 @@ class MediaAction extends Action {
     return this.db.media_file.select_video_preview(media_reference_id)
   }
 
-  get_file = (media_reference_id: number) => {
-    const chunks = this.db.media_chunk.all({ media_reference_id }).map(r => r.chunk)
-    return Buffer.concat(chunks)
+  get_file = (media_reference_id: number, range?: { bytes_start: number; bytes_end: number }) => {
+    if (range === undefined) {
+      const chunks = this.db.media_chunk.all({ media_reference_id }).map(r => r.chunk)
+      return Buffer.concat(chunks)
+    } else {
+      const media_chunks = this.db.media_chunk.select_chunk_range({ media_reference_id, ...range })
+      const chunks = media_chunks.map((row, i) => {
+        let chunk = row.chunk
+        if (i === 0) {
+          if (row.bytes_start < range.bytes_start) {
+            chunk = chunk.slice(range.bytes_start - row.bytes_start)
+          }
+        }
+        if (i === media_chunks.length - 1) {
+          if (row.bytes_end > range.bytes_start) {
+            if (i === 0) chunk = chunk.slice(0, range.bytes_end - range.bytes_start)
+            else chunk = chunk.slice(0, 1 + range.bytes_end - row.bytes_start)
+          }
+        }
+        return chunk
+      })
+      return Buffer.concat(chunks)
+    }
+
   }
 
-  get_file_info = (media_reference_id: number) => {
+  get_reference = (media_reference_id: number) => {
     const media_file = this.db.media_file.select_one({ media_reference_id })
     // TODO these should be a get_or_raise helper or something
     if (!media_file) throw new Error(`media_file does not exist for media_refernce_id ${media_reference_id}`)
@@ -155,9 +181,8 @@ class MediaAction extends Action {
 
   // methods like these make me nervous because its super granular, which makes it fast,
   // but an orm would avoid the need for a statement, model method, etc
-  get_content_type = (media_reference_id: number) => {
-    const content_type = this.db.media_file.select_one_content_type({ media_reference_id },)
-    return content_type
+  get_file_info = (media_reference_id: number) => {
+    return this.db.media_file.select_one_content_type({ media_reference_id },)
   }
 }
 

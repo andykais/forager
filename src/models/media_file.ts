@@ -71,14 +71,13 @@ class InsertMediaFile extends Statement {
 
 
 class SelectOneContentType extends Statement {
-  sql = `SELECT content_type FROM media_file
+  sql = `SELECT media_type, content_type, file_size_bytes FROM media_file
     INNER JOIN media_reference ON media_reference.id = @media_reference_id
     WHERE media_file.media_reference_id = media_reference.id`
   stmt = this.register(this.sql)
 
-  call(query_data: {media_reference_id: MediaReferenceTR['id']}): MediaFileTR['content_type'] | null {
-    const row = this.stmt.ref.get(query_data)
-    return row ? row.content_type : null
+  call(query_data: {media_reference_id: MediaReferenceTR['id']}): null | Pick<MediaFileTR, 'content_type' | 'media_type' | 'file_size_bytes'> {
+    return this.stmt.ref.get(query_data)
   }
 }
 

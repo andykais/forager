@@ -1,5 +1,5 @@
 import { Migration as Migration_000 } from './000_initial'
-import { Migration as Migration_001 } from './001_tag'
+import { Migration as Migration_001 } from './001_media_chunk_byte_ranges'
 import type { Database } from 'better-sqlite3'
 import type { MigrationStatement } from '../base'
 

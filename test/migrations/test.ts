@@ -36,7 +36,7 @@ test('migrations', async t => {
     t.deepEqual(new_defs, outdated_defs)
 
   } catch(e){
-    // console.log({message: e.message})
+    console.error({message: e.message})
     throw e
   }
 })
