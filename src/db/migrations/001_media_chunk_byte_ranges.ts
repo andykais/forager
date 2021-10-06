@@ -65,7 +65,7 @@ export class Migration extends MigrationStatement {
     this.db.exec(`
       DROP TABLE media_chunk;
       ALTER TABLE media_chunk_new RENAME TO media_chunk;
-      CREATE INDEX media_chunk_range ON media_chunk (media_file_id, bytes_start);
+      CREATE UNIQUE INDEX media_chunk_range ON media_chunk (media_file_id, bytes_start, bytes_end);
     `)
     console.log() // just flush the last line of output
   }

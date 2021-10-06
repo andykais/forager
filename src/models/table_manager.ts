@@ -263,7 +263,7 @@ class CreateTables extends Statement {
     CREATE UNIQUE INDEX tag_name ON tag (name, tag_group_id);
     CREATE UNIQUE INDEX media_file_reference ON media_file (media_reference_id);
     CREATE INDEX media_file_type ON media_file (media_type, animated);
-    CREATE INDEX media_chunk_range ON media_chunk (media_file_id, bytes_start);
+    CREATE UNIQUE INDEX media_chunk_range ON media_chunk (media_file_id, bytes_start, bytes_end);
   `
 
   call() {
