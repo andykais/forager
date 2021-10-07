@@ -136,7 +136,7 @@ test('cursor', async t => {
   }catch(e){console.error(e);throw e}
 })
 
-test('media chunks', async t => {
+test.only('media chunks', async t => {
   try {
     const database_path = 'test/fixtures/forager-media-chunks-test.db'
     await rmf(database_path)
@@ -158,12 +158,14 @@ test('media chunks', async t => {
       { bytes_start: 0, bytes_end: file_stats.size + 100 },
       { bytes_start: 100, bytes_end: 600 },
       { bytes_start: 100, bytes_end: file_stats.size + 100 },
-      { bytes_start: 100, bytes_end: file_stats.size + 100 },
       { bytes_start: 1024 * 1024 + 100, bytes_end: 1024 * 1024 * 3 },
       { bytes_start: 1024 * 1024 * 3, bytes_end: 1024 * 1024 * 4 },
+      { bytes_start: 0, bytes_end: file_stats.size },
+      { bytes_start: file_stats.size - 100, bytes_end: file_stats.size },
     ]
     for (const range of range_queries) {
       const binary_data_chunk = forager.media.get_file(video_media.media_reference_id, range)
+      // const binary_data_chunk = forager.media.get_file(video_media.media_reference_id, { bytes_start: 0, bytes_end: file_stats.size })
       const expected_file_size = Math.min(range.bytes_end - range.bytes_start, file_stats.size - range.bytes_start)
       t.is(binary_data_chunk.length, expected_file_size)
       t.deepEqual(binary_data.slice(range.bytes_start, range.bytes_end), binary_data_chunk)

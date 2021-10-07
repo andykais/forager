@@ -24,18 +24,6 @@ export class Migration extends MigrationStatement {
 
     const select_media_files_stmt = this.db.prepare('SELECT id FROM media_file')
     const select_media_chunk_stmt = this.db.prepare('SELECT id, LENGTH(chunk) AS chunk_size FROM media_chunk WHERE media_file_id = ? ORDER BY id')
-    // migrated table statements
-    // const insert_media_chunk_stmt = this.db.prepare(`INSERT INTO media_chunk_new (
-    //   media_file_id,
-    //   chunk,
-    //   bytes_start,
-    //   bytes_end
-    // ) VALUES (
-    //   @media_file_id,
-    //   @chunk,
-    //   @bytes_start,
-    //   @bytes_end
-    // )`)
     const insert_media_chunk_stmt = this.db.prepare(`INSERT INTO media_chunk_new
     SELECT
       id,
@@ -56,11 +44,11 @@ export class Migration extends MigrationStatement {
         const bytes_end: number = bytes_start + media_chunk.chunk_size
         const info = insert_media_chunk_stmt.run({ media_chunk_id: media_chunk.id, bytes_start, bytes_end })
         if (info.changes !== 1) throw new Error('no changes occurred.')
-        bytes_start = bytes_end + 1
+        bytes_start = bytes_end
         chunks_completed++
+        process.stdout.write(`\rmigrated ${files_completed}/${media_file_count} media files (${chunks_completed}/${media_chunk_count} media chunks)`)
       }
       files_completed++
-      process.stdout.write(`\rmigrated ${files_completed}/${media_file_count} media files (${chunks_completed}/${media_chunk_count} media chunks)`)
     }
     this.db.exec(`
       DROP TABLE media_chunk;

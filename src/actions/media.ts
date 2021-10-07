@@ -56,7 +56,7 @@ class MediaAction extends Action {
         stream.on('data', (chunk: Buffer) => {
           const bytes_end = bytes_start + chunk.length
           this.db.media_chunk.insert({ media_file_id, chunk, bytes_start, bytes_end })
-          bytes_start = bytes_end + 1
+          bytes_start = bytes_end
         })
         stream.on('end', resolve)
         stream.on('error', reject)
@@ -156,9 +156,9 @@ class MediaAction extends Action {
           }
         }
         if (i === media_chunks.length - 1) {
-          if (row.bytes_end > range.bytes_start) {
+          if (row.bytes_end > range.bytes_end) {
             if (i === 0) chunk = chunk.slice(0, range.bytes_end - range.bytes_start)
-            else chunk = chunk.slice(0, 1 + range.bytes_end - row.bytes_start)
+            else chunk = chunk.slice(0, range.bytes_end - row.bytes_start)
           }
         }
         return chunk
