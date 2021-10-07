@@ -12,8 +12,6 @@ export class Migration extends MigrationStatement {
       media_file_id INTEGER NOT NULL,
       -- 1MiB chunks
       chunk BLOB NOT NULL,
-      bytes_start INTEGER NOT NULL,
-      bytes_end INTEGER NOT NULL,
       updated_at ${TIMESTAMP_SQLITE},
       created_at ${TIMESTAMP_SQLITE},
 
