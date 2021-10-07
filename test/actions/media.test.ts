@@ -161,6 +161,7 @@ test.only('media chunks', async t => {
       { bytes_start: 1024 * 1024 + 100, bytes_end: 1024 * 1024 * 3 },
       { bytes_start: 1024 * 1024 * 3, bytes_end: 1024 * 1024 * 4 },
       { bytes_start: 0, bytes_end: file_stats.size },
+      { bytes_start: 1, bytes_end: file_stats.size },
       { bytes_start: file_stats.size - 100, bytes_end: file_stats.size },
     ]
     for (const range of range_queries) {
