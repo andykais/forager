@@ -163,10 +163,10 @@ test.only('media chunks', async t => {
       { bytes_start: 0, bytes_end: file_stats.size },
       { bytes_start: 1, bytes_end: file_stats.size },
       { bytes_start: file_stats.size - 100, bytes_end: file_stats.size },
+      { bytes_start: 10485760, bytes_end: 11065971 },
     ]
     for (const range of range_queries) {
       const binary_data_chunk = forager.media.get_file(video_media.media_reference_id, range)
-      // const binary_data_chunk = forager.media.get_file(video_media.media_reference_id, { bytes_start: 0, bytes_end: file_stats.size })
       const expected_file_size = Math.min(range.bytes_end - range.bytes_start, file_stats.size - range.bytes_start)
       t.is(binary_data_chunk.length, expected_file_size)
       t.deepEqual(binary_data.slice(range.bytes_start, range.bytes_end), binary_data_chunk)

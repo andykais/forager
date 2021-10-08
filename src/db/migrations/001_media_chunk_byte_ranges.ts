@@ -44,11 +44,12 @@ export class Migration extends MigrationStatement {
         const bytes_end: number = bytes_start + media_chunk.chunk_size
         const info = insert_media_chunk_stmt.run({ media_chunk_id: media_chunk.id, bytes_start, bytes_end })
         if (info.changes !== 1) throw new Error('no changes occurred.')
-        bytes_start = bytes_end
+        bytes_start = bytes_end + 1
         chunks_completed++
         process.stdout.write(`\rmigrated ${files_completed}/${media_file_count} media files (${chunks_completed}/${media_chunk_count} media chunks)`)
       }
       files_completed++
+      process.stdout.write(`\rmigrated ${files_completed}/${media_file_count} media files (${chunks_completed}/${media_chunk_count} media chunks)`)
     }
     this.db.exec(`
       DROP TABLE media_chunk;

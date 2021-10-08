@@ -264,7 +264,6 @@ export async function create_media(db: Database, filepath: string, media_info = 
       stream.on('error', reject)
     })
     db.exec('COMMIT')
-    console.log('committed')
 }
 
 // It occurs to me...long after implementing this file...that I could have simply

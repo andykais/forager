@@ -1,5 +1,6 @@
 import { Migration as Migration_000 } from './000_initial'
 import { Migration as Migration_001 } from './001_media_chunk_byte_ranges'
+import { Migration as Migration_002 } from './002_migration_media_chunk_bytes_range_fix'
 import type { Database } from 'better-sqlite3'
 import type { MigrationStatement } from '../base'
 
@@ -7,6 +8,7 @@ const m = Migration_000.call
 const MIGRATIONS = [
   Migration_000,
   Migration_001,
+  Migration_002,
 ]
 
 type DatabaseVersions = typeof MIGRATIONS[number]['VERSION']

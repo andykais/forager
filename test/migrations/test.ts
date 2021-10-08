@@ -40,6 +40,12 @@ test('migrations', async t => {
     const table_schemas_migrated = outdated_context.db.table_manager.tables_schema()
 
     t.deepEqual(table_schemas_new, table_schemas_migrated)
+
+    const range = { bytes_start: 10485760, bytes_end: 11065971 }
+    t.deepEqual(
+      forager_new.media.get_file(1, range),
+      outdated_forager.media.get_file(1, range),
+    )
   } catch(e){
     console.error({message: e.message})
     throw e
