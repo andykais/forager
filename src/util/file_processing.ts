@@ -83,7 +83,8 @@ async function get_video_preview(filepath: string, file_info: FileInfo) {
   const frames = parseInt(frames_str)
   if (Number.isNaN(frames)) throw new Error(`Failed to parse frames from ffmpeg:\n${stderr}`)
   const frame_capture_interval = Math.ceil(frames / num_captured_frames)
-  const preview_filepath = await get_temp_filepath('video-preview', 'preview.jpg')
+  const tmpdir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'video_preview-'))
+  const preview_filepath = path.join(tmpdir, 'preview.jpg')
   const full_width = file_info.width!
   const full_height = file_info.height!
 
@@ -119,6 +120,7 @@ async function get_video_preview(filepath: string, file_info: FileInfo) {
   }
   await exec(`ffmpeg -loglevel error -y -i "${filepath}" -frames 1 -q:v 1 -vf "select=not(mod(n\\,${frame_capture_interval})),scale=${frame_width}:${frame_height},tile=${num_cols}x${num_rows}:padding=2" "${preview_filepath}"`)
   const buffer = fs.promises.readFile(preview_filepath)
+  await fs.promises.rm(tmpdir, { recursive: true })
   return buffer
 }
 
@@ -137,19 +139,16 @@ async function get_file_thumbnail(filepath: string, file_info: FileInfo): Promis
       : `${Math.floor((width*500)/height)}x${500}`
 
     const preview_position = file_info.duration > 1 ? file_info.duration * 0.25 : 0 // assuming that 1/4 of the way into a video is a good preview position
-    const thumbnail_filepath = await get_temp_filepath('thumbnail', 'thumbnail.jpg')
+    const tmpdir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'thumbnail-'))
+    const thumbnail_filepath = path.join(tmpdir, 'preview.jpg')
     const cmd = `ffmpeg -v error -i '${filepath}' -an -s ${max_width_or_height} -frames:v 1 -ss ${preview_position} '${thumbnail_filepath}'`
     await exec(cmd)
     const buffer = fs.promises.readFile(thumbnail_filepath)
+    await fs.promises.rm(tmpdir, { recursive: true })
     return buffer
   } else {
     throw new Error('audio thumbnail unimplemented')
   }
-}
-
-async function get_temp_filepath(prefix: string, filename: string) {
-  const tmpdir = await fs.promises.mkdtemp(path.join(os.tmpdir(), `${prefix}-`))
-  return path.join(tmpdir, filename)
 }
 
 export { get_file_size, get_file_info, get_video_preview, get_file_checksum, get_buffer_checksum, get_file_thumbnail }
