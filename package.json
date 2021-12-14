@@ -12,7 +12,8 @@
     "build:watch": "mkdir -p build/src && cp package.json build/src && tsc --watch",
     "typecheck": "tsc --noEmit",
     "typecheck:watch": "tsc --noEmit --watch",
-    "test:migrations": "ava test/**/*test.ts",
+    "test": "ava test/**/*test.ts",
+    "test:migrations": "ava test/migrations/*test.ts",
     "test:watch": "ava test/**/*test.ts --watch"
   },
   "keywords": [],

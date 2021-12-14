@@ -1,4 +1,5 @@
 import { Model, Statement } from '../db/base'
+import { TIMESTAMP_SQLITE } from '../db/sql'
 import * as date_fns from 'date-fns'
 import type { Json } from '../util/types'
 import type { InsertRow, InsertRowEncoded, SelectRowEncoded, Paginated } from '../db/base'
@@ -84,6 +85,7 @@ class InsertMediaReference extends Statement {
 // the alternative is to dynamically create statements, probably with a cache
 class UpdateMediaReference extends Statement {
   sql = `UPDATE media_reference SET
+      updated_at = ${TIMESTAMP_SQLITE}
       source_url = CASE WHEN @source_url = -1 THEN source_url ELSE @source_url END,
       source_created_at = CASE WHEN @source_created_at = -1 THEN source_created_at ELSE @source_created_at END,
       title = CASE WHEN @title = -1 THEN title ELSE @title END,
@@ -115,7 +117,7 @@ class UpdateMediaReference extends Statement {
 }
 
 class IncrementViewCount extends Statement {
-  sql = `UPDATE media_reference SET view_count = view_count + 1 WHERE id = ?`
+  sql = `UPDATE media_reference SET view_count = view_count + 1, updated_at = ${TIMESTAMP_SQLITE} WHERE id = ?`
   stmt = this.register(this.sql)
 
   call(media_reference_id: number) {

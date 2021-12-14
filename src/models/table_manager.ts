@@ -1,4 +1,5 @@
 import { Model, Statement } from '../db/base'
+import { TIMESTAMP_SQLITE } from '../db/sql'
 
 /* --============= Table Row Definitions =============-- */
 
@@ -96,7 +97,7 @@ class DropTables extends Statement {
   }
 }
 
-const TIMESTAMP_SQLITE = `TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'NOW'))`
+export const TIMESTAMP_COLUMN = `TIMESTAMP DATETIME DEFAULT(${TIMESTAMP_SQLITE})`
 
 class CreateTables extends Statement {
   sql = `
@@ -106,8 +107,8 @@ class CreateTables extends Statement {
       chunk BLOB NOT NULL,
       bytes_start INTEGER NOT NULL,
       bytes_end INTEGER NOT NULL,
-      updated_at ${TIMESTAMP_SQLITE},
-      created_at ${TIMESTAMP_SQLITE},
+      updated_at ${TIMESTAMP_COLUMN},
+      created_at ${TIMESTAMP_COLUMN},
 
       FOREIGN KEY (media_file_id) REFERENCES media_file(id)
     );
@@ -138,8 +139,8 @@ class CreateTables extends Statement {
 
       video_preview BLOB,
 
-      updated_at ${TIMESTAMP_SQLITE},
-      created_at ${TIMESTAMP_SQLITE},
+      updated_at ${TIMESTAMP_COLUMN},
+      created_at ${TIMESTAMP_COLUMN},
 
       media_reference_id INTEGER NOT NULL,
       FOREIGN KEY (media_reference_id) REFERENCES media_reference(id)
@@ -148,8 +149,8 @@ class CreateTables extends Statement {
     CREATE TABLE media_sequence (
       id INTEGER PRIMARY KEY NOT NULL,
       media_reference_id INTEGER NOT NULL,
-      updated_at ${TIMESTAMP_SQLITE},
-      created_at ${TIMESTAMP_SQLITE},
+      updated_at ${TIMESTAMP_COLUMN},
+      created_at ${TIMESTAMP_COLUMN},
 
       FOREIGN KEY (media_reference_id) REFERENCES media_reference(id)
     );
@@ -172,8 +173,8 @@ class CreateTables extends Statement {
       stars INTEGER NOT NULL,
       view_count INTEGER NOT NULL,
 
-      updated_at ${TIMESTAMP_SQLITE},
-      created_at ${TIMESTAMP_SQLITE},
+      updated_at ${TIMESTAMP_COLUMN},
+      created_at ${TIMESTAMP_COLUMN},
 
       -- denormalized fields
       tag_count INTEGER NOT NULL DEFAULT 0,
