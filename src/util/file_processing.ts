@@ -77,51 +77,56 @@ const num_captured_frames = 18
 const max_width = 800
 const max_height = 400
 async function get_video_preview(filepath: string, file_info: FileInfo) {
-  // TODO get frame from ffprobe. If not exists, then use ffmpeg
-  const { stderr } = await exec(`ffmpeg -nostats -i '${filepath}' -vcodec copy -f rawvideo -y /dev/null`)
-  const frames_str = stderr.substr(stderr.indexOf('frame=')).replace(/frame=\s+(\d+)\s.*/, '$1')
-  const frames = parseInt(frames_str)
-  if (Number.isNaN(frames)) throw new Error(`Failed to parse frames from ffmpeg:\n${stderr}`)
-  const frame_capture_interval = Math.ceil(frames / num_captured_frames)
-  const tmpdir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'video_preview-'))
-  const preview_filepath = path.join(tmpdir, 'preview.jpg')
-  const full_width = file_info.width!
-  const full_height = file_info.height!
+  try {
+    // TODO get frame from ffprobe. If not exists, then use ffmpeg
+    const { stderr } = await exec(`ffmpeg -nostats -i '${filepath}' -vcodec copy -f rawvideo -y /dev/null`)
+    const frames_str = stderr.substr(stderr.indexOf('frame=')).replace(/frame=\s+(\d+)\s.*/, '$1')
+    const frames = parseInt(frames_str)
+    if (Number.isNaN(frames)) throw new Error(`Failed to parse frames from ffmpeg:\n${stderr}`)
+    const frame_capture_interval = Math.ceil(frames / num_captured_frames)
+    const tmpdir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'video_preview-'))
+    const preview_filepath = path.join(tmpdir, 'preview.jpg')
+    const full_width = file_info.width!
+    const full_height = file_info.height!
 
-  let num_cols = 1
-  let num_rows = num_captured_frames / num_cols
-  let frame_width = 100
-  let frame_height = 100
+    let num_cols = 1
+    let num_rows = num_captured_frames / num_cols
+    let frame_width = 100
+    let frame_height = 100
 
-  if (full_width > full_height) {
-    const ratio = full_height / full_width
-    let total_preview_height = Infinity
+    if (full_width > full_height) {
+      const ratio = full_height / full_width
+      let total_preview_height = Infinity
 
-    while (total_preview_height > max_height) {
-      num_cols ++
-      num_rows = Math.ceil(num_captured_frames / num_cols)
-      frame_width = max_width / num_cols
-      frame_height = ratio * frame_width
-      total_preview_height = num_rows * frame_height
+      while (total_preview_height > max_height) {
+        num_cols ++
+        num_rows = Math.ceil(num_captured_frames / num_cols)
+        frame_width = max_width / num_cols
+        frame_height = ratio * frame_width
+        total_preview_height = num_rows * frame_height
+      }
+    } else {
+      num_rows = 1
+      num_cols = num_captured_frames / num_cols
+      const ratio = full_width / full_height
+      let total_preview_width = Infinity
+
+      while (total_preview_width > max_width) {
+        num_cols --
+        num_rows = Math.ceil(num_captured_frames / num_cols)
+        frame_height = max_height / num_rows
+        frame_width = ratio * frame_height
+        total_preview_width = num_cols * frame_height
+      }
     }
-  } else {
-    num_rows = 1
-    num_cols = num_captured_frames / num_cols
-    const ratio = full_width / full_height
-    let total_preview_width = Infinity
-
-    while (total_preview_width > max_width) {
-      num_cols --
-      num_rows = Math.ceil(num_captured_frames / num_cols)
-      frame_height = max_height / num_rows
-      frame_width = ratio * frame_height
-      total_preview_width = num_cols * frame_height
-    }
+    await exec(`ffmpeg -loglevel error -y -i "${filepath}" -frames 1 -q:v 1 -vf "select=not(mod(n\\,${frame_capture_interval})),scale=${frame_width}:${frame_height},tile=${num_cols}x${num_rows}:padding=2" "${preview_filepath}"`)
+    const buffer = fs.promises.readFile(preview_filepath)
+    await fs.promises.rm(tmpdir, { recursive: true })
+    return buffer
+  } catch (e) {
+    console.error(e)
+    throw new Error(`A fatal error has occurred creating video thumbnails for '${filepath}`)
   }
-  await exec(`ffmpeg -loglevel error -y -i "${filepath}" -frames 1 -q:v 1 -vf "select=not(mod(n\\,${frame_capture_interval})),scale=${frame_width}:${frame_height},tile=${num_cols}x${num_rows}:padding=2" "${preview_filepath}"`)
-  const buffer = fs.promises.readFile(preview_filepath)
-  await fs.promises.rm(tmpdir, { recursive: true })
-  return buffer
 }
 
 function get_buffer_checksum(buffer: Buffer): string {
@@ -131,23 +136,28 @@ function get_buffer_checksum(buffer: Buffer): string {
 }
 
 async function get_file_thumbnail(filepath: string, file_info: FileInfo): Promise<Buffer> {
-  if (['VIDEO', 'IMAGE'].includes(file_info.media_type)) {
-    const width = file_info.width!
-    const height = file_info.height!
-    const max_width_or_height = width > height
-      ? `${500}x${Math.floor((height*500)/width)}`
-      : `${Math.floor((width*500)/height)}x${500}`
+  try {
+    if (['VIDEO', 'IMAGE'].includes(file_info.media_type)) {
+      const width = file_info.width!
+      const height = file_info.height!
+      const max_width_or_height = width > height
+        ? `${500}x${Math.floor((height*500)/width)}`
+        : `${Math.floor((width*500)/height)}x${500}`
 
-    const preview_position = file_info.duration > 1 ? file_info.duration * 0.25 : 0 // assuming that 1/4 of the way into a video is a good preview position
-    const tmpdir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'thumbnail-'))
-    const thumbnail_filepath = path.join(tmpdir, 'preview.jpg')
-    const cmd = `ffmpeg -v error -i '${filepath}' -an -s ${max_width_or_height} -frames:v 1 -ss ${preview_position} '${thumbnail_filepath}'`
-    await exec(cmd)
-    const buffer = fs.promises.readFile(thumbnail_filepath)
-    await fs.promises.rm(tmpdir, { recursive: true })
-    return buffer
-  } else {
-    throw new Error('audio thumbnail unimplemented')
+      const preview_position = file_info.duration > 1 ? file_info.duration * 0.25 : 0 // assuming that 1/4 of the way into a video is a good preview position
+      const tmpdir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'thumbnail-'))
+      const thumbnail_filepath = path.join(tmpdir, 'preview.jpg')
+      const cmd = `ffmpeg -v error -i '${filepath}' -an -s ${max_width_or_height} -frames:v 1 -ss ${preview_position} '${thumbnail_filepath}'`
+      await exec(cmd)
+      const buffer = fs.promises.readFile(thumbnail_filepath)
+      await fs.promises.rm(tmpdir, { recursive: true })
+      return buffer
+    } else {
+      throw new Error('audio thumbnail unimplemented')
+    }
+  } catch (e) {
+    console.error(e)
+    throw new Error(`A fatal error has occurred creating thumbnail for '${filepath}`)
   }
 }
 

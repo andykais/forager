@@ -14,6 +14,7 @@
 
     "strictNullChecks": true,
     "strict": true,
+    "useUnknownInCatchVariables": false,
     "noImplicitAny": true,
     "baseUrl": ".",
     "paths": {

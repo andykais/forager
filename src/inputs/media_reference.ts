@@ -21,7 +21,7 @@ export const PaginatedSearchInput = PaginatedQueryInput.extend({
     tags: z.array(TagInput).optional(),
     stars: z.number().gte(0).lte(5).optional(),
     unread: z.boolean().default(false),
-    sort_by: z.enum(['created_at', 'updated_at', 'source_created_at', 'view_count']).default('created_at'),
+    sort_by: z.enum(['created_at', 'updated_at', 'source_created_at', 'view_count']).default('source_created_at'),
     order: z.enum(['desc', 'asc']).default('desc'),
   }).strict()
 }).strict()
