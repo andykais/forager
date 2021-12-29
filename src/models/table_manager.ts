@@ -113,6 +113,13 @@ class CreateTables extends Statement {
       FOREIGN KEY (media_file_id) REFERENCES media_file(id)
     );
 
+    CREATE TABLE media_thumbnail (
+      id INTEGER PRIMARY KEY NOT NULL,
+      media_file_id INTEGER NOT NULL,
+      FOREIGN KEY (media_file_id) REFERENCES media_file_new(id)
+    );
+
+
 
     CREATE TABLE media_file (
       id INTEGER PRIMARY KEY NOT NULL,
@@ -131,13 +138,7 @@ class CreateTables extends Statement {
       -- audio/video/gif specific
       animated BOOLEAN NOT NULL,
       duration INTEGER NOT NULL CHECK (IIF(animated == 0, duration == 0, 1)),
-
-      -- TODO should we use a separate table for thumbnails?
-      thumbnail BLOB NOT NULL,
-      thumbnail_file_size_bytes INTEGER NOT NULL,
-      thumbnail_sha512checksum TEXT NOT NULL,
-
-      video_preview BLOB,
+      framerate INTEGER NOT NULL,
 
       updated_at ${TIMESTAMP_COLUMN},
       created_at ${TIMESTAMP_COLUMN},
