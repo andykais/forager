@@ -136,7 +136,7 @@ test('cursor', async t => {
   }catch(e){console.error(e);throw e}
 })
 
-test.only('media chunks', async t => {
+test('media chunks', async t => {
   try {
     const database_path = 'test/fixtures/forager-media-chunks-test.db'
     await rmf(database_path)
@@ -171,5 +171,58 @@ test.only('media chunks', async t => {
       t.is(binary_data_chunk.length, expected_file_size)
       t.deepEqual(binary_data.slice(range.bytes_start, range.bytes_end), binary_data_chunk)
     }
+  }catch(e){console.error(e);throw e}
+})
+
+test.only('media views', async t => {
+  try{
+  const database_path = 'test/fixtures/forager-views-test.db'
+  await rmf(database_path)
+
+  const forager = new Forager({ database_path })
+  forager.init()
+
+  const procedural_media = await forager.media.create('test/resources/koch.tif', {}, [{ name: 'shared' }, { name: 'procedural' }])
+  t.is(forager.media.list().total, 1)
+  const ed_edd_eddy = await forager.media.create('test/resources/ed-edd-eddy.png', {}, [{ name: 'shared' }, { name: 'cartoon' }])
+  t.is(forager.media.list().total, 2)
+
+  let ed_edd_eddy_reference = forager.media.get_reference(ed_edd_eddy.media_reference_id)
+  t.is(ed_edd_eddy_reference.media_reference.view_count, 0)
+
+  // console.log(forager.tag.get_tags(procedural_media.media_reference_id))
+
+  forager.media.update(ed_edd_eddy.media_reference_id, { view_count: 1 })
+  ed_edd_eddy_reference = forager.media.get_reference(ed_edd_eddy.media_reference_id)
+  t.is(ed_edd_eddy_reference.media_reference.view_count, 1)
+
+
+  let ed_edd_eddy_tags = forager.tag.get_tags(ed_edd_eddy.media_reference_id)
+
+  const cartoon_tag = ed_edd_eddy_tags.find(t => t.name === 'cartoon')
+  t.is(cartoon_tag?.media_reference_count, 1)
+  t.is(cartoon_tag?.unread_media_reference_count, 0)
+  const shared_tag = ed_edd_eddy_tags.find(t => t.name === 'shared')
+  t.is(shared_tag?.media_reference_count, 2)
+  t.is(shared_tag?.unread_media_reference_count, 1)
+
+  let procedural_tags = forager.tag.get_tags(procedural_media.media_reference_id)
+  t.is(procedural_tags.find(t => t.name === 'shared')?.unread_media_reference_count, 1)
+  t.is(procedural_tags.find(t => t.name === 'procedural')?.unread_media_reference_count, 1)
+
+  forager.media.add_view(ed_edd_eddy.media_reference_id)
+  ed_edd_eddy_tags = forager.tag.get_tags(ed_edd_eddy.media_reference_id)
+  t.is(ed_edd_eddy_tags.find(t => t.name === 'shared')?.unread_media_reference_count, 1)
+  t.is(ed_edd_eddy_tags.find(t => t.name === 'cartoon')?.unread_media_reference_count, 0)
+
+  forager.media.add_view(procedural_media.media_reference_id)
+  procedural_tags = forager.tag.get_tags(procedural_media.media_reference_id)
+  t.is(procedural_tags.find(t => t.name === 'shared')?.unread_media_reference_count, 0)
+  t.is(procedural_tags.find(t => t.name === 'procedural')?.unread_media_reference_count, 0)
+
+  ed_edd_eddy_tags = forager.tag.get_tags(ed_edd_eddy.media_reference_id)
+  t.is(ed_edd_eddy_tags.find(t => t.name === 'shared')?.unread_media_reference_count, 0)
+  t.is(ed_edd_eddy_tags.find(t => t.name === 'cartoon')?.unread_media_reference_count, 0)
+
   }catch(e){console.error(e);throw e}
 })

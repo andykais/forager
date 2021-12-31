@@ -25,17 +25,18 @@ test.beforeEach(async () => {
 // TODO we should add data to these migrations. Its going to suck to reimplement file import, but its gonna be hella useful
 test('migrations', async t => {
   try {
+    const sample_tag = { group: '', name: 'sample' }
     const forager_new = new Forager({ database_path: NEW_DB_PATH })
     forager_new.init()
     const context_new = ((forager_new as any).context as Forager['context']) // context is a private prop, were being a bit cheeky here
     const table_schemas_new = context_new.db.table_manager.tables_schema()
-    await forager_new.media.create(MEDIA_FILEPATH, {}, [])
+    await forager_new.media.create(MEDIA_FILEPATH, {}, [sample_tag])
 
     const outdated_forager = new Forager({ database_path: OUTDATED_DB_PATH })
     const outdated_context = ((outdated_forager as any).context as Forager['context']) // context is a private prop, were being a bit cheeky here
     outdated_context.db.migration_map.get('0.0.0')!.call() // run the very first migration, which sets up tables in the very first version
     outdated_context.db.table_manager.set_forager_metadata('0.0.0')
-    await create_media(outdated_context.db.db, MEDIA_FILEPATH)
+    await create_media(outdated_context.db.db, MEDIA_FILEPATH, {}, [sample_tag])
     outdated_forager.init()
     const table_schemas_migrated = outdated_context.db.table_manager.tables_schema()
 
@@ -46,6 +47,8 @@ test('migrations', async t => {
       forager_new.media.get_file(1, range),
       outdated_forager.media.get_file(1, range),
     )
+    t.is(forager_new.tag.list()[0].unread_media_reference_count, 1)
+    t.is(outdated_forager.tag.list()[0].unread_media_reference_count, 1)
   } catch(e){
     console.error({message: e.message})
     throw e

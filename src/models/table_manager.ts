@@ -34,8 +34,9 @@ class TableManager extends Model {
       .filter(row => row.sql !== null) // skip the builtin auto definitions
       .map(row => row.sql)
       .map(sql => sql.replace(/^\s+/mg, '')) // remove excess whitespace
+      .map(sql => sql.replace(/,\s+/mg, ',\n')) // make sure column definitions are on new lines
       .map(sql => sql.replace(/CREATE TABLE "(.*?)"/g, (_, name) => `CREATE TABLE ${name}`)) // remove optional quotes around table name
-      .join('\n')
+      .join('\n\n')
   }
 }
 
@@ -65,7 +66,7 @@ class GetForagerMetadata extends Statement {
 }
 
 class GetTableDefinitions extends Statement {
-  sql = `SELECT tbl_name, sql FROM sqlite_master ORDER BY tbl_name`
+  sql = `SELECT tbl_name, sql FROM sqlite_master ORDER BY name`
   stmt = this.register(this.sql)
 
   call(): SqliteMasterTR[] {
@@ -207,6 +208,7 @@ class CreateTables extends Statement {
       created_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
       -- denormalized fields
       media_reference_count INTEGER NOT NULL DEFAULT 0,
+      unread_media_reference_count INTEGER NOT NULL DEFAULT 0,
 
       FOREIGN KEY (alias_tag_id) REFERENCES tag(id),
       FOREIGN KEY (tag_group_id) REFERENCES tag_group(id)
@@ -242,20 +244,41 @@ class CreateTables extends Statement {
 
 
     -- triggers --
+
     CREATE TRIGGER media_reference_tag_count_inc AFTER INSERT ON media_reference_tag BEGIN
-      UPDATE media_reference SET tag_count = tag_count + 1 WHERE new.media_reference_id = id;
-      UPDATE tag SET media_reference_count = media_reference_count + 1 WHERE new.tag_id = id;
+      UPDATE media_reference SET tag_count = tag_count + 1 WHERE NEW.media_reference_id = id;
+      UPDATE tag SET
+        media_reference_count = media_reference_count + 1,
+        unread_media_reference_count = unread_media_reference_count + (SELECT view_count = 0 FROM media_reference WHERE media_reference.id = NEW.media_reference_id)
+      WHERE NEW.tag_id = id;
     END;
+
     CREATE TRIGGER media_reference_tag_count_dec AFTER DELETE ON media_reference_tag BEGIN
-      UPDATE media_reference SET tag_count = tag_count - 1 WHERE old.media_reference_id = id;
-      UPDATE tag SET media_reference_count = media_reference_count - 1 WHERE old.tag_id = id;
+      UPDATE media_reference SET tag_count = tag_count - 1 WHERE OLD.media_reference_id = id;
+      UPDATE tag SET
+        media_reference_count = media_reference_count - 1,
+        unread_media_reference_count = unread_media_reference_count - (SELECT view_count = 0 FROM media_reference WHERE media_reference.id = OLD.media_reference_id)
+      WHERE OLD.tag_id = id;
     END;
+
     CREATE TRIGGER tag_group_count_inc AFTER INSERT ON tag BEGIN
-      UPDATE tag_group SET tag_count = tag_count + 1 WHERE new.tag_group_id = id;
+      UPDATE tag_group SET tag_count = tag_count + 1 WHERE NEW.tag_group_id = id;
     END;
+
     CREATE TRIGGER tag_group_count_dec AFTER DELETE ON tag BEGIN
-      UPDATE tag_group SET tag_count = tag_count - 1 WHERE old.tag_group_id = id;
+      UPDATE tag_group SET tag_count = tag_count - 1 WHERE OLD.tag_group_id = id;
     END;
+
+    CREATE TRIGGER unread_media_reference_tag_count_change AFTER UPDATE ON media_reference
+      WHEN (NEW.view_count > 0 AND OLD.view_count = 0) OR (NEW.view_count = 0 AND OLD.view_count > 0)
+    BEGIN
+        UPDATE tag SET
+          unread_media_reference_count = unread_media_reference_count - (NEW.view_count > 0) + (NEW.view_count = 0)
+        WHERE tag.id IN (
+          SELECT tag_id as id FROM media_reference_tag WHERE media_reference_id = NEW.id
+        );
+    END;
+
 
     -- NOTES: lets use the "INDEXED BY <index_name>" clause to hardcode indexes to look things up with
     -- It will be cool and way easier to determine what queries are used

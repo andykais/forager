@@ -92,7 +92,7 @@ class UpdateMediaReference extends Statement {
       description = CASE WHEN @description = -1 THEN description ELSE @description END,
       metadata = CASE WHEN @metadata = -1 THEN metadata ELSE @metadata END,
       stars = CASE WHEN @stars = -1 THEN stars ELSE @stars END,
-      view_count = CASE WHEN @view_count = -1 THEN view_count ELSE @stars END
+      view_count = CASE WHEN @view_count = -1 THEN view_count ELSE @view_count END
     WHERE id = @media_reference_id`
 
   stmt = this.register(this.sql)

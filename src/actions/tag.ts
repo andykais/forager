@@ -51,7 +51,6 @@ class TagAction extends Action {
     transaction()
     return this.db.tag.select_many_by_media_reference({ media_reference_id })
   }
-
 }
 
 export { TagAction }

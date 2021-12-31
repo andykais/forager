@@ -222,9 +222,13 @@ const insert_media_file_sql = `INSERT INTO media_file (
 
 const insert_media_chunk_sql = `INSERT INTO media_chunk (media_file_id, chunk) VALUES (@media_file_id, @chunk)`
 
+const insert_tag_group_sql = `INSERT INTO tag_group (name, color) VALUES (:name, 'black')`
+const insert_tag_sql = `INSERT INTO tag (tag_group_id, name) VALUES (:tag_group_id, :name)`
+const insert_media_reference_tag_sql = `INSERT INTO media_reference_tag (media_reference_id, tag_id) VALUES (:media_reference_id, :tag_id)`
+
 const CHUNK_SIZE = 1024 * 1024 * 2
 
-export async function create_media(db: Database, filepath: string, media_info = {}) {
+export async function create_media(db: Database, filepath: string, media_info = {}, tags: { group: string; name: string }[]) {
     const media_file_info = await get_file_info(filepath)
     const sha512checksum = await get_file_checksum(filepath)
     const [file_size_bytes, thumbnail, video_preview] = await Promise.all([
@@ -253,6 +257,12 @@ export async function create_media(db: Database, filepath: string, media_info = 
     }
     db.exec('BEGIN TRANSACTION')
     const media_reference_id = db.prepare(insert_media_reference_sql).run(media_reference_data).lastInsertRowid
+    for (const tag of tags) {
+      const tag_group_id = db.prepare(insert_tag_group_sql).run({ name: tag.group }).lastInsertRowid
+      const tag_id = db.prepare(insert_tag_sql).run({ tag_group_id, name: tag.name }).lastInsertRowid
+      const media_reference_tag_id = db.prepare(insert_media_reference_tag_sql).run({ tag_id, media_reference_id}).lastInsertRowid
+    }
+
     const media_file_id = db.prepare(insert_media_file_sql).run({ ...media_file_data, media_reference_id }).lastInsertRowid
     const insert_media_chunk_stmt = db.prepare(insert_media_chunk_sql)
     await new Promise((resolve, reject) => {
