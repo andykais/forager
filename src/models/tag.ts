@@ -33,7 +33,7 @@ class Tag extends Model {
   select_all = this.register(SelectAllTags)
   select_many_by_media_reference = this.register(SelectManyTagsByMediaReferenceId)
   private select_many_like_name_stmt = this.register(SelectManyTagsLikeName)
-  select_many_like_name(query_data: TagIdentifier & { limit: number; filter: TagIdentifier[] }) {
+  select_many_like_name(query_data: TagIdentifier & { limit: number; filter: TagIdentifier[]; order: 'desc' | 'asc'; sort_by: 'updated_at' | 'created_at' | 'media_reference_count' | 'unread_media_reference_count'  }) {
     const {filter, ...rest} = query_data
     // if this gets slow, theres lots of speedup techniques (shove it all into a single query, memoize query)
     const filter_ids = filter
@@ -92,14 +92,14 @@ class SelectAllTags extends Statement {
 
 type TagIdentifier = {name: TagTR['name']; group: TagGroupTR['name'] | null;}
 class SelectManyTagsLikeName extends Statement {
-   call(query_data: TagIdentifier & { limit: number; filter_ids: TagTR['id'][] }): TagDataTR[] {
+   call(query_data: TagIdentifier & { limit: number; filter_ids: TagTR['id'][]; order: 'desc' | 'asc'; sort_by: 'updated_at' | 'created_at' | 'media_reference_count' | 'unread_media_reference_count' }): TagDataTR[] {
     const where_clauses = []
     if (query_data.group !== null) where_clauses.push(`tag_group.name = @group`)
     if (query_data.filter_ids.length) where_clauses.push(`tag.id NOT IN (${query_data.filter_ids.join(',')})`)
     where_clauses.push(`tag.name LIKE @name || '%'`)
     const sql = `${SELECT_TAG_GROUP_JOIN}
       WHERE ${where_clauses.join(' AND ')}
-      ORDER BY media_reference_count DESC
+      ORDER BY tag.${query_data.sort_by} ${query_data.order}
       LIMIT @limit`
     const stmt = this.db.prepare(sql)
     return stmt.all(query_data)
