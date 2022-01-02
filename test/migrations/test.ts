@@ -1,5 +1,4 @@
 import 'source-map-support/register'
-import test from 'ava'
 import * as fs from 'fs'
 import { Context } from '../../src/context'
 import { Forager } from '../../src/index'
@@ -18,12 +17,12 @@ async function rmf(filepath: string) {
 }
 
 
-test.beforeEach(async () => {
+beforeEach(async () => {
   await rmf(NEW_DB_PATH)
   await rmf(OUTDATED_DB_PATH)
 })
-// TODO we should add data to these migrations. Its going to suck to reimplement file import, but its gonna be hella useful
-test('migrations', async t => {
+
+test('migrations', async () => {
   try {
     const sample_tag = { group: '', name: 'sample' }
     const forager_new = new Forager({ database_path: NEW_DB_PATH })
@@ -40,15 +39,15 @@ test('migrations', async t => {
     outdated_forager.init()
     const table_schemas_migrated = outdated_context.db.table_manager.tables_schema()
 
-    t.deepEqual(table_schemas_new, table_schemas_migrated)
+    expect(table_schemas_new).toEqual(table_schemas_migrated)
 
     const range = { bytes_start: 10485760, bytes_end: 11065971 }
-    t.deepEqual(
-      forager_new.media.get_file(1, range),
-      outdated_forager.media.get_file(1, range),
+    expect(
+      forager_new.media.get_file(1, range)).toEqual(
+      outdated_forager.media.get_file(1, range)
     )
-    t.is(forager_new.tag.list()[0].unread_media_reference_count, 1)
-    t.is(outdated_forager.tag.list()[0].unread_media_reference_count, 1)
+    expect(forager_new.tag.list()[0].unread_media_reference_count).toEqual(1)
+    expect(outdated_forager.tag.list()[0].unread_media_reference_count).toEqual(1)
   } catch(e){
     console.error({message: e.message})
     throw e

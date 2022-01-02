@@ -1,4 +1,3 @@
-import test from 'ava'
 import * as fs from 'fs'
 import { Forager } from '../../src/index'
 
@@ -14,7 +13,7 @@ function str_compare(a: string, b: string) {
   return a.localeCompare(b)
 }
 
-test('tag crud', async t => {
+test('tag crud', async () => {
   try{
   const database_path = 'test/fixtures/forager.db'
   const media_output_path = 'test/fixtures/koch-export.tif'
@@ -31,39 +30,38 @@ test('tag crud', async t => {
   const { media_reference_id, media_file_id } = await forager.media.create('test/resources/koch.tif', media_info, tags)
 
   const before_tags = forager.tag.get_tags(media_reference_id)
-  t.deepEqual(before_tags.map(t => t.name).sort(str_compare), ['black', 'procedural_generation'])
+  expect(before_tags.map(t => t.name).sort(str_compare)).toEqual(['black', 'procedural_generation'])
 
   // we can re-add tags that already exist on the media reference and errors should be silent
   const after_tags = forager.tag.add_tags(media_reference_id, [{ group: 'colors', name: 'black' }, { group: '', name: 'art' }])
-  t.deepEqual(after_tags.map(t => t.name).sort(str_compare), ['art', 'black', 'procedural_generation'])
+  expect(after_tags.map(t => t.name).sort(str_compare)).toEqual(['art', 'black', 'procedural_generation'])
 
   const after_delete_tags = forager.tag.remove_tags(media_reference_id, [{ group: 'colors', name: 'black' }])
-  t.deepEqual(after_delete_tags.map(t => t.name).sort(str_compare), ['art', 'procedural_generation'])
+  expect(after_delete_tags.map(t => t.name).sort(str_compare)).toEqual(['art', 'procedural_generation'])
 
   const final_tags = forager.tag.get_tags(media_reference_id)
-  t.deepEqual(final_tags.map(t => t.name).sort(str_compare), ['art', 'procedural_generation'])
+  expect(final_tags.map(t => t.name).sort(str_compare)).toEqual(['art', 'procedural_generation'])
 
   const all_tags = forager.tag.list()
   all_tags.sort((a, b) => str_compare(a.name, b.name))
-  t.deepEqual(all_tags.map(t => ({ name: t.name, media_reference_count: t.media_reference_count })), [
+  expect(all_tags.map(t => ({ name: t.name, media_reference_count: t.media_reference_count }))).toEqual([
     { name: 'art', media_reference_count: 1},
     { name: 'black', media_reference_count: 0},
     { name: 'procedural_generation', media_reference_count: 1},
   ])
 
   // search tags
-  t.is(forager.tag.search({ name: 'pr' }).length, 1)
-  forager.tag.search({ name: 'pr' }).map(tag => t.like(tag, {group: '', name: 'procedural_generation'}))
+  expect(forager.tag.search({ name: 'pr' }).length).toEqual(1)
+  expect(forager.tag.search({ name: 'pr' })[0]).toEqual(expect.objectContaining({ group: '', name: 'procedural_generation' }))
   // not passing in group will search on any groups
-  t.is(forager.tag.search({ name: 'blac' }).length, 1)
-  forager.tag.search({ name: 'blac' }).map(tag => t.like(tag, {group: 'colors', name: 'black'}))
+  expect(forager.tag.search({ name: 'blac' }).length).toEqual(1)
+  expect(forager.tag.search({ name: 'blac' })[0]).toEqual(expect.objectContaining({ group: 'colors', name: 'black' }))
   // passing in a group only searches on that group (theres 'black' tag, but its under the 'colors' group)
-  t.is(forager.tag.search({ group: '', name: 'blac' }).length, 0)
+  expect(forager.tag.search({ group: '', name: 'blac' }).length).toEqual(0)
   // filtering tags out should remove them
-  t.is(forager.tag.search({ name: 'blac', filter: [{name: 'black', group:'colors'}] }).length, 0)
-  t.is(forager.tag.search({ name: 'proc', filter: [{name: 'black', group:'colors'}] }).length, 1)
-  forager.tag.search({ name: 'proc', filter: [{name: 'black', group:'colors'}] }).map(tag => t.like(tag, {name: 'procedural_generation'}))
-
+  expect(forager.tag.search({ name: 'blac', filter: [{name: 'black', group:'colors'}] }).length).toEqual(0)
+  expect(forager.tag.search({ name: 'proc', filter: [{name: 'black', group:'colors'}] }).length).toEqual(1)
+  expect(forager.tag.search({ name: 'proc' })[0]).toEqual(expect.objectContaining({name: 'procedural_generation'}))
   }catch(e){
     console.error(e)
     throw e

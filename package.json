@@ -12,9 +12,9 @@
     "build:watch": "mkdir -p build/src && cp package.json build/src && tsc --watch",
     "typecheck": "tsc --noEmit",
     "typecheck:watch": "tsc --noEmit --watch",
-    "test": "ava test/**/*test.ts",
-    "test:migrations": "ava test/migrations/*test.ts",
-    "test:watch": "ava test/**/*test.ts --watch"
+    "test": "jest --config test/jest.config.js",
+    "test:migrations": "npm run test -- test/migrations/*test.ts",
+    "test:watch": "npm run test -- test/**/*test.ts --watch"
   },
   "keywords": [],
   "author": "Andrew Kaiser",
@@ -28,31 +28,14 @@
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.4.0",
-    "@types/mocha": "^8.2.3",
+    "@types/jest": "^27.4.0",
     "@types/node": "^15.14.2",
     "@types/sharp": "^0.28.5",
     "@types/tap": "^15.0.5",
     "@types/tape": "^4.13.2",
-    "ava": "^3.15.0",
-    "jest": "^27.2.4",
-    "mocha": "^8.4.0",
+    "jest": "^27.4.5",
     "source-map-support": "^0.5.19",
-    "tap": "^15.0.10",
-    "tape": "^5.3.1",
     "ts-jest": "^27.0.5",
-    "ts-node": "^10.1.0",
     "typescript": "^4.5.2"
-  },
-  "ava": {
-    "extensions": [
-      "ts"
-    ],
-    "require": [
-      "ts-node/register"
-    ],
-    "ignoredByWatcher": [
-      "scratchwork/*",
-      "test/fixtures/*"
-    ]
   }
 }
