@@ -38,6 +38,6 @@ export class Migration extends MigrationStatement {
       files_completed++
       process.stdout.write(`\rmigrated ${files_completed}/${media_file_count} media files (${chunks_completed}/${media_chunk_count} media chunks)`)
     }
-    console.log() // just flush the last line of output
+    console.log('') // just flush the last line of output
   }
 }

@@ -12,7 +12,7 @@
     "build:watch": "mkdir -p build/src && cp package.json build/src && tsc --watch",
     "typecheck": "tsc --noEmit",
     "typecheck:watch": "tsc --noEmit --watch",
-    "test": "jest --config test/jest.config.js",
+    "test": "jest --config test/jest.config.json",
     "test:migrations": "npm run test -- test/migrations/*test.ts",
     "test:watch": "npm run test -- test/**/*test.ts --watch"
   },

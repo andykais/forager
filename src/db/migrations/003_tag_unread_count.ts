@@ -55,6 +55,6 @@ export class Migration extends MigrationStatement {
       if (info.changes !== 1) throw new Error(`unexpected number of changes for tag id ${tag_id}`)
       process.stdout.write(`\rmigrated ${index + 1}/${tag_count} tags (last tag had ${unread_count} unread media)`)
     }
-    console.log()
+    console.log('')
   }
 }
