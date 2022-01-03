@@ -204,6 +204,8 @@ class CreateTables extends Statement {
       tag_group_id INTEGER NOT NULL,
       -- some tags will just be aliases for others. We have to be careful not to have cyclical references here
       alias_tag_id INTEGER,
+      description TEXT,
+      metadata JSON,
       updated_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
       created_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
       -- denormalized fields
