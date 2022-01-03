@@ -9,6 +9,8 @@ interface TagTR {
   tag_group_id: TagGroupTR['id']
   name: string
   alias_tag_id: TagTR['id'] | null
+  description: string | null
+  metadata: {} | null
   // auto generated fields
   media_reference_count: number
   unread_media_reference_count: number
@@ -21,6 +23,8 @@ interface TagDataTR {
   name: TagTR['name']
   group: TagGroupTR['name']
   color: TagGroupTR['color']
+  description: TagTR['description']
+  metadata: TagTR['metadata']
   media_reference_count: TagTR['media_reference_count']
   unread_media_reference_count: TagTR['unread_media_reference_count']
 }
@@ -47,16 +51,28 @@ class Tag extends Model {
 /* --=================== Statements ===================-- */
 
 class CreateTag extends Statement {
-  insert_stmt = this.register('INSERT INTO tag (tag_group_id, name, alias_tag_id) VALUES (@tag_group_id, @name, @alias_tag_id)')
+  insert_stmt = this.register('INSERT INTO tag (tag_group_id, name, alias_tag_id, description, metadata) VALUES (@tag_group_id, @name, @alias_tag_id, @description, @metadata)')
   select_stmt = this.register('SELECT id FROM tag WHERE name = @name AND tag_group_id = @tag_group_id')
 
   call(tag_data: InsertRow<TagTR>): TagTR['id'] {
     try {
-      return this.insert_stmt.ref.run(tag_data).lastInsertRowid as number
+      const safe_tag_data = {
+        description: null,
+        ...tag_data,
+        metadata: tag_data.metadata ? JSON.stringify(tag_data.metadata) : null,
+      }
+      return this.insert_stmt.ref.run(safe_tag_data).lastInsertRowid as number
     } catch(e) {
       if (this.is_unique_constaint_error(e)) return this.select_stmt.ref.get(tag_data).id
       else throw e
     }
+  }
+}
+
+function deserialize_tag_group_join(tag_data: TagDataTR & { metadata?: string }): TagDataTR {
+  return {
+    ...tag_data,
+    metadata: tag_data === null ? null : JSON.parse(tag_data?.metadata)
   }
 }
 
@@ -65,6 +81,8 @@ const SELECT_TAG_GROUP_JOIN = `SELECT
   tag.name,
   tag_group.name as 'group',
   tag_group.color,
+  tag.description,
+  tag.metadata,
   tag.media_reference_count,
   tag.unread_media_reference_count
 FROM tag
@@ -77,7 +95,9 @@ class SelectOneTagByName extends Statement {
 
   call(query_data: { name: TagTR['name']; group: TagGroupTR['name'] | null}): TagDataTR | null {
     const { name, group = '' } = query_data
-    return this.stmt.ref.get({ name, group })
+    const row = this.stmt.ref.get({ name, group })
+    if (row === null) return null
+    else return deserialize_tag_group_join(row)
   }
 }
 
@@ -86,7 +106,7 @@ class SelectAllTags extends Statement {
     ORDER BY media_reference_count, tag.name DESC`)
 
   call(): TagDataTR[] {
-    return this.stmt.ref.all()
+    return this.stmt.ref.all().map(deserialize_tag_group_join)
   }
 }
 
@@ -102,7 +122,7 @@ class SelectManyTagsLikeName extends Statement {
       ORDER BY tag.${query_data.sort_by} ${query_data.order}
       LIMIT @limit`
     const stmt = this.db.prepare(sql)
-    return stmt.all(query_data)
+    return stmt.all(query_data).map(deserialize_tag_group_join)
    }
 }
 
@@ -112,7 +132,7 @@ class SelectManyTagsByMediaReferenceId extends Statement {
     WHERE media_reference_tag.media_reference_id = ?`)
 
     call(query_data: { media_reference_id: number }): TagDataTR[] {
-      return this.stmt.ref.all(query_data.media_reference_id)
+      return this.stmt.ref.all(query_data.media_reference_id).map(deserialize_tag_group_join)
     }
 }
 

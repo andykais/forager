@@ -7,6 +7,8 @@ function sanitize_name(name: string) {
 export const TagInput = z.object({
   name: z.string().transform(sanitize_name),
   group: z.string().optional().default('').transform(sanitize_name),
+  description: z.string().optional(),
+  metadata: z.record(z.any()).optional(),
 })
 export type Tag = z.input<typeof TagInput>
 

@@ -66,7 +66,7 @@ class MediaAction extends Action {
         const group = tag.group ?? ''
         const color = get_hash_color(group, 'hsl')
         const tag_group_id = this.db.tag_group.create({ name: group, color })
-        const tag_id = this.db.tag.create({ alias_tag_id: null, name: tag.name, tag_group_id })
+        const tag_id = this.db.tag.create({ alias_tag_id: null, name: tag.name, tag_group_id, description: tag.description, metadata: tag.metadata })
         this.db.media_reference_tag.insert({ media_reference_id, tag_id })
       }
       return { media_reference_id, media_file_id }

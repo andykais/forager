@@ -25,7 +25,10 @@ test('tag crud', async () => {
   forager.init()
 
   // import a file
-  const tags = [{ group: '', name: 'Procedural Generation' }, { group: 'colors', name: 'black' }]
+  const tags = [
+    { group: '', name: 'Procedural Generation', description: 'art made by computers', metadata: {hello: 'world'} },
+    { group: 'colors', name: 'black' }
+  ]
   const media_info = { title: 'Generated Art', stars: 2 }
   const { media_reference_id, media_file_id } = await forager.media.create('test/resources/koch.tif', media_info, tags)
 
@@ -41,6 +44,11 @@ test('tag crud', async () => {
 
   const final_tags = forager.tag.get_tags(media_reference_id)
   expect(final_tags.map(t => t.name).sort(str_compare)).toEqual(['art', 'procedural_generation'])
+  expect(final_tags.find(t => t.name === 'procedural_generation')).toEqual(expect.objectContaining({
+    name: 'procedural_generation',
+    description: 'art made by computers',
+    metadata: {hello: 'world'}
+  }))
 
   const all_tags = forager.tag.list()
   all_tags.sort((a, b) => str_compare(a.name, b.name))
