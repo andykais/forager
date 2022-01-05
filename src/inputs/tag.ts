@@ -17,7 +17,7 @@ export const TagSearchInput = z.object({
   group: z.string().optional().nullable().transform(t => typeof t === 'string' ? sanitize_name(t) : null),
   filter: z.array(TagInput).optional().transform(v => v ?? []),
   limit: z.number().optional().default(10),
-  sort_by: z.enum(['created_at', 'updated_at', 'media_reference_count', 'unread_media_reference_count']).default('created_at'),
+  sort_by: z.enum(['created_at', 'updated_at', 'media_reference_count', 'unread_media_reference_count']).default('updated_at'),
   order: z.enum(['desc', 'asc']).default('desc'),
 })
 export type TagSearch = z.input<typeof TagSearchInput>
