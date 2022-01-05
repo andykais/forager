@@ -131,20 +131,27 @@ class CreateTables extends Statement {
       height INTEGER CHECK (media_type IN ('IMAGE', 'VIDEO') AND height IS NOT NULL),
       -- audio/video/gif specific
       animated BOOLEAN NOT NULL,
+      framerate INTEGER NOT NULL CHECK (IIF(animated == 0, framerate == 0, 1)),
       duration INTEGER NOT NULL CHECK (IIF(animated == 0, duration == 0, 1)),
-
-      -- TODO should we use a separate table for thumbnails?
-      thumbnail BLOB NOT NULL,
-      thumbnail_file_size_bytes INTEGER NOT NULL,
-      thumbnail_sha512checksum TEXT NOT NULL,
-
-      video_preview BLOB,
 
       updated_at ${TIMESTAMP_COLUMN},
       created_at ${TIMESTAMP_COLUMN},
 
       media_reference_id INTEGER NOT NULL,
       FOREIGN KEY (media_reference_id) REFERENCES media_reference(id)
+    );
+
+    CREATE TABLE media_thumbnail (
+      id INTEGER PRIMARY KEY NOT NULL,
+      thumbnail BLOB NOT NULL,
+      file_size_bytes INTEGER NOT NULL,
+      sha512checksum TEXT NOT NULL,
+      thumbnail_index INTEGER NOT NULL,
+      updated_at ${TIMESTAMP_COLUMN},
+      created_at ${TIMESTAMP_COLUMN},
+
+      media_file_id INTEGER NOT NULL,
+      FOREIGN KEY (media_file_id) REFERENCES media_reference(id)
     );
 
     CREATE TABLE media_sequence (

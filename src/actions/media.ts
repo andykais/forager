@@ -47,6 +47,7 @@ class MediaAction extends Action {
       thumbnail_sha512checksum: get_buffer_checksum(thumbnail),
       video_preview,
     }
+    console.log(media_file_data)
     const transaction = this.db.transaction_async(async () => {
       const media_reference_id = this.db.media_reference.insert(media_reference_data)
       const media_file_id = this.db.media_file.insert({ ...media_file_data, media_reference_id })
@@ -129,18 +130,26 @@ class MediaAction extends Action {
     return this.db.media_reference.select_many({ limit, cursor, sort_by: 'created_at', order: 'desc' })
   }
 
-  get_preview = (media_reference_id: number) => {
-    return this.db.media_file.select_video_preview(media_reference_id)
-      ?? this.db.media_file.select_thumbnail(media_reference_id)
+  get_thumbnails = (media_file_id: number) => {
+    return this.db.media_thumbnail.select_all_thumbnails({ media_file_id })
   }
 
-  get_thumbnail = (media_reference_id: number) => {
-    return this.db.media_file.select_thumbnail(media_reference_id)
+  get_thumbnail = (media_file_id: number, thumbnail_index: number) => {
+    return this.db.media_thumbnail.select_thumbnail({ media_file_id, thumbnail_index })
   }
 
-  get_video_preview = (media_reference_id: number) => {
-    return this.db.media_file.select_video_preview(media_reference_id)
-  }
+  // get_preview = (media_reference_id: number) => {
+  //   return this.db.media_file.select_video_preview(media_reference_id)
+  //     ?? this.db.media_file.select_thumbnail(media_reference_id)
+  // }
+
+  // get_thumbnail = (media_reference_id: number) => {
+  //   return this.db.media_file.select_thumbnail(media_reference_id)
+  // }
+
+  // get_video_preview = (media_reference_id: number) => {
+  //   return this.db.media_file.select_video_preview(media_reference_id)
+  // }
 
   get_file = (media_reference_id: number, range?: { bytes_start: number; bytes_end: number }) => {
     if (range === undefined) {

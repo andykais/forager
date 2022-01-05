@@ -7,6 +7,7 @@ import type { Model } from './base'
 import { TableManager } from '../models/table_manager'
 import { MediaChunk } from '../models/media_chunk'
 import { MediaFile } from '../models/media_file'
+import { MediaThumbnail } from '../models/media_thumbnail'
 import { MediaReference } from '../models/media_reference'
 import { MediaReferenceTag } from '../models/media_reference_tag'
 import { TagGroup } from '../models/tag_group'
@@ -23,6 +24,7 @@ class Database {
   public table_manager = this.register(TableManager)
   public media_chunk = this.register(MediaChunk)
   public media_file = this.register(MediaFile)
+  public media_thumbnail = this.register(MediaThumbnail)
   public media_reference = this.register(MediaReference)
   public media_reference_tag = this.register(MediaReferenceTag)
   public tag_group = this.register(TagGroup)

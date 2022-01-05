@@ -20,12 +20,6 @@ interface MediaFileTR {
   updated_at: Date
   created_at: Date
   media_reference_id: MediaReferenceTR['id']
-
-  thumbnail: Buffer
-  thumbnail_file_size_bytes: number
-  thumbnail_sha512checksum: string
-
-  video_preview: Buffer | null
 }
 
 /* --================ Model Definition ================-- */
@@ -35,8 +29,6 @@ class MediaFile extends Model {
   select_one = this.register(SelectOneMediaFile)
   select_one_content_type = this.register(SelectOneContentType)
   select_one_by_checksum = this.register(SelectOneByChecksum)
-  select_thumbnail = this.register(SelectThumbnail)
-  select_video_preview = this.register(SelectVideoPreview)
 }
 
 /* --=================== Statements ===================-- */
@@ -53,12 +45,9 @@ class InsertMediaFile extends Statement {
     height,
     animated,
     duration,
-    media_reference_id,
-    thumbnail,
-    thumbnail_file_size_bytes,
-    thumbnail_sha512checksum,
-    video_preview
-  ) VALUES (@filename, @file_size_bytes, @sha512checksum, @media_type, @content_type, @codec, @width, @height, @animated, @duration, @media_reference_id, @thumbnail, @thumbnail_file_size_bytes, @thumbnail_sha512checksum, @video_preview)`
+    framerate,
+    media_reference_id
+  ) VALUES (@filename, @file_size_bytes, @sha512checksum, @media_type, @content_type, @codec, @width, @height, @animated, @duration, @framerate, @media_reference_id)`
 
   stmt = this.register(this.sql)
 
@@ -109,15 +98,6 @@ class SelectVideoPreview extends Statement {
     return this.stmt.ref.get(media_reference_id).video_preview
   }
 }
-
-class SelectThumbnail extends Statement {
-  stmt = this.register('SELECT thumbnail FROM media_file WHERE media_reference_id = ?')
-
-  call(media_reference_id: MediaReferenceTR['id']): Buffer {
-    return this.stmt.ref.get(media_reference_id).thumbnail
-  }
-}
-
 
 export { MediaFile }
 export type { MediaFileTR }

@@ -21,6 +21,7 @@ interface FileInfo {
   // video/gif/audio fields
   animated: boolean
   duration: number
+  framerate: number
 }
 
 async function get_file_size(filepath: string) {
@@ -39,10 +40,12 @@ async function get_file_info(filepath: string) {
   let height = undefined
   let animated = false
   let duration = 0
+  let framerate = 0
 
   for (const stream of ffprobe_data.streams) {
     switch(stream.codec_type) {
       case 'video':
+        framerate = eval(stream.avg_frame_rate)
         width = stream.width
         height = stream.height
         if (media_type === 'VIDEO' || stream.codec_name === 'gif') {
@@ -58,7 +61,7 @@ async function get_file_info(filepath: string) {
     }
   }
   const filename = path.basename(filepath)
-  const file_info: FileInfo = { filename, ...codec_info, width, height, animated, duration }
+  const file_info: FileInfo = { filename, ...codec_info, width, height, animated, duration, framerate }
   return file_info
 }
 
