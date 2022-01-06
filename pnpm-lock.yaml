@@ -12,7 +12,6 @@ specifiers:
   date-fns: ^2.23.0
   jest: ^27.4.5
   sharp: ^0.28.3
-  source-map-support: ^0.5.19
   ts-jest: ^27.0.5
   typescript: ^4.5.2
   zod: ^3.8.2
@@ -32,7 +31,6 @@ devDependencies:
   '@types/tap': 15.0.5
   '@types/tape': 4.13.2
   jest: 27.4.5
-  source-map-support: 0.5.19
   ts-jest: 27.0.5_a66452afa9efa04f7be441e56ad31a57
   typescript: 4.5.2
 

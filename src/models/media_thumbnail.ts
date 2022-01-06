@@ -8,9 +8,11 @@ import type { MediaFileTR } from './media_file'
 
 interface MediaThumbnailTR {
   id: number
-  thumbnail: string
+  thumbnail: Buffer
   file_size_bytes: number
   sha512checksum: string
+  timestamp: number
+  thumbnail_index: number
   media_file_id: MediaFileTR['id']
   updated_at: Date
   created_at: Date
@@ -21,7 +23,7 @@ interface MediaThumbnailTR {
 class MediaThumbnail extends Model {
   insert = this.register(InsertThumbnail)
   select_thumbnail = this.register(SelectThumbnail)
-  select_all_thumbnails = this.register(SelectAllThumbnail)
+  select_thumbnails_info = this.register(SelectThumbnailsInfo)
 }
 
 /* --=================== Statements ===================-- */
@@ -31,9 +33,10 @@ class InsertThumbnail extends Statement {
     thumbnail,
     file_size_bytes,
     sha512checksum,
+    timestamp,
     thumbnail_index,
     media_file_id
-  ) VALUES (@thumbnail, @file_size_bytes, @sha512checksum, @thumbnail_index, @media_file_id)`
+  ) VALUES (@thumbnail, @file_size_bytes, @sha512checksum, @timestamp, @thumbnail_index, @media_file_id)`
 
   stmt = this.register(this.sql)
 
@@ -46,24 +49,23 @@ class InsertThumbnail extends Statement {
 
 
 class SelectThumbnail extends Statement {
-  sql = `SELECT thumbnail FROM media_thumbnail
-    WHERE media_file_id = :media_file_id AND thumbnail_index = :thumbnail_index`
+  sql = `SELECT thumbnail FROM media_thumbnail WHERE id = ?`
 
   stmt = this.register(this.sql)
 
-  call(query_data: { media_file_id: number; thumbnail_index: number }): MediaThumbnailTR['thumbnail'] {
+  call(query_data: Pick<MediaThumbnailTR, 'media_file_id' | 'thumbnail_index'>): MediaThumbnailTR['thumbnail'] {
     const result = this.stmt.ref.get(query_data)
     if (result === null) throw new NotFoundError(SelectThumbnail.name, query_data)
     return result.thumbnail
   }
 }
 
-class SelectAllThumbnail extends Statement {
-  sql = `SELECT thumbnail FROM media_thumbnail WHERE media_file_id = :media_file_id`
+class SelectThumbnailsInfo extends Statement {
+  sql = `SELECT id, timestamp, thumbnail_index FROM media_thumbnail WHERE media_file_id = :media_file_id ORDER BY thumbnail_index`
 
   stmt = this.register(this.sql)
 
-  call(query_data: { media_file_id: number }): Pick<MediaThumbnailTR, 'thumbnail'>[] {
+  call(query_data: { media_file_id: number }): Pick<MediaThumbnailTR, 'id' | 'timestamp' | 'thumbnail_index'>[] {
     const result = this.stmt.ref.all(query_data)
     if (result.length === 0) throw new NotFoundError(SelectThumbnail.name, query_data)
     return result

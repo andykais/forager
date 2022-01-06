@@ -45,12 +45,13 @@ async function get_file_info(filepath: string) {
   for (const stream of ffprobe_data.streams) {
     switch(stream.codec_type) {
       case 'video':
-        framerate = eval(stream.avg_frame_rate)
         width = stream.width
         height = stream.height
         if (media_type === 'VIDEO' || stream.codec_name === 'gif') {
           duration = stream.duration
           animated = true
+          framerate = eval(stream.avg_frame_rate)
+          if (Number.isNaN(framerate)) throw new Error(`Unable to parse framerate for ${filepath} from ${stream.avg_frame_rate}`)
         }
         break
       case 'audio':
@@ -77,8 +78,60 @@ async function get_file_checksum(filepath: string): Promise<string> {
 }
 
 const num_captured_frames = 18
-const max_width = 800
-const max_height = 400
+const max_width = 500
+const max_height = 500
+async function  get_thumbnails(filepath: string, file_info: FileInfo) {
+  const full_width = file_info.width!
+  const full_height = file_info.height!
+
+  const max_width_or_height = full_width > full_height
+    ? `${500}x${Math.floor((full_height*500)/full_width)}`
+    : `${Math.floor((full_width*500)/full_height)}x${500}`
+
+  const tmpdir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'thumbnails-'))
+  const thumbnail_filepath = path.join(tmpdir, 'thumbnail-%04d.jpg')
+
+  let thumbnail_timestamps = [0]
+  try {
+    if (file_info.media_type === 'VIDEO') {
+      const thumbnail_fps = 1 / (file_info.duration / num_captured_frames)
+
+      const ffmpeg_cmd = `ffmpeg -v error -i '${filepath}' -an -s ${max_width_or_height} -vf fps=${thumbnail_fps} -frames:v ${num_captured_frames} -f image2 '${thumbnail_filepath}'`
+      const ffprobe_cmd = `ffprobe -v error -f lavfi -i "movie=${filepath},fps=fps=${thumbnail_fps}[out0]" -show_frames -show_entries frame=pkt_pts_time -of csv=p=0`
+      const [frame_timestamps] = await Promise.all([
+        exec(ffprobe_cmd).then(out => {
+          const timestamps = out.stdout.trim().split('\n').map(line => parseFloat(line))
+          for (const timestamp of timestamps) if (Number.isNaN(timestamp)) throw new Error(`could not parse ffprobe timestamp for thumbnail of ${filepath}, ${out.stderr}`)
+          return timestamps
+        }),
+        exec(ffmpeg_cmd),
+      ])
+      thumbnail_timestamps = frame_timestamps
+    } else if (file_info.media_type  === 'IMAGE') {
+      const cmd = `ffmpeg -v error -i '${filepath}' -an -s ${max_width_or_height} -frames:v 1 -ss ${0} '${thumbnail_filepath}'`
+      await exec(cmd)
+    } else if (file_info.media_type === 'AUDIO') {
+      throw new Error('audio thumbnail unimplemented')
+    }
+    const thumbnail_filepaths = await fs.promises.readdir(tmpdir)
+    if (thumbnail_filepaths.length !== thumbnail_timestamps.length) throw new Error(`ffprobe thumbnail timestamp detection for ${filepath} incorrect`)
+    const thumbnails = await Promise.all(thumbnail_filepaths.map(async (filepath, i) => {
+      const buffer = await fs.promises.readFile(path.join(tmpdir, filepath))
+      return {
+        timestamp: thumbnail_timestamps[i],
+        thumbnail: buffer,
+        file_size_bytes: buffer.length,
+        sha512checksum: get_buffer_checksum(buffer),
+      }
+    }))
+    await fs.promises.rm(tmpdir, { recursive: true })
+    return thumbnails
+  } catch (e) {
+    console.error(e)
+    throw new Error(`A fatal error has occurred creating thumbnails for '${filepath}`)
+  }
+}
+
 async function get_video_preview(filepath: string, file_info: FileInfo) {
   try {
     // TODO get frame from ffprobe. If not exists, then use ffmpeg
@@ -164,4 +217,4 @@ async function get_file_thumbnail(filepath: string, file_info: FileInfo): Promis
   }
 }
 
-export { get_file_size, get_file_info, get_video_preview, get_file_checksum, get_buffer_checksum, get_file_thumbnail }
+export { get_file_size, get_file_info, get_video_preview, get_file_checksum, get_buffer_checksum, get_thumbnails }

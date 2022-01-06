@@ -1,4 +1,3 @@
-import 'source-map-support/register'
 import * as fs from 'fs'
 import { Context } from '../../src/context'
 import { Forager } from '../../src/index'
@@ -19,25 +18,27 @@ async function rmf(filepath: string) {
 
 beforeEach(async () => {
   await rmf(NEW_DB_PATH)
+  await rmf(NEW_DB_PATH + '-shm')
+  await rmf(NEW_DB_PATH + '-wal')
   await rmf(OUTDATED_DB_PATH)
+  await rmf(OUTDATED_DB_PATH + '-shm')
+  await rmf(OUTDATED_DB_PATH + '-wal')
 })
 
-test('migrations', async () => {
-  console.log('migrate')
+test('migrations', async function() {
   const sample_tag = { group: '', name: 'sample' }
   const forager_new = new Forager({ database_path: NEW_DB_PATH, log_level: 'info' })
-  forager_new.init()
+  await forager_new.init()
   const context_new = ((forager_new as any).context as Forager['context']) // context is a private prop, were being a bit cheeky here
   const table_schemas_new = context_new.db.table_manager.tables_schema()
   await forager_new.media.create(MEDIA_FILEPATH, {}, [sample_tag])
 
   const outdated_forager = new Forager({ database_path: OUTDATED_DB_PATH, log_level: 'info' })
   const outdated_context = ((outdated_forager as any).context as Forager['context']) // context is a private prop, were being a bit cheeky here
-  outdated_context.db.migration_map.get('0.0.0')!.call() // run the very first migration, which sets up tables in the very first version
+  outdated_context.db.migrations.find(m => m.version === '0.0.0')!.migration.call() // run the very first migration, which sets up tables in the very first version
   outdated_context.db.table_manager.set_forager_metadata('0.0.0')
-  await create_media(outdated_context.db.db, MEDIA_FILEPATH, {}, [sample_tag])
-  outdated_forager.init()
-  return
+  const video_media = await create_media(outdated_context.db.db, MEDIA_FILEPATH, {}, [sample_tag])
+  await outdated_forager.init()
   const table_schemas_migrated = outdated_context.db.table_manager.tables_schema()
 
   expect(table_schemas_new).toEqual(table_schemas_migrated)
@@ -49,4 +50,5 @@ test('migrations', async () => {
   )
   expect(forager_new.tag.list()[0].unread_media_reference_count).toEqual(1)
   expect(outdated_forager.tag.list()[0].unread_media_reference_count).toEqual(1)
+  expect(outdated_forager.media.get_media_info(video_media.media_file_id).framerate).toEqual(24)
 })

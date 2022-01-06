@@ -83,6 +83,7 @@ abstract class Statement<A extends any[] = any[], R = any> {
 
 abstract class MigrationStatement extends Statement {
   static VERSION = ''
+  static FOREIGN_KEYS = true
   abstract call(): void
 }
 

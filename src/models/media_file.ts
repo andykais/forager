@@ -17,6 +17,7 @@ interface MediaFileTR {
   height: number | null
   animated: boolean
   duration: number
+  framerate: number
   updated_at: Date
   created_at: Date
   media_reference_id: MediaReferenceTR['id']

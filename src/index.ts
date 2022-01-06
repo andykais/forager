@@ -8,8 +8,8 @@ class Forager {
 
   public constructor(public config: ContextConfig) {}
 
-  public init() {
-    this.context.init()
+  public async init() {
+    await this.context.init()
   }
 
   // available actions

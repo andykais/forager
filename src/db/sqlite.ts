@@ -1,8 +1,8 @@
 import Sqlite3 from 'better-sqlite3'
 import { version } from '../../package.json'
 import { Context } from '../context'
-import { init_migration_map } from './migrations/index'
-import type { Model } from './base'
+import { init_migrations } from './migrations/index'
+import type { Model, MigrationStatement } from './base'
 // import model definitions
 import { TableManager } from '../models/table_manager'
 import { MediaChunk } from '../models/media_chunk'
@@ -18,7 +18,7 @@ import { DuplicateLog } from '../models/duplicate_logs'
 class Database {
   public db: Sqlite3.Database = new Sqlite3(this.context.config.database_path)
   private registered_models: Model[] = []
-  public migration_map = init_migration_map(this.db)
+  public migrations =  init_migrations(this.db)
 
   // model definitions
   public table_manager = this.register(TableManager)
@@ -36,10 +36,10 @@ class Database {
     this.context.logger.debug('opened database at', this.context.config.database_path)
   }
 
-  public init() {
+  public async init() {
     this.db.pragma('journal_mode = WAL')
     if (this.table_manager.tables_exist()) {
-      this.migrate()
+      await this.migrate()
     } else {
       this.db.transaction(() => {
         this.context.logger.info('initializing database...')
@@ -57,22 +57,22 @@ class Database {
     throw new Error('unimplemented')
   }
 
-  public migrate() {
-    const migration_versions = [...this.migration_map.keys()].sort((a, b) => a.localeCompare(b))
-
-    for (const version of migration_versions) {
+  public async migrate() {
+    for (const { migration, version, foreign_keys } of this.migrations) {
       const current_version = this.table_manager.get_forager_metadata().version
 
       if (version > current_version) {
         this.context.logger.info(`migrating ${current_version} to ${version}`)
         try {
-          this.db.transaction(() => {
-            const migration = this.migration_map.get(version)
-            migration!.call()
+          if (foreign_keys === false) this.db.pragma('foreign_keys = OFF')
+          await this.transaction_async(async () => {
+            await migration.call()
             this.table_manager.set_forager_metadata(version)
           })()
         } catch (e) {
           throw new Error(`Database migration failed going from ${current_version} to ${version}\n${e}`)
+        } finally {
+          if (foreign_keys === false) this.db.pragma('foreign_keys = ON')
         }
       }
     }

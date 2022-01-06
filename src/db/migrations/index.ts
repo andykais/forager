@@ -21,12 +21,19 @@ const MIGRATIONS = [
 
 type DatabaseVersions = typeof MIGRATIONS[number]['VERSION']
 
-const MigrationMap = Object.fromEntries(MIGRATIONS.map(m => [m.VERSION, m]))
-
-function init_migration_map(database: Database) {
-  const migration_map: Map<DatabaseVersions, MigrationStatement> = new Map()
-  for (const migration of MIGRATIONS) migration_map.set(migration.VERSION, new migration(database))
-  return migration_map
+function init_migrations(database: Database) {
+  const migration_versions = new Set<string>()
+  const migrations = MIGRATIONS.map(migration_class => {
+    if (migration_versions.has(migration_class.VERSION)) throw new Error(`Duplicate migrations for version ${migration_class.VERSION}`)
+    migration_versions.add(migration_class.VERSION)
+    return {
+      version: migration_class.VERSION,
+      foreign_keys: migration_class.FOREIGN_KEYS,
+      migration: new migration_class(database)
+    }
+  })
+  migrations.sort((a, b) => a.version.localeCompare(b.version))
+  return migrations
 }
 
-export { init_migration_map }
+export { init_migrations }

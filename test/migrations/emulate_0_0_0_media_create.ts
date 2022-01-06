@@ -256,14 +256,14 @@ export async function create_media(db: Database, filepath: string, media_info = 
       animated: 1,
     }
     db.exec('BEGIN TRANSACTION')
-    const media_reference_id = db.prepare(insert_media_reference_sql).run(media_reference_data).lastInsertRowid
+    const media_reference_id = db.prepare(insert_media_reference_sql).run(media_reference_data).lastInsertRowid as number
     for (const tag of tags) {
       const tag_group_id = db.prepare(insert_tag_group_sql).run({ name: tag.group }).lastInsertRowid
       const tag_id = db.prepare(insert_tag_sql).run({ tag_group_id, name: tag.name }).lastInsertRowid
       const media_reference_tag_id = db.prepare(insert_media_reference_tag_sql).run({ tag_id, media_reference_id}).lastInsertRowid
     }
 
-    const media_file_id = db.prepare(insert_media_file_sql).run({ ...media_file_data, media_reference_id }).lastInsertRowid
+    const media_file_id = db.prepare(insert_media_file_sql).run({ ...media_file_data, media_reference_id }).lastInsertRowid as number
     const insert_media_chunk_stmt = db.prepare(insert_media_chunk_sql)
     await new Promise((resolve, reject) => {
       const stream = fs.createReadStream(filepath, { highWaterMark: CHUNK_SIZE })
@@ -274,6 +274,7 @@ export async function create_media(db: Database, filepath: string, media_info = 
       stream.on('error', reject)
     })
     db.exec('COMMIT')
+    return { media_file_id, media_reference_id }
 }
 
 // It occurs to me...long after implementing this file...that I could have simply

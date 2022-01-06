@@ -18,8 +18,8 @@ class Context {
     this.db = new Database(this)
   }
 
-  public init() {
-    this.db.init()
+  public async init() {
+    await this.db.init()
   }
 }
 

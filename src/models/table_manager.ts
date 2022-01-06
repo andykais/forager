@@ -4,7 +4,7 @@ import { TIMESTAMP_SQLITE } from '../db/sql'
 /* --============= Table Row Definitions =============-- */
 
 interface SqliteMasterTR {
-  tbl_name: string
+  name: string
   sql: string
 }
 
@@ -26,17 +26,59 @@ class TableManager extends Model {
 
   tables_exist() {
     const res = this.get_table_definitions()
-    return res.some(row => row.tbl_name === 'forager')
+    return res.some(row => row.name === 'forager')
   }
 
   tables_schema() {
-    return this.get_table_definitions()
+    const tbl= this.get_table_definitions()
       .filter(row => row.sql !== null) // skip the builtin auto definitions
       .map(row => row.sql)
       .map(sql => sql.replace(/^\s+/mg, '')) // remove excess whitespace
-      .map(sql => sql.replace(/,\s+/mg, ',\n')) // make sure column definitions are on new lines
       .map(sql => sql.replace(/CREATE TABLE "(.*?)"/g, (_, name) => `CREATE TABLE ${name}`)) // remove optional quotes around table name
+      .map(sql => sql.replace(/CREATE TABLE ([a-z_]+) \(([\s\S]+)\)/gm, (_, name, columns_str: string) => {
+        const columns = columns_str
+          .trim()
+          .split(/\n/)
+          .map(col => col.trim())
+          .filter(col => !col.startsWith('--'))
+          .flatMap(col => {
+            const inlined_columns: string[] = []
+            let last_column_index = 0
+            let paren_count = 0
+            for (let i = 0; i < col.length; i++) {
+              const char = col[i]
+              switch(char) {
+                case '(':
+                  paren_count++
+                  break
+                case ')':
+                  paren_count--
+                  break
+                case ',':
+                  if (paren_count === 0) {
+                    inlined_columns.push(col.substring(last_column_index, i).trim())
+                    last_column_index = i + 1
+                  }
+                  break
+              }
+            }
+            if (last_column_index > col.length) inlined_columns.push(col.substring(last_column_index))
+            return inlined_columns
+          })
+          columns.sort((a, b) => {
+          if (a.startsWith('id')) return -1
+          else if (b.startsWith('id')) return 1
+          else if (a.startsWith('FOREIGN KEY')) return 1
+          else if (b.startsWith('FOREIGN KEY')) return -1
+          else return a.localeCompare(b)
+        })
+        const table_definition = `CREATE TABLE ${name} (
+  ${columns.join('\n  ')}
+)`
+        return table_definition
+      }))
       .join('\n\n')
+      return tbl
   }
 }
 
@@ -66,13 +108,12 @@ class GetForagerMetadata extends Statement {
 }
 
 class GetTableDefinitions extends Statement {
-  sql = `SELECT tbl_name, sql FROM sqlite_master ORDER BY name`
+  sql = `SELECT name, sql FROM sqlite_master ORDER BY name`
   stmt = this.register(this.sql)
 
   call(): SqliteMasterTR[] {
     return this.db.prepare(this.sql).all()
   }
-
 }
 
 
@@ -90,6 +131,7 @@ class DropTables extends Statement {
     DROP INDEX IF EXISTS media_tag;
     DROP INDEX IF EXISTS tag_name;
     DROP INDEX IF EXISTS media_file_text_search ;
+    DROP INDEX IF EXISTS media_file_reference;
     DROP INDEX IF EXISTS media_file_type;
     DROP INDEX IF EXISTS duplicate_log;`
 
@@ -146,6 +188,7 @@ class CreateTables extends Statement {
       thumbnail BLOB NOT NULL,
       file_size_bytes INTEGER NOT NULL,
       sha512checksum TEXT NOT NULL,
+      timestamp FLOAT NOT NULL,
       thumbnail_index INTEGER NOT NULL,
       updated_at ${TIMESTAMP_COLUMN},
       created_at ${TIMESTAMP_COLUMN},

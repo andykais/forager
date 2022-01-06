@@ -2,7 +2,8 @@ import { Action } from './base'
 import { NotFoundError, DuplicateMediaError } from '../util/errors'
 import { MediaChunk } from '../models/media_chunk'
 import { MediaReference } from '../models/media_reference'
-import { get_file_size, get_file_info, get_video_preview , get_file_checksum, get_buffer_checksum, get_file_thumbnail } from '../util/file_processing'
+import { get_file_size, get_file_info, get_video_preview , get_file_checksum, get_buffer_checksum, get_thumbnails  } from '../util/file_processing'
+// import { get_file_size, get_file_info, get_video_preview , get_file_checksum, get_buffer_checksum, get_file_thumbnail } from '../util/file_processing'
 import { get_hash_color } from '../util/text_processing'
 import * as inputs from '../inputs'
 import type { MediaReferenceTR } from '../models/media_reference'
@@ -32,25 +33,25 @@ class MediaAction extends Action {
       // this just is a way to skip the video preview early
       throw new DuplicateMediaError(filepath, sha512checksum)
     }
-    const [file_size_bytes, thumbnail, video_preview] = await Promise.all([
+    const [file_size_bytes, thumbnails] = await Promise.all([
       get_file_size(filepath),
-      get_file_thumbnail(filepath, media_file_info),
-      media_file_info.media_type === 'VIDEO' ? get_video_preview(filepath, media_file_info) : null,
+      get_thumbnails(filepath, media_file_info)
+      // get_file_thumbnail(filepath, media_file_info),
+      // media_file_info.media_type === 'VIDEO' ? get_video_preview(filepath, media_file_info) : null,
     ])
     const media_reference_data = { media_sequence_index: 0, stars: 0, view_count: 0, ...media_info }
     const media_file_data = {
       ...media_file_info,
       file_size_bytes,
       sha512checksum,
-      thumbnail,
-      thumbnail_file_size_bytes: thumbnail.length,
-      thumbnail_sha512checksum: get_buffer_checksum(thumbnail),
-      video_preview,
     }
-    console.log(media_file_data)
     const transaction = this.db.transaction_async(async () => {
       const media_reference_id = this.db.media_reference.insert(media_reference_data)
       const media_file_id = this.db.media_file.insert({ ...media_file_data, media_reference_id })
+      for (const thumbnail_index of thumbnails.keys()) {
+        const thumbnail = thumbnails[thumbnail_index]
+        this.db.media_thumbnail.insert({ thumbnail_index, media_file_id, ...thumbnail })
+      }
       await new Promise((resolve, reject) => {
         let bytes_start = 0
         const stream = fs.createReadStream(filepath, { highWaterMark: MediaChunk.CHUNK_SIZE })
@@ -95,7 +96,7 @@ class MediaAction extends Action {
 
   export = (media_reference_id: number, output_filepath: string) => {
       const media_file = this.db.media_file.select_one({ media_reference_id })
-      if (!media_file) throw new NotFoundError('MediaReference', media_reference_id)
+      if (!media_file) throw new NotFoundError('MediaFile', { media_reference_id })
 
       const stream = fs.createWriteStream(output_filepath)
       for (const media_chunk of this.db.media_chunk.iterate({ media_file_id: media_file.id })) {
@@ -130,26 +131,13 @@ class MediaAction extends Action {
     return this.db.media_reference.select_many({ limit, cursor, sort_by: 'created_at', order: 'desc' })
   }
 
-  get_thumbnails = (media_file_id: number) => {
-    return this.db.media_thumbnail.select_all_thumbnails({ media_file_id })
+  get_thumbnails_info = (media_file_id: number) => {
+    return this.db.media_thumbnail.select_thumbnails_info({ media_file_id })
   }
 
   get_thumbnail = (media_file_id: number, thumbnail_index: number) => {
     return this.db.media_thumbnail.select_thumbnail({ media_file_id, thumbnail_index })
   }
-
-  // get_preview = (media_reference_id: number) => {
-  //   return this.db.media_file.select_video_preview(media_reference_id)
-  //     ?? this.db.media_file.select_thumbnail(media_reference_id)
-  // }
-
-  // get_thumbnail = (media_reference_id: number) => {
-  //   return this.db.media_file.select_thumbnail(media_reference_id)
-  // }
-
-  // get_video_preview = (media_reference_id: number) => {
-  //   return this.db.media_file.select_video_preview(media_reference_id)
-  // }
 
   get_file = (media_reference_id: number, range?: { bytes_start: number; bytes_end: number }) => {
     if (range === undefined) {
@@ -180,7 +168,7 @@ class MediaAction extends Action {
   get_reference = (media_reference_id: number) => {
     const media_file = this.db.media_file.select_one({ media_reference_id })
     // TODO these should be a get_or_raise helper or something
-    if (!media_file) throw new Error(`media_file does not exist for media_refernce_id ${media_reference_id}`)
+    if (!media_file) throw new NotFoundError('MediaFile', {media_reference_id})
     const media_reference = this.db.media_reference.select_one({ media_reference_id })
     if (!media_reference) throw new Error(`media_file does not exist for media_refernce_id ${media_reference_id}`)
     const tags = this.db.tag.select_many_by_media_reference({ media_reference_id })
@@ -191,7 +179,15 @@ class MediaAction extends Action {
   // methods like these make me nervous because its super granular, which makes it fast,
   // but an orm would avoid the need for a statement, model method, etc
   get_file_info = (media_reference_id: number) => {
-    return this.db.media_file.select_one_content_type({ media_reference_id },)
+    const file_info = this.db.media_file.select_one_content_type({ media_reference_id },)
+    if (!file_info) throw new NotFoundError('MediaFile', {media_reference_id})
+    return file_info
+  }
+
+  get_media_info = (media_reference_id: number) => {
+    const media_file = this.db.media_file.select_one({ media_reference_id },)
+    if (!media_file) throw new NotFoundError('MediaFile', {media_reference_id})
+    return media_file
   }
 }
 

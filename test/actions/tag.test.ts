@@ -22,7 +22,7 @@ test('tag crud', async () => {
   await rmf(media_output_path)
 
   const forager = new Forager({ database_path })
-  forager.init()
+  await forager.init()
 
   // import a file
   const tags = [

@@ -72,7 +72,7 @@ class CreateTag extends Statement {
 function deserialize_tag_group_join(tag_data: TagDataTR & { metadata?: string }): TagDataTR {
   return {
     ...tag_data,
-    metadata: tag_data === null ? null : JSON.parse(tag_data?.metadata)
+    metadata: tag_data.metadata === null ? null : JSON.parse(tag_data.metadata)
   }
 }
 
@@ -96,7 +96,7 @@ class SelectOneTagByName extends Statement {
   call(query_data: { name: TagTR['name']; group: TagGroupTR['name'] | null}): TagDataTR | null {
     const { name, group = '' } = query_data
     const row = this.stmt.ref.get({ name, group })
-    if (row === null) return null
+    if (row === undefined) return null
     else return deserialize_tag_group_join(row)
   }
 }

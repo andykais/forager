@@ -1,6 +1,3 @@
-// import 'source-map-support/register'
-// import tap from 'tap'
-// import type * as Tap from 'tap'
 import * as fs from 'fs'
 import { Forager, DuplicateMediaError, NotFoundError } from '../../src/index'
 import { get_file_checksum } from '../../src/util/file_processing'
@@ -25,7 +22,7 @@ test('add media', async () => {
   await rmf(media_output_path)
 
   const forager = new Forager({ database_path })
-  forager.init()
+  await forager.init()
 
   // test file importing
   const tags = [{ group: '', name: 'Procedural Generation' }, { group: 'colors', name: 'black' }]
@@ -84,7 +81,7 @@ test('cursor', async () => {
   await rmf(database_path)
 
   const forager = new Forager({ database_path })
-  forager.init()
+  await forager.init()
 
   const procedural_media = await forager.media.create('test/resources/koch.tif', {}, [{ name: 'same' }])
   expect(forager.media.list().total).toEqual(1)
@@ -122,12 +119,36 @@ test('cursor', async () => {
   expect(nullish_2nd.result[0].id).toEqual(ed_edd_eddy.media_reference_id)
 })
 
+test('media thumbnails', async () => {
+  const database_path = 'test/fixtures/forager-media-chunks-test.db'
+  await rmf(database_path)
+
+  const forager = new Forager({ database_path })
+  await forager.init()
+
+  const video_media = await forager.media.create('test/resources/cityscape-timelapse.mp4', {}, [])
+  expect(forager.media.list().total).toEqual(1)
+
+  const { duration, framerate } = await forager.media.get_media_info(video_media.media_reference_id)
+  const num_captured_frames = 18 // this is hardcoded for now
+  expect(duration).toEqual(8.5)
+  expect(framerate).toEqual(24)
+  const thumbnails = await forager.media.get_thumbnails_info(video_media.media_file_id)
+  expect(thumbnails.length).toEqual(18)
+  expect(thumbnails.map(t => t.thumbnail_index)).toEqual([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17])
+  const frame_capture_per_interval = duration / num_captured_frames
+  for (const thumbnail of thumbnails) {
+    const expected_timestamp = frame_capture_per_interval * thumbnail.thumbnail_index
+    expect(thumbnail.timestamp).toEqual(parseFloat(expected_timestamp.toFixed(6)))
+  }
+})
+
 test('media chunks', async () => {
   const database_path = 'test/fixtures/forager-media-chunks-test.db'
   await rmf(database_path)
 
   const forager = new Forager({ database_path })
-  forager.init()
+  await forager.init()
 
   const video_media = await forager.media.create('test/resources/cityscape-timelapse.mp4', {}, [])
   expect(forager.media.list().total).toEqual(1)
@@ -163,7 +184,7 @@ test('media views', async () => {
   await rmf(database_path)
 
   const forager = new Forager({ database_path })
-  forager.init()
+  await forager.init()
 
   const procedural_media = await forager.media.create('test/resources/koch.tif', {}, [{ name: 'shared' }, { name: 'procedural' }])
   expect(forager.media.list().total).toEqual(1)
