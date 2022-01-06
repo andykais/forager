@@ -1,3 +1,4 @@
+import fs from 'fs'
 import arg from 'arg'
 import { Forager, DuplicateMediaError } from './index'
 import { Logger } from './logger'
@@ -52,7 +53,8 @@ function parse_tags(tags: string[] = []) {
   const forager = new Forager(config)
   forager.init()
   for (const filepath of args['_']) {
-    const media_info = {}
+    const stats = await fs.promises.stat(filepath)
+    const media_info = {  source_created_at: stats.ctime }
     const tags = parse_tags(args['--tag'])
     try {
       cli_logger.info(`importing ${filepath}`)
