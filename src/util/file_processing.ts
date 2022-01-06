@@ -217,4 +217,4 @@ async function get_file_thumbnail(filepath: string, file_info: FileInfo): Promis
   }
 }
 
-export { get_file_size, get_file_info, get_video_preview, get_file_checksum, get_buffer_checksum, get_thumbnails }
+export { get_file_size, get_file_info, get_video_preview, get_file_checksum, get_buffer_checksum, get_thumbnails, num_captured_frames }

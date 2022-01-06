@@ -2,7 +2,7 @@ import { Action } from './base'
 import { NotFoundError, DuplicateMediaError } from '../util/errors'
 import { MediaChunk } from '../models/media_chunk'
 import { MediaReference } from '../models/media_reference'
-import { get_file_size, get_file_info, get_video_preview , get_file_checksum, get_buffer_checksum, get_thumbnails  } from '../util/file_processing'
+import { get_file_size, get_file_info, get_video_preview , get_file_checksum, get_buffer_checksum, get_thumbnails, num_captured_frames } from '../util/file_processing'
 // import { get_file_size, get_file_info, get_video_preview , get_file_checksum, get_buffer_checksum, get_file_thumbnail } from '../util/file_processing'
 import { get_hash_color } from '../util/text_processing'
 import * as inputs from '../inputs'
@@ -187,7 +187,12 @@ class MediaAction extends Action {
   get_media_info = (media_reference_id: number) => {
     const media_file = this.db.media_file.select_one({ media_reference_id },)
     if (!media_file) throw new NotFoundError('MediaFile', {media_reference_id})
-    return media_file
+    const thumbnail_count = {
+      VIDEO: num_captured_frames,
+      IMAGE: 1,
+      AUDIO: 0
+    }[media_file.media_type]
+    return {...media_file, thumbnail_count}
   }
 }
 

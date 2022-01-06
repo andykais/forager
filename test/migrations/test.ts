@@ -50,5 +50,15 @@ test('migrations', async function() {
   )
   expect(forager_new.tag.list()[0].unread_media_reference_count).toEqual(1)
   expect(outdated_forager.tag.list()[0].unread_media_reference_count).toEqual(1)
-  expect(outdated_forager.media.get_media_info(video_media.media_file_id).framerate).toEqual(24)
+  const outdated_media_info = outdated_forager.media.get_media_info(video_media.media_file_id)
+  expect(outdated_media_info.framerate).toEqual(24)
+  expect(outdated_media_info.duration).toEqual(8.5)
+  const thumbnails = outdated_forager.media.get_thumbnails_info(video_media.media_file_id)
+  expect(outdated_media_info.thumbnail_count).toEqual(18)
+  expect(thumbnails.length).toEqual(18)
+  const frame_capture_per_interval = outdated_media_info.duration / outdated_media_info.thumbnail_count
+  for (const thumbnail of thumbnails) {
+    const expected_timestamp = frame_capture_per_interval * thumbnail.thumbnail_index
+    expect(thumbnail.timestamp).toEqual(parseFloat(expected_timestamp.toFixed(6)))
+  }
 })

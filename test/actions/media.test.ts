@@ -129,18 +129,28 @@ test('media thumbnails', async () => {
   const video_media = await forager.media.create('test/resources/cityscape-timelapse.mp4', {}, [])
   expect(forager.media.list().total).toEqual(1)
 
-  const { duration, framerate } = await forager.media.get_media_info(video_media.media_reference_id)
-  const num_captured_frames = 18 // this is hardcoded for now
+  const { duration, framerate, thumbnail_count } = await forager.media.get_media_info(video_media.media_reference_id)
   expect(duration).toEqual(8.5)
   expect(framerate).toEqual(24)
   const thumbnails = await forager.media.get_thumbnails_info(video_media.media_file_id)
+  expect(thumbnail_count).toEqual(18)
   expect(thumbnails.length).toEqual(18)
   expect(thumbnails.map(t => t.thumbnail_index)).toEqual([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17])
-  const frame_capture_per_interval = duration / num_captured_frames
+  const frame_capture_per_interval = duration / thumbnail_count
   for (const thumbnail of thumbnails) {
     const expected_timestamp = frame_capture_per_interval * thumbnail.thumbnail_index
     expect(thumbnail.timestamp).toEqual(parseFloat(expected_timestamp.toFixed(6)))
   }
+
+  const image_media = await forager.media.create(media_input_path, {}, [])
+  expect(forager.media.list().total).toEqual(2)
+  const image_info = forager.media.get_media_info(image_media.media_reference_id)
+  expect(image_info.duration).toEqual(0)
+  expect(image_info.framerate).toEqual(0)
+  expect(image_info.thumbnail_count).toEqual(1)
+  const image_thumbnails = forager.media.get_thumbnails_info(image_media.media_file_id)
+  expect(image_thumbnails.length).toEqual(1)
+  expect(image_thumbnails[0].timestamp).toEqual(0)
 })
 
 test('media chunks', async () => {
