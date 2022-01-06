@@ -5,7 +5,6 @@ export class Migration extends MigrationStatement {
 
   call() {
     this.db.exec(`ALTER TABLE tag ADD COLUMN description TEXT;`)
-    this.db.exec(`ALTER TABLE tag ADD COLUMN 
-                 metadata JSON;`)
+    this.db.exec(`ALTER TABLE tag ADD COLUMN metadata JSON;`)
   }
 }

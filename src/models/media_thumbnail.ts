@@ -73,3 +73,4 @@ class SelectThumbnailsInfo extends Statement {
 }
 
 export { MediaThumbnail }
+export type { MediaThumbnailTR }
