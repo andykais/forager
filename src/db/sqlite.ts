@@ -1,5 +1,5 @@
-import Sqlite3 from 'better-sqlite3'
 import { version } from '../../package.json'
+import Sqlite3 from 'better-sqlite3'
 import { Context } from '../context'
 import { init_migrations } from './migrations/index'
 import type { Model, MigrationStatement } from './base'
