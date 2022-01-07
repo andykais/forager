@@ -200,7 +200,9 @@ export class Migration extends MigrationStatement {
       width?: number
       height?: number
     }
-    for (const media_file of select_media_file_ids_stmt.all() as MediaFile[]) {
+    const media_files: MediaFile[] = select_media_file_ids_stmt.all()
+    for (const index of media_files.keys()) {
+      const media_file = media_files[index]
       const tmpdir = await fs.promises.mkdtemp(path.join(os.tmpdir(), '006_migration-'))
       const ext = {
         'h264': 'mp4',
@@ -232,6 +234,8 @@ export class Migration extends MigrationStatement {
         })
       }
       update_media_file_stmt.run({ framerate, media_file_id: media_file.id })
+      process.stdout.write(`\rcreated thumbnails for media file ${index}/${media_files.length}`)
     }
+    console.log()
   }
 }
