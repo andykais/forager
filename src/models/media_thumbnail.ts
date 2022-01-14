@@ -3,6 +3,7 @@ import { NotFoundError } from '../util/errors'
 import { TagInput } from '../inputs/tag'
 import type { InsertRow } from '../db/base'
 import type { MediaFileTR } from './media_file'
+import type { MediaReferenceTR } from './media_reference'
 
 /* --============= Table Row Definitions =============-- */
 
@@ -23,6 +24,7 @@ interface MediaThumbnailTR {
 class MediaThumbnail extends Model {
   insert = this.register(InsertThumbnail)
   select_thumbnail = this.register(SelectThumbnail)
+  select_thumbnail_by_reference = this.register(SelectThumbnailByReference)
   select_thumbnails_info = this.register(SelectThumbnailsInfo)
 }
 
@@ -56,6 +58,21 @@ class SelectThumbnail extends Statement {
   call(query_data: Pick<MediaThumbnailTR, 'media_file_id' | 'thumbnail_index'>): MediaThumbnailTR['thumbnail'] {
     const result = this.stmt.ref.get(query_data)
     if (result === null) throw new NotFoundError(SelectThumbnail.name, query_data)
+    return result.thumbnail
+  }
+}
+
+class SelectThumbnailByReference extends Statement {
+  sql = `SELECT thumbnail FROM media_thumbnail
+    INNER JOIN media_file ON media_file_id = media_file.id
+    INNER JOIN media_reference ON media_reference_id = media_reference.id
+    WHERE media_reference.id = ?`
+
+  stmt = this.register(this.sql)
+
+  call(media_reference_id: MediaReferenceTR['id']): MediaThumbnailTR['thumbnail'] {
+    const result = this.stmt.ref.get(media_reference_id)
+    if (result === null) throw new NotFoundError(SelectThumbnail.name, {media_reference_id})
     return result.thumbnail
   }
 }

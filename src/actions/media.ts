@@ -139,6 +139,10 @@ class MediaAction extends Action {
     return this.db.media_thumbnail.select_thumbnail({ media_file_id, thumbnail_index })
   }
 
+  get_thumbnail_by_media_reference = (media_reference_id: number) => {
+    return this.db.media_thumbnail.select_thumbnail_by_reference(media_reference_id)
+  }
+
   get_file = (media_reference_id: number, range?: { bytes_start: number; bytes_end: number }) => {
     if (range === undefined) {
       const chunks = this.db.media_chunk.all({ media_reference_id }).map(r => r.chunk)

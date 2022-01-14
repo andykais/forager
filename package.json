@@ -8,7 +8,6 @@
     "forager": "src/cli.js"
   },
   "scripts": {
-    "build": "cp package.json build/src && sed -i.bak 's/..\\/..\\/package.json/..\\/package.json/' build/src/db/sqlite.js",
     "build": "tsc",
     "build:watch": "mkdir -p build/src && cp package.json build/src && tsc --watch",
     "typecheck": "tsc --noEmit",
