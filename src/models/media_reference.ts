@@ -140,6 +140,7 @@ class SelectManyMediaReference extends Statement {
   call(query_data: {
     tag_ids?: TagTR['id'][]
     stars?: number
+    stars_equality?: 'gte' | 'eq'
     unread?: boolean
     sort_by: 'created_at' | 'updated_at' | 'source_created_at' | 'view_count',
     order: 'desc' | 'asc'
@@ -162,7 +163,8 @@ class SelectManyMediaReference extends Statement {
       group_clauses.push(`HAVING COUNT(tag.id) >= ${tag_ids.length}`)
     }
     if (stars !== undefined) {
-      where_clauses.push(`media_reference.stars >= ${query_data.stars}`)
+      const equality = query_data.stars_equality === 'eq' ? '=' : '>='
+      where_clauses.push(`media_reference.stars ${equality} ${query_data.stars}`)
     }
     if (unread) {
       where_clauses.push('media_reference.view_count = 0')

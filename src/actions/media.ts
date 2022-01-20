@@ -120,9 +120,9 @@ class MediaAction extends Action {
       tag_ids.push(...params.query.tag_ids)
     }
     const { limit, cursor } = input
-    const { stars, unread, sort_by, order } = input.query
+    const { stars, stars_equality, unread, sort_by, order } = input.query
 
-    return this.db.media_reference.select_many({ tag_ids, stars, unread, sort_by, order, limit, cursor })
+    return this.db.media_reference.select_many({ tag_ids, stars, stars_equality, unread, sort_by, order, limit, cursor })
   }
 
   // TODO offset needs to be replaces w/ a cursor. The cursor will be source_created_at + created_at
