@@ -163,8 +163,12 @@ class SelectManyMediaReference extends Statement {
       group_clauses.push(`HAVING COUNT(tag.id) >= ${tag_ids.length}`)
     }
     if (stars !== undefined) {
-      const equality = query_data.stars_equality === 'eq' ? '=' : '>='
-      where_clauses.push(`media_reference.stars ${equality} ${query_data.stars}`)
+      // stars >= 0 is the equivilant of not specifying a star filter
+      if (stars === 0 && query_data.stars_equality === 'gte') {}
+      else {
+        const equality = query_data.stars_equality === 'eq' ? '=' : '>='
+        where_clauses.push(`media_reference.stars ${equality} ${query_data.stars}`)
+      }
     }
     if (unread) {
       where_clauses.push('media_reference.view_count = 0')

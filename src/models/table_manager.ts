@@ -337,7 +337,7 @@ class CreateTables extends Statement {
     -- NOTES: lets use the "INDEXED BY <index_name>" clause to hardcode indexes to look things up with
     -- It will be cool and way easier to determine what queries are used
 
-    CREATE UNIQUE INDEX media_tag ON media_reference_tag (tag_id, media_reference_id);
+    CREATE UNIQUE INDEX media_tag_by_reference ON media_reference_tag (tag_id, media_reference_id);
     CREATE UNIQUE INDEX tag_name ON tag (name, tag_group_id);
     CREATE UNIQUE INDEX media_file_reference ON media_file (media_reference_id);
     CREATE INDEX media_file_type ON media_file (media_type, animated);
