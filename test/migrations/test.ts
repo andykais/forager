@@ -45,15 +45,15 @@ test('migrations', async function() {
 
   const range = { bytes_start: 10485760, bytes_end: 11065971 }
   expect(
-    forager_new.media.get_file(1, range)).toEqual(
-    outdated_forager.media.get_file(1, range)
+    forager_new.file.get({ media_reference_id: 1, range})).toEqual(
+    outdated_forager.file.get({ media_reference_id: 1, range })
   )
   expect(forager_new.tag.list()[0].unread_media_reference_count).toEqual(1)
   expect(outdated_forager.tag.list()[0].unread_media_reference_count).toEqual(1)
-  const outdated_media_info = outdated_forager.media.get_media_info(video_media.media_file_id)
+  const outdated_media_info = outdated_forager.file.stat({ media_file_id: video_media.media_file_id })
   expect(outdated_media_info.framerate).toEqual(24)
   expect(outdated_media_info.duration).toEqual(8.5)
-  const thumbnails = outdated_forager.media.get_thumbnails_info(video_media.media_file_id)
+  const thumbnails = outdated_forager.thumbnail.list({media_file_id: video_media.media_file_id})
   expect(outdated_media_info.thumbnail_count).toEqual(18)
   expect(thumbnails.length).toEqual(18)
   const frame_capture_per_interval = outdated_media_info.duration / outdated_media_info.thumbnail_count

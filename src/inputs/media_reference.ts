@@ -4,7 +4,9 @@ import { parseISO } from 'date-fns'
 import type { MediaInfo } from '../actions/media'
 import type { Json } from '../util/types'
 
-const StringDateTime = z.string().refine(parseISO).transform(parseISO)
+const StringDateTime = z.string()
+  .refine(date_str => parseISO(date_str))
+  .transform(date_str => parseISO(date_str))
 
 export const PaginatedQueryInput = z.object({
   limit: z.number().default(100),

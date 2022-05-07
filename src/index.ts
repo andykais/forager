@@ -1,5 +1,7 @@
 import { Context } from './context'
 import { MediaAction } from './actions/media'
+import { FileAction } from './actions/file'
+import { ThumbnailAction } from './actions/thumbnail'
 import { TagAction } from './actions/tag'
 import type { ContextConfig } from './context'
 
@@ -13,8 +15,10 @@ class Forager {
   }
 
   // available actions
-  media = new MediaAction(this.context)
   tag = new TagAction(this.context)
+  media = new MediaAction(this.context)
+  file = new FileAction(this.context)
+  thumbnail = new ThumbnailAction(this.context)
 }
 
 export { Forager }

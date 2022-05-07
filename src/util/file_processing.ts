@@ -97,11 +97,17 @@ async function  get_thumbnails(filepath: string, file_info: FileInfo) {
       const thumbnail_fps = 1 / (file_info.duration / num_captured_frames)
 
       const ffmpeg_cmd = `ffmpeg -v error -i '${filepath}' -an -s ${max_width_or_height} -vf fps=${thumbnail_fps} -frames:v ${num_captured_frames} -f image2 '${thumbnail_filepath}'`
-      const ffprobe_cmd = `ffprobe -v error -f lavfi -i "movie=${filepath},fps=fps=${thumbnail_fps}[out0]" -show_frames -show_entries frame=pkt_pts_time -of csv=p=0`
+      const ffprobe_cmd = `ffprobe -v error -f lavfi -i "movie=${filepath},fps=fps=${thumbnail_fps}[out0]" -show_frames -show_entries frame=pkt_dts_time -of csv=p=0`
       const [frame_timestamps] = await Promise.all([
         exec(ffprobe_cmd).then(out => {
-          const timestamps = out.stdout.trim().split('\n').map(line => parseFloat(line))
-          for (const timestamp of timestamps) if (Number.isNaN(timestamp)) throw new Error(`could not parse ffprobe timestamp for thumbnail of ${filepath}, ${out.stderr}`)
+          const timestamps = out.stdout
+            .trim()
+            .split('\n')
+            .map(line => {
+              const timestamp = parseFloat(line)
+              if (Number.isNaN(timestamp)) throw new Error(`could not parse ffprobe timestamp '${line}' for thumbnail of ${filepath}\n${ffprobe_cmd}\n${out.stderr}`)
+              return timestamp
+            })
           return timestamps
         }),
         exec(ffmpeg_cmd),

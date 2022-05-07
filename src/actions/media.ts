@@ -124,6 +124,23 @@ class MediaAction extends Action {
 
     return this.db.media_reference.select_many({ tag_ids, stars, stars_equality, unread, sort_by, order, limit, cursor })
   }
+  search_group_by = () => {
+    return {
+      total: 2,
+      cursor: '',
+      results: [
+        {
+          group: '',
+          count: 10
+        },
+        {
+          group: 'medium',
+          count: 3
+        }
+      ]
+    }
+
+  }
 
   // TODO offset needs to be replaces w/ a cursor. The cursor will be source_created_at + created_at
   list = (params: inputs.PaginatedQuery = {}) => {
@@ -131,43 +148,6 @@ class MediaAction extends Action {
     return this.db.media_reference.select_many({ limit, cursor, sort_by: 'created_at', order: 'desc' })
   }
 
-  get_thumbnails_info = (media_file_id: number) => {
-    return this.db.media_thumbnail.select_thumbnails_info({ media_file_id })
-  }
-
-  get_thumbnail = (media_file_id: number, thumbnail_index: number) => {
-    return this.db.media_thumbnail.select_thumbnail({ media_file_id, thumbnail_index })
-  }
-
-  get_thumbnail_by_media_reference = (media_reference_id: number) => {
-    return this.db.media_thumbnail.select_thumbnail_by_reference(media_reference_id)
-  }
-
-  get_file = (media_reference_id: number, range?: { bytes_start: number; bytes_end: number }) => {
-    if (range === undefined) {
-      const chunks = this.db.media_chunk.all({ media_reference_id }).map(r => r.chunk)
-      return Buffer.concat(chunks)
-    } else {
-      const media_chunks = this.db.media_chunk.select_chunk_range({ media_reference_id, ...range })
-      const chunks = media_chunks.map((row, i) => {
-        let chunk = row.chunk
-        if (i === 0) {
-          if (row.bytes_start < range.bytes_start) {
-            chunk = chunk.slice(range.bytes_start - row.bytes_start)
-          }
-        }
-        if (i === media_chunks.length - 1) {
-          if (row.bytes_end > range.bytes_end) {
-            if (i === 0) chunk = chunk.slice(0, range.bytes_end - range.bytes_start)
-            else chunk = chunk.slice(0, range.bytes_end - row.bytes_start)
-          }
-        }
-        return chunk
-      })
-      return Buffer.concat(chunks)
-    }
-
-  }
 
   get_reference = (media_reference_id: number) => {
     const media_file = this.db.media_file.select_one({ media_reference_id })
@@ -178,25 +158,6 @@ class MediaAction extends Action {
     const tags = this.db.tag.select_many_by_media_reference({ media_reference_id })
 
     return { media_file, media_reference, tags }
-  }
-
-  // methods like these make me nervous because its super granular, which makes it fast,
-  // but an orm would avoid the need for a statement, model method, etc
-  get_file_info = (media_reference_id: number) => {
-    const file_info = this.db.media_file.select_one_content_type({ media_reference_id },)
-    if (!file_info) throw new NotFoundError('MediaFile', {media_reference_id})
-    return file_info
-  }
-
-  get_media_info = (media_reference_id: number) => {
-    const media_file = this.db.media_file.select_one({ media_reference_id },)
-    if (!media_file) throw new NotFoundError('MediaFile', {media_reference_id})
-    const thumbnail_count = {
-      VIDEO: num_captured_frames,
-      IMAGE: 1,
-      AUDIO: 0
-    }[media_file.media_type]
-    return {...media_file, thumbnail_count}
   }
 }
 

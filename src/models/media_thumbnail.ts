@@ -1,7 +1,7 @@
 import { Model, Statement } from '../db/base'
 import { NotFoundError } from '../util/errors'
 import { TagInput } from '../inputs/tag'
-import type { InsertRow } from '../db/base'
+import type { InsertRow, SqliteStatementRef } from '../db/base'
 import type { MediaFileTR } from './media_file'
 import type { MediaReferenceTR } from './media_reference'
 
@@ -24,7 +24,7 @@ interface MediaThumbnailTR {
 class MediaThumbnail extends Model {
   insert = this.register(InsertThumbnail)
   select_thumbnail = this.register(SelectThumbnail)
-  select_thumbnail_by_reference = this.register(SelectThumbnailByReference)
+  // select_thumbnail_by_reference = this.register(SelectThumbnailByReference)
   select_thumbnails_info = this.register(SelectThumbnailsInfo)
 }
 
@@ -50,32 +50,32 @@ class InsertThumbnail extends Statement {
 }
 
 
+type MediaThumbnailQuery =
+  | { media_reference_id: number; thumbnail_index: number }
+  | { media_file_id: number; thumbnail_index: number }
+  | { thumbnail_id: number }
+
 class SelectThumbnail extends Statement {
-  sql = `SELECT thumbnail FROM media_thumbnail WHERE id = ?`
-
-  stmt = this.register(this.sql)
-
-  call(query_data: Pick<MediaThumbnailTR, 'media_file_id' | 'thumbnail_index'>): MediaThumbnailTR['thumbnail'] {
-    const result = this.stmt.ref.get(query_data)
-    if (result === null) throw new NotFoundError(SelectThumbnail.name, query_data)
-    return result.thumbnail
-  }
-}
-
-class SelectThumbnailByReference extends Statement {
-  sql = `SELECT thumbnail FROM media_thumbnail
+  stmt_by_thumbnail_id = this.register(`SELECT * FROM media_thumbnail WHERE id = :thumbnail_id`)
+  stmt_by_file_id = this.register(`SELECT * FROM media_thumbnail WHERE media_file_id = :media_file_id AND thumbnail_index = :thumbnail_index`)
+  stmt_by_reference_id = this.register(`SELECT * FROM media_thumbnail
     INNER JOIN media_file ON media_file_id = media_file.id
-    INNER JOIN media_reference ON media_reference_id = media_reference.id
-    WHERE media_reference.id = ?`
+    WHERE media_reference_id = :media_reference_id AND thumbnail_index = :thumbnail_index`)
 
-  stmt = this.register(this.sql)
+  call(query_data: MediaThumbnailQuery): MediaThumbnailTR['thumbnail'] {
+    if ('media_reference_id' in query_data) return this.get_or_raise(this.stmt_by_reference_id, query_data)
+    if ('media_file_id' in query_data) return this.get_or_raise(this.stmt_by_file_id, query_data)
+    if ('thumbnail_id' in query_data) return this.get_or_raise(this.stmt_by_thumbnail_id, query_data)
+    else throw new Error(`Unexpected thumbnail query ${query_data}`)
+  }
 
-  call(media_reference_id: MediaReferenceTR['id']): MediaThumbnailTR['thumbnail'] {
-    const result = this.stmt.ref.get(media_reference_id)
-    if (result === null) throw new NotFoundError(SelectThumbnail.name, {media_reference_id})
-    return result.thumbnail
+  private get_or_raise(stmt: SqliteStatementRef, query_data: MediaThumbnailQuery): MediaThumbnailTR['thumbnail'] {
+    const row = stmt.ref.get(query_data)
+    if (!row) throw new NotFoundError(SelectThumbnail.name, query_data)
+    return row.thumbnail
   }
 }
+
 
 class SelectThumbnailsInfo extends Statement {
   sql = `SELECT id, timestamp, thumbnail_index FROM media_thumbnail WHERE media_file_id = :media_file_id ORDER BY thumbnail_index`

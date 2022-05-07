@@ -71,24 +71,31 @@ class SelectOneContentType extends Statement {
   }
 }
 
+
+type MediaFileQuery =
+  | { media_reference_id: MediaReferenceTR['id'] }
+  | { media_file_id: MediaFileTR['id'] }
+  | { sha512checksum: MediaFileTR['sha512checksum'] }
+
+
+class SelectOneMediaFile extends Statement {
+  stmt_by_reference_id = this.register(`SELECT * FROM media_file WHERE media_reference_id = :media_reference_id`)
+  stmt_by_checksum = this.register(`SELECT * FROM media_file WHERE sha512checksum = :sha512checksum`)
+  stmt_by_file_id = this.register(`SELECT * FROM media_file WHERE id = :media_file_id`)
+
+  call(query_data: MediaFileQuery): MediaFileTR | null {
+    if ('media_reference_id' in query_data) return this.stmt_by_reference_id.ref.get(query_data)
+    if ('media_file_id' in query_data) return this.stmt_by_file_id.ref.get(query_data)
+    if ('sha512checksum' in query_data) return this.stmt_by_checksum.ref.get(query_data)
+    else throw new Error(`Unexpected query ${query_data}`)
+  }
+}
+
 class SelectOneByChecksum extends Statement {
   stmt = this.register(`SELECT * FROM media_file WHERE sha512checksum = ?`)
 
   call(query_data: { sha512checksum: string }): MediaFileTR | null {
     return this.stmt.ref.get(query_data.sha512checksum)
-  }
-}
-
-class SelectOneMediaFile extends Statement {
-  sql = `SELECT media_file.* FROM media_file
-    INNER JOIN media_reference ON media_reference.id = @media_reference_id
-    WHERE media_file.media_reference_id = media_reference.id
-  `
-  stmt = this.register(this.sql)
-
-  call(query_data: {media_reference_id: MediaReferenceTR['id']}): MediaFileTR | null {
-    const row = this.stmt.ref.get(query_data)
-    return row
   }
 }
 

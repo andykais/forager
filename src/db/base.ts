@@ -5,6 +5,7 @@ import type Sqlite3 from 'better-sqlite3'
 // I dont see us ever inserting more than 2^53 rows, and since we use integer primary keys, this should never happen
 type RunResult = { lastInsertRowid: number }
 class UninitializedStmt implements Sqlite3.Statement {
+  busy: boolean = false
   database: any
   reader: any
   constructor(public source: string) {}
@@ -41,8 +42,10 @@ abstract class Model {
 
 
 
+type SqliteStatementRef = { ref: Sqlite3.Statement; sql: string }
+
 abstract class Statement<A extends any[] = any[], R = any> {
-  private stmt_pointers: { ref: Sqlite3.Statement; sql: string }[]
+  private stmt_pointers: SqliteStatementRef[]
 
 
   public constructor(protected db: Sqlite3.Database) {
@@ -162,4 +165,4 @@ type Paginated<TR extends BaseTR> = {
 }
 
 export { Model, Statement, MigrationStatement }
-export type { SelectRow, InsertRow, InsertRowEncoded, SelectRowEncoded, Paginated }
+export type { SelectRow, InsertRow, InsertRowEncoded, SelectRowEncoded, Paginated, SqliteStatementRef }

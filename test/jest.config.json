@@ -1,5 +1,6 @@
 {
   "preset": "ts-jest",
   "testEnvironment": "node",
-  "setupFilesAfterEnv": ["./setupFilesAfterEnv.js"]
+  "setupFilesAfterEnv": ["./setupFilesAfterEnv.js"],
+  "testTimeout": 10000
 }

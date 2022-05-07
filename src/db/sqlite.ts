@@ -38,6 +38,7 @@ class Database {
 
   public async init() {
     this.db.pragma('journal_mode = WAL')
+    this.db.pragma('FOREIGN_KEYS = ON')
     if (this.table_manager.tables_exist()) {
       await this.migrate()
     } else {
