@@ -1,14 +1,18 @@
 import { ForagerConfig } from './src/config.ts'
 import { Context } from './src/context.ts'
+import { MediaAction } from './src/actions/media.ts'
 
 
 class Forager {
-  public config: ForagerConfig
   private context: Context
+  public config: ForagerConfig
+  // available actions
+  public media: MediaAction
 
   public constructor(config: ForagerConfig) {
     this.config = config
     this.context = new Context(this.config)
+    this.media = new MediaAction(this.context)
   }
 
   public async init() {

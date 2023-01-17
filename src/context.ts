@@ -2,6 +2,9 @@ import { ForagerCore } from './database/core.ts'
 import { ForagerConfig, ForagerConfigInput } from './config.ts'
 import { Logger, type LogLevel } from './logger.ts'
 
+type Literal = boolean | null | number | string;
+export type Json = Literal | { [key: string]: Json } | Json[];
+
 class Context {
   public db: ForagerCore
   public config: ForagerConfig
