@@ -1,4 +1,4 @@
-import { z } from '../deps.ts'
+import { z } from 'zod'
 
 function sanitize_name(name: string) {
   return name.toLowerCase().replace(/ /g, '_')

@@ -1,15 +1,14 @@
-import type { Context } from '../context'
-import type { Database } from '../db/sqlite'
-import { Statement } from '../db/base'
+import type { Context } from '../context.ts'
+import type { ForagerCore } from '../database/core.ts'
 
 class Action {
-  protected db: Database
+  protected context: Context
+  protected db: ForagerCore
 
-  public constructor(protected context: Context) {
+  public constructor(context: Context) {
+    this.context = context
     this.db = context.db
   }
-
-  protected is_unique_constaint_error = Statement.is_unique_constaint_error
 }
 
 
