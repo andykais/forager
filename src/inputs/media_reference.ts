@@ -1,6 +1,12 @@
 import { z, expect_type } from '../deps.ts'
-import { JsonSchema } from './mod.ts'
+import { TagInput } from './mod.ts'
 import { type Json } from '../context.ts'
+
+
+const LiteralSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
+export const JsonSchema: z.ZodSchema<Json> = z.lazy(() =>
+  z.union([LiteralSchema, z.array(JsonSchema), z.record(JsonSchema)])
+);
 
 
 export interface MediaInfo {
@@ -17,6 +23,29 @@ export interface MediaInfo {
 const StringDateTime = z.string()
   .refine(date_str => new Date(date_str))
   .transform(date_str => new Date(date_str))
+
+
+export const PaginatedQueryInput = z.object({
+  limit: z.number().default(100),
+  cursor: z.tuple([
+    z.union([z.number(), z.string(), z.null()]),
+    z.number()
+  ]).optional().nullable().transform(v => v ?? null)
+}).strict()
+export type PaginatedQuery = z.input<typeof PaginatedQueryInput>
+
+export const PaginatedSearchInput = PaginatedQueryInput.extend({
+  query: z.object({
+    tag_ids: z.array(z.number()).optional(),
+    tags: z.array(TagInput).optional(),
+    stars: z.number().gte(0).lte(5).optional(),
+    stars_equality: z.enum(['gte', 'eq']).default(('gte')),
+    unread: z.boolean().default(false),
+    sort_by: z.enum(['created_at', 'updated_at', 'source_created_at', 'view_count']).default('source_created_at'),
+    order: z.enum(['desc', 'asc']).default('desc'),
+  }).strict().default({})
+}).strict()
+export type PaginatedSearch = z.input<typeof PaginatedSearchInput>
 
 
 export const MediaReferenceUpdateInput: z.ZodSchema<MediaInfo> = z.object({
