@@ -1,9 +1,10 @@
+import { path } from '../src/deps.ts'
 export { assertEquals as assert_equals } from "https://deno.land/std@0.155.0/testing/asserts.ts";
 export { expectType as expect_type } from "npm:ts-expect"
 
 
 const resources = {
-  koch_tif: 'test/resources/koch.tif'
+  koch_tif: path.resolve('test/resources/koch.tif')
 }
 
 class TestContext {

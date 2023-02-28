@@ -5,9 +5,15 @@ class NotFoundError extends Error {
 }
 
 class DuplicateMediaError extends Error {
-  constructor(filepath: string, checksum: string) {
-    super(`file '${filepath}' checksum ${checksum} already exists`)
+  constructor(filepath: string, checksum: string, options?: ErrorOptions) {
+    super(`file '${filepath}' checksum ${checksum} already exists`, options)
   }
 }
 
-export { NotFoundError, DuplicateMediaError }
+class MediaParseError extends Error {
+  constructor(filepath: string, message: string) {
+    super(`file '${filepath}' ${message}`)
+  }
+}
+
+export { NotFoundError, DuplicateMediaError, MediaParseError }

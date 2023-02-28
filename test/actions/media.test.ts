@@ -17,7 +17,7 @@ test('add media', async (test_context) => {
     source_created_at: new Date(),
   }
   const tags = [{ name: 'black', group: 'color' }]
-  forager.media.create(test_context.resources.koch_tif, media_info, tags)
+  await forager.media.create(test_context.resources.koch_tif, media_info, tags)
   assert_equals(forager.media.search().total, 1)
 
   forager.close()

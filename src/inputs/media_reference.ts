@@ -48,6 +48,8 @@ export const PaginatedSearchInput = PaginatedQueryInput.extend({
 export type PaginatedSearch = z.input<typeof PaginatedSearchInput>
 
 
+export const MediaFilepathInput = z.string()
+
 export const MediaReferenceUpdateInput: z.ZodSchema<MediaInfo> = z.object({
   title: z.string().optional(),
   description: z.string().optional(),

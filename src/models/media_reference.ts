@@ -1,5 +1,6 @@
 import { field, Model, Vars, Migration, TIMESTAMP_COLUMN, type FieldParam, type FieldResult } from './base.ts'
 import { Tag } from './tag.ts'
+import { MediaFile } from './media_file.ts'
 
 type Cursor = [sort_col: string | number | null, id: number] | null
 const vars = Vars({
@@ -24,6 +25,30 @@ class MediaReference extends Model('media_reference', {
   updated_at:           field.datetime(),
   created_at:           field.datetime(),
 }) {
+  insert = this.query`INSERT INTO media_reference (
+    media_sequence_id,
+    media_sequence_index,
+    source_url,
+    source_created_at,
+    title,
+    description,
+    metadata,
+    stars,
+    view_count
+  ) VALUES (
+    ${[
+      MediaReference.params.media_sequence_id,
+      MediaReference.params.media_sequence_index,
+      MediaReference.params.source_url,
+      MediaReference.params.source_created_at,
+      MediaReference.params.title,
+      MediaReference.params.description,
+      MediaReference.params.metadata,
+      MediaReference.params.stars,
+      MediaReference.params.view_count,
+    ]}
+  )`.exec
+
   select_many = (query_data: {
     tag_ids?: FieldParam<typeof Tag.params.id.data_transformers>[]
     stars?: number
@@ -101,6 +126,11 @@ class MediaReference extends Model('media_reference', {
     }
     return { total, limit, cursor: new_cursor, result }
   }
+
+  select_one_by_checksum = this.query`
+    SELECT ${MediaReference.result.id} FROM media_reference
+    INNER JOIN media_file ON media_reference.id = media_reference_id
+    WHERE media_file.sha512checksum = ${MediaFile.params.sha512checksum}`.one
 }
 
 /* --================ Migrations ================-- */
