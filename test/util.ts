@@ -9,16 +9,17 @@ type ValueOf<T> = T extends Array<infer V>
 type ResourceFileMapper<T extends string[]> = {
   [K in ValueOf<T>]: string
 }
+// TODO error out early here if the resource file does not exist (maybe with fs.existsSync?)
 function resource_file_mapper<F extends string[]>(resource_files: F): ResourceFileMapper<F> {
   const resource_entries = resource_files.map(relative_path => {
     if (!import.meta.dirname) throw new Error(`unexpected value in import.meta.dirname`)
-    const resource_filepaths = path.join(import.meta.dirname, relative_path)
+    const resource_filepaths = path.join(import.meta.dirname, 'resources', relative_path)
     return [relative_path, resource_filepaths]
   })
   return Object.fromEntries(resource_entries)
 }
 const media_files = resource_file_mapper([
-  'koch.tiff',
+  'koch.tif',
 ] as const)
 
 const resources = {

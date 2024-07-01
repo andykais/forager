@@ -119,6 +119,7 @@
   },
   "workspace": {
     "dependencies": [
+      "jsr:@std/path@0.225.2",
       "npm:zod@3.23.8"
     ]
   }
