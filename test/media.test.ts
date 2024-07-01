@@ -9,7 +9,7 @@ test('add media', async (ctx) => {
   
   const media_info = { title: 'Generated Art', stars: 2 }
   const tags = [{ group: '', name: 'Procedural Generation' }, { group: 'colors', name: 'black' }]
-  const { media_reference_id, media_file_id } = await forager.media.create(ctx.resources.media_files['koch.tiff'], media_info, tags)
+  const { media_reference_id, media_file_id } = await forager.media.create(ctx.resources.media_files['koch.tif'], media_info, tags)
 
 
   // const database_path = 'test/fixtures/forager.db'

@@ -1,6 +1,8 @@
 import { Action } from './actions_base.ts'
 import { inputs, parsers } from '~/inputs/mod.ts'
 
+// import * as hash from 'jsr:@std/'
+
 class MediaAction extends Action {
   create = async (filepath: string, media_info: inputs.MediaInfo, tags: inputs.Tag[]) => {
     const parsed = {
@@ -8,6 +10,8 @@ class MediaAction extends Action {
       tags: tags.map(t => parsers.Tag.parse(t)),
     }
 
+    const media_file_info = await this.ctx.files.get_info(filepath)
+    console.log({media_file_info})
     throw new Error('unimplemented')
   /*
     inputs.MediaReferenceUpdate.parse(media_info)
