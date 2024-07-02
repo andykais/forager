@@ -1,3 +1,4 @@
+import * as path from '@std/path'
 import * as fs from '@std/fs'
 import { Action } from './actions_base.ts'
 import { inputs, parsers } from '~/inputs/mod.ts'
@@ -39,7 +40,9 @@ class MediaAction extends Action {
         media_reference_id: media_reference.id,
       })!
       // copy the thumbnails into the configured folder (we wait until the database writes to do this to keep the generated thumbnail folder clean)
-      await fs.copy(thumbnails.folder, this.ctx.config.thumbnail_folder)
+      // add the storage folder checksum here to merge the new files into whatever files already exist in that directory
+      const thumbnail_destination_folder = file_processor.get_storage_folder(checksum)
+      await fs.copy(thumbnails.folder, path.join(this.ctx.config.thumbnail_folder, thumbnail_destination_folder))
       return { media_reference, media_file }
     })
 

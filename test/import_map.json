@@ -1,5 +1,0 @@
-{
-  "imports": {
-    "forager": "../src/mod.ts"
-  }
-}
