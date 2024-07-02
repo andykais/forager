@@ -1,6 +1,7 @@
+import * as fs from '@std/fs'
 import { Action } from './actions_base.ts'
 import { inputs, parsers } from '~/inputs/mod.ts'
-import { FileProcessor } from '../lib/file_processing.ts'
+import { FileProcessor } from '../lib/file_processor.ts'
 import * as errors from '../lib/errors.ts'
 
 class MediaAction extends Action {
@@ -19,7 +20,41 @@ class MediaAction extends Action {
       // this just is a way to skip the video preview early
       throw new errors.DuplicateMediaError(filepath, checksum)
     }
-    throw new Error('unimplemented')
+    const [file_size, thumbnails] = await Promise.all([
+      file_processor.get_size(),
+      file_processor.create_thumbnails(media_file_info)
+    ])
+
+    const transaction = this.ctx.db.transaction_async(async () => {
+      const media_reference = this.ctx.models.MediaReference.create({
+        media_sequence_index: 0,
+        stars: 0,
+        view_count: 0,
+        ...media_info 
+      })!
+      const media_file = this.ctx.models.MediaFile.create({
+        ...media_file_info,
+        file_size_bytes: file_size,
+        checksum,
+        media_reference_id: media_reference.id,
+      })!
+      // copy the thumbnails into the configured folder (we wait until the database writes to do this to keep the generated thumbnail folder clean)
+      await fs.copy(thumbnails.folder, this.ctx.config.thumbnail_folder)
+      return { media_reference, media_file }
+    })
+
+    try {
+      return await transaction()
+    } catch(e) {
+      /*
+      // TODO this can be handled more robustly if we do a full buffer comparison upon getting a DuplicateMediaError
+      // a larger checksum would also be helpful
+      // possibly we would put expensive buffer comparisons behind a config flag, opting to just use the duplicate_log otherwise
+      if (this.is_unique_constaint_error(e)) throw new DuplicateMediaError(filepath, sha512checksum)
+      else throw e
+      */
+      throw e
+    }
   /*
     inputs.MediaReferenceUpdate.parse(media_info)
     const tags_input = tags.map(t => inputs.Tag.parse(t))

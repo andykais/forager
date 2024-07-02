@@ -10,4 +10,16 @@ class DuplicateMediaError extends Error {
   }
 }
 
-export { NotFoundError, DuplicateMediaError }
+
+class SubprocessError extends Error {
+  public output: Deno.CommandOutput
+  public constructor(output: Deno.CommandOutput, message: string) {
+    const decoder = new TextDecoder()
+    const stdout = decoder.decode(output.stdout)
+    const stderr = decoder.decode(output.stderr)
+    super(`${message}\n\nSTDOUT:\n${stdout}\nSTDERR:\n${stderr}`)
+    this.output = output
+  }
+}
+
+export { NotFoundError, DuplicateMediaError, SubprocessError }

@@ -12,9 +12,11 @@
       "jsr:@std/encoding@^0.221.0": "jsr:@std/encoding@0.221.0",
       "jsr:@std/fmt@0.225.4": "jsr:@std/fmt@0.225.4",
       "jsr:@std/fmt@^0.221.0": "jsr:@std/fmt@0.221.0",
+      "jsr:@std/fs@0.229.3": "jsr:@std/fs@0.229.3",
       "jsr:@std/fs@^0.221.0": "jsr:@std/fs@0.221.0",
       "jsr:@std/path@0.217": "jsr:@std/path@0.217.0",
       "jsr:@std/path@0.225.2": "jsr:@std/path@0.225.2",
+      "jsr:@std/path@1.0.0-rc.1": "jsr:@std/path@1.0.0-rc.1",
       "jsr:@std/path@^0.221.0": "jsr:@std/path@0.221.0",
       "jsr:@std/semver@0.200.0": "jsr:@std/semver@0.200.0",
       "npm:@types/node": "npm:@types/node@18.16.19",
@@ -75,6 +77,12 @@
           "jsr:@std/path@^0.221.0"
         ]
       },
+      "@std/fs@0.229.3": {
+        "integrity": "783bca21f24da92e04c3893c9e79653227ab016c48e96b3078377ebd5222e6eb",
+        "dependencies": [
+          "jsr:@std/path@1.0.0-rc.1"
+        ]
+      },
       "@std/path@0.217.0": {
         "integrity": "1217cc25534bca9a2f672d7fe7c6f356e4027df400c0e85c0ef3e4343bc67d11",
         "dependencies": [
@@ -92,6 +100,9 @@
         "dependencies": [
           "jsr:@std/assert@^0.226.0"
         ]
+      },
+      "@std/path@1.0.0-rc.1": {
+        "integrity": "b8c00ae2f19106a6bb7cbf1ab9be52aa70de1605daeb2dbdc4f87a7cbaf10ff6"
       },
       "@std/semver@0.200.0": {
         "integrity": "24dbcf555b801a84c2cb7f07e0634cb971fb148f1a9576543f0b0009386469d4"
@@ -124,6 +135,7 @@
   },
   "workspace": {
     "dependencies": [
+      "jsr:@std/fs@0.229.3",
       "jsr:@std/path@0.225.2",
       "npm:zod@3.23.8"
     ]
