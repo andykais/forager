@@ -1,4 +1,5 @@
 import * as node_crypto from 'node:crypto'
+import * as fs from '@std/fs'
 import * as path from '@std/path'
 import z from 'zod'
 
@@ -182,11 +183,10 @@ class FileProcessor {
 
     // assert that ffmpeg did what we expect
     const read_thumbnails = await Array.fromAsync(Deno.readDir(tmp_folder))
-    if (read_thumbnails.length != thumbnail_timestamps.length) {
-      throw new Error(`thumbnail generation error. Expected ${thumbnail_timestamps.length}, but ${read_thumbnails.length} thumbnails were generated (${read_thumbnails})`)
+    const tmp_thumbnail_filepaths = read_thumbnails.map(entry => path.join(tmp_folder, entry.name))
+    if (tmp_thumbnail_filepaths.length != thumbnail_timestamps.length) {
+      throw new Error(`thumbnail generation error. Expected ${thumbnail_timestamps.length}, but ${tmp_thumbnail_filepaths.length} thumbnails were generated (${tmp_thumbnail_filepaths})`)
     }
-
-    const tmp_thumbnail_filepaths = read_thumbnails.map(dir_entry => path.join(tmp_folder, dir_entry.name))
     return {folder: tmp_folder, thumbnail_filepaths: tmp_thumbnail_filepaths}
   }
 

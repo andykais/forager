@@ -1,5 +1,6 @@
 import { test, assert_equals } from './util.ts'
-import { Forager } from 'forager'
+import * as fs from '@std/fs'
+import { Forager } from '~/mod.ts'
 
 test('add media', async (ctx) => {
   const database_path = ctx.create_fixture_path('forager.db')
@@ -14,6 +15,17 @@ test('add media', async (ctx) => {
   // silly checks, SQLITE will always make the first row id `1`. This is just a simple smoke test that we actually wrote something to the db
   assert_equals(result.media_file.id, 1)
   assert_equals(result.media_reference.id, 1)
+
+  // assert thumbnails were generated properly
+  // hardcode this for simplicity of testing. This is the sha256 checksum for koch.tif
+  const expected_checksum = 'e00df1e96425e0f231bb0cf065432927933f6f2ffd397119334bd2b0b307923f'
+  const thumbnails = await Array.fromAsync(fs.walk(thumbnail_folder))
+  assert_equals([
+    'test/fixtures/add media/thumbnails',
+    'test/fixtures/add media/thumbnails/e0',
+    `test/fixtures/add media/thumbnails/e0/${expected_checksum}`,
+    `test/fixtures/add media/thumbnails/e0/${expected_checksum}/0001.jpg`,
+  ], thumbnails.map(entry => entry.path))
 
 
   // const database_path = 'test/fixtures/forager.db'
