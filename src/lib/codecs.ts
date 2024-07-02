@@ -7,12 +7,12 @@ type Codec = string
 interface CodecInfo {
   media_type: 'VIDEO' | 'IMAGE' | 'AUDIO'
   codec: string
-  mime_type: string
+  content_type: string
 }
 
 class Codecs extends Map<Codec, CodecInfo> {
-  add_codec(media_type: 'AUDIO' | 'VIDEO' | 'IMAGE', codec: string, mime_type: string) {
-    this.set(codec, {media_type, mime_type, codec})
+  add_codec(media_type: 'AUDIO' | 'VIDEO' | 'IMAGE', codec: string, content_type: string) {
+    this.set(codec, {media_type, content_type, codec})
   }
 
   get_codec(codec: string) {

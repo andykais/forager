@@ -29,13 +29,26 @@ class Database {
     this.#torm = new ForagerTorm(ctx.config.database_path)
   }
 
+  public init() {
+    this.#torm.init()
+  }
+
   get models() {
     return this.#torm.models
   }
 
-  public init() {
-    this.#torm.init()
+  public transaction_async = <T>(fn: () => Promise<T>) => async () => {
+    try {
+      this.#torm.driver.exec('BEGIN TRANSACTION')
+      const result = await fn()
+      this.#torm.driver.exec('COMMIT')
+      return result
+    } catch(e) {
+      this.#torm.driver.exec('ROLLBACK')
+      throw e
+    }
   }
+
 }
 
 

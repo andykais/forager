@@ -7,6 +7,7 @@ import {
 
 interface ForagerConfig {
   database_path: string
+  thumbnail_folder: string
   log_level?: LogLevel
 }
 

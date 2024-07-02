@@ -1,15 +1,19 @@
-import { test } from './util.ts'
+import { test, assert_equals } from './util.ts'
 import { Forager } from 'forager'
 
 test('add media', async (ctx) => {
   const database_path = ctx.create_fixture_path('forager.db')
-  const forager = new Forager({ database_path })
+  const thumbnail_folder = ctx.create_fixture_path('thumbnails')
+  const forager = new Forager({ database_path, thumbnail_folder })
   forager.init()
 
   
   const media_info = { title: 'Generated Art', stars: 2 }
   const tags = [{ group: '', name: 'Procedural Generation' }, { group: 'colors', name: 'black' }]
-  const { media_reference_id, media_file_id } = await forager.media.create(ctx.resources.media_files['koch.tif'], media_info, tags)
+  const result = await forager.media.create(ctx.resources.media_files['koch.tif'], media_info, tags)
+  // silly checks, SQLITE will always make the first row id `1`. This is just a simple smoke test that we actually wrote something to the db
+  assert_equals(result.media_file.id, 1)
+  assert_equals(result.media_reference.id, 1)
 
 
   // const database_path = 'test/fixtures/forager.db'
