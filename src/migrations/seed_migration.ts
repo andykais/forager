@@ -28,7 +28,7 @@ export class Migration extends torm.SeedMigration {
       filename TEXT NOT NULL,
       -- mime_type TEXT NOT NULL,
       file_size_bytes INTEGER NOT NULL,
-      sha512checksum TEXT NOT NULL UNIQUE,
+      checksum TEXT NOT NULL UNIQUE,
 
       -- image,video,audio
       media_type TEXT NOT NULL CHECK( media_type IN ('IMAGE', 'VIDEO', 'AUDIO') ),

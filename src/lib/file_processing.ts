@@ -2,6 +2,7 @@ import z from 'zod'
 import * as path from '@std/path'
 import { Context } from '~/context.ts'
 import { CODECS } from './codecs.ts'
+import * as node_crypto from 'node:crypto'
 
 
 interface FileInfo {
@@ -40,18 +41,20 @@ const FFProbeOutput = z.object({
 }).passthrough()
 
 
-class FileProcessing {
+class FileProcessor {
   #ctx: Context
   #decoder: TextDecoder
+  #filepath: string
 
-  public constructor(ctx: Context) {
+  public constructor(ctx: Context, filepath: string) {
     this.#ctx = ctx
     this.#decoder = new TextDecoder()
+    this.#filepath = filepath
   }
 
-  public async get_info(filepath: string) {
+  public async get_info() {
     const cmd = new Deno.Command('ffprobe', {
-      args: ['-v', 'error', '-print_format', 'json', '-show_streams', '-i', filepath],
+      args: ['-v', 'error', '-print_format', 'json', '-show_streams', '-i', this.#filepath],
       stdout: 'piped',
       stderr: 'piped',
     })
@@ -77,7 +80,7 @@ class FileProcessing {
             duration = z.number().parse(stream.duration)
             animated = true
             framerate = eval(stream.avg_frame_rate)
-            if (Number.isNaN(framerate)) throw new Error(`Unable to parse framerate for ${filepath} from ${stream.avg_frame_rate}`)
+            if (Number.isNaN(framerate)) throw new Error(`Unable to parse framerate for ${this.#filepath} from ${stream.avg_frame_rate}`)
           }
           break
         }
@@ -90,10 +93,20 @@ class FileProcessing {
         }
       }
     }
-    const filename = path.basename(filepath)
+    const filename = path.basename(this.#filepath)
     const file_info: FileInfo = { filename, ...codec_info, width, height, animated, duration, framerate }
     return file_info
   }
+
+  // TODO put filepath in constructor and make all operations single-file-centric?
+  public async get_checksum() {
+    const hash = node_crypto.createHash('sha512')
+    using file = await Deno.open(this.#filepath)
+    for await (const chunk of file.readable) {
+      hash.update(chunk)
+    }
+    return hash.digest('hex')
+  }
 }
 
-export { FileProcessing }
+export { FileProcessor }

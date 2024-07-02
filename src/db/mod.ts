@@ -29,7 +29,12 @@ class Database {
     this.#torm = new ForagerTorm(ctx.config.database_path)
   }
 
+  get models() {
+    return this.#torm.models
+  }
+
   public init() {
+    this.#torm.init()
   }
 }
 

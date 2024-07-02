@@ -1,7 +1,7 @@
 {
   "tasks": {
-    "test":       "deno test --allow-run=ffprobe,ffmpeg --unstable-ffi --check --allow-read --allow-write --allow-ffi --allow-env=HOME,DENO_DIR,XDG_CACHE_HOME --allow-net test",
-    "test:watch": "deno test --allow-run=ffprobe,ffmpeg --unstable-ffi --check --allow-read --allow-write --allow-ffi --allow-env=HOME,DENO_DIR,XDG_CACHE_HOME --allow-net --watch"
+    "test":       "deno test --allow-run=ffprobe,ffmpeg --unstable-ffi --check --allow-read --allow-write --allow-ffi --allow-env=HOME,DENO_DIR,XDG_CACHE_HOME --allow-net --trace-ops --trace-leaks test",
+    "test:watch": "deno test --allow-run=ffprobe,ffmpeg --unstable-ffi --check --allow-read --allow-write --allow-ffi --allow-env=HOME,DENO_DIR,XDG_CACHE_HOME --allow-net --trace-ops --trace-leaks --watch"
   },
 
   "imports": {

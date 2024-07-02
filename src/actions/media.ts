@@ -1,7 +1,7 @@
 import { Action } from './actions_base.ts'
 import { inputs, parsers } from '~/inputs/mod.ts'
-
-// import * as hash from 'jsr:@std/'
+import { FileProcessor } from '../lib/file_processing.ts'
+import * as errors from '../lib/errors.ts'
 
 class MediaAction extends Action {
   create = async (filepath: string, media_info: inputs.MediaInfo, tags: inputs.Tag[]) => {
@@ -10,8 +10,15 @@ class MediaAction extends Action {
       tags: tags.map(t => parsers.Tag.parse(t)),
     }
 
-    const media_file_info = await this.ctx.files.get_info(filepath)
-    console.log({media_file_info})
+    const file_processor = new FileProcessor(this.ctx, filepath)
+    const media_file_info = await file_processor.get_info()
+    const checksum = await file_processor.get_checksum()
+
+    if (this.ctx.models.MediaFile.find_by_checksum({checksum})) {
+      // an non-transactional step to exit early if we find the hash existing.
+      // this just is a way to skip the video preview early
+      throw new errors.DuplicateMediaError(filepath, checksum)
+    }
     throw new Error('unimplemented')
   /*
     inputs.MediaReferenceUpdate.parse(media_info)
