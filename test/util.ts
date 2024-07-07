@@ -1,7 +1,7 @@
-export { assertEquals as assert_equals, assertRejects as assert_rejects, assertThrows as assert_throws } from "https://deno.land/std@0.155.0/testing/asserts.ts";
+import * as asserts from 'https://deno.land/std@0.155.0/testing/asserts.ts'
 export { expectType as expect_type } from "npm:ts-expect"
 import * as colors from 'jsr:@std/fmt@0.225.4/colors'
-import * as path from 'jsr:@std/path@0.225.2'
+import * as path from '@std/path'
 
 type ValueOf<T> = T extends Array<infer V>
   ? V
@@ -20,6 +20,10 @@ function resource_file_mapper<F extends string[]>(resource_files: F): ResourceFi
 }
 const media_files = resource_file_mapper([
   'koch.tif',
+  'ed-edd-eddy.png',
+  'cat_doodle.jpg',
+  // 'Succulentsaur.mp4',
+  // 'cityscape-timelapse.mp4',
 ] as const)
 
 const resources = {
@@ -29,6 +33,13 @@ const resources = {
 class TestContext {
   test_name: string
   resources = resources
+  assert = {
+    equals: asserts.assertEquals,
+    rejects: asserts.assertRejects,
+    throws: asserts.assertThrows,
+    object_match: asserts.assertObjectMatch,
+// export { assertEquals as assert_equals, assertRejects as assert_rejects, assertThrows as assert_throws } from "https://deno.land/std@0.155.0/testing/asserts.ts";
+  }
 
   constructor(test_name: string) {
     this.test_name = test_name
@@ -73,14 +84,42 @@ class Debugger {
     const file_contents = this.#decoder.decode(Deno.readFileSync(stacktrace_console_debug_filepath))
     const stacktrace_console_debug_source_code = file_contents.split('\n')[stacktrace_console_debug_line_number - 1].trim()
 
+    console.log(colors.dim('==================================================='))
     for (let trace_index = trace; trace_index > 0; trace_index--) {
       let code_line = stacktrace[trace_index + 1].trim()
       // trim the path to be relative
       code_line = code_line.replace('file://' + Deno.cwd(), '.')
       const formatted_code_line = `${code_line}`
-      console.log(colors.gray(formatted_code_line))
+      console.log(colors.dim(formatted_code_line))
     }
-    console.log('   ' + colors.gray(stacktrace_console_debug_source_code))
+
+      // // const console_debug_start = formatted_code_line.replace(/console.debug\(.*/, 'console.debug(')
+      // // some kind of multipart array slice function would be handy for this sort of thing
+      // const console_debug_index_start = formatted_code_line.indexOf('console.debug(')
+      // const console_debug_index_end = formatted_code_line.lastIndexOf(')')
+      // console.log({formatted_code_line, console_debug_index_start})
+      // if (console_debug_index_start !== -1) {
+      //   throw new Error('not implementented')
+      // } else {
+      //   throw new Error('not implementented')
+      // }
+      // // const console_debug_index_arguments = formatted_code_line.indexOf()
+
+
+    // a light attepmt at javascript source code parsing inline. What could go wrong (:
+    const console_debug_token_start = 'console.debug('
+    const console_debug_token_end = ')'
+    const console_debug_index_start = stacktrace_console_debug_source_code.indexOf(console_debug_token_start) + console_debug_token_start.length
+    const console_debug_index_end = stacktrace_console_debug_source_code.lastIndexOf(console_debug_token_end)
+    if (console_debug_index_start === -1 || console_debug_index_end === -1) {
+      console.log('   ' + colors.red(stacktrace_console_debug_source_code))
+    } else {
+      const console_debug_start = stacktrace_console_debug_source_code.substring(0, console_debug_index_start)
+      const console_debug_arguments = stacktrace_console_debug_source_code.substring(console_debug_index_start, console_debug_index_end)
+      const console_debug_end = stacktrace_console_debug_source_code.substring(console_debug_index_end)
+      // console.log({console_debug_index_start, console_debug_index_end, console_debug_arguments, console_debug_end  })
+      console.log(`   ${colors.dim(console_debug_start)}${colors.yellow(console_debug_arguments)}${colors.dim(console_debug_end)}`)
+    }
     console.log(...args)
     console.log()
   }
@@ -102,7 +141,7 @@ class Debugger {
 // NOTE this overrides everyone's console.debug with detailed logging
 Debugger.attach_console_debug()
 
-function test(test_name: string, fn: (test_context: TestContext) => any, only = false) {
+function test(test_name: string, fn: (test_context: TestContext) => void, only = false) {
   const test_context = new TestContext(test_name)
 
   const test_fn = async () => {
@@ -129,6 +168,6 @@ function test(test_name: string, fn: (test_context: TestContext) => any, only = 
     only
   })
 }
-test.only = (name: string, fn: (test_context: TestContext) => any) => { test(name, fn, true) }
+test.only = (name: string, fn: (test_context: TestContext) => void) => { test(name, fn, true) }
 
 export { test }

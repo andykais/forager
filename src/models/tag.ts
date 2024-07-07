@@ -1,3 +1,4 @@
+import * as pattern from 'ts-pattern'
 import { Model, field, errors } from 'torm'
 import {TagGroup} from './tag_group.ts'
 
@@ -30,7 +31,12 @@ class Tag extends Model('tag', {
         Tag.params.metadata
     ]}) RETURNING ${Tag.result.id}`
 
-  find_by_group_and_name = this.query.one`
+  select_by_tag_group_and_name = this.query`
+    SELECT ${Tag.result['*']} FROM tag
+    INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
+    WHERE tag.name = ${Tag.params.name} AND tag_group.name = ${TagGroup.params.name.as('group')}`
+
+  select_by_tag_group_id_and_name = this.query`
     SELECT ${Tag.result['*']} FROM tag
     WHERE tag_group_id = ${Tag.params.tag_group_id} AND name = ${Tag.params.name}`
 
@@ -39,12 +45,35 @@ class Tag extends Model('tag', {
       return this.create(params)!
     } catch (e) {
       if (e instanceof errors.UniqueConstraintError) {
-        return this.find_by_group_and_name({tag_group_id: params.tag_group_id, name: params.name})
+        return this.select_by_tag_group_id_and_name.one({tag_group_id: params.tag_group_id, name: params.name})
       } else {
         throw e
       }
     }
   }
+
+  select_one(params: {
+    group?: string
+    name?: string
+  }) {
+    return pattern.match(params)
+      .with({ group: pattern.P.string, name: pattern.P.string }, vars => {
+        return this.select_by_tag_group_and_name.one(vars)
+      })
+      .otherwise(() => {
+        throw new Error(`unimplemented`)
+      })
+
+  }
+
+  /* TODO support this
+  select_one(params: {
+    group: TagGroup['schema']['name']
+    name: Tag['schema']['name']
+  }): Tag['schema'] {
+
+  }
+  */
 }
 
 export { Tag }

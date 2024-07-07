@@ -45,9 +45,9 @@ class MediaAction extends Action {
         // const color = get_hash_color(group, 'hsl')
         const color = ''
         const tag_group = this.ctx.models.TagGroup.get_or_create({ name: group, color })!
-        const tag_result = this.ctx.models.Tag.create({ alias_tag_id: null, name: tag.name, tag_group_id: tag_group.id, description: tag.description, metadata: tag.metadata })
-        console.log({tag_group, tag_result})
+        const tag_result = this.ctx.models.Tag.get_or_create({ alias_tag_id: null, name: tag.name, tag_group_id: tag_group.id, description: tag.description, metadata: tag.metadata })
         // this.db.media_reference_tag.insert({ media_reference_id, tag_id })
+        // TODO insert the reference
       }
 
       // copy the thumbnails into the configured folder (we wait until the database writes to do this to keep the generated thumbnail folder clean)
@@ -162,13 +162,24 @@ class MediaAction extends Action {
   }
 
   // TODO offset needs to be replaces w/ a cursor. The cursor will be source_created_at + created_at
-  search = (params: inputs.PaginatedSearch) => {
+  search = (params?: inputs.PaginatedSearch) => {
     const parsed = {
-      query: parsers.PaginatedSearch.parse(params),
+      params: parsers.PaginatedSearch.parse(params ?? {}),
     }
 
+    const tag_ids: number[] | undefined = parsed.params.query.tags
+      ?.map(tag => this.ctx.models.Tag.select_one({name: tag.name, group: tag.group })?.id)
+      .filter((tag): tag is number => tag !== undefined)
+
+    const records = this.ctx.models.MediaReference.select_many({
+      id: parsed.params.query.media_reference_id,
+      tag_ids,
+      cursor: parsed.params.cursor,
+      limit: parsed.params.limit,
+    })
+    return records
+
   /*
-    const input = inputs.PaginatedSearch.parse(params)
     const tag_ids: number[] = []
     if (params.query.tags) {
       for (const tag of params.query.tags) {

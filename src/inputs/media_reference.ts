@@ -16,14 +16,14 @@ export const MediaInfo = z.object({
 
 export const PaginatedSearch = PaginatedQuery.extend({
   query: z.object({
-    tag_ids: z.array(z.number()).optional(),
+    media_reference_id: z.number().optional(),
     tags: z.array(Tag).optional(),
     stars: z.number().gte(0).lte(5).optional(),
     stars_equality: z.enum(['gte', 'eq']).default(('gte')),
     unread: z.boolean().default(false),
     sort_by: z.enum(['created_at', 'updated_at', 'source_created_at', 'view_count']).default('source_created_at'),
     order: z.enum(['desc', 'asc']).default('desc'),
-  }).strict()
+  }).strict().optional().transform(q => ({...q}))
 }).strict()
 
 
