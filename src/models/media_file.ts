@@ -1,23 +1,22 @@
-import * as torm from 'torm'
-import { ForagerTorm } from '../db/mod.ts'
+import { Model, field } from 'torm'
 import { MediaReference } from './media_reference.ts'
 
-class MediaFile extends torm.Model('media_file', {
-  id:       torm.field.number(),
-  media_reference_id: torm.field.number(),  // TODO support MediaReference.schema.id here
-  filename:           torm.field.string(),
-  file_size_bytes:    torm.field.number(),
-  checksum:           torm.field.string(),
-  media_type:         torm.field.string(),  // TODO enum support
-  codec:              torm.field.string(),
-  content_type:       torm.field.string(),
-  width:              torm.field.number().optional(),
-  height:             torm.field.number().optional(),
-  animated:           torm.field.boolean().optional(),
-  duration:           torm.field.number(),
-  framerate:          torm.field.number(),
-  updated_at:         torm.field.datetime(),
-  created_at:         torm.field.datetime(),
+class MediaFile extends Model('media_file', {
+  id:                 field.number(),
+  media_reference_id: field.number(),  // TODO support MediaReference.schema.id here
+  filename:           field.string(),
+  file_size_bytes:    field.number(),
+  checksum:           field.string(),
+  media_type:         field.string(),  // TODO enum support
+  codec:              field.string(),
+  content_type:       field.string(),
+  width:              field.number().optional(),
+  height:             field.number().optional(),
+  animated:           field.boolean().optional(),
+  duration:           field.number(),
+  framerate:          field.number(),
+  updated_at:         field.datetime(),
+  created_at:         field.datetime(),
 
 }) {
   find_by_checksum = this.query.one`

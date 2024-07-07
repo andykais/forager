@@ -10,7 +10,14 @@ test('add media', async (ctx) => {
 
   
   const media_info = { title: 'Generated Art', stars: 2 }
-  const tags = [{ group: '', name: 'Procedural Generation' }, { group: 'colors', name: 'black' }]
+  const tags = [
+    // this one should transform capitals and spaces for us
+    { group: '', name: 'Procedural Generation' },
+    // this one is here so we can ensure different tags can exist for the same tag group id
+    { group: '', name: 'generated' },
+    // this is a different tag group
+    { group: 'colors', name: 'black' },
+  ]
   const result = await forager.media.create(ctx.resources.media_files['koch.tif'], media_info, tags)
   // silly checks, SQLITE will always make the first row id `1`. This is just a simple smoke test that we actually wrote something to the db
   assert_equals(result.media_file.id, 1)

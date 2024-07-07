@@ -1,5 +1,5 @@
 import z from 'zod'
-import { type Json, JsonInput, StringDateTime } from './inputs_base.ts'
+import { type Json, JsonInput, StringDateTime, PaginatedQuery } from './inputs_base.ts'
 import { Tag } from './tag.ts'
 
 
@@ -12,15 +12,6 @@ export const MediaInfo = z.object({
   stars: z.number().optional(),
   view_count: z.number().optional(),
 })
-
-
-export const PaginatedQuery = z.object({
-  limit: z.number().default(100),
-  cursor: z.tuple([
-    z.union([z.number(), z.string(), z.null()]),
-    z.number()
-  ]).optional().nullable().transform(v => v ?? null)
-}).strict()
 
 
 export const PaginatedSearch = PaginatedQuery.extend({

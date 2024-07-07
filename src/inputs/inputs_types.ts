@@ -3,7 +3,6 @@ import * as parsers from './inputs_parsers.ts'
 
 
 export type MediaInfo = z.infer<typeof parsers.MediaInfo>
-export type PaginatedQuery = z.input<typeof parsers.PaginatedQuery>
 export type PaginatedSearch = z.input<typeof parsers.PaginatedSearch>
 export type MediaReferenceUpdate = z.input<typeof parsers.MediaReferenceUpdate>
 
