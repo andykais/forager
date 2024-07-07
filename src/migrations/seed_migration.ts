@@ -137,7 +137,7 @@ export class Migration extends torm.SeedMigration {
     CREATE TABLE tag_group (
       id INTEGER PRIMARY KEY NOT NULL,
       name TEXT NOT NULL UNIQUE,
-      color TEXT NOT NULL UNIQUE,
+      color TEXT NOT NULL,
       updated_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
       created_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
       -- denormalized fields

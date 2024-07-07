@@ -1,21 +1,20 @@
-import * as torm from 'torm'
-import { ForagerTorm } from '../db/mod.ts'
+import { Model, field } from 'torm'
 
-class MediaReference extends torm.Model('media_reference', {
-  id:                   torm.field.number(),
-  media_sequence_id:    torm.field.number().optional(),
-  media_sequence_index: torm.field.number().default(0),
-  source_url:           torm.field.string().optional(),
-  source_created_at:    torm.field.datetime().optional(),
-  title:                torm.field.string().optional(),
-  description:          torm.field.string().optional(),
-  metadata:             torm.field.json().optional(),
-  stars:                torm.field.number().optional(),
-  view_count:           torm.field.number().optional(),
-  // // auto generated fields
-  tag_count:            torm.field.number(),
-  updated_at:           torm.field.datetime(),
-  created_at:           torm.field.datetime(),
+class MediaReference extends Model('media_reference', {
+  id:                   field.number(),
+  media_sequence_id:    field.number().optional(),
+  media_sequence_index: field.number().default(0),
+  source_url:           field.string().optional(),
+  source_created_at:    field.datetime().optional(),
+  title:                field.string().optional(),
+  description:          field.string().optional(),
+  metadata:             field.json().optional(),
+  stars:                field.number().optional(),
+  view_count:           field.number().optional(),
+  // auto generated fields
+  tag_count:            field.number(),
+  updated_at:           field.datetime(),
+  created_at:           field.datetime(),
 }) {
   create = this.query.one`
     INSERT INTO media_reference (
