@@ -45,7 +45,7 @@ const FFProbeOutputVideoStream = z.object({
     codec_type: z.literal('video'),
     width: z.number(),
     height: z.number(),
-    duration: z.number().optional(),
+    duration: z.coerce.number().optional(),
     r_frame_rate: z.string(),
     avg_frame_rate: z.string(),
 }).passthrough()

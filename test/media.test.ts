@@ -1,4 +1,4 @@
-import { test, assert_equals } from './util.ts'
+import { test } from './util.ts'
 import * as fs from '@std/fs'
 import { Forager } from '~/mod.ts'
 
@@ -18,21 +18,77 @@ test('add media', async (ctx) => {
     // this is a different tag group
     { group: 'colors', name: 'black' },
   ]
-  const result = await forager.media.create(ctx.resources.media_files['koch.tif'], media_info, tags)
+  const media_generated_art = await forager.media.create(ctx.resources.media_files['koch.tif'], media_info, tags)
   // silly checks, SQLITE will always make the first row id `1`. This is just a simple smoke test that we actually wrote something to the db
-  assert_equals(result.media_file.id, 1)
-  assert_equals(result.media_reference.id, 1)
+  ctx.assert.equals(media_generated_art.media_file.id, 1)
+  ctx.assert.equals(media_generated_art.media_reference.id, 1)
 
   // assert thumbnails were generated properly
   // hardcode this for simplicity of testing. This is the sha256 checksum for koch.tif
   const expected_checksum = 'e00df1e96425e0f231bb0cf065432927933f6f2ffd397119334bd2b0b307923f'
   const thumbnails = await Array.fromAsync(fs.walk(thumbnail_folder))
-  assert_equals([
+  ctx.assert.equals([
     'test/fixtures/add media/thumbnails',
     'test/fixtures/add media/thumbnails/e0',
     `test/fixtures/add media/thumbnails/e0/${expected_checksum}`,
     `test/fixtures/add media/thumbnails/e0/${expected_checksum}/0001.jpg`,
   ], thumbnails.map(entry => entry.path))
+
+  const media_cartoon = await forager.media.create(ctx.resources.media_files["ed-edd-eddy.png"], {title: 'Ed Edd Eddy Poster'}, [])
+  const media_doodle = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {title: 'Cat Doodle'}, [])
+
+  // search default
+  ctx.assert.object_match(forager.media.search(), {
+    total: 3,
+    result: [
+      {title: 'Generated Art'},
+      {title: 'Ed Edd Eddy Poster'},
+      {title: 'Cat Doodle'},
+    ],
+  })
+
+  // search used for just counting
+  ctx.assert.object_match(forager.media.search({limit: 0}), {
+    total: 3,
+    cursor: undefined,
+    result: []
+  })
+
+  //  essentially the default arguments
+  ctx.assert.object_match(forager.media.search({cursor: 0, limit: -1}), {
+    total: 3,
+    result: [
+      {title: 'Generated Art'},
+      {title: 'Ed Edd Eddy Poster'}
+    ],
+  })
+
+  const media_list_page_1 = forager.media.search({limit: 2})
+  const media_list_page_2 = forager.media.search({cursor: media_list_page_1.cursor, limit: 2})
+  ctx.assert.equals(media_list_page_1.result.length, 2)
+  ctx.assert.object_match(media_list_page_1, {
+    result: [
+      {title: 'Generated Art'},
+      {title: 'Ed Edd Eddy Poster'},
+    ],
+    total: 3
+  })
+  ctx.assert.equals(media_list_page_2.result.length, 1)
+  ctx.assert.object_match(media_list_page_2, {result: [{title: 'Cat Doodle'}]})
+
+
+  // search by media reference id
+  ctx.assert.object_match(forager.media.search({query: {media_reference_id: media_generated_art.media_reference.id}}), {
+    total: 1,
+    result: [{id: media_generated_art.media_reference.id, title: 'Generated Art'}],
+  })
+
+  // TODO now that we have external files, do we want to return the filepath inside the search? What should the structure be?
+
+  // search by tags
+  // const media = forager.media.search({query: { tags: [{group: '', name: 'generated' }] }})
+  // console.debug({media})
+
 
 
   // const database_path = 'test/fixtures/forager.db'

@@ -11,10 +11,7 @@ export const JsonInput: z.ZodSchema<Json> = z.lazy(() =>
 
 export const PaginatedQuery = z.object({
   limit: z.number().default(100),
-  cursor: z.tuple([
-    z.union([z.number(), z.string(), z.null()]),
-    z.number()
-  ]).optional().nullable().transform(v => v ?? null)
+  cursor: z.number().optional(),
 }).strict()
 
 
