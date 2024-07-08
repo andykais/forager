@@ -29,18 +29,17 @@ jobs:
         with:
           deno-version: v1.x
 
+      - name: Setup FFMPEG
+        uses: FedericoCarboni/setup-ffmpeg@v3
+        id: setup-ffmpeg
+        with:
+          ffmpeg-version: 7.0.1
 
       - name: Cache Deno dependencies 
         uses: actions/cache@v3
         with:
           path: ${{ env.DENO_DIR }}
           key: ${{ hashFiles('deno.lock') }}
-
-      - name: Setup FFMPEG
-        uses: FedericoCarboni/setup-ffmpeg@v3
-        id: setup-ffmpeg
-        with:
-          ffmpeg-version: release
 
       # - name: Lint
       # lint source code & jsr publish requirements. Currently disabled because we should get jsr published before addressing
