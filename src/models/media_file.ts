@@ -4,6 +4,7 @@ import { MediaReference } from './media_reference.ts'
 class MediaFile extends Model('media_file', {
   id:                 field.number(),
   media_reference_id: field.number(),  // TODO support MediaReference.schema.id here
+  filepath:           field.string(),
   filename:           field.string(),
   file_size_bytes:    field.number(),
   checksum:           field.string(),
@@ -28,6 +29,7 @@ class MediaFile extends Model('media_file', {
     WHERE checksum = ${MediaFile.params.checksum}`
 
   create = this.query.one`INSERT INTO media_file (
+    filepath,
     filename,
     file_size_bytes,
     checksum,
@@ -41,6 +43,7 @@ class MediaFile extends Model('media_file', {
     framerate,
     media_reference_id
   ) VALUES (${[
+    MediaFile.params.filepath,
     MediaFile.params.filename,
     MediaFile.params.file_size_bytes,
     MediaFile.params.checksum,

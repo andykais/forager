@@ -91,7 +91,13 @@ test('add media', async (ctx) => {
     ],
   })
 
-  console.debug(forager.media.search())
+
+  // assert filepaths
+  ctx.assert.search_result(forager.media.search({query: {media_reference_id: media_generated_art.media_reference.id}}), {
+    result: [
+      {media_file: {filepath: ctx.resources.media_files["koch.tif"]}}
+    ]
+  })
 
   // search by tags
   // const media = forager.media.search({query: { tags: [{group: '', name: 'generated' }] }})
