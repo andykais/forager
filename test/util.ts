@@ -65,6 +65,10 @@ class Assertions {
       })
     }
   }
+  list_partial(actual_list: any[], expected_list: any[]) {
+    this.equals(actual_list.length, expected_list.length, `Expected list length to be ${actual_list.length} but is actually ${expected_list.length}`)
+    this.object_match(actual_list as any, expected_list as any)
+  }
 }
 class TestContext {
   test_name: string

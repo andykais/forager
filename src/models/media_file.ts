@@ -1,5 +1,13 @@
 import { Model, field } from 'torm'
 import { MediaReference } from './media_reference.ts'
+import { type SelectOneOptions } from './models_base.ts'
+import * as errors from '~/lib/errors.ts'
+
+interface SelectOneParams {
+  media_reference_id?: number
+  checksum?: string
+}
+type MediaFileRow = typeof MediaFile.schema_types.result
 
 class MediaFile extends Model('media_file', {
   id:                 field.number(),
@@ -58,19 +66,25 @@ class MediaFile extends Model('media_file', {
     MediaFile.params.media_reference_id,
   ]}) RETURNING ${MediaFile.result.id}`
 
-  select_one(params: {
-    media_reference_id?: number
-    checksum?: string
-  }): typeof MediaFile.schema_types.result | undefined {
+  public select_one(params: SelectOneParams, options: {or_raise: true}): MediaFileRow
+  public select_one(params: SelectOneParams, options?: SelectOneOptions): MediaFileRow | undefined
+  public select_one(params: SelectOneParams, options?: SelectOneOptions): MediaFileRow | undefined {
+  // select_one(params: {
+  // }): typeof MediaFile.schema_types.result | undefined {
+    let row: MediaFileRow | undefined
     if (params.checksum !== undefined && Object.keys(params).length === 1) {
-      return this.select_by_checksum.one({checksum: params.checksum})
+      row = this.select_by_checksum.one({checksum: params.checksum})
     }
 
     if (params.media_reference_id !== undefined && Object.keys(params).length === 1) {
-      return this.select_by_media_reference_id.one({media_reference_id: params.media_reference_id})
+      row = this.select_by_media_reference_id.one({media_reference_id: params.media_reference_id})
     }
 
-    throw new Error(`unimplemented for params: ${Object.keys(params)}`)
+    if (options?.or_raise && row === undefined) {
+      throw new errors.NotFoundError('MediaFile', 'select_one', params)
+    }
+
+    return row
   }
 }
 

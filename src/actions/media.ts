@@ -40,21 +40,30 @@ class MediaAction extends Action {
         media_reference_id: media_reference.id,
       })!
 
+      const tags: ReturnType<typeof this.ctx.models.Tag.select_one>[] = []
+
       for (const tag of parsed.tags) {
         const group = tag.group ?? ''
         // const color = get_hash_color(group, 'hsl')
         const color = ''
         const tag_group = this.ctx.models.TagGroup.get_or_create({ name: group, color })!
-        const tag_result = this.ctx.models.Tag.get_or_create({ alias_tag_id: null, name: tag.name, tag_group_id: tag_group.id, description: tag.description, metadata: tag.metadata })
-        // this.db.media_reference_tag.insert({ media_reference_id, tag_id })
-        // TODO insert the reference
+        const {id: tag_id} = this.ctx.models.Tag.get_or_create({ alias_tag_id: null, name: tag.name, tag_group_id: tag_group.id, description: tag.description, metadata: tag.metadata })
+        const media_reference_tag = this.ctx.models.MediaReferenceTag.create({ media_reference_id: media_reference.id, tag_id })
+
+        const tag_record = this.ctx.models.Tag.select_one({id: tag_id}, {or_raise: true})
+        tags.push(tag_record)
       }
 
       // copy the thumbnails into the configured folder (we wait until the database writes to do this to keep the generated thumbnail folder clean)
       // add the storage folder checksum here to merge the new files into whatever files already exist in that directory
       const thumbnail_destination_folder = file_processor.get_storage_folder(checksum)
       await fs.copy(thumbnails.folder, path.join(this.ctx.config.thumbnail_folder, thumbnail_destination_folder))
-      return { media_reference, media_file }
+      const res = this.ctx.models.MediaReference.select_one({id: media_reference.id}, {or_raise: true})
+      return {
+        media_reference: this.ctx.models.MediaReference.select_one({id: media_reference.id}, {or_raise: true}),
+        media_file: this.ctx.models.MediaFile.select_one({media_reference_id: media_reference.id}, {or_raise: true}),
+        tags,
+      }
     })
 
     try {

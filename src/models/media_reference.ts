@@ -1,19 +1,16 @@
-import * as pattern from 'ts-pattern'
-import { Model, field, Vars, Statement, Fields, Driver } from 'torm'
-import { type InferTypes } from 'torm/schema.ts'
-import { PaginatedQuery } from "~/inputs/inputs_base.ts";
+import { Model, field, Statement, Fields, Driver } from 'torm'
+import * as errors from '~/lib/errors.ts'
+import { PaginationVars, type PaginatedResult, type SelectOneOptions } from './models_base.ts'
 
 
-const PaginationVars = Vars({
-  cursor_id: field.number(),
-  limit: field.number(),
-  total: field.number(),
-})
-
-type PaginatedResult<T> = {
+interface SelectOneParams {
+  id: number
+}
+interface SelectManyParams {
+  id: number | undefined
+  tag_ids: number[] | undefined
+  limit: number | undefined
   cursor: number | undefined
-  total: number
-  result: T[]
 }
 
 class MediaReference extends Model('media_reference', {
@@ -55,13 +52,21 @@ class MediaReference extends Model('media_reference', {
       MediaReference.params.view_count,
     ]}) RETURNING ${MediaReference.result.id}`
 
+  #select_by_id = this.query`
+    SELECT ${MediaReference.result['*']} FROM media_reference
+    WHERE id = ${MediaReference.params.id}`
 
-  public select_many(params: {
-    id: number | undefined
-    tag_ids: number[] | undefined
-    limit: number | undefined
-    cursor: number | undefined
-  }): PaginatedResult<typeof MediaReference.schema_types.result> {
+  public select_one(params: SelectOneParams, options: {or_raise: true}): typeof MediaReference.schema_types.result
+  public select_one(params: SelectOneParams, options?: SelectOneOptions): typeof MediaReference.schema_types.result | undefined
+  public select_one(params: SelectOneParams, options?: SelectOneOptions): typeof MediaReference.schema_types.result | undefined {
+    const result = this.#select_by_id.one(params)
+    if (options?.or_raise && result === undefined) {
+      throw new errors.NotFoundError('MediaFile', 'select_one', params)
+    }
+    return result
+  }
+
+  public select_many(params: SelectManyParams): PaginatedResult<typeof MediaReference.schema_types.result> {
     const records_arguments: Record<string, any> = {}
     const count_arguments: Record<string, any> = {}
 
