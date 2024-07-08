@@ -1,15 +1,14 @@
 import { test } from './lib/util.ts'
 import * as fs from '@std/fs'
-import { Forager } from '~/mod.ts'
+import { Forager, errors } from '~/mod.ts'
 
 
-test('add media', async (ctx) => {
+test('media actions', async (ctx) => {
   const database_path = ctx.create_fixture_path('forager.db')
   const thumbnail_folder = ctx.create_fixture_path('thumbnails')
   const forager = new Forager({ database_path, thumbnail_folder })
   forager.init()
 
-  
   const media_info = { title: 'Generated Art', stars: 2 }
   const tags = [
     // this one should transform capitals and spaces for us
@@ -33,16 +32,16 @@ test('add media', async (ctx) => {
     {name: 'wallpaper', group: ''},
   ])
 
-  await ctx.subtest('checksums', async () => {
+  await ctx.subtest('thumbnail generation', async () => {
     // assert thumbnails were generated properly
     // hardcode this for simplicity of testing. This is the sha256 checksum for koch.tif
-    const expected_checksum = 'e00df1e96425e0f231bb0cf065432927933f6f2ffd397119334bd2b0b307923f'
+    const generated_art_checksum = 'e00df1e96425e0f231bb0cf065432927933f6f2ffd397119334bd2b0b307923f'
     const thumbnails = await Array.fromAsync(fs.walk(thumbnail_folder))
     ctx.assert.equals([
-      'test/fixtures/add media/thumbnails',
-      'test/fixtures/add media/thumbnails/e0',
-      `test/fixtures/add media/thumbnails/e0/${expected_checksum}`,
-      `test/fixtures/add media/thumbnails/e0/${expected_checksum}/0001.jpg`,
+      `${thumbnail_folder}`,
+      `${thumbnail_folder}/e0`,
+      `${thumbnail_folder}/e0/${generated_art_checksum}`,
+      `${thumbnail_folder}/e0/${generated_art_checksum}/0001.jpg`,
     ], thumbnails.map(entry => entry.path))
   })
 
@@ -53,6 +52,13 @@ test('add media', async (ctx) => {
     {name: 'wallpaper', group: ''},
   ])
   const media_doodle = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {title: 'Cat Doodle'}, [])
+
+  await ctx.subtest('duplicate media creation guards', async () => {
+    await ctx.assert.rejects(
+      async () => forager.media.create(ctx.resources.media_files['koch.tif']),
+      errors.DuplicateMediaError
+    )
+  })
 
   await ctx.subtest('default search behavior', () => {
     ctx.assert.search_result(forager.media.search(), {
@@ -162,6 +168,13 @@ test('add media', async (ctx) => {
       total: 2,
       result: []
     })
+
+    // non existent tags should bubble up NotFoundError on the tag
+    ctx.assert.throws(
+      () => forager.media.search({query: {tags: ['nonexistent_tag']}}),
+      errors.NotFoundError,
+      'Tag "{"name":"nonexistent_tag","group":""}" does not exist'
+    )
   })
 
 

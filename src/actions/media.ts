@@ -6,10 +6,10 @@ import { FileProcessor } from '../lib/file_processor.ts'
 import * as errors from '../lib/errors.ts'
 
 class MediaAction extends Action {
-  create = async (filepath: string, media_info: inputs.MediaInfo, tags: inputs.Tag[]) => {
+  create = async (filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.Tag[]) => {
     const parsed = {
-      media_info: parsers.MediaReferenceUpdate.parse(media_info),
-      tags: tags.map(t => parsers.Tag.parse(t)),
+      media_info: parsers.MediaReferenceUpdate.parse(media_info ?? {}),
+      tags: tags?.map(t => parsers.Tag.parse(t)) ?? [],
     }
 
     const file_processor = new FileProcessor(this.ctx, filepath)
@@ -78,67 +78,6 @@ class MediaAction extends Action {
       */
       throw e
     }
-  /*
-    inputs.MediaReferenceUpdate.parse(media_info)
-    const tags_input = tags.map(t => inputs.Tag.parse(t))
-    const media_file_info = await get_file_info(filepath)
-    const sha512checksum = await get_file_checksum(filepath)
-    if (this.db.media_file.select_one_by_checksum({ sha512checksum })) {
-      // an non-transactional step to exit early if we find the hash existing.
-      // this just is a way to skip the video preview early
-      throw new DuplicateMediaError(filepath, sha512checksum)
-    }
-    const [file_size_bytes, thumbnails] = await Promise.all([
-      get_file_size(filepath),
-      get_thumbnails(filepath, media_file_info)
-      // get_file_thumbnail(filepath, media_file_info),
-      // media_file_info.media_type === 'VIDEO' ? get_video_preview(filepath, media_file_info) : null,
-    ])
-    const media_reference_data = { media_sequence_index: 0, stars: 0, view_count: 0, ...media_info }
-    const media_file_data = {
-      ...media_file_info,
-      file_size_bytes,
-      sha512checksum,
-    }
-    const transaction = this.db.transaction_async(async () => {
-      const media_reference_id = this.db.media_reference.insert(media_reference_data)
-      const media_file_id = this.db.media_file.insert({ ...media_file_data, media_reference_id })
-      for (const thumbnail_index of thumbnails.keys()) {
-        const thumbnail = thumbnails[thumbnail_index]
-        this.db.media_thumbnail.insert({ thumbnail_index, media_file_id, ...thumbnail })
-      }
-      await new Promise((resolve, reject) => {
-        let bytes_start = 0
-        const stream = fs.createReadStream(filepath, { highWaterMark: MediaChunk.CHUNK_SIZE })
-        stream.on('data', (chunk: Buffer) => {
-          const bytes_end = bytes_start + chunk.length
-          this.db.media_chunk.insert({ media_file_id, chunk, bytes_start, bytes_end })
-          bytes_start = bytes_end
-        })
-        stream.on('end', resolve)
-        stream.on('error', reject)
-      })
-
-      for (const tag of tags_input) {
-        const group = tag.group ?? ''
-        const color = get_hash_color(group, 'hsl')
-        const tag_group_id = this.db.tag_group.create({ name: group, color })
-        const tag_id = this.db.tag.create({ alias_tag_id: null, name: tag.name, tag_group_id, description: tag.description, metadata: tag.metadata })
-        this.db.media_reference_tag.insert({ media_reference_id, tag_id })
-      }
-      return { media_reference_id, media_file_id }
-    })
-
-    try {
-      return await transaction()
-    } catch(e) {
-      // TODO this can be handled more robustly if we do a full buffer comparison upon getting a DuplicateMediaError
-      // a larger checksum would also be helpful
-      // possibly we would put expensive buffer comparisons behind a config flag, opting to just use the duplicate_log otherwise
-      if (this.is_unique_constaint_error(e)) throw new DuplicateMediaError(filepath, sha512checksum)
-      else throw e
-    }
-    */
   }
 
   update = (media_reference_id: number, media_info: inputs.MediaInfo) => {
@@ -176,7 +115,7 @@ class MediaAction extends Action {
     }
 
     const tag_ids: number[] | undefined = parsed.params.query.tags
-      ?.map(tag => this.ctx.models.Tag.select_one({name: tag.name, group: tag.group })?.id)
+      ?.map(tag => this.ctx.models.Tag.select_one({name: tag.name, group: tag.group }, {or_raise: true}).id)
       .filter((tag): tag is number => tag !== undefined)
 
     const records = this.ctx.models.MediaReference.select_many({
