@@ -1,6 +1,6 @@
 import * as pattern from 'ts-pattern'
 import { Model, field, Vars, Statement, Fields, Driver } from 'torm'
-import { type SchemaFieldGeneric } from 'torm/schema.ts'
+import { type InferTypes } from 'torm/schema.ts'
 import { PaginatedQuery } from "~/inputs/inputs_base.ts";
 
 
@@ -9,6 +9,12 @@ const PaginationVars = Vars({
   limit: field.number(),
   total: field.number(),
 })
+
+type PaginatedResult<T> = {
+  cursor: number | undefined
+  total: number
+  result: T[]
+}
 
 class MediaReference extends Model('media_reference', {
   id:                   field.number(),
@@ -55,7 +61,7 @@ class MediaReference extends Model('media_reference', {
     tag_ids: number[] | undefined
     limit: number | undefined
     cursor: number | undefined
-  }) {
+  }): PaginatedResult<typeof MediaReference.schema_types.result> {
     const records_arguments: Record<string, any> = {}
     const count_arguments: Record<string, any> = {}
 
@@ -94,14 +100,19 @@ class MediaReference extends Model('media_reference', {
     }
 
     const records_stmt = records_builder.build()
-    const result = records_stmt.all(records_arguments)
+    type PaginatedRow = typeof MediaReference.schema_types.result & {cursor_id: number}
+    const result: PaginatedRow[] = records_stmt.all(records_arguments)
 
     const count_stmt = count_builder.build()
-    const { total } = count_stmt.one(count_arguments)!
+    const { total } = count_stmt.one(count_arguments)! as {total: number}
 
+    const next_cursor = result.at(-1)?.cursor_id
+    for (const row of result) {
+      delete (row as any).cursor_id
+    }
     return {
       result,
-      cursor: result.at(-1)?.cursor_id,
+      cursor: next_cursor,
       total,
     }
   }

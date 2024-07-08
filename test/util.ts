@@ -2,6 +2,7 @@ import * as asserts from 'https://deno.land/std@0.155.0/testing/asserts.ts'
 export { expectType as expect_type } from "npm:ts-expect"
 import * as colors from 'jsr:@std/fmt@0.225.4/colors'
 import * as path from '@std/path'
+import { Forager } from '~/mod.ts'
 
 type ValueOf<T> = T extends Array<infer V>
   ? V
@@ -30,16 +31,45 @@ const resources = {
   media_files,
   books_db_1_0_0: 'test/resources/migrations_1.0.0.db',
 }
+
+
+type ForagerMediaSearchResult = ReturnType<Forager['media']['search']>
+interface SearchResultAssertions {
+  total?: number
+  cursor?: number | undefined
+  result?: {
+    media_reference?: Partial<ForagerMediaSearchResult['result'][0]['media_reference']>
+    media_file?: Partial<ForagerMediaSearchResult['result'][0]['media_file']>
+  }[]
+}
+
+class Assertions {
+  equals = asserts.assertEquals
+  rejects = asserts.assertRejects
+  throws = asserts.assertThrows
+  object_match = asserts.assertObjectMatch
+  search_result(search_result: ForagerMediaSearchResult, assertions: SearchResultAssertions) {
+    if (assertions.total) {
+      this.equals(search_result.total, assertions.total)
+    }
+    if (assertions.cursor) {
+      this.equals(search_result.cursor, assertions.cursor)
+    }
+
+    if (assertions.result) {
+      this.equals(search_result.result.length, assertions.result.length, `Expected search result length to be ${assertions.result.length} but is actually ${search_result.result.length}`)
+      this.object_match({
+        result: search_result.result
+      }, {
+        result: assertions.result
+      })
+    }
+  }
+}
 class TestContext {
   test_name: string
   resources = resources
-  assert = {
-    equals: asserts.assertEquals,
-    rejects: asserts.assertRejects,
-    throws: asserts.assertThrows,
-    object_match: asserts.assertObjectMatch,
-// export { assertEquals as assert_equals, assertRejects as assert_rejects, assertThrows as assert_throws } from "https://deno.land/std@0.155.0/testing/asserts.ts";
-  }
+  assert = new Assertions()
 
   constructor(test_name: string) {
     this.test_name = test_name
