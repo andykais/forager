@@ -18,11 +18,20 @@ test('add media', async (ctx) => {
     { group: '', name: 'generated' },
     // this is a different tag group
     { group: 'colors', name: 'black' },
+    // this is a shorthand tag declaration
+    'wallpaper',
   ]
   const media_generated_art = await forager.media.create(ctx.resources.media_files['koch.tif'], media_info, tags)
   // silly checks, SQLITE will always make the first row id `1`. This is just a simple smoke test that we actually wrote something to the db
   ctx.assert.equals(media_generated_art.media_file.id, 1)
   ctx.assert.equals(media_generated_art.media_reference.id, 1)
+  ctx.assert.equals(media_generated_art.media_file.filepath, ctx.resources.media_files["koch.tif"])
+  ctx.assert.list_partial(media_generated_art.tags, [
+    {name: 'procedural_generation', group: ''},
+    {name: 'generated', group: ''},
+    {name: 'black', group: 'colors'},
+    {name: 'wallpaper', group: ''},
+  ])
 
   // assert thumbnails were generated properly
   // hardcode this for simplicity of testing. This is the sha256 checksum for koch.tif
@@ -35,7 +44,12 @@ test('add media', async (ctx) => {
     `test/fixtures/add media/thumbnails/e0/${expected_checksum}/0001.jpg`,
   ], thumbnails.map(entry => entry.path))
 
-  const media_cartoon = await forager.media.create(ctx.resources.media_files["ed-edd-eddy.png"], {title: 'Ed Edd Eddy Poster'}, [])
+  const media_cartoon = await forager.media.create(ctx.resources.media_files["ed-edd-eddy.png"], {title: 'Ed Edd Eddy Screengrab'}, ['cartoon', 'wallpaper'])
+  ctx.assert.equals(media_cartoon.media_file.filepath, ctx.resources.media_files["ed-edd-eddy.png"])
+  ctx.assert.list_partial(media_cartoon.tags, [
+    {name: 'cartoon', group: ''},
+    {name: 'wallpaper', group: ''},
+  ])
   const media_doodle = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {title: 'Cat Doodle'}, [])
 
   // search default
@@ -43,7 +57,7 @@ test('add media', async (ctx) => {
     total: 3,
     result: [
       {media_reference: {title: 'Generated Art'}},
-      {media_reference: {title: 'Ed Edd Eddy Poster'}},
+      {media_reference: {title: 'Ed Edd Eddy Screengrab'}},
       {media_reference: {title: 'Cat Doodle'}},
     ],
   })
@@ -53,7 +67,7 @@ test('add media', async (ctx) => {
     total: 3,
     result: [
       {media_reference: {title: 'Generated Art'}},
-      {media_reference: {title: 'Ed Edd Eddy Poster'}},
+      {media_reference: {title: 'Ed Edd Eddy Screengrab'}},
       {media_reference: {title: 'Cat Doodle'}},
     ],
   })
@@ -71,7 +85,7 @@ test('add media', async (ctx) => {
   ctx.assert.search_result(media_list_page_1, {
     result: [
       {media_reference: {title: 'Generated Art'}},
-      {media_reference: {title: 'Ed Edd Eddy Poster'}},
+      {media_reference: {title: 'Ed Edd Eddy Screengrab'}},
     ],
     total: 3
   })
@@ -82,7 +96,6 @@ test('add media', async (ctx) => {
     ]
   })
 
-
   // search by media reference id
   ctx.assert.search_result(forager.media.search({query: {media_reference_id: media_generated_art.media_reference.id}}), {
     total: 1,
@@ -90,7 +103,6 @@ test('add media', async (ctx) => {
       {media_reference: {id: media_generated_art.media_reference.id, title: 'Generated Art'}}
     ],
   })
-
 
   // assert filepaths
   ctx.assert.search_result(forager.media.search({query: {media_reference_id: media_generated_art.media_reference.id}}), {

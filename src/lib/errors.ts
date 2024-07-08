@@ -1,6 +1,6 @@
 class NotFoundError extends Error {
-  constructor(model: string, query: any) {
-    super(`${model} "${JSON.stringify(query)}" does not exist`)
+  constructor(model: string, query_name: string, params: Record<string, any>) {
+    super(`${model} "${JSON.stringify(params)}" does not exist (queried with ${query_name})`)
   }
 }
 

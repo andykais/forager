@@ -5,12 +5,27 @@ function sanitize_name(name: string) {
   return name.toLowerCase().replace(/ /g, '_')
 }
 
-export const Tag = z.object({
+export const TagShorthand = z.string().transform(tag_str => {
+  const tag_split = tag_str.split(':')
+  if (tag_split.length === 1) {
+    return {
+      name: tag_str,
+      group: '',
+    }
+  }
+  else {
+    throw new Error('unimplemented')
+  }
+})
+
+export const TagObject = z.object({
   name: z.string().transform(sanitize_name),
   group: z.string().optional().default('').transform(sanitize_name),
   description: z.string().optional(),
   metadata: z.record(z.any()).optional(),
 })
+
+export const Tag = TagObject.or(TagShorthand.pipe(TagObject))
 
 export const TagSearch = z.object({
   name: z.string().transform(sanitize_name),

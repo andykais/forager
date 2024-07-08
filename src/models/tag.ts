@@ -1,6 +1,16 @@
 import * as pattern from 'ts-pattern'
 import { Model, field, errors } from 'torm'
 import {TagGroup} from './tag_group.ts'
+import { type SelectOneOptions } from './models_base.ts'
+import {NotFoundError} from '~/lib/errors.ts'
+
+interface SelectOneParams {
+  id?: number
+  name?: string
+  tag_group_id?: number
+  group?: string
+}
+type Row = typeof Tag.schema_types.result
 
 class Tag extends Model('tag', {
   id:                           field.number(),
@@ -31,49 +41,64 @@ class Tag extends Model('tag', {
         Tag.params.metadata
     ]}) RETURNING ${Tag.result.id}`
 
-  select_by_tag_group_and_name = this.query`
-    SELECT ${Tag.result['*']} FROM tag
+  #select_by_id = this.query`
+    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')} FROM tag
+    INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
+    WHERE tag.id = ${Tag.params.id}`
+
+  #select_by_tag_group_and_name = this.query`
+    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')} FROM tag
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
     WHERE tag.name = ${Tag.params.name} AND tag_group.name = ${TagGroup.params.name.as('group')}`
 
-  select_by_tag_group_id_and_name = this.query`
-    SELECT ${Tag.result['*']} FROM tag
-    WHERE tag_group_id = ${Tag.params.tag_group_id} AND name = ${Tag.params.name}`
+  #select_by_tag_group_id_and_name = this.query`
+    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')} FROM tag
+    INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
+    WHERE tag_group_id = ${Tag.params.tag_group_id} AND tag.name = ${Tag.params.name}`
 
   get_or_create(params: Parameters<Tag['create']>[0]) {
     try {
       return this.create(params)!
     } catch (e) {
       if (e instanceof errors.UniqueConstraintError) {
-        return this.select_by_tag_group_id_and_name.one({tag_group_id: params.tag_group_id, name: params.name})
+        return this.select_one({tag_group_id: params.tag_group_id, name: params.name}, {or_raise: true})
       } else {
         throw e
       }
     }
   }
 
-  select_one(params: {
-    group?: string
-    name?: string
-  }) {
-    return pattern.match(params)
-      .with({ group: pattern.P.string, name: pattern.P.string }, vars => {
-        return this.select_by_tag_group_and_name.one(vars)
-      })
-      .otherwise(() => {
-        throw new Error(`unimplemented`)
-      })
+  public select_one(params: SelectOneParams, options: {or_raise: true}): Row
+  public select_one(params: SelectOneParams, options?: SelectOneOptions): Row | undefined
+  public select_one(params: SelectOneParams, options?: SelectOneOptions): Row | undefined {
+    let row: Row | undefined
+    if (
+      params.id !== undefined &&
+      Object.keys(params).length === 1
+    ) {
+      row = this.#select_by_id.one({id: params.id})
+    } else if (
+      params.name !== undefined &&
+      params.group !== undefined &&
+      Object.keys(params).length === 2
+    ) {
+      row = this.#select_by_tag_group_and_name.one({name: params.name, group: params.group})
+    } else if (
+      params.name !== undefined &&
+      params.tag_group_id !== undefined &&
+      Object.keys(params).length === 2
+    ) {
+      row = this.#select_by_tag_group_id_and_name.one({name: params.name, tag_group_id: params.tag_group_id})
+    } else {
+      throw new Error(`unimplemented`)
+    }
 
+    if (options?.or_raise && row === undefined) {
+      throw new NotFoundError('Tag', 'select_one', params)
+    }
+
+    return row
   }
-
-  /* TODO support this
-  select_one(params: {
-    group: TagGroup['schema']['name']
-    name: Tag['schema']['name']
-  }): Tag['schema'] {
-
-  }
-  */
 }
 
 export { Tag }
