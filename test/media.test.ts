@@ -1,5 +1,6 @@
 import { test } from './lib/util.ts'
 import * as fs from '@std/fs'
+import * as path from '@std/fs'
 import { Forager, errors } from '~/mod.ts'
 
 
@@ -38,10 +39,10 @@ test('media actions', async (ctx) => {
     const generated_art_checksum = 'e00df1e96425e0f231bb0cf065432927933f6f2ffd397119334bd2b0b307923f'
     const thumbnails = await Array.fromAsync(fs.walk(thumbnail_folder))
     ctx.assert.equals([
-      `${thumbnail_folder}`,
-      `${thumbnail_folder}/e0`,
-      `${thumbnail_folder}/e0/${generated_art_checksum}`,
-      `${thumbnail_folder}/e0/${generated_art_checksum}/0001.jpg`,
+      thumbnail_folder,
+      path.join(thumbnail_folder, 'e0'),
+      path.join(thumbnail_folder, 'e0', generated_art_checksum),
+      path.join(thumbnail_folder, 'e0', generated_art_checksum, '0001.jpg'),
     ], thumbnails.map(entry => entry.path))
   })
 
