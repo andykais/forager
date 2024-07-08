@@ -123,6 +123,8 @@ class MediaAction extends Action {
       tag_ids,
       cursor: parsed.params.cursor,
       limit: parsed.params.limit,
+      sort_by: parsed.params.sort_by,
+      order: parsed.params.order,
     })
 
     return {

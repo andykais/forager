@@ -64,9 +64,9 @@ test('media actions', async (ctx) => {
     ctx.assert.search_result(forager.media.search(), {
       total: 3,
       result: [
-        {media_reference: {title: 'Generated Art'}},
-        {media_reference: {title: 'Ed Edd Eddy Screengrab'}},
         {media_reference: {title: 'Cat Doodle'}},
+        {media_reference: {title: 'Ed Edd Eddy Screengrab'}},
+        {media_reference: {title: 'Generated Art'}},
       ],
     })
   })
@@ -75,9 +75,9 @@ test('media actions', async (ctx) => {
     ctx.assert.search_result(forager.media.search({cursor: 0, limit: -1}), {
       total: 3,
       result: [
-        {media_reference: {title: 'Generated Art'}},
-        {media_reference: {title: 'Ed Edd Eddy Screengrab'}},
         {media_reference: {title: 'Cat Doodle'}},
+        {media_reference: {title: 'Ed Edd Eddy Screengrab'}},
+        {media_reference: {title: 'Generated Art'}},
       ],
     })
   })
@@ -95,7 +95,7 @@ test('media actions', async (ctx) => {
     const media_list_page_2 = forager.media.search({cursor: media_list_page_1.cursor, limit: 2})
     ctx.assert.search_result(media_list_page_1, {
       result: [
-        {media_reference: {title: 'Generated Art'}},
+        {media_reference: {title: 'Cat Doodle'}},
         {media_reference: {title: 'Ed Edd Eddy Screengrab'}},
       ],
       total: 3
@@ -103,10 +103,12 @@ test('media actions', async (ctx) => {
 
     ctx.assert.object_match(media_list_page_2, {
       result: [
-        {media_reference: {title: 'Cat Doodle'}}
+        {media_reference: {title: 'Generated Art'}},
       ]
     })
+
   })
+
 
   await ctx.subtest('search filters media_reference_id', () => {
     ctx.assert.search_result(forager.media.search({query: {media_reference_id: media_generated_art.media_reference.id}}), {
@@ -133,8 +135,8 @@ test('media actions', async (ctx) => {
     ctx.assert.search_result(forager.media.search({query: { tags: ['wallpaper'] }}), {
       total: 2,
       result: [
-        {media_reference: {id: media_generated_art.media_reference.id}},
         {media_reference: {id: media_cartoon.media_reference.id}},
+        {media_reference: {id: media_generated_art.media_reference.id}},
       ]
     })
 
@@ -142,9 +144,9 @@ test('media actions', async (ctx) => {
     ctx.assert.search_result(forager.media.search({query: { tags: [] }}), {
       total: 3,
       result: [
-        {media_reference: {id: media_generated_art.media_reference.id}},
-        {media_reference: {id: media_cartoon.media_reference.id}},
         {media_reference: {id: media_doodle.media_reference.id}},
+        {media_reference: {id: media_cartoon.media_reference.id}},
+        {media_reference: {id: media_generated_art.media_reference.id}},
       ]
     })
 
@@ -155,13 +157,13 @@ test('media actions', async (ctx) => {
     ctx.assert.search_result(wallpaper_media_page_1, {
       total: 2,
       result: [
-        {media_reference: {id: media_generated_art.media_reference.id}},
+        {media_reference: {id: media_cartoon.media_reference.id}},
       ]
     })
     ctx.assert.search_result(wallpaper_media_page_2, {
       total: 2,
       result: [
-        {media_reference: {id: media_cartoon.media_reference.id}},
+        {media_reference: {id: media_generated_art.media_reference.id}},
       ]
     })
     ctx.assert.search_result(wallpaper_media_page_3, {
@@ -177,6 +179,32 @@ test('media actions', async (ctx) => {
     )
   })
 
+  await ctx.subtest('search sort order', () => {
+    // descending is the default sort order
+    ctx.assert.search_result(forager.media.search({sort_by: 'created_at'}), {
+      result: [
+        {media_reference: {id: media_doodle.media_reference.id}},
+        {media_reference: {id: media_cartoon.media_reference.id}},
+        {media_reference: {id: media_generated_art.media_reference.id}},
+      ]
+    })
+    ctx.assert.search_result(forager.media.search({sort_by: 'created_at', order: 'asc'}), {
+      result: [
+        {media_reference: {id: media_generated_art.media_reference.id}},
+        {media_reference: {id: media_cartoon.media_reference.id}},
+        {media_reference: {id: media_doodle.media_reference.id}},
+      ]
+    })
+    ctx.assert.search_result(forager.media.search({sort_by: 'created_at', order: 'desc'}), {
+      result: [
+        {media_reference: {id: media_doodle.media_reference.id}},
+        {media_reference: {id: media_cartoon.media_reference.id}},
+        {media_reference: {id: media_generated_art.media_reference.id}},
+      ]
+    })
+
+    // TODO add more variable sorting tests with view_count once we can update media references
+  })
 
 
   // const database_path = 'test/fixtures/forager.db'

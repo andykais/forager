@@ -12,6 +12,94 @@ interface SelectManyParams {
   tag_ids: number[] | undefined
   limit: number | undefined
   cursor: number | undefined
+  sort_by: 'created_at' | 'updated_at' | 'source_created_at' | 'view_count'
+  order: 'asc' | 'desc'
+}
+
+
+class SQLBuilder {
+  #driver: Driver
+  #param_fields: Fields = {}
+  #result_fields: Fields = {}
+  fragments: {
+    select_clause: string
+    where_clauses: string[]
+    group_clauses: string[]
+    join_clauses: string[]
+    limit_clause: string
+    order_by_clause: string
+  }
+
+  constructor(driver: Driver) {
+    this.#driver = driver
+    this.fragments = {
+      select_clause: '',
+      where_clauses: [],
+      join_clauses: [],
+      group_clauses: [],
+      limit_clause: '',
+      order_by_clause: '',
+    }
+  }
+
+  set_select_clause(sql: string) {
+    this.fragments.select_clause = sql
+  }
+
+  add_join_clause(sql: string) {
+    this.fragments.join_clauses.push(sql)
+  }
+
+  add_where_clause(sql: string) {
+    this.fragments.where_clauses.push(sql)
+  }
+
+  add_group_clause(sql: string) {
+    this.fragments.group_clauses.push(sql)
+  }
+
+  set_limit_clause(sql: string) {
+    this.fragments.limit_clause = sql
+  }
+
+  add_param_fields(param_fields: Fields) {
+    Object.assign(this.#param_fields, param_fields)
+  }
+
+  add_result_fields(result_fields: Fields) {
+    if (Array.isArray(result_fields)) {
+      Object.assign(
+        this.#result_fields,
+        Object.fromEntries(result_fields.map(field => [field.field_name, field]))
+      )
+    } else {
+      Object.assign(this.#result_fields, result_fields)
+    }
+  }
+
+  generate_sql() {
+    let where_clause = ''
+    if (this.fragments.where_clauses.length) {
+      where_clause = `WHERE ${this.fragments.where_clauses.join(' AND ')}`
+    }
+    const join_clause = this.fragments.join_clauses.join('\n')
+    const group_clause = this.fragments.group_clauses.join('\n')
+
+    return `
+${this.fragments.select_clause}
+${join_clause}
+${where_clause}
+${this.fragments.order_by_clause}
+${this.fragments.limit_clause}
+    `
+  }
+
+  build() {
+    const sql = this.generate_sql()
+    const stmt = Statement.create<any, any>(sql, this.#param_fields, this.#result_fields)
+    stmt.prepare_query(this.#driver)
+    return stmt
+  }
 }
 
 class MediaReference extends Model('media_reference', {
@@ -68,6 +156,7 @@ class MediaReference extends Model('media_reference', {
   }
 
   public select_many(params: SelectManyParams): PaginatedResult<typeof MediaReference.schema_types.result> {
+
     const records_arguments: Record<string, any> = {}
     const count_arguments: Record<string, any> = {}
 
@@ -75,7 +164,7 @@ class MediaReference extends Model('media_reference', {
     records_builder.set_select_clause(`
 SELECT media_reference.*, cursor_id FROM (
   SELECT
-    ROW_NUMBER() OVER (ORDER BY created_at) cursor_id,
+    ROW_NUMBER() OVER (ORDER BY ${params.sort_by} ${params.order}, media_reference.id ${params.order}) cursor_id,
     *
   FROM media_reference
 ) media_reference`)
@@ -86,11 +175,6 @@ SELECT media_reference.*, cursor_id FROM (
     count_builder.set_select_clause(`SELECT COUNT(1) AS total FROM media_reference`)
     count_builder.add_result_fields({total: PaginationVars.result.total})
 
-    if (params.cursor !== undefined) {
-      records_builder.add_where_clause(`cursor_id > :cursor_id`)
-      records_builder.add_param_fields({cursor_id: PaginationVars.params.cursor_id})
-      records_arguments.cursor_id = params.cursor
-    }
     if (params.limit !== undefined) {
       records_builder.set_limit_clause(`LIMIT :limit`)
       records_builder.add_param_fields({limit: PaginationVars.params.limit})
@@ -113,12 +197,21 @@ SELECT media_reference.*, cursor_id FROM (
       records_builder.add_where_clause(`tag.id IN (${tag_ids_str})`)
       records_builder.add_group_clause('GROUP BY media_reference.id')
       records_builder.add_group_clause(`HAVING COUNT(tag.id) >= ${params.tag_ids.length}`)
+      // NOTE it appears that when we add join clauses, ROW_NUMBER seems to start to ascend/descend according to the order by clause
+      // I dont know if this means I am supposed to account for this or not
+      records_builder.fragments.order_by_clause = `ORDER BY ${params.sort_by} ${params.order}, media_reference.id ${params.order}`
 
       count_builder.add_join_clause(`INNER JOIN media_reference_tag ON media_reference_tag.media_reference_id = media_reference.id`)
       count_builder.add_join_clause(`INNER JOIN tag ON media_reference_tag.tag_id = tag.id`)
       count_builder.add_where_clause(`tag.id IN (${tag_ids_str})`)
       count_builder.add_group_clause('GROUP BY media_reference.id')
       count_builder.add_group_clause(`HAVING COUNT(tag.id) >= ${params.tag_ids.length}`)
+    }
+
+    if (params.cursor !== undefined) {
+      records_builder.add_where_clause(`cursor_id > :cursor_id`)
+      records_builder.add_param_fields({cursor_id: PaginationVars.params.cursor_id})
+      records_arguments.cursor_id = params.cursor
     }
 
     const records_stmt = records_builder.build()
@@ -129,97 +222,14 @@ SELECT media_reference.*, cursor_id FROM (
     const { total } = count_stmt.one(count_arguments)! as {total: number}
 
     const next_cursor = result.at(-1)?.cursor_id
-    for (const row of result) {
-      delete (row as any).cursor_id
-    }
+    // for (const row of result) {
+    //   delete (row as any).cursor_id
+    // }
     return {
       result,
       cursor: next_cursor,
       total,
     }
-  }
-}
-
-
-class SQLBuilder {
-  #driver: Driver
-  #param_fields: Fields = {}
-  #result_fields: Fields = {}
-  #fragments: {
-    select_clause: string
-    where_clauses: string[]
-    group_clauses: string[]
-    join_clauses: string[]
-    limit_clause: string
-  }
-
-  constructor(driver: Driver) {
-    this.#driver = driver
-    this.#fragments = {
-      select_clause: '',
-      where_clauses: [],
-      join_clauses: [],
-      group_clauses: [],
-      limit_clause: '',
-    }
-  }
-
-  set_select_clause(sql: string) {
-    this.#fragments.select_clause = sql
-  }
-
-  add_join_clause(sql: string) {
-    this.#fragments.join_clauses.push(sql)
-  }
-
-  add_where_clause(sql: string) {
-    this.#fragments.where_clauses.push(sql)
-  }
-
-  add_group_clause(sql: string) {
-    this.#fragments.group_clauses.push(sql)
-  }
-
-  set_limit_clause(sql: string) {
-    this.#fragments.limit_clause = sql
-  }
-
-  add_param_fields(param_fields: Fields) {
-    Object.assign(this.#param_fields, param_fields)
-  }
-
-  add_result_fields(result_fields: Fields) {
-    if (Array.isArray(result_fields)) {
-      Object.assign(
-        this.#result_fields,
-        Object.fromEntries(result_fields.map(field => [field.field_name, field]))
-      )
-    } else {
-      Object.assign(this.#result_fields, result_fields)
-    }
-  }
-
-  #generate_sql() {
-    let where_clause = ''
-    if (this.#fragments.where_clauses.length) {
-      where_clause = `WHERE ${this.#fragments.where_clauses.join(' AND ')}`
-    }
-    const join_clause = this.#fragments.join_clauses.join('\n')
-    const group_clause = this.#fragments.group_clauses.join('\n')
-
-    return `
-${this.#fragments.select_clause}
-${join_clause}
-${where_clause}
-${this.#fragments.limit_clause}
-    `
-  }
-
-  build() {
-    const sql = this.#generate_sql()
-    const stmt = Statement.create<any, any>(sql, this.#param_fields, this.#result_fields)
-    stmt.prepare_query(this.#driver)
-    return stmt
   }
 }
 
