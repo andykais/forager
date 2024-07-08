@@ -19,7 +19,11 @@ class MediaFile extends Model('media_file', {
   created_at:         field.datetime(),
 
 }) {
-  find_by_checksum = this.query.one`
+  private select_by_media_reference_id = this.query`
+    SELECT ${MediaFile.result['*']} FROM media_file
+    WHERE media_reference_id = ${MediaFile.params.media_reference_id}`
+
+  private select_by_checksum = this.query`
     SELECT ${MediaFile.result['*']} FROM media_file
     WHERE checksum = ${MediaFile.params.checksum}`
 
@@ -50,6 +54,21 @@ class MediaFile extends Model('media_file', {
     MediaFile.params.framerate,
     MediaFile.params.media_reference_id,
   ]}) RETURNING ${MediaFile.result.id}`
+
+  select_one(params: {
+    media_reference_id?: number
+    checksum?: string
+  }): typeof MediaFile.schema_types.result | undefined {
+    if (params.checksum !== undefined && Object.keys(params).length === 1) {
+      return this.select_by_checksum.one({checksum: params.checksum})
+    }
+
+    if (params.media_reference_id !== undefined && Object.keys(params).length === 1) {
+      return this.select_by_media_reference_id.one({media_reference_id: params.media_reference_id})
+    }
+
+    throw new Error(`unimplemented for params: ${Object.keys(params)}`)
+  }
 }
 
 export { MediaFile }

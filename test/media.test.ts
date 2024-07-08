@@ -2,6 +2,7 @@ import { test } from './util.ts'
 import * as fs from '@std/fs'
 import { Forager } from '~/mod.ts'
 
+
 test('add media', async (ctx) => {
   const database_path = ctx.create_fixture_path('forager.db')
   const thumbnail_folder = ctx.create_fixture_path('thumbnails')
@@ -38,52 +39,59 @@ test('add media', async (ctx) => {
   const media_doodle = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {title: 'Cat Doodle'}, [])
 
   // search default
-  ctx.assert.object_match(forager.media.search(), {
+  ctx.assert.search_result(forager.media.search(), {
     total: 3,
     result: [
-      {title: 'Generated Art'},
-      {title: 'Ed Edd Eddy Poster'},
-      {title: 'Cat Doodle'},
+      {media_reference: {title: 'Generated Art'}},
+      {media_reference: {title: 'Ed Edd Eddy Poster'}},
+      {media_reference: {title: 'Cat Doodle'}},
+    ],
+  })
+
+  //  essentially the default arguments
+  ctx.assert.search_result(forager.media.search({cursor: 0, limit: -1}), {
+    total: 3,
+    result: [
+      {media_reference: {title: 'Generated Art'}},
+      {media_reference: {title: 'Ed Edd Eddy Poster'}},
+      {media_reference: {title: 'Cat Doodle'}},
     ],
   })
 
   // search used for just counting
-  ctx.assert.object_match(forager.media.search({limit: 0}), {
+  ctx.assert.search_result(forager.media.search({limit: 0}), {
     total: 3,
     cursor: undefined,
     result: []
   })
 
-  //  essentially the default arguments
-  ctx.assert.object_match(forager.media.search({cursor: 0, limit: -1}), {
-    total: 3,
-    result: [
-      {title: 'Generated Art'},
-      {title: 'Ed Edd Eddy Poster'}
-    ],
-  })
-
+  // test pagination
   const media_list_page_1 = forager.media.search({limit: 2})
   const media_list_page_2 = forager.media.search({cursor: media_list_page_1.cursor, limit: 2})
-  ctx.assert.equals(media_list_page_1.result.length, 2)
-  ctx.assert.object_match(media_list_page_1, {
+  ctx.assert.search_result(media_list_page_1, {
     result: [
-      {title: 'Generated Art'},
-      {title: 'Ed Edd Eddy Poster'},
+      {media_reference: {title: 'Generated Art'}},
+      {media_reference: {title: 'Ed Edd Eddy Poster'}},
     ],
     total: 3
   })
-  ctx.assert.equals(media_list_page_2.result.length, 1)
-  ctx.assert.object_match(media_list_page_2, {result: [{title: 'Cat Doodle'}]})
+
+  ctx.assert.object_match(media_list_page_2, {
+    result: [
+      {media_reference: {title: 'Cat Doodle'}}
+    ]
+  })
 
 
   // search by media reference id
-  ctx.assert.object_match(forager.media.search({query: {media_reference_id: media_generated_art.media_reference.id}}), {
+  ctx.assert.search_result(forager.media.search({query: {media_reference_id: media_generated_art.media_reference.id}}), {
     total: 1,
-    result: [{id: media_generated_art.media_reference.id, title: 'Generated Art'}],
+    result: [
+      {media_reference: {id: media_generated_art.media_reference.id, title: 'Generated Art'}}
+    ],
   })
 
-  // TODO now that we have external files, do we want to return the filepath inside the search? What should the structure be?
+  console.debug(forager.media.search())
 
   // search by tags
   // const media = forager.media.search({query: { tags: [{group: '', name: 'generated' }] }})

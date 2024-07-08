@@ -16,7 +16,7 @@ class MediaAction extends Action {
     const media_file_info = await file_processor.get_info()
     const checksum = await file_processor.get_checksum()
 
-    if (this.ctx.models.MediaFile.find_by_checksum({checksum})) {
+    if (this.ctx.models.MediaFile.select_one({checksum})) {
       // an non-transactional step to exit early if we find the hash existing.
       // this just is a way to skip the video preview early
       throw new errors.DuplicateMediaError(filepath, checksum)
@@ -161,7 +161,6 @@ class MediaAction extends Action {
     */
   }
 
-  // TODO offset needs to be replaces w/ a cursor. The cursor will be source_created_at + created_at
   search = (params?: inputs.PaginatedSearch) => {
     const parsed = {
       params: parsers.PaginatedSearch.parse(params ?? {}),
@@ -177,7 +176,19 @@ class MediaAction extends Action {
       cursor: parsed.params.cursor,
       limit: parsed.params.limit,
     })
-    return records
+
+    return {
+      total: records.total,
+      cursor: records.cursor,
+      result: records.result.map(row => {
+        const media_file = this.ctx.models.MediaFile.select_one({media_reference_id: row.id})
+        if (media_file === undefined) throw new Error(`reference error: MediaReference id ${row.id} has no media_file`)
+        return {
+          media_reference: row,
+          media_file,
+        }
+      })
+    }
 
   /*
     const tag_ids: number[] = []
