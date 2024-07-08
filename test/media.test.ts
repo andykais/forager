@@ -1,4 +1,4 @@
-import { test } from './util.ts'
+import { test } from './lib/util.ts'
 import * as fs from '@std/fs'
 import { Forager } from '~/mod.ts'
 
@@ -33,16 +33,18 @@ test('add media', async (ctx) => {
     {name: 'wallpaper', group: ''},
   ])
 
-  // assert thumbnails were generated properly
-  // hardcode this for simplicity of testing. This is the sha256 checksum for koch.tif
-  const expected_checksum = 'e00df1e96425e0f231bb0cf065432927933f6f2ffd397119334bd2b0b307923f'
-  const thumbnails = await Array.fromAsync(fs.walk(thumbnail_folder))
-  ctx.assert.equals([
-    'test/fixtures/add media/thumbnails',
-    'test/fixtures/add media/thumbnails/e0',
-    `test/fixtures/add media/thumbnails/e0/${expected_checksum}`,
-    `test/fixtures/add media/thumbnails/e0/${expected_checksum}/0001.jpg`,
-  ], thumbnails.map(entry => entry.path))
+  await ctx.subtest('checksums', async () => {
+    // assert thumbnails were generated properly
+    // hardcode this for simplicity of testing. This is the sha256 checksum for koch.tif
+    const expected_checksum = 'e00df1e96425e0f231bb0cf065432927933f6f2ffd397119334bd2b0b307923f'
+    const thumbnails = await Array.fromAsync(fs.walk(thumbnail_folder))
+    ctx.assert.equals([
+      'test/fixtures/add media/thumbnails',
+      'test/fixtures/add media/thumbnails/e0',
+      `test/fixtures/add media/thumbnails/e0/${expected_checksum}`,
+      `test/fixtures/add media/thumbnails/e0/${expected_checksum}/0001.jpg`,
+    ], thumbnails.map(entry => entry.path))
+  })
 
   const media_cartoon = await forager.media.create(ctx.resources.media_files["ed-edd-eddy.png"], {title: 'Ed Edd Eddy Screengrab'}, ['cartoon', 'wallpaper'])
   ctx.assert.equals(media_cartoon.media_file.filepath, ctx.resources.media_files["ed-edd-eddy.png"])
@@ -52,63 +54,68 @@ test('add media', async (ctx) => {
   ])
   const media_doodle = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {title: 'Cat Doodle'}, [])
 
-  // search default
-  ctx.assert.search_result(forager.media.search(), {
-    total: 3,
-    result: [
-      {media_reference: {title: 'Generated Art'}},
-      {media_reference: {title: 'Ed Edd Eddy Screengrab'}},
-      {media_reference: {title: 'Cat Doodle'}},
-    ],
+  await ctx.subtest('default search behavior', () => {
+    ctx.assert.search_result(forager.media.search(), {
+      total: 3,
+      result: [
+        {media_reference: {title: 'Generated Art'}},
+        {media_reference: {title: 'Ed Edd Eddy Screengrab'}},
+        {media_reference: {title: 'Cat Doodle'}},
+      ],
+    })
   })
 
-  //  essentially the default arguments
-  ctx.assert.search_result(forager.media.search({cursor: 0, limit: -1}), {
-    total: 3,
-    result: [
-      {media_reference: {title: 'Generated Art'}},
-      {media_reference: {title: 'Ed Edd Eddy Screengrab'}},
-      {media_reference: {title: 'Cat Doodle'}},
-    ],
+  await ctx.subtest('default search arguments', () => {
+    ctx.assert.search_result(forager.media.search({cursor: 0, limit: -1}), {
+      total: 3,
+      result: [
+        {media_reference: {title: 'Generated Art'}},
+        {media_reference: {title: 'Ed Edd Eddy Screengrab'}},
+        {media_reference: {title: 'Cat Doodle'}},
+      ],
+    })
   })
 
-  // search used for just counting
-  ctx.assert.search_result(forager.media.search({limit: 0}), {
-    total: 3,
-    cursor: undefined,
-    result: []
+  await ctx.subtest('using search for total counts only', () => {
+    ctx.assert.search_result(forager.media.search({limit: 0}), {
+      total: 3,
+      cursor: undefined,
+      result: []
+    })
   })
 
-  // test pagination
-  const media_list_page_1 = forager.media.search({limit: 2})
-  const media_list_page_2 = forager.media.search({cursor: media_list_page_1.cursor, limit: 2})
-  ctx.assert.search_result(media_list_page_1, {
-    result: [
-      {media_reference: {title: 'Generated Art'}},
-      {media_reference: {title: 'Ed Edd Eddy Screengrab'}},
-    ],
-    total: 3
+  await ctx.subtest('search pagination', () => {
+    const media_list_page_1 = forager.media.search({limit: 2})
+    const media_list_page_2 = forager.media.search({cursor: media_list_page_1.cursor, limit: 2})
+    ctx.assert.search_result(media_list_page_1, {
+      result: [
+        {media_reference: {title: 'Generated Art'}},
+        {media_reference: {title: 'Ed Edd Eddy Screengrab'}},
+      ],
+      total: 3
+    })
+
+    ctx.assert.object_match(media_list_page_2, {
+      result: [
+        {media_reference: {title: 'Cat Doodle'}}
+      ]
+    })
   })
 
-  ctx.assert.object_match(media_list_page_2, {
-    result: [
-      {media_reference: {title: 'Cat Doodle'}}
-    ]
-  })
+  await ctx.subtest('search filters media_reference_id', () => {
+    ctx.assert.search_result(forager.media.search({query: {media_reference_id: media_generated_art.media_reference.id}}), {
+      total: 1,
+      result: [
+        {media_reference: {id: media_generated_art.media_reference.id, title: 'Generated Art'}}
+      ],
+    })
 
-  // search by media reference id
-  ctx.assert.search_result(forager.media.search({query: {media_reference_id: media_generated_art.media_reference.id}}), {
-    total: 1,
-    result: [
-      {media_reference: {id: media_generated_art.media_reference.id, title: 'Generated Art'}}
-    ],
-  })
-
-  // assert filepaths
-  ctx.assert.search_result(forager.media.search({query: {media_reference_id: media_generated_art.media_reference.id}}), {
-    result: [
-      {media_file: {filepath: ctx.resources.media_files["koch.tif"]}}
-    ]
+    // assert filepaths
+    ctx.assert.search_result(forager.media.search({query: {media_reference_id: media_generated_art.media_reference.id}}), {
+      result: [
+        {media_file: {filepath: ctx.resources.media_files["koch.tif"]}}
+      ]
+    })
   })
 
   // search by tags
