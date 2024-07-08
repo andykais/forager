@@ -118,9 +118,51 @@ test('add media', async (ctx) => {
     })
   })
 
-  // search by tags
-  // const media = forager.media.search({query: { tags: [{group: '', name: 'generated' }] }})
-  // console.debug({media})
+  await ctx.subtest('search filters tags', () => {
+    ctx.assert.search_result(forager.media.search({query: { tags: ['procedural_generation'] }}), {
+      total: 1,
+      result: [{media_reference: {id: media_generated_art.media_reference.id}}]
+    })
+
+    ctx.assert.search_result(forager.media.search({query: { tags: ['wallpaper'] }}), {
+      total: 2,
+      result: [
+        {media_reference: {id: media_generated_art.media_reference.id}},
+        {media_reference: {id: media_cartoon.media_reference.id}},
+      ]
+    })
+
+    // an empty list should act like a noop
+    ctx.assert.search_result(forager.media.search({query: { tags: [] }}), {
+      total: 3,
+      result: [
+        {media_reference: {id: media_generated_art.media_reference.id}},
+        {media_reference: {id: media_cartoon.media_reference.id}},
+        {media_reference: {id: media_doodle.media_reference.id}},
+      ]
+    })
+
+    // check that pagination works with tag filters
+    const wallpaper_media_page_1 = forager.media.search({query: { tags: ['wallpaper'] }, limit: 1})
+    const wallpaper_media_page_2 = forager.media.search({query: { tags: ['wallpaper'] }, limit: 1, cursor: wallpaper_media_page_1.cursor})
+    const wallpaper_media_page_3 = forager.media.search({query: { tags: ['wallpaper'] }, limit: 1, cursor: wallpaper_media_page_2.cursor})
+    ctx.assert.search_result(wallpaper_media_page_1, {
+      total: 2,
+      result: [
+        {media_reference: {id: media_generated_art.media_reference.id}},
+      ]
+    })
+    ctx.assert.search_result(wallpaper_media_page_2, {
+      total: 2,
+      result: [
+        {media_reference: {id: media_cartoon.media_reference.id}},
+      ]
+    })
+    ctx.assert.search_result(wallpaper_media_page_3, {
+      total: 2,
+      result: []
+    })
+  })
 
 
 
