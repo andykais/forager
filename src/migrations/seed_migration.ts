@@ -26,6 +26,7 @@ export class Migration extends torm.SeedMigration {
 
     CREATE TABLE media_file (
       id INTEGER PRIMARY KEY NOT NULL,
+      filepath TEXT NOT NULL,
       filename TEXT NOT NULL,
       -- mime_type TEXT NOT NULL,
       file_size_bytes INTEGER NOT NULL,

@@ -9,6 +9,7 @@ import * as errors from './errors.ts'
 
 
 interface FileInfoBase {
+  filepath: string
   filename: string
   media_type: 'VIDEO' | 'AUDIO' | 'IMAGE'
   codec: string
@@ -77,7 +78,7 @@ class FileProcessor {
     this.#filepath = filepath
   }
 
-  public async get_info() {
+  public async get_info(): Promise<FileInfo> {
     const cmd = new Deno.Command('ffprobe', {
       args: ['-v', 'error', '-print_format', 'json', '-show_streams', '-i', this.#filepath],
       stdout: 'piped',
@@ -119,7 +120,16 @@ class FileProcessor {
       }
     }
     const filename = path.basename(this.#filepath)
-    const file_info = { filename, ...codec_info, width, height, animated, duration, framerate } as FileInfo // we use "as" here because typescript gets confused about unions
+    const file_info = {
+      filepath: this.#filepath,
+      filename,
+      ...codec_info,
+      width,
+      height,
+      animated,
+      duration,
+      framerate
+    } as FileInfo // we use "as" here because typescript gets confused about unions
     return file_info
   }
 
