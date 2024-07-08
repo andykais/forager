@@ -1,5 +1,6 @@
 import { Model, field, Statement, Fields, Driver } from 'torm'
 import * as errors from '~/lib/errors.ts'
+import { MediaReferenceTag } from './media_reference_tag.ts'
 import { PaginationVars, type PaginatedResult, type SelectOneOptions } from './models_base.ts'
 
 
@@ -72,12 +73,12 @@ class MediaReference extends Model('media_reference', {
 
     const records_builder = new SQLBuilder(this.driver)
     records_builder.set_select_clause(`
-      SELECT * FROM (
-        SELECT
-          ROW_NUMBER() OVER (ORDER BY created_at) cursor_id,
-          *
-        FROM media_reference
-      ) t`)
+SELECT media_reference.*, cursor_id FROM (
+  SELECT
+    ROW_NUMBER() OVER (ORDER BY created_at) cursor_id,
+    *
+  FROM media_reference
+) media_reference`)
     records_builder.add_result_fields(MediaReference.result['*'] as any)
     records_builder.add_result_fields({cursor_id: PaginationVars.result.cursor_id})
 
@@ -99,9 +100,25 @@ class MediaReference extends Model('media_reference', {
       records_builder.add_where_clause(`id = :id`)
       records_builder.add_param_fields({id: MediaReference.params.id})
       records_arguments.id = params.id
+
       count_builder.add_where_clause(`id = :id`)
       count_builder.add_param_fields({id: MediaReference.params.id})
       count_arguments.id = params.id
+    }
+
+    if (params.tag_ids !== undefined && params.tag_ids.length > 0) {
+      const tag_ids_str = params.tag_ids.join(',')
+      records_builder.add_join_clause(`INNER JOIN media_reference_tag ON media_reference_tag.media_reference_id = media_reference.id`)
+      records_builder.add_join_clause(`INNER JOIN tag ON media_reference_tag.tag_id = tag.id`)
+      records_builder.add_where_clause(`tag.id IN (${tag_ids_str})`)
+      records_builder.add_group_clause('GROUP BY media_reference.id')
+      records_builder.add_group_clause(`HAVING COUNT(tag.id) >= ${params.tag_ids.length}`)
+
+      count_builder.add_join_clause(`INNER JOIN media_reference_tag ON media_reference_tag.media_reference_id = media_reference.id`)
+      count_builder.add_join_clause(`INNER JOIN tag ON media_reference_tag.tag_id = tag.id`)
+      count_builder.add_where_clause(`tag.id IN (${tag_ids_str})`)
+      count_builder.add_group_clause('GROUP BY media_reference.id')
+      count_builder.add_group_clause(`HAVING COUNT(tag.id) >= ${params.tag_ids.length}`)
     }
 
     const records_stmt = records_builder.build()
@@ -131,6 +148,7 @@ class SQLBuilder {
   #fragments: {
     select_clause: string
     where_clauses: string[]
+    group_clauses: string[]
     join_clauses: string[]
     limit_clause: string
   }
@@ -141,6 +159,7 @@ class SQLBuilder {
       select_clause: '',
       where_clauses: [],
       join_clauses: [],
+      group_clauses: [],
       limit_clause: '',
     }
   }
@@ -149,8 +168,16 @@ class SQLBuilder {
     this.#fragments.select_clause = sql
   }
 
+  add_join_clause(sql: string) {
+    this.#fragments.join_clauses.push(sql)
+  }
+
   add_where_clause(sql: string) {
     this.#fragments.where_clauses.push(sql)
+  }
+
+  add_group_clause(sql: string) {
+    this.#fragments.group_clauses.push(sql)
   }
 
   set_limit_clause(sql: string) {
@@ -175,12 +202,16 @@ class SQLBuilder {
   #generate_sql() {
     let where_clause = ''
     if (this.#fragments.where_clauses.length) {
-      where_clause = `WHERE ${this.#fragments.where_clauses.join('\n')}`
+      where_clause = `WHERE ${this.#fragments.where_clauses.join(' AND ')}`
     }
+    const join_clause = this.#fragments.join_clauses.join('\n')
+    const group_clause = this.#fragments.group_clauses.join('\n')
+
     return `
-      ${this.#fragments.select_clause}
-      ${where_clause}
-      ${this.#fragments.limit_clause}
+${this.#fragments.select_clause}
+${join_clause}
+${where_clause}
+${this.#fragments.limit_clause}
     `
   }
 
