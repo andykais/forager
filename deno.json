@@ -15,8 +15,8 @@
     // "torm": "/Users/andrew.kaiser/Code/andykais/torm/drivers/sqlite.ts",
     // "torm/": "/Users/andrew.kaiser/Code/andykais/torm/src/",
 
-    "torm": "https://raw.githubusercontent.com/andykais/torm/af4e612b85c6cffac3faaf5c3d63018002f8e76c/drivers/sqlite.ts",
-    "torm/": "https://raw.githubusercontent.com/andykais/torm/af4e612b85c6cffac3faaf5c3d63018002f8e76c/src/",
+    "torm": "https://raw.githubusercontent.com/andykais/torm/9d50da23841d628d98defe6fdd102f251551a732/drivers/sqlite.ts",
+    "torm/": "https://raw.githubusercontent.com/andykais/torm/9d50da23841d628d98defe6fdd102f251551a732/src/",
     "~/": "./src/",
     // used by the test suite
     "forager": "./src/mod.ts",
