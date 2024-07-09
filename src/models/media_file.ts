@@ -1,6 +1,6 @@
 import { Model, field } from 'torm'
 import { MediaReference } from './media_reference.ts'
-import { type SelectOneOptions } from './models_base.ts'
+import { type SelectOneOptions } from './lib/base.ts'
 import * as errors from '~/lib/errors.ts'
 
 interface SelectOneParams {

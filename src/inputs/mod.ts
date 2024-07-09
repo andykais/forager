@@ -1,2 +1,2 @@
-export * as parsers from './inputs_parsers.ts'
-export * as inputs from './inputs_types.ts'
+export * as parsers from '~/inputs/lib/inputs_parsers.ts'
+export * as inputs from '~/inputs/lib/inputs_types.ts'

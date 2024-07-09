@@ -1,17 +1,25 @@
+class BadInputError extends Error {
+  name = 'BadInputError'
+}
+
 class NotFoundError extends Error {
+  name = 'NotFoundError'
+
   constructor(model: string, query_name: string, params: Record<string, any>) {
     super(`${model} "${JSON.stringify(params)}" does not exist (queried with ${query_name})`)
   }
 }
 
 class DuplicateMediaError extends Error {
+  name = 'DuplicateMediaError'
+
   constructor(filepath: string, checksum: string) {
     super(`file '${filepath}' checksum ${checksum} already exists`)
   }
 }
 
-
 class SubprocessError extends Error {
+  name = 'SubprocessError'
   public output: Deno.CommandOutput
   public constructor(output: Deno.CommandOutput, message: string) {
     const decoder = new TextDecoder()
@@ -22,4 +30,4 @@ class SubprocessError extends Error {
   }
 }
 
-export { NotFoundError, DuplicateMediaError, SubprocessError }
+export { BadInputError, NotFoundError, DuplicateMediaError, SubprocessError }

@@ -1,8 +1,6 @@
 import { Context } from './context.ts'
-import type { LogLevel } from './logger.ts'
-import {
-  MediaAction
-} from './actions/mod.ts'
+import type { LogLevel } from '~/lib/logger.ts'
+import * as actions from './actions/mod.ts'
 
 
 interface ForagerConfig {
@@ -13,17 +11,27 @@ interface ForagerConfig {
 
 class Forager {
   public config: ForagerConfig
-  public media: MediaAction
+  public media: actions.MediaActions
+  public series: actions.SeriesActions
   #ctx: Context
 
   public constructor(config: ForagerConfig) {
     this.config = config
     this.#ctx = new Context(config)
-    this.media = new MediaAction(this.#ctx)
+    this.media = new actions.MediaActions(this.#ctx)
+    this.series = new actions.SeriesActions(this.#ctx)
   }
 
   public init() {
     this.#ctx.db.init()
+  }
+
+  public close() {
+    this.#ctx.db.close()
+  }
+
+  [Symbol.dispose]() {
+    this.close()
   }
 }
 

@@ -10,6 +10,9 @@ export type Tag = z.input<typeof parsers.Tag>
 export type TagSearch = z.input<typeof parsers.TagSearch>
 export type TagList = z.input<typeof parsers.TagList>
 
+export type SeriesItem = z.input<typeof parsers.SeriesItem>
+export type SeriesId = z.input<typeof parsers.SeriesId>
+
 /* TODO neat idea here, but this doesnt export a namespace so typescript cannot access these as tersley as explicit exports
 type ParsersToInputType<T extends Record<string, z.ZodType<any, any, any>>> = {
   [K in keyof T]: z.infer<T[K]>

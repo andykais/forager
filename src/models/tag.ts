@@ -1,7 +1,7 @@
 import * as pattern from 'ts-pattern'
 import { Model, field, errors } from 'torm'
 import {TagGroup} from './tag_group.ts'
-import { type SelectOneOptions } from './models_base.ts'
+import { type SelectOneOptions } from './lib/base.ts'
 import {NotFoundError} from '~/lib/errors.ts'
 
 interface SelectOneParams {

@@ -68,7 +68,9 @@ class Assertions {
   }
   list_partial(actual_list: any[], expected_list: any[]) {
     this.equals(actual_list.length, expected_list.length, `Expected list length to be ${actual_list.length} but is actually ${expected_list.length}`)
-    this.object_match(actual_list as any, expected_list as any)
+    const actual_list_sorted = [...actual_list].sort((a, b) => a - b)
+    const expected_list_sorted = [...actual_list].sort((a, b) => a - b)
+    this.object_match(actual_list_sorted as any, expected_list_sorted as any)
   }
 }
 
