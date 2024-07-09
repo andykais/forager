@@ -119,14 +119,14 @@ SELECT media_reference.*, cursor_id FROM (
     if (params.series_id !== undefined) {
       records_builder
         .add_join_clause(`INNER JOIN media_series_item ON media_series_item.media_reference_id = media_reference.id`)
-        .add_where_clause(`media_series_item.media_series_reference_id  = :series_id`)
-        .add_param_fields({ series_id: MediaSeriesItem.params.media_series_reference_id.as('series_id') })
+        .add_where_clause(`media_series_item.series_id  = :series_id`)
+        .add_param_fields({ series_id: MediaSeriesItem.params.series_id.as('series_id') })
       records_arguments.series_id = params.series_id
 
       count_builder
         .add_join_clause(`INNER JOIN media_series_item ON media_series_item.media_reference_id = media_reference.id`)
-        .add_where_clause(`media_series_item.media_series_reference_id  = :series_id`)
-        .add_param_fields({ series_id: MediaSeriesItem.params.media_series_reference_id.as('series_id') })
+        .add_where_clause(`media_series_item.series_id  = :series_id`)
+        .add_param_fields({ series_id: MediaSeriesItem.params.series_id.as('series_id') })
       count_arguments.series_id = params.series_id
     }
 

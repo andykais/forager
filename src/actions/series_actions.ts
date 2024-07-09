@@ -29,7 +29,7 @@ class SeriesActions extends Actions {
     const series_index = parsed.series_index ?? 0
 
     const series_item = this.models.MediaSeriesItem.create({
-      media_series_reference_id: parsed.series_id,
+      series_id: parsed.series_id,
       media_reference_id: parsed.media_reference_id,
       series_index: series_index,
     })!
