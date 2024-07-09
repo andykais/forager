@@ -90,8 +90,8 @@ class TestContext {
   get fixture_folder() {
     return path.join('test', 'fixtures', this.test_name)
   }
-  create_fixture_path(path: string) {
-    return path.join(this.fixture_folder, path)
+  create_fixture_path(filepath: string) {
+    return path.join(this.fixture_folder, filepath)
   }
 
   async remove(path: string) {
