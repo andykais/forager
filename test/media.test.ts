@@ -263,6 +263,9 @@ test('media series', async (ctx) => {
   cool_art_series = forager.series.get({series_id: cool_art_series.id})
   ctx.assert.equals(cool_art_series.media_series_length, 4)
 
+  const cool_art_series_items = forager.media.search({ query: {series_id: cool_art_series.id} })
+  console.log(cool_art_series_items)
+
   await ctx.subtest('nested series', () => {
     const nested_series = forager.series.create({title: 'a nested folder'})
     forager.series.add({series_id: nested_series.id, media_reference_id: media_generated_art.media_reference.id})
@@ -271,4 +274,5 @@ test('media series', async (ctx) => {
     cool_art_series = forager.series.get({series_id: cool_art_series.id})
     ctx.assert.equals(cool_art_series.media_series_length, 5)
   })
+
 })
