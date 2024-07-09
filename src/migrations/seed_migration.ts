@@ -65,6 +65,19 @@ export class Migration extends torm.SeedMigration {
       FOREIGN KEY (media_file_id) REFERENCES media_reference(id)
     );
 
+    CREATE TABLE media_series_item (
+      id INTEGER PRIMARY KEY NOT NULL,
+      media_reference_id INTEGER NOT NULL,
+      media_series_reference_id INTEGER NOT NULL,
+      series_index INTEGER NOT NULL,
+
+      updated_at ${TIMESTAMP_COLUMN},
+      created_at ${TIMESTAMP_COLUMN},
+
+      FOREIGN KEY (media_reference_id) REFERENCES media_reference(id)
+      FOREIGN KEY (media_series_reference_id) REFERENCES media_reference(id)
+    );
+
     CREATE TABLE media_sequence (
       id INTEGER PRIMARY KEY NOT NULL,
       media_reference_id INTEGER NOT NULL,
@@ -92,11 +105,15 @@ export class Migration extends torm.SeedMigration {
       stars INTEGER NOT NULL,
       view_count INTEGER NOT NULL,
 
+      -- media series reference fields
+      media_series_reference BOOLEAN NOT NULL,
+
       updated_at ${TIMESTAMP_COLUMN},
       created_at ${TIMESTAMP_COLUMN},
 
       -- denormalized fields
       tag_count INTEGER NOT NULL DEFAULT 0,
+      media_series_length INTEGER NOT NULL DEFAULT 0,
 
       FOREIGN KEY (media_sequence_id) REFERENCES media_sequence(id)
     );
@@ -199,6 +216,14 @@ export class Migration extends torm.SeedMigration {
         WHERE tag.id IN (
           SELECT tag_id as id FROM media_reference_tag WHERE media_reference_id = NEW.id
         );
+    END;
+
+    CREATE TRIGGER media_series_length_inc AFTER INSERT ON media_series_item BEGIN
+      UPDATE media_reference SET media_series_length = media_series_length + 1 WHERE NEW.media_series_reference_id = id;
+    END;
+
+    CREATE TRIGGER media_series_length_dec AFTER DELETE ON media_series_item BEGIN
+      UPDATE media_reference SET media_series_length = media_series_length - 1 WHERE NEW.media_series_reference_id = id;
     END;
 
 

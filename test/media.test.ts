@@ -33,19 +33,6 @@ test('media actions', async (ctx) => {
     {name: 'wallpaper', group: ''},
   ])
 
-  await ctx.subtest('thumbnail generation', async () => {
-    // assert thumbnails were generated properly
-    // hardcode this for simplicity of testing. This is the sha256 checksum for koch.tif
-    const generated_art_checksum = 'e00df1e96425e0f231bb0cf065432927933f6f2ffd397119334bd2b0b307923f'
-    const thumbnails = await Array.fromAsync(fs.walk(thumbnail_folder))
-    ctx.assert.equals([
-      thumbnail_folder,
-      path.join(thumbnail_folder, 'e0'),
-      path.join(thumbnail_folder, 'e0', generated_art_checksum),
-      path.join(thumbnail_folder, 'e0', generated_art_checksum, '0001.jpg'),
-    ], thumbnails.map(entry => entry.path))
-  })
-
   const media_cartoon = await forager.media.create(ctx.resources.media_files["ed-edd-eddy.png"], {title: 'Ed Edd Eddy Screengrab'}, ['cartoon', 'wallpaper'])
   ctx.assert.equals(media_cartoon.media_file.filepath, ctx.resources.media_files["ed-edd-eddy.png"])
   ctx.assert.list_partial(media_cartoon.tags, [
@@ -53,6 +40,27 @@ test('media actions', async (ctx) => {
     {name: 'wallpaper', group: ''},
   ])
   const media_doodle = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {title: 'Cat Doodle'}, [])
+
+  await ctx.subtest('thumbnail generation', async () => {
+    const checksums = {
+      generated_art: 'e00df1e96425e0f231bb0cf065432927933f6f2ffd397119334bd2b0b307923f',
+      cartoon: '13df03de07b03af9d01667c8a32ef3779a1f3724817b35ffa34909a5d45dc2c6',
+      doodle: 'ee704bb3e4a8ef14bf2825480b4d5e4057be76d4c22386295b7eeaa7278175b2',
+    }
+    const thumbnails = await Array.fromAsync(fs.walk(thumbnail_folder))
+    ctx.assert.list_partial([
+      thumbnail_folder,
+      path.join(thumbnail_folder, 'e0'),
+      path.join(thumbnail_folder, 'e0', checksums.generated_art),
+      path.join(thumbnail_folder, 'e0', checksums.generated_art, '0001.jpg'),
+      path.join(thumbnail_folder, '13'),
+      path.join(thumbnail_folder, '13', checksums.cartoon),
+      path.join(thumbnail_folder, '13', checksums.cartoon, '0001.jpg'),
+      path.join(thumbnail_folder, 'e0'),
+      path.join(thumbnail_folder, 'e0', checksums.doodle),
+      path.join(thumbnail_folder, 'e0', checksums.doodle, '0001.jpg'),
+    ], thumbnails.map(entry => entry.path))
+  })
 
   await ctx.subtest('duplicate media creation guards', async () => {
     await ctx.assert.rejects(
@@ -109,7 +117,6 @@ test('media actions', async (ctx) => {
     })
 
   })
-
 
   await ctx.subtest('search filters media_reference_id', () => {
     ctx.assert.search_result(forager.media.search({query: {media_reference_id: media_generated_art.media_reference.id}}), {
@@ -207,64 +214,61 @@ test('media actions', async (ctx) => {
     // TODO add more variable sorting tests with view_count once we can update media references
   })
 
+  forager.close()
+})
 
-  // const database_path = 'test/fixtures/forager.db'
-  // const media_output_path = 'test/fixtures/koch-export.tif'
-  // await fs.promises.mkdir('test/fixtures', { recursive: true })
-  // await rmf(database_path)
-  // await rmf(media_output_path)
 
-  // const forager = new Forager({ database_path })
-  // await forager.init()
+test('media series', async (ctx) => {
+  const database_path = ctx.create_fixture_path('forager.db')
+  const thumbnail_folder = ctx.create_fixture_path('thumbnails')
+  using forager = new Forager({ database_path, thumbnail_folder })
+  forager.init()
 
-  // // test file importing
-  // const tags = [{ group: '', name: 'Procedural Generation' }, { group: 'colors', name: 'black' }]
-  // const media_info = { title: 'Generated Art', stars: 2 }
-  // const { media_reference_id, media_file_id } = await forager.media.create(media_input_path, media_info, tags)
-  // // await throws_async(t, DuplicateMediaError)(forager.media.create(media_input_path, media_info, tags))
-  // await expect(forager.media.create(media_input_path, media_info, tags)).rejects.toThrow(DuplicateMediaError)
-  // // await t.throwsAsync(() => forager.media.create(media_input_path, media_info, tags), {instanceOf: DuplicateMediaError})
-  // expect(forager.media.list().total).toEqual(1)
+  const media_generated_art = await forager.media.create(ctx.resources.media_files['koch.tif'], {title: 'Generated Art'}, [])
+  const media_cartoon = await forager.media.create(ctx.resources.media_files["ed-edd-eddy.png"], {title: 'Ed Edd Eddy Screengrab'}, ['cartoon', 'wallpaper'])
+  const media_doodle = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {title: 'Cat Doodle'}, [])
 
-  // // test that file info was properly probed
-  // const reference = forager.media.get_reference(media_reference_id)
-  // expect(reference.media_file.codec).toEqual('tiff')
-  // expect(forager.file.stat({ media_reference_id })).toMatchObject({content_type: 'image/tiff', media_type: 'IMAGE', file_size_bytes: 4320768 })
+  let cool_art_series = forager.series.create({ title: 'cool art collection' })
+  ctx.assert.equals(cool_art_series.title, 'cool art collection')
+  ctx.assert.equals(cool_art_series.media_series_reference, true)
+  ctx.assert.equals(cool_art_series.media_series_length, 0)
 
-  // // test that exported files are the same as imported files
-  // forager.media.export(media_reference_id, media_output_path)
-  // const input_sha512checksum = await get_file_checksum(media_input_path)
-  // const output_sha512checksum = await get_file_checksum(media_output_path)
+  forager.series.add({
+    series_id: cool_art_series.id,
+    media_reference_id: media_generated_art.media_reference.id,
+    series_index: 0,
+  })
 
-  // // test that tag searching works
-  // const media_references = forager.media.search({ query: { tags } })
-  // expect(media_references.total).toEqual(1)
-  // expect(media_references.result[0].id).toEqual(media_reference_id)
-  // expect(media_references.result[0].tag_count).toEqual(2)
+  cool_art_series = forager.series.get({series_id: cool_art_series.id})
+  ctx.assert.equals(cool_art_series.media_series_length, 1)
 
-  // // test that searching using non existent tags fails
-  // expect(() => forager.media.search({ query: { tags: [{ name: 'nonexistent_tag' }] } })).toThrow(NotFoundError)
+  forager.series.add({
+    series_id: cool_art_series.id,
+    media_reference_id: media_cartoon.media_reference.id,
+    series_index: 1,
+  })
 
-  // // add a second media file
-  // const cartoon_tags = [{ group: 'colors', name: 'black' }, { group: 'genre', name: 'cartoon' }]
-  // const ed_edd_eddy = await forager.media.create('test/resources/ed-edd-eddy.png', {}, cartoon_tags)
+  forager.series.add({
+    series_id: cool_art_series.id,
+    media_reference_id: media_doodle.media_reference.id,
+    series_index: 2,
+  })
+  // should we error when adding the same thing twice? I think we want to support this for things like ffmpeg-templates which might actually want a sequence containing duplicates
+  forager.series.add({
+    series_id: cool_art_series.id,
+    media_reference_id: media_doodle.media_reference.id,
+    series_index: 3,
+  })
 
-  // const search_results = forager.media.search({ query: { tags } })
-  // expect(search_results.total).toEqual(1)
-  // expect(search_results.result[0].id).toEqual(media_reference_id)
-  // expect(search_results.result[0].tag_count).toEqual(2)
+  cool_art_series = forager.series.get({series_id: cool_art_series.id})
+  ctx.assert.equals(cool_art_series.media_series_length, 4)
 
-  // const starred_media = forager.media.search({ query: { stars: 1 } })
-  // expect(starred_media.total).toEqual(1)
-  // expect(starred_media.result[0].id).toEqual(media_reference_id)
-  // expect(starred_media.result[0].tag_count).toEqual(2)
+  await ctx.subtest('nested series', () => {
+    const nested_series = forager.series.create({title: 'a nested folder'})
+    forager.series.add({series_id: nested_series.id, media_reference_id: media_generated_art.media_reference.id})
+    forager.series.add({series_id: cool_art_series.id, media_reference_id: nested_series.id})
 
-  // const listed_tags = forager.tag.list()
-  // expect(listed_tags.length).toEqual(3)
-  // listed_tags.sort((a,b) => a.name.localeCompare(b.name))
-  // const tag_names = listed_tags.map(t => t.name)
-  // expect(tag_names).toEqual(['black', 'cartoon', 'procedural_generation'])
-  // expect(listed_tags[0].media_reference_count).toEqual(2)
-  // expect(listed_tags[1].media_reference_count).toEqual(1)
-  // expect(listed_tags[2].media_reference_count).toEqual(1)
+    cool_art_series = forager.series.get({series_id: cool_art_series.id})
+    ctx.assert.equals(cool_art_series.media_series_length, 5)
+  })
 })

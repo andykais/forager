@@ -1,11 +1,13 @@
 import * as path from '@std/path'
 import * as fs from '@std/fs'
-import { Action } from './actions_base.ts'
+import { Actions } from '~/actions/lib/base.ts'
 import { inputs, parsers } from '~/inputs/mod.ts'
 import { FileProcessor } from '../lib/file_processor.ts'
 import * as errors from '../lib/errors.ts'
 
-class MediaAction extends Action {
+
+class MediaActions extends Actions {
+
   create = async (filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.Tag[]) => {
     const parsed = {
       media_info: parsers.MediaReferenceUpdate.parse(media_info ?? {}),
@@ -16,7 +18,7 @@ class MediaAction extends Action {
     const media_file_info = await file_processor.get_info()
     const checksum = await file_processor.get_checksum()
 
-    if (this.ctx.models.MediaFile.select_one({checksum})) {
+    if (this.models.MediaFile.select_one({checksum})) {
       // an non-transactional step to exit early if we find the hash existing.
       // this just is a way to skip the video preview early
       throw new errors.DuplicateMediaError(filepath, checksum)
@@ -27,30 +29,31 @@ class MediaAction extends Action {
     ])
 
     const transaction = this.ctx.db.transaction_async(async () => {
-      const media_reference = this.ctx.models.MediaReference.create({
+      const media_reference = this.models.MediaReference.create({
+        media_series_reference: false,
         media_sequence_index: 0,
         stars: 0,
         view_count: 0,
         ...media_info 
       })!
-      const media_file = this.ctx.models.MediaFile.create({
+      const media_file = this.models.MediaFile.create({
         ...media_file_info,
         file_size_bytes: file_size,
         checksum,
         media_reference_id: media_reference.id,
       })!
 
-      const tags: ReturnType<typeof this.ctx.models.Tag.select_one>[] = []
+      const tags: ReturnType<typeof this.models.Tag.select_one>[] = []
 
       for (const tag of parsed.tags) {
         const group = tag.group ?? ''
         // const color = get_hash_color(group, 'hsl')
         const color = ''
-        const tag_group = this.ctx.models.TagGroup.get_or_create({ name: group, color })!
-        const {id: tag_id} = this.ctx.models.Tag.get_or_create({ alias_tag_id: null, name: tag.name, tag_group_id: tag_group.id, description: tag.description, metadata: tag.metadata })
-        const media_reference_tag = this.ctx.models.MediaReferenceTag.create({ media_reference_id: media_reference.id, tag_id })
+        const tag_group = this.models.TagGroup.get_or_create({ name: group, color })!
+        const {id: tag_id} = this.models.Tag.get_or_create({ alias_tag_id: null, name: tag.name, tag_group_id: tag_group.id, description: tag.description, metadata: tag.metadata })
+        const media_reference_tag = this.models.MediaReferenceTag.create({ media_reference_id: media_reference.id, tag_id })
 
-        const tag_record = this.ctx.models.Tag.select_one({id: tag_id}, {or_raise: true})
+        const tag_record = this.models.Tag.select_one({id: tag_id}, {or_raise: true})
         tags.push(tag_record)
       }
 
@@ -58,10 +61,10 @@ class MediaAction extends Action {
       // add the storage folder checksum here to merge the new files into whatever files already exist in that directory
       const thumbnail_destination_folder = file_processor.get_storage_folder(checksum)
       await fs.copy(thumbnails.folder, path.join(this.ctx.config.thumbnail_folder, thumbnail_destination_folder))
-      const res = this.ctx.models.MediaReference.select_one({id: media_reference.id}, {or_raise: true})
+      const res = this.models.MediaReference.select_one({id: media_reference.id}, {or_raise: true})
       return {
-        media_reference: this.ctx.models.MediaReference.select_one({id: media_reference.id}, {or_raise: true}),
-        media_file: this.ctx.models.MediaFile.select_one({media_reference_id: media_reference.id}, {or_raise: true}),
+        media_reference: this.models.MediaReference.select_one({id: media_reference.id}, {or_raise: true}),
+        media_file: this.models.MediaFile.select_one({media_reference_id: media_reference.id}, {or_raise: true}),
         tags,
       }
     })
@@ -115,10 +118,10 @@ class MediaAction extends Action {
     }
 
     const tag_ids: number[] | undefined = parsed.params.query.tags
-      ?.map(tag => this.ctx.models.Tag.select_one({name: tag.name, group: tag.group }, {or_raise: true}).id)
+      ?.map(tag => this.models.Tag.select_one({name: tag.name, group: tag.group }, {or_raise: true}).id)
       .filter((tag): tag is number => tag !== undefined)
 
-    const records = this.ctx.models.MediaReference.select_many({
+    const records = this.models.MediaReference.select_many({
       id: parsed.params.query.media_reference_id,
       tag_ids,
       cursor: parsed.params.cursor,
@@ -131,7 +134,7 @@ class MediaAction extends Action {
       total: records.total,
       cursor: records.cursor,
       result: records.result.map(row => {
-        const media_file = this.ctx.models.MediaFile.select_one({media_reference_id: row.id})
+        const media_file = this.models.MediaFile.select_one({media_reference_id: row.id})
         if (media_file === undefined) throw new Error(`reference error: MediaReference id ${row.id} has no media_file`)
         return {
           media_reference: row,
@@ -180,8 +183,6 @@ class MediaAction extends Action {
   */
   }
 
-
-
   get_reference = (media_reference_id: number) => {
     throw new Error('unimplemented')
   /*
@@ -198,4 +199,4 @@ class MediaAction extends Action {
 }
 
 
-export { MediaAction }
+export { MediaActions }

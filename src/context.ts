@@ -1,6 +1,6 @@
 import type { ForagerConfig } from './mod.ts'
-import { Logger } from './logger.ts'
-import { Database } from './db/mod.ts'
+import { Logger } from '~/lib/logger.ts'
+import { Database } from '~/db/mod.ts'
 import './migrations/mod.ts'
 
 
@@ -14,10 +14,6 @@ class Context {
     this.config = config
     this.logger = new Logger(this)
     this.db = new Database(this)
-  }
-
-  get models() {
-    return this.db.models
   }
 }
 

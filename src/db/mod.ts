@@ -49,6 +49,9 @@ class Database {
     }
   }
 
+  public close() {
+    this.#torm.close()
+  }
 }
 
 
