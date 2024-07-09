@@ -248,31 +248,53 @@ test('media series', async (ctx) => {
     series_index: 1,
   })
 
-  forager.series.add({
-    series_id: cool_art_series.id,
-    media_reference_id: media_doodle.media_reference.id,
-    series_index: 2,
-  })
-  // should we error when adding the same thing twice? I think we want to support this for things like ffmpeg-templates which might actually want a sequence containing duplicates
-  forager.series.add({
-    series_id: cool_art_series.id,
-    media_reference_id: media_doodle.media_reference.id,
-    series_index: 3,
-  })
-
   cool_art_series = forager.series.get({series_id: cool_art_series.id})
-  ctx.assert.equals(cool_art_series.media_series_length, 4)
+  ctx.assert.equals(cool_art_series.media_series_length, 2)
 
-  const cool_art_series_items = forager.media.search({ query: {series_id: cool_art_series.id} })
-  console.log(cool_art_series_items)
+  ctx.assert.search_result(forager.media.search({query: {series_id: cool_art_series.id}}), {
+    total: 2,
+    result: [
+      {media_reference: {title: 'Generated Art'}},
+      {media_reference: {title: 'Ed Edd Eddy Screengrab'}},
+    ]
+  })
 
   await ctx.subtest('nested series', () => {
-    const nested_series = forager.series.create({title: 'a nested folder'})
-    forager.series.add({series_id: nested_series.id, media_reference_id: media_generated_art.media_reference.id})
-    forager.series.add({series_id: cool_art_series.id, media_reference_id: nested_series.id})
+    let doodle_series = forager.series.create({title: 'doodles'})
+    forager.series.add({
+      series_id: doodle_series.id,
+      media_reference_id: media_doodle.media_reference.id,
+      series_index: 2,
+    })
+    // should we error when adding the same thing twice? I think we want to support this for things like ffmpeg-templates which might actually want a sequence containing duplicates
+    forager.series.add({
+      series_id: doodle_series.id,
+      media_reference_id: media_doodle.media_reference.id,
+      series_index: 3,
+    })
 
+    doodle_series = forager.series.get({series_id: doodle_series.id})
+    ctx.assert.equals(cool_art_series.media_series_length, 2)
+    ctx.assert.search_result(forager.media.search({query: {series_id: doodle_series.id}}), {
+      total: 2,
+      result: [
+        {media_reference: {title: 'Cat Doodle'}},
+        {media_reference: {title: 'Cat Doodle'}},
+      ]
+    })
+
+
+    forager.series.add({series_id: cool_art_series.id, media_reference_id: doodle_series.id})
     cool_art_series = forager.series.get({series_id: cool_art_series.id})
-    ctx.assert.equals(cool_art_series.media_series_length, 5)
-  })
+    ctx.assert.equals(cool_art_series.media_series_length, 3)
 
+    ctx.assert.search_result(forager.media.search({ query: {series_id: cool_art_series.id} }), {
+      total: 3,
+      result: [
+        {result_type: 'media_file', media_reference: {id: media_generated_art.media_reference.id}},
+        {result_type: 'media_file', media_reference: {id: media_cartoon.media_reference.id}},
+        {result_type: 'media_series', media_reference: {id: doodle_series.id}},
+      ]
+    })
+  })
 })

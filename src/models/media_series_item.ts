@@ -10,7 +10,7 @@ type Row = typeof MediaSeriesItem.schema_types.result
 class MediaSeriesItem extends Model('media_series_item', {
   id:                        field.number(),
   media_reference_id:        field.number(),
-  media_series_reference_id: field.number(),
+  series_id: field.number(),
   series_index:              field.number(),
   updated_at:                field.datetime(),
   created_at:                field.datetime(),
@@ -19,12 +19,12 @@ class MediaSeriesItem extends Model('media_series_item', {
   create = this.query.one`
     INSERT INTO media_series_item (
       media_reference_id,
-      media_series_reference_id,
+      series_id,
       series_index
     )
     VALUES (${[
       MediaSeriesItem.schema.params.media_reference_id,
-      MediaSeriesItem.schema.params.media_series_reference_id,
+      MediaSeriesItem.schema.params.series_id,
       MediaSeriesItem.schema.params.series_index,
     ]})
     RETURNING ${MediaSeriesItem.result.id}`

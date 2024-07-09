@@ -129,11 +129,19 @@ class MediaActions extends Actions {
       total: records.total,
       cursor: records.cursor,
       result: records.result.map(row => {
-        const media_file = this.models.MediaFile.select_one({media_reference_id: row.id})
-        if (media_file === undefined) throw new Error(`reference error: MediaReference id ${row.id} has no media_file`)
-        return {
-          media_reference: row,
-          media_file,
+        if (row.media_series_reference) {
+          return {
+            result_type: 'media_series',
+            media_reference: row,
+          }
+        } else {
+          const media_file = this.models.MediaFile.select_one({media_reference_id: row.id})
+          if (media_file === undefined) throw new Error(`reference error: MediaReference id ${row.id} has no media_file`)
+          return {
+            result_type: 'media_file',
+            media_reference: row,
+            media_file,
+          }
         }
       })
     }

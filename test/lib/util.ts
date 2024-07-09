@@ -39,6 +39,7 @@ interface SearchResultAssertions {
   total?: number
   cursor?: number | undefined
   result?: {
+    result_type?: string
     media_reference?: Partial<ForagerMediaSearchResult['result'][0]['media_reference']>
     media_file?: Partial<ForagerMediaSearchResult['result'][0]['media_file']>
   }[]
