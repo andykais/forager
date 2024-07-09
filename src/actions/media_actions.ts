@@ -123,6 +123,9 @@ class MediaActions extends Actions {
       limit: parsed.params.limit,
       sort_by: parsed.params.sort_by,
       order: parsed.params.order,
+      stars: parsed.params.query.stars,
+      stars_equality: parsed.params.query.stars_equality,
+      unread: parsed.params.query.unread,
     })
 
     return {
@@ -145,25 +148,6 @@ class MediaActions extends Actions {
         }
       })
     }
-
-  /*
-    const tag_ids: number[] = []
-    if (params.query.tags) {
-      for (const tag of params.query.tags) {
-        const query_data = inputs.Tag.parse(tag)
-        const tag_row = this.db.tag.select_one_by_name(query_data)
-        if (!tag_row) throw new NotFoundError('Tag', `${query_data.group}:${query_data.name}`)
-        tag_ids.push(tag_row.id)
-      }
-    }
-    if (params.query.tag_ids) {
-      tag_ids.push(...params.query.tag_ids)
-    }
-    const { limit, cursor } = input
-    const { stars, stars_equality, unread, sort_by, order } = input.query
-
-    return this.db.media_reference.select_many({ tag_ids, stars, stars_equality, unread, sort_by, order, limit, cursor })
-  */
   }
 
   search_group_by = () => {

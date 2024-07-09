@@ -16,7 +16,10 @@ interface SelectManyParams {
   limit: number | undefined
   cursor: number | undefined
   sort_by: 'created_at' | 'updated_at' | 'source_created_at' | 'view_count'
-  order: 'asc' | 'desc'
+  order: 'asc' | 'desc' | undefined
+  stars: number | undefined
+  stars_equality: 'gte' | 'eq' | undefined
+  unread: boolean
 }
 
 class MediaReference extends Model('media_reference', {
@@ -148,6 +151,18 @@ SELECT media_reference.*, cursor_id FROM (
         .add_where_clause(`tag.id IN (${tag_ids_str})`)
         .add_group_clause('GROUP BY media_reference.id')
         .add_group_clause(`HAVING COUNT(tag.id) >= ${params.tag_ids.length}`)
+    }
+
+    if (params.stars !== undefined) {
+      throw new Error('unimplemented')
+      if (params.stars_equality !== undefined) {
+        throw new Error('unimplemented')
+      }
+    }
+
+    if (params.unread !== false) {
+      console.log({params})
+      throw new Error('unimplemented')
     }
 
     if (params.cursor !== undefined) {
