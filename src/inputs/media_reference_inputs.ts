@@ -22,7 +22,7 @@ export const PaginatedSearch = PaginatedQuery.extend({
     stars: z.number().gte(0).lte(5).optional(),
     stars_equality: z.enum(['gte', 'eq']).default(('gte')),
     unread: z.boolean().default(false),
-  }).strict().optional().transform(q => ({...q})),
+  }).strict().optional().transform(q => ({unread: false, ...q})),
   sort_by: z.enum(['created_at', 'updated_at', 'source_created_at', 'view_count']).default('source_created_at'),
   order: z.enum(['desc', 'asc']).default('desc'),
 }).strict()
