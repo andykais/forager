@@ -16,6 +16,7 @@ export const MediaInfo = z.object({
 
 export const PaginatedSearch = PaginatedQuery.extend({
   query: z.object({
+    series_id: z.number().optional(),
     media_reference_id: z.number().optional(),
     tags: z.array(Tag).optional(),
     stars: z.number().gte(0).lte(5).optional(),

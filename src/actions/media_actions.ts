@@ -61,25 +61,14 @@ class MediaActions extends Actions {
       // add the storage folder checksum here to merge the new files into whatever files already exist in that directory
       const thumbnail_destination_folder = file_processor.get_storage_folder(checksum)
       await fs.copy(thumbnails.folder, path.join(this.ctx.config.thumbnail_folder, thumbnail_destination_folder))
-      const res = this.models.MediaReference.select_one({id: media_reference.id}, {or_raise: true})
-      return {
-        media_reference: this.models.MediaReference.select_one({id: media_reference.id}, {or_raise: true}),
-        media_file: this.models.MediaFile.select_one({media_reference_id: media_reference.id}, {or_raise: true}),
-        tags,
-      }
+      return { media_reference, tags }
     })
 
-    try {
-      return await transaction()
-    } catch(e) {
-      /*
-      // TODO this can be handled more robustly if we do a full buffer comparison upon getting a DuplicateMediaError
-      // a larger checksum would also be helpful
-      // possibly we would put expensive buffer comparisons behind a config flag, opting to just use the duplicate_log otherwise
-      if (this.is_unique_constaint_error(e)) throw new DuplicateMediaError(filepath, sha512checksum)
-      else throw e
-      */
-      throw e
+    const transaction_result = await transaction()
+    return {
+      media_reference: this.models.MediaReference.select_one({id: transaction_result.media_reference.id}, {or_raise: true}),
+      media_file: this.models.MediaFile.select_one({media_reference_id: transaction_result.media_reference.id}, {or_raise: true}),
+      tags: transaction_result.tags,
     }
   }
 
@@ -121,8 +110,14 @@ class MediaActions extends Actions {
       ?.map(tag => this.models.Tag.select_one({name: tag.name, group: tag.group }, {or_raise: true}).id)
       .filter((tag): tag is number => tag !== undefined)
 
+    if (parsed.params.query.series_id) {
+      // ensure that a series id actually exists and is a series id
+      this.models.MediaReference.select_one_media_series_reference(parsed.params.query.series_id)
+    }
+
     const records = this.models.MediaReference.select_many({
       id: parsed.params.query.media_reference_id,
+      series_id: parsed.params.query.series_id,
       tag_ids,
       cursor: parsed.params.cursor,
       limit: parsed.params.limit,
