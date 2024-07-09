@@ -69,8 +69,6 @@ class MediaFile extends Model('media_file', {
   public select_one(params: SelectOneParams, options: {or_raise: true}): MediaFileRow
   public select_one(params: SelectOneParams, options?: SelectOneOptions): MediaFileRow | undefined
   public select_one(params: SelectOneParams, options?: SelectOneOptions): MediaFileRow | undefined {
-  // select_one(params: {
-  // }): typeof MediaFile.schema_types.result | undefined {
     let row: MediaFileRow | undefined
     if (params.checksum !== undefined && Object.keys(params).length === 1) {
       row = this.select_by_checksum.one({checksum: params.checksum})
