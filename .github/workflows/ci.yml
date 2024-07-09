@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Setup repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Deno
         uses: denoland/setup-deno@v1
@@ -36,7 +36,7 @@ jobs:
           ffmpeg-version: 7.0.1
 
       - name: Cache Deno dependencies 
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ env.DENO_DIR }}
           key: ${{ hashFiles('deno.lock') }}
