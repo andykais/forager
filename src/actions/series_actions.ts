@@ -24,7 +24,7 @@ class SeriesActions extends Actions {
   add = (params: inputs.SeriesItem) => {
     const parsed = parsers.SeriesItem.parse(params)
 
-    const media_series_reference = this.models.MediaReference.select_one_media_series_reference(parsed.series_id)
+    const media_series_reference = this.models.MediaReference.select_one_media_series(parsed.series_id)
     // making it default to the back of the list is more complicated (either storing that data on MediaReference or doing MAX() sql call) so for now we just default to putting it on the front of the list
     const series_index = parsed.series_index ?? 0
 
@@ -38,7 +38,7 @@ class SeriesActions extends Actions {
 
   get = (params: inputs.SeriesId) => {
     const parsed = parsers.SeriesId.parse(params)
-    return this.models.MediaReference.select_one_media_series_reference(parsed.series_id)
+    return this.models.MediaReference.select_one_media_series(parsed.series_id)
   }
 }
 

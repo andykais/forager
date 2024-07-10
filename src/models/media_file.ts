@@ -1,15 +1,9 @@
-import { Model, field } from 'torm'
+import { field, schema } from 'torm'
 import { MediaReference } from './media_reference.ts'
-import { type SelectOneOptions } from './lib/base.ts'
+import { Model, type SelectOneOptions } from './lib/base.ts'
 import * as errors from '~/lib/errors.ts'
 
-interface SelectOneParams {
-  media_reference_id?: number
-  checksum?: string
-}
-type MediaFileRow = typeof MediaFile.schema_types.result
-
-class MediaFile extends Model('media_file', {
+const SCHEMA = schema('media_file', {
   id:                 field.number(),
   media_reference_id: field.number(),  // TODO support MediaReference.schema.id here
   filepath:           field.string(),
@@ -26,15 +20,24 @@ class MediaFile extends Model('media_file', {
   framerate:          field.number(),
   updated_at:         field.datetime(),
   created_at:         field.datetime(),
+})
 
-}) {
-  private select_by_media_reference_id = this.query`
-    SELECT ${MediaFile.result['*']} FROM media_file
-    WHERE media_reference_id = ${MediaFile.params.media_reference_id}`
+interface SelectOneParams {
+  media_reference_id?: number
+  checksum?: string
+}
 
-  private select_by_checksum = this.query`
+class MediaFile extends Model {
+  static params = SCHEMA.params
+  static result = SCHEMA.result
+
+  #select_by_media_reference_id = this.query`
     SELECT ${MediaFile.result['*']} FROM media_file
-    WHERE checksum = ${MediaFile.params.checksum}`
+    WHERE media_reference_id = ${SCHEMA.params.media_reference_id}`
+
+  #select_by_checksum = this.query`
+    SELECT ${MediaFile.result['*']} FROM media_file
+    WHERE checksum = ${SCHEMA.params.checksum}`
 
   create = this.query.one`INSERT INTO media_file (
     filepath,
@@ -51,39 +54,37 @@ class MediaFile extends Model('media_file', {
     framerate,
     media_reference_id
   ) VALUES (${[
-    MediaFile.params.filepath,
-    MediaFile.params.filename,
-    MediaFile.params.file_size_bytes,
-    MediaFile.params.checksum,
-    MediaFile.params.media_type,
-    MediaFile.params.content_type,
-    MediaFile.params.codec,
-    MediaFile.params.width,
-    MediaFile.params.height,
-    MediaFile.params.animated,
-    MediaFile.params.duration,
-    MediaFile.params.framerate,
-    MediaFile.params.media_reference_id,
-  ]}) RETURNING ${MediaFile.result.id}`
+    SCHEMA.params.filepath,
+    SCHEMA.params.filename,
+    SCHEMA.params.file_size_bytes,
+    SCHEMA.params.checksum,
+    SCHEMA.params.media_type,
+    SCHEMA.params.content_type,
+    SCHEMA.params.codec,
+    SCHEMA.params.width,
+    SCHEMA.params.height,
+    SCHEMA.params.animated,
+    SCHEMA.params.duration,
+    SCHEMA.params.framerate,
+    SCHEMA.params.media_reference_id,
+  ]}) RETURNING ${SCHEMA.result.id}`
 
-  public select_one(params: SelectOneParams, options: {or_raise: true}): MediaFileRow
-  public select_one(params: SelectOneParams, options?: SelectOneOptions): MediaFileRow | undefined
-  public select_one(params: SelectOneParams, options?: SelectOneOptions): MediaFileRow | undefined {
-    let row: MediaFileRow | undefined
+  #select_one_impl(params: {
+    media_reference_id?: number
+    checksum?: string
+  }) {
     if (params.checksum !== undefined && Object.keys(params).length === 1) {
-      row = this.select_by_checksum.one({checksum: params.checksum})
+      return this.#select_by_checksum.one({checksum: params.checksum})
     }
 
     if (params.media_reference_id !== undefined && Object.keys(params).length === 1) {
-      row = this.select_by_media_reference_id.one({media_reference_id: params.media_reference_id})
+      return this.#select_by_media_reference_id.one({media_reference_id: params.media_reference_id})
     }
 
-    if (options?.or_raise && row === undefined) {
-      throw new errors.NotFoundError('MediaFile', 'select_one', params)
-    }
-
-    return row
+    throw new Error('unimplemented')
   }
+
+  public select_one = this.select_one_fn(this.#select_one_impl.bind(this))
 }
 
 export { MediaFile }

@@ -1,28 +1,11 @@
-import { Model, field } from 'torm'
+import { field, schema } from 'torm'
+import { type InferSchemaTypes } from 'torm/schema.ts'
 import * as errors from '~/lib/errors.ts'
-import { PaginationVars, type PaginatedResult, type SelectOneOptions } from '~/models/lib/base.ts'
+import { Model, PaginationVars, type PaginatedResult } from '~/models/lib/base.ts'
 import { SQLBuilder } from '~/models/lib/sql_builder.ts'
 import { MediaSeriesItem } from '~/models/media_series_item.ts'
 
-
-interface SelectOneParams {
-  id: number
-}
-
-interface SelectManyParams {
-  id: number | undefined
-  series_id: number| undefined
-  tag_ids: number[] | undefined
-  limit: number | undefined
-  cursor: number | undefined
-  sort_by: 'created_at' | 'updated_at' | 'source_created_at' | 'view_count'
-  order: 'asc' | 'desc' | undefined
-  stars: number | undefined
-  stars_equality: 'gte' | 'eq' | undefined
-  unread: boolean
-}
-
-class MediaReference extends Model('media_reference', {
+const SCHEMA = schema('media_reference', {
   id:                     field.number(),
   media_sequence_id:      field.number().optional(),
   media_sequence_index:   field.number().default(0),
@@ -39,8 +22,26 @@ class MediaReference extends Model('media_reference', {
   tag_count:              field.number(),
   updated_at:             field.datetime(),
   created_at:             field.datetime(),
-}) {
-  create = this.query.one`
+})
+
+interface SelectManyParams {
+  id: number | undefined
+  series_id: number| undefined
+  tag_ids: number[] | undefined
+  limit: number | undefined
+  cursor: number | undefined
+  sort_by: 'created_at' | 'updated_at' | 'source_created_at' | 'view_count'
+  order: 'asc' | 'desc' | undefined
+  stars: number | undefined
+  stars_equality: 'gte' | 'eq' | undefined
+  unread: boolean
+}
+
+class MediaReference extends Model {
+  static params = SCHEMA.params
+  static result = SCHEMA.result
+
+  #create = this.query.one`
     INSERT INTO media_reference (
       media_series_reference,
       media_sequence_id,
@@ -69,17 +70,11 @@ class MediaReference extends Model('media_reference', {
     SELECT ${MediaReference.result['*']} FROM media_reference
     WHERE id = ${MediaReference.params.id}`
 
-  public select_one(params: SelectOneParams, options: {or_raise: true}): typeof MediaReference.schema_types.result
-  public select_one(params: SelectOneParams, options?: SelectOneOptions): typeof MediaReference.schema_types.result | undefined
-  public select_one(params: SelectOneParams, options?: SelectOneOptions): typeof MediaReference.schema_types.result | undefined {
-    const result = this.#select_by_id.one(params)
-    if (options?.or_raise && result === undefined) {
-      throw new errors.NotFoundError('MediaFile', 'select_one', params)
-    }
-    return result
+  #select_one_impl(params: {id: number}) {
+    return this.#select_by_id.one(params)
   }
 
-  public select_many(params: SelectManyParams): PaginatedResult<typeof MediaReference.schema_types.result> {
+  public select_many(params: SelectManyParams): PaginatedResult<InferSchemaTypes<typeof SCHEMA.result>> {
 
     const records_arguments: Record<string, any> = {}
     const count_arguments: Record<string, any> = {}
@@ -123,13 +118,13 @@ SELECT media_reference.*, cursor_id FROM (
       records_builder
         .add_join_clause(`INNER JOIN media_series_item ON media_series_item.media_reference_id = media_reference.id`)
         .add_where_clause(`media_series_item.series_id  = :series_id`)
-        .add_param_fields({ series_id: MediaSeriesItem.params.series_id.as('series_id') })
+        .add_param_fields({ series_id: MediaSeriesItem.schema.params.series_id.as('series_id') })
       records_arguments.series_id = params.series_id
 
       count_builder
         .add_join_clause(`INNER JOIN media_series_item ON media_series_item.media_reference_id = media_reference.id`)
         .add_where_clause(`media_series_item.series_id  = :series_id`)
-        .add_param_fields({ series_id: MediaSeriesItem.params.series_id.as('series_id') })
+        .add_param_fields({ series_id: MediaSeriesItem.schema.params.series_id.as('series_id') })
       count_arguments.series_id = params.series_id
     }
 
@@ -173,7 +168,7 @@ SELECT media_reference.*, cursor_id FROM (
     }
 
     const records_query = records_builder.build()
-    type PaginatedRow = typeof MediaReference.schema_types.result & {cursor_id: number}
+    type PaginatedRow = InferSchemaTypes<typeof SCHEMA.result> & {cursor_id: number}
     const result: PaginatedRow[] = records_query.stmt.all(records_arguments)
 
     const count_query = count_builder.build()
@@ -190,13 +185,17 @@ SELECT media_reference.*, cursor_id FROM (
     }
   }
 
-  public select_one_media_series_reference(series_id: number) {
+  public select_one_media_series(series_id: number) {
     const media_series_reference = this.select_one({id: series_id}, {or_raise: true})
     if (!media_series_reference.media_series_reference) {
       throw new errors.BadInputError(`series_id ${series_id} does not reference a series MediaReference`)
     }
     return media_series_reference
   }
+
+  public create = this.create_fn(this.#create)
+
+  public select_one = this.select_one_fn(this.#select_one_impl.bind(this))
 }
 
 export { MediaReference }

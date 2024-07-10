@@ -5,7 +5,7 @@ class BadInputError extends Error {
 class NotFoundError extends Error {
   name = 'NotFoundError'
 
-  constructor(model: string, query_name: string, params: Record<string, any>) {
+  constructor(model: string, query_name: string, params: any) {
     super(`${model} "${JSON.stringify(params)}" does not exist (queried with ${query_name})`)
   }
 }
