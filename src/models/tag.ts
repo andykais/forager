@@ -1,26 +1,24 @@
-import { schema, field, errors } from 'torm'
-import { type InferSchemaTypes } from 'torm/schema.ts'
+import * as torm from 'torm'
+import { Model, field } from '~/models/lib/base.ts'
 import {TagGroup} from './tag_group.ts'
-import { Model } from '~/models/lib/base.ts'
-import {NotFoundError} from '~/lib/errors.ts'
-
-const SCHEMA = schema('tag', {
-  id:                           field.number(),
-  name:                         field.string(),
-  tag_group_id:                 field.number(), // TODO support schema references (TagGroup::schema::id)
-  alias_tag_id:                 field.number().optional(), // TODO support lazy references? This is a Tag::schema::id
-  description:                  field.string().optional(),
-  metadata:                     field.json().optional(),
-  media_reference_count:        field.number(),
-  unread_media_reference_count: field.number(),
-  // auto generated fields
-  updated_at:                   field.datetime(),
-  created_at:                   field.datetime(),
-})
 
 class Tag extends Model {
-  static params = SCHEMA.params
-  static result = SCHEMA.result
+  static schema = torm.schema('tag', {
+    id:                           field.number(),
+    name:                         field.string(),
+    tag_group_id:                 field.number(), // TODO support schema references (TagGroup::schema::id)
+    alias_tag_id:                 field.number().optional(), // TODO support lazy references? This is a Tag::schema::id
+    description:                  field.string().optional(),
+    metadata:                     field.json().optional(),
+    media_reference_count:        field.number(),
+    unread_media_reference_count: field.number(),
+    // auto generated fields
+    updated_at:                   field.datetime(),
+    created_at:                   field.datetime(),
+  })
+
+  static params = this.schema.params
+  static result = this.schema.result
 
   #create = this.query.one`
     INSERT INTO tag (
@@ -57,7 +55,7 @@ class Tag extends Model {
     name?: string
     tag_group_id?: number
     group?: string
-  }): InferSchemaTypes<typeof SCHEMA.result> | undefined {
+  }): torm.InferSchemaTypes<typeof Tag.result> | undefined {
     if (
       params.id !== undefined &&
       Object.keys(params).length === 1
@@ -88,7 +86,7 @@ class Tag extends Model {
     try {
       return this.create(params)!
     } catch (e) {
-      if (e instanceof errors.UniqueConstraintError) {
+      if (e instanceof torm.errors.UniqueConstraintError) {
         return this.select_one({tag_group_id: params.tag_group_id, name: params.name}, {or_raise: true})
       } else {
         throw e

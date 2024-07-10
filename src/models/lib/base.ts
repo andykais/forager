@@ -1,3 +1,4 @@
+import * as torm from 'torm'
 import { Vars, field, DriverModel } from 'torm'
 import { NotFoundError } from '~/lib/errors.ts'
 
@@ -14,7 +15,7 @@ export type PaginatedResult<T> = {
   result: T[]
 }
 
-export interface SelectOneOptions {
+interface SelectOneOptions {
   or_raise?: boolean
 }
 
@@ -30,7 +31,7 @@ interface SelectOneFnOverrides<P, R> {
   (params: P, options: SelectOneOptionsRaiseOnUndefined): NonNullable<R>
 }
 
-export abstract class Model extends DriverModel {
+abstract class Model extends DriverModel {
 
   protected select_one_fn<P, R>(fn: (params: P) => R): SelectOneFnOverrides<P, R> {
     const overloaded_fn = (params: P, options?: SelectOneOptions): R => {
@@ -51,3 +52,5 @@ export abstract class Model extends DriverModel {
     return row
   }
 }
+
+export { Model, torm, field }

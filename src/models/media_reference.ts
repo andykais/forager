@@ -1,45 +1,30 @@
-import { field, schema } from 'torm'
-import { type InferSchemaTypes } from 'torm/schema.ts'
+import * as torm from 'torm'
 import * as errors from '~/lib/errors.ts'
-import { Model, PaginationVars, type PaginatedResult } from '~/models/lib/base.ts'
+import { Model, field, PaginationVars, type PaginatedResult } from '~/models/lib/base.ts'
 import { SQLBuilder } from '~/models/lib/sql_builder.ts'
 import { MediaSeriesItem } from '~/models/media_series_item.ts'
 
-const SCHEMA = schema('media_reference', {
-  id:                     field.number(),
-  media_sequence_id:      field.number().optional(),
-  media_sequence_index:   field.number().default(0),
-  source_url:             field.string().optional(),
-  source_created_at:      field.datetime().optional(),
-  title:                  field.string().optional(),
-  description:            field.string().optional(),
-  metadata:               field.json().optional(),
-  stars:                  field.number().optional(),
-  view_count:             field.number().optional(),
-  media_series_reference: field.boolean(),
-  // auto generated fields
-  media_series_length:    field.number(),
-  tag_count:              field.number(),
-  updated_at:             field.datetime(),
-  created_at:             field.datetime(),
-})
-
-interface SelectManyParams {
-  id: number | undefined
-  series_id: number| undefined
-  tag_ids: number[] | undefined
-  limit: number | undefined
-  cursor: number | undefined
-  sort_by: 'created_at' | 'updated_at' | 'source_created_at' | 'view_count'
-  order: 'asc' | 'desc' | undefined
-  stars: number | undefined
-  stars_equality: 'gte' | 'eq' | undefined
-  unread: boolean
-}
-
 class MediaReference extends Model {
-  static params = SCHEMA.params
-  static result = SCHEMA.result
+  static schema = torm.schema('media_reference', {
+    id:                     field.number(),
+    media_sequence_id:      field.number().optional(),
+    media_sequence_index:   field.number().default(0),
+    source_url:             field.string().optional(),
+    source_created_at:      field.datetime().optional(),
+    title:                  field.string().optional(),
+    description:            field.string().optional(),
+    metadata:               field.json().optional(),
+    stars:                  field.number().optional(),
+    view_count:             field.number().optional(),
+    media_series_reference: field.boolean(),
+    // auto generated fields
+    media_series_length:    field.number(),
+    tag_count:              field.number(),
+    updated_at:             field.datetime(),
+    created_at:             field.datetime(),
+  })
+  static params = this.schema.params
+  static result = this.schema.result
 
   #create = this.query.one`
     INSERT INTO media_reference (
@@ -74,7 +59,18 @@ class MediaReference extends Model {
     return this.#select_by_id.one(params)
   }
 
-  public select_many(params: SelectManyParams): PaginatedResult<InferSchemaTypes<typeof SCHEMA.result>> {
+  public select_many(params: {
+    id: number | undefined
+    series_id: number| undefined
+    tag_ids: number[] | undefined
+    limit: number | undefined
+    cursor: number | undefined
+    sort_by: 'created_at' | 'updated_at' | 'source_created_at' | 'view_count'
+    order: 'asc' | 'desc' | undefined
+    stars: number | undefined
+    stars_equality: 'gte' | 'eq' | undefined
+    unread: boolean
+  }): PaginatedResult<torm.InferSchemaTypes<typeof MediaReference.result>> {
 
     const records_arguments: Record<string, any> = {}
     const count_arguments: Record<string, any> = {}
@@ -168,7 +164,7 @@ SELECT media_reference.*, cursor_id FROM (
     }
 
     const records_query = records_builder.build()
-    type PaginatedRow = InferSchemaTypes<typeof SCHEMA.result> & {cursor_id: number}
+    type PaginatedRow = torm.InferSchemaTypes<typeof MediaReference.result> & {cursor_id: number}
     const result: PaginatedRow[] = records_query.stmt.all(records_arguments)
 
     const count_query = count_builder.build()
