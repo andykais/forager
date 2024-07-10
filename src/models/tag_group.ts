@@ -2,19 +2,17 @@ import { schema, field, errors } from 'torm'
 import { Model } from '~/models/lib/base.ts'
 
 
-const SCHEMA = schema('tag_group', {
-  id:         field.number(),
-  name:       field.string(),
-  color:      field.string(),
-  tag_count:  field.number(),
-  updated_at: field.datetime(),
-  created_at: field.datetime(),
-})
-
-
 class TagGroup extends Model {
-  static params = SCHEMA.params
-  static result = SCHEMA.result
+  static schema = schema('tag_group', {
+    id:         field.number(),
+    name:       field.string(),
+    color:      field.string(),
+    tag_count:  field.number(),
+    updated_at: field.datetime(),
+    created_at: field.datetime(),
+  })
+  static params = this.schema.params
+  static result = this.schema.result
 
   #create = this.query.one`
     INSERT INTO tag_group (name, color)

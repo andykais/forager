@@ -12,11 +12,11 @@
 
     "torm": "jsr:@andykais/torm@1.3.2/drivers/sqlite",
     // uncomment for testing
-    "torm": "/home/andrew/Code/development/torm/drivers/sqlite.ts",
-    "torm/": "/home/andrew/Code/development/torm/src/",
+    // "torm": "/home/andrew/Code/development/torm/drivers/sqlite.ts",
+    // "torm/": "/home/andrew/Code/development/torm/src/",
 
-    // "torm": "https://raw.githubusercontent.com/andykais/torm/a24e59d32321775b6002d32a993503ac4d16af68/drivers/sqlite.ts",
-    // "torm/": "https://raw.githubusercontent.com/andykais/torm/a24e59d32321775b6002d32a993503ac4d16af68/src/",
+    "torm": "https://raw.githubusercontent.com/andykais/torm/96807fac75f5a993d66d2c026b25d220e2c984ec/drivers/sqlite.ts",
+    "torm/": "https://raw.githubusercontent.com/andykais/torm/96807fac75f5a993d66d2c026b25d220e2c984ec/src/",
     "~/": "./src/",
     // used by the test suite
     "forager": "./src/mod.ts",

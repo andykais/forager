@@ -1,5 +1,5 @@
 import * as torm from 'torm'
-import { ForagerTorm } from '../db/mod.ts'
+import { ForagerTorm } from '~/db/mod.ts'
 
 
 const TIMESTAMP_SQLITE = `STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'NOW')`
