@@ -1,18 +1,10 @@
-import * as pattern from 'ts-pattern'
-import { Model, field, errors } from 'torm'
+import { schema, field, errors } from 'torm'
+import { type InferSchemaTypes } from 'torm/schema.ts'
 import {TagGroup} from './tag_group.ts'
-import { type SelectOneOptions } from './lib/base.ts'
+import { Model } from '~/models/lib/base.ts'
 import {NotFoundError} from '~/lib/errors.ts'
 
-interface SelectOneParams {
-  id?: number
-  name?: string
-  tag_group_id?: number
-  group?: string
-}
-type Row = typeof Tag.schema_types.result
-
-class Tag extends Model('tag', {
+const SCHEMA = schema('tag', {
   id:                           field.number(),
   name:                         field.string(),
   tag_group_id:                 field.number(), // TODO support schema references (TagGroup::schema::id)
@@ -24,9 +16,13 @@ class Tag extends Model('tag', {
   // auto generated fields
   updated_at:                   field.datetime(),
   created_at:                   field.datetime(),
+})
 
-}) {
-  create = this.query.one`
+class Tag extends Model {
+  static params = SCHEMA.params
+  static result = SCHEMA.result
+
+  #create = this.query.one`
     INSERT INTO tag (
       tag_group_id,
       name,
@@ -56,7 +52,39 @@ class Tag extends Model('tag', {
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
     WHERE tag_group_id = ${Tag.params.tag_group_id} AND tag.name = ${Tag.params.name}`
 
-  get_or_create(params: Parameters<Tag['create']>[0]) {
+  #select_one_impl(params: {
+    id?: number
+    name?: string
+    tag_group_id?: number
+    group?: string
+  }): InferSchemaTypes<typeof SCHEMA.result> | undefined {
+    if (
+      params.id !== undefined &&
+      Object.keys(params).length === 1
+    ) {
+      return this.#select_by_id.one({id: params.id})
+    } else if (
+      params.name !== undefined &&
+      params.group !== undefined &&
+      Object.keys(params).length === 2
+    ) {
+      return this.#select_by_tag_group_and_name.one({name: params.name, group: params.group})
+    } else if (
+      params.name !== undefined &&
+      params.tag_group_id !== undefined &&
+      Object.keys(params).length === 2
+    ) {
+      return this.#select_by_tag_group_id_and_name.one({name: params.name, tag_group_id: params.tag_group_id})
+    } else {
+      throw new Error(`unimplemented`)
+    }
+  }
+
+  public select_one = this.select_one_fn(this.#select_one_impl.bind(this))
+
+  public create = this.create_fn(this.#create)
+
+  public get_or_create(params: Parameters<Tag['create']>[0]) {
     try {
       return this.create(params)!
     } catch (e) {
@@ -68,37 +96,6 @@ class Tag extends Model('tag', {
     }
   }
 
-  public select_one(params: SelectOneParams, options: {or_raise: true}): Row
-  public select_one(params: SelectOneParams, options?: SelectOneOptions): Row | undefined
-  public select_one(params: SelectOneParams, options?: SelectOneOptions): Row | undefined {
-    let row: Row | undefined
-    if (
-      params.id !== undefined &&
-      Object.keys(params).length === 1
-    ) {
-      row = this.#select_by_id.one({id: params.id})
-    } else if (
-      params.name !== undefined &&
-      params.group !== undefined &&
-      Object.keys(params).length === 2
-    ) {
-      row = this.#select_by_tag_group_and_name.one({name: params.name, group: params.group})
-    } else if (
-      params.name !== undefined &&
-      params.tag_group_id !== undefined &&
-      Object.keys(params).length === 2
-    ) {
-      row = this.#select_by_tag_group_id_and_name.one({name: params.name, tag_group_id: params.tag_group_id})
-    } else {
-      throw new Error(`unimplemented`)
-    }
-
-    if (options?.or_raise && row === undefined) {
-      throw new NotFoundError('Tag', 'select_one', params)
-    }
-
-    return row
-  }
 }
 
 export { Tag }

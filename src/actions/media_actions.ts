@@ -112,7 +112,7 @@ class MediaActions extends Actions {
 
     if (parsed.params.query.series_id) {
       // ensure that a series id actually exists and is a series id
-      this.models.MediaReference.select_one_media_series_reference(parsed.params.query.series_id)
+      this.models.MediaReference.select_one_media_series(parsed.params.query.series_id)
     }
 
     const records = this.models.MediaReference.select_many({

@@ -297,4 +297,17 @@ test('media series', async (ctx) => {
       ]
     })
   })
+
+  await ctx.subtest('validation errors', () => {
+    // getting a media reference that is not a media reference should error out
+    ctx.assert.throws(() => forager.series.get({ series_id: media_doodle.media_reference.id }), errors.BadInputError)
+
+    // a non existent series id should error out
+    ctx.assert.throws(() => forager.series.get({ series_id: -1 }), errors.NotFoundError)
+
+    // non existent should also error out using media search
+    ctx.assert.throws(() => forager.media.search({ query: {series_id: -1} }), errors.NotFoundError)
+    // non media series being referenced as a series_id should also error out using media search
+    ctx.assert.throws(() => forager.media.search({ query: {series_id: media_doodle.media_reference.id} }), errors.BadInputError)
+  })
 })
