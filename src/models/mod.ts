@@ -1,5 +1,6 @@
 export {MediaFile} from './media_file.ts'
 export {MediaReference} from './media_reference.ts'
+export {MediaThumbnail} from './media_thumbnail.ts'
 export {TagGroup} from './tag_group.ts'
 export {Tag} from './tag.ts'
 export {MediaReferenceTag} from './media_reference_tag.ts'

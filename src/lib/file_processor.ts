@@ -37,8 +37,13 @@ type FileInfo = GraphicalFileInfo | AudioFileInfo
 
 
 interface Thumbnails {
-  folder: string
-  thumbnail_filepaths: string[]
+  source_folder: string
+  destination_folder: string
+  thumbnails: {
+    timestamp: number
+    source_filepath: string
+    destination_filepath: string
+  }[]
 }
 
 
@@ -157,7 +162,7 @@ class FileProcessor {
     return stats.size
   }
 
-  public async create_thumbnails(file_info: FileInfo): Promise<Thumbnails> {
+  public async create_thumbnails(file_info: FileInfo, checksum: string): Promise<Thumbnails> {
     if (file_info.media_type === 'AUDIO') {
       throw new Error('audio thumbnail unimplemented')
     }
@@ -197,68 +202,22 @@ class FileProcessor {
     if (tmp_thumbnail_filepaths.length != thumbnail_timestamps.length) {
       throw new Error(`thumbnail generation error. Expected ${thumbnail_timestamps.length}, but ${tmp_thumbnail_filepaths.length} thumbnails were generated (${tmp_thumbnail_filepaths})`)
     }
-    return {folder: tmp_folder, thumbnail_filepaths: tmp_thumbnail_filepaths}
-  }
 
-/*
-async function  get_thumbnails(filepath: string, file_info: FileInfo) {
-  const full_width = file_info.width!
-  const full_height = file_info.height!
-
-  const max_width_or_height = full_width > full_height
-    ? `${500}x${Math.floor((full_height*500)/full_width)}`
-    : `${Math.floor((full_width*500)/full_height)}x${500}`
-
-  const tmpdir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'thumbnails-'))
-  const thumbnail_filepath = path.join(tmpdir, 'thumbnail-%04d.jpg')
-
-  let thumbnail_timestamps = [0]
-  try {
-    if (file_info.media_type === 'VIDEO') {
-      const thumbnail_fps = 1 / (file_info.duration / num_captured_frames)
-
-      const ffmpeg_cmd = `ffmpeg -v error -i '${filepath}' -an -s ${max_width_or_height} -vf fps=${thumbnail_fps} -frames:v ${num_captured_frames} -f image2 '${thumbnail_filepath}'`
-      const ffprobe_cmd = `ffprobe -v error -f lavfi -i "movie=${filepath},fps=fps=${thumbnail_fps}[out0]" -show_frames -show_entries frame=pkt_dts_time -of csv=p=0`
-      const [frame_timestamps] = await Promise.all([
-        exec(ffprobe_cmd).then(out => {
-          const timestamps = out.stdout
-            .trim()
-            .split('\n')
-            .map(line => {
-              const timestamp = parseFloat(line)
-              if (Number.isNaN(timestamp)) throw new Error(`could not parse ffprobe timestamp '${line}' for thumbnail of ${filepath}\n${ffprobe_cmd}\n${out.stderr}`)
-              return timestamp
-            })
-          return timestamps
-        }),
-        exec(ffmpeg_cmd),
-      ])
-      thumbnail_timestamps = frame_timestamps
-    } else if (file_info.media_type  === 'IMAGE') {
-      const cmd = `ffmpeg -v error -i '${filepath}' -an -s ${max_width_or_height} -frames:v 1 -ss ${0} '${thumbnail_filepath}'`
-      await exec(cmd)
-    } else if (file_info.media_type === 'AUDIO') {
-      throw new Error('audio thumbnail unimplemented')
+    const thumbnail_destination_folder = path.join(this.#ctx.config.thumbnail_folder, this.get_storage_folder(checksum))
+    return {
+      source_folder: tmp_folder,
+      destination_folder: thumbnail_destination_folder,
+      thumbnails: tmp_thumbnail_filepaths.map((source_filepath, index) => {
+        const relative_path = path.relative(tmp_folder, source_filepath)
+        const destination_filepath = path.join(thumbnail_destination_folder, relative_path)
+        return {
+          source_filepath,
+          destination_filepath,
+          timestamp: thumbnail_timestamps[index]
+        }
+      })
     }
-    const thumbnail_filepaths = await fs.promises.readdir(tmpdir)
-    if (thumbnail_filepaths.length !== thumbnail_timestamps.length) throw new Error(`ffprobe thumbnail timestamp detection for ${filepath} incorrect`)
-    const thumbnails = await Promise.all(thumbnail_filepaths.map(async (filepath, i) => {
-      const buffer = await fs.promises.readFile(path.join(tmpdir, filepath))
-      return {
-        timestamp: thumbnail_timestamps[i],
-        thumbnail: buffer,
-        file_size_bytes: buffer.length,
-        sha512checksum: get_buffer_checksum(buffer),
-      }
-    }))
-    await fs.promises.rm(tmpdir, { recursive: true })
-    return thumbnails
-  } catch (e) {
-    console.error(e)
-    throw new Error(`A fatal error has occurred creating thumbnails for '${filepath}`)
   }
-}
-*/
 }
 
 export { FileProcessor }

@@ -1,6 +1,7 @@
 import * as torm from 'torm'
 import { Vars, field, DriverModel } from 'torm'
 import { NotFoundError } from '~/lib/errors.ts'
+export type { PaginatedResult } from './result_types.ts'
 
 
 export const PaginationVars = Vars({
@@ -8,12 +9,6 @@ export const PaginationVars = Vars({
   limit: field.number(),
   total: field.number(),
 })
-
-export type PaginatedResult<T> = {
-  cursor: number | undefined
-  total: number
-  result: T[]
-}
 
 interface SelectOneOptions {
   or_raise?: boolean

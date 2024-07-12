@@ -53,16 +53,13 @@ export class Migration extends torm.SeedMigration {
 
     CREATE TABLE media_thumbnail (
       id INTEGER PRIMARY KEY NOT NULL,
-      thumbnail BLOB NOT NULL,
-      file_size_bytes INTEGER NOT NULL,
-      checksum TEXT NOT NULL,
-      timestamp FLOAT NOT NULL,
-      thumbnail_index INTEGER NOT NULL,
+      media_timestamp FLOAT NOT NULL,
+      media_file_id INTEGER NOT NULL,
+      filepath TEXT NOT NULL,
       updated_at ${TIMESTAMP_COLUMN},
       created_at ${TIMESTAMP_COLUMN},
 
-      media_file_id INTEGER NOT NULL,
-      FOREIGN KEY (media_file_id) REFERENCES media_reference(id)
+      FOREIGN KEY (media_file_id) REFERENCES media_file(id)
     );
 
     CREATE TABLE media_series_item (

@@ -229,29 +229,29 @@ test('media series', async (ctx) => {
   const media_doodle = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {title: 'Cat Doodle'}, [])
 
   let cool_art_series = forager.series.create({ title: 'cool art collection' })
-  ctx.assert.equals(cool_art_series.title, 'cool art collection')
-  ctx.assert.equals(cool_art_series.media_series_reference, true)
-  ctx.assert.equals(cool_art_series.media_series_length, 0)
+  ctx.assert.equals(cool_art_series.media_reference.title, 'cool art collection')
+  ctx.assert.equals(cool_art_series.media_reference.media_series_reference, true)
+  ctx.assert.equals(cool_art_series.media_reference.media_series_length, 0)
 
   forager.series.add({
-    series_id: cool_art_series.id,
+    series_id: cool_art_series.media_reference.id,
     media_reference_id: media_generated_art.media_reference.id,
     series_index: 0,
   })
 
-  cool_art_series = forager.series.get({series_id: cool_art_series.id})
-  ctx.assert.equals(cool_art_series.media_series_length, 1)
+  cool_art_series = forager.series.get({series_id: cool_art_series.media_reference.id})
+  ctx.assert.equals(cool_art_series.media_reference.media_series_length, 1)
 
   forager.series.add({
-    series_id: cool_art_series.id,
+    series_id: cool_art_series.media_reference.id,
     media_reference_id: media_cartoon.media_reference.id,
     series_index: 1,
   })
 
-  cool_art_series = forager.series.get({series_id: cool_art_series.id})
-  ctx.assert.equals(cool_art_series.media_series_length, 2)
+  cool_art_series = forager.series.get({series_id: cool_art_series.media_reference.id})
+  ctx.assert.equals(cool_art_series.media_reference.media_series_length, 2)
 
-  ctx.assert.search_result(forager.media.search({query: {series_id: cool_art_series.id}}), {
+  ctx.assert.search_result(forager.media.search({query: {series_id: cool_art_series.media_reference.id}}), {
     total: 2,
     result: [
       {media_reference: {title: 'Generated Art'}},
@@ -260,22 +260,22 @@ test('media series', async (ctx) => {
   })
 
   await ctx.subtest('nested series', () => {
-    let doodle_series = forager.series.create({title: 'doodles'})
+    let doodle_series = forager.series.create({title: 'doodles'}, ['doodle_list'])
     forager.series.add({
-      series_id: doodle_series.id,
+      series_id: doodle_series.media_reference.id,
       media_reference_id: media_doodle.media_reference.id,
       series_index: 2,
     })
     // should we error when adding the same thing twice? I think we want to support this for things like ffmpeg-templates which might actually want a sequence containing duplicates
     forager.series.add({
-      series_id: doodle_series.id,
+      series_id: doodle_series.media_reference.id,
       media_reference_id: media_doodle.media_reference.id,
       series_index: 3,
     })
 
-    doodle_series = forager.series.get({series_id: doodle_series.id})
-    ctx.assert.equals(cool_art_series.media_series_length, 2)
-    ctx.assert.search_result(forager.media.search({query: {series_id: doodle_series.id}}), {
+    doodle_series = forager.series.get({series_id: doodle_series.media_reference.id})
+    ctx.assert.equals(cool_art_series.media_reference.media_series_length, 2)
+    ctx.assert.search_result(forager.media.search({query: {series_id: doodle_series.media_reference.id}}), {
       total: 2,
       result: [
         {media_reference: {title: 'Cat Doodle'}},
@@ -284,16 +284,16 @@ test('media series', async (ctx) => {
     })
 
 
-    forager.series.add({series_id: cool_art_series.id, media_reference_id: doodle_series.id})
-    cool_art_series = forager.series.get({series_id: cool_art_series.id})
-    ctx.assert.equals(cool_art_series.media_series_length, 3)
+    forager.series.add({series_id: cool_art_series.media_reference.id, media_reference_id: doodle_series.media_reference.id})
+    cool_art_series = forager.series.get({series_id: cool_art_series.media_reference.id})
+    ctx.assert.equals(cool_art_series.media_reference.media_series_length, 3)
 
-    ctx.assert.search_result(forager.media.search({ query: {series_id: cool_art_series.id} }), {
+    ctx.assert.search_result(forager.media.search({ query: {series_id: cool_art_series.media_reference.id} }), {
       total: 3,
       result: [
-        {result_type: 'media_file', media_reference: {id: media_generated_art.media_reference.id}},
-        {result_type: 'media_file', media_reference: {id: media_cartoon.media_reference.id}},
-        {result_type: 'media_series', media_reference: {id: doodle_series.id}},
+        {media_type: 'media_file', media_reference: {id: media_generated_art.media_reference.id}},
+        {media_type: 'media_file', media_reference: {id: media_cartoon.media_reference.id}},
+        {media_type: 'media_series', media_reference: {id: doodle_series.media_reference.id}},
       ]
     })
   })
@@ -309,5 +309,52 @@ test('media series', async (ctx) => {
     ctx.assert.throws(() => forager.media.search({ query: {series_id: -1} }), errors.NotFoundError)
     // non media series being referenced as a series_id should also error out using media search
     ctx.assert.throws(() => forager.media.search({ query: {series_id: media_doodle.media_reference.id} }), errors.BadInputError)
+  })
+
+  await ctx.subtest('thumbnails', () => {
+    // first we need to grab the doodle series id
+    const doodle_series_search = forager.media.search({query: {tags: ['doodle_list']}})
+    ctx.assert.equals(doodle_series_search.total, 1)
+    ctx.assert.equals(doodle_series_search.result[0].media_reference.title, 'doodles')
+    const doodle_series = doodle_series_search.result[0]
+
+    ctx.assert.search_result(forager.media.search({query: {series_id: cool_art_series.media_reference.id}, thumbnail_limit: -1}), {
+      total: 3,
+      result: [
+        {
+          media_type: 'media_file',
+          media_reference: {id: media_generated_art.media_reference.id},
+          thumbnails: {
+            total: 1,
+            result: [{media_file_id: media_generated_art.media_file.id}]
+          }
+        },
+        {
+          media_type: 'media_file',
+          media_reference: {id: media_cartoon.media_reference.id},
+          thumbnails: {
+            total: 1,
+            result: [{media_file_id: media_cartoon.media_file.id}]
+          }
+        },
+        {
+          media_type: 'media_series',
+          media_reference: {id: doodle_series.media_reference.id},
+          thumbnails: {
+            total: 2,
+            result: [
+              {media_file_id: media_doodle.media_file.id},
+              {media_file_id: media_doodle.media_file.id}
+            ]
+          }
+        },
+      ]
+    })
+
+    ctx.assert.object_match(forager.series.get({series_id: cool_art_series.media_reference.id}), {
+      media_type: 'media_series',
+      tags: [],
+      thumbnails: { total: 2, result: [] },
+    })
   })
 })

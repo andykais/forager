@@ -2,13 +2,22 @@ import * as path from '@std/path'
 import * as fs from '@std/fs'
 import { Actions } from '~/actions/lib/base.ts'
 import { inputs, parsers } from '~/inputs/mod.ts'
+import * as result_types from '~/models/lib/result_types.ts'
 import { FileProcessor } from '../lib/file_processor.ts'
-import * as errors from '../lib/errors.ts'
+import * as errors from '~/lib/errors.ts'
+import { MediaSeriesResponse } from './series_actions.ts'
 
+export interface MediaFileResponse {
+  media_type: 'media_file'
+  media_reference: result_types.MediaReference
+  media_file: result_types.MediaFile
+  tags: result_types.Tag[]
+  thumbnails: result_types.PaginatedResult<result_types.MediaThumbnail>
+}
 
 class MediaActions extends Actions {
 
-  create = async (filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.Tag[]) => {
+  create = async (filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.Tag[]): Promise<MediaFileResponse> => {
     const parsed = {
       media_info: parsers.MediaReferenceUpdate.parse(media_info ?? {}),
       tags: tags?.map(t => parsers.Tag.parse(t)) ?? [],
@@ -25,7 +34,7 @@ class MediaActions extends Actions {
     }
     const [file_size, thumbnails] = await Promise.all([
       file_processor.get_size(),
-      file_processor.create_thumbnails(media_file_info)
+      file_processor.create_thumbnails(media_file_info, checksum)
     ])
 
     const transaction = this.ctx.db.transaction_async(async () => {
@@ -51,24 +60,34 @@ class MediaActions extends Actions {
         const color = ''
         const tag_group = this.models.TagGroup.get_or_create({ name: group, color })!
         const {id: tag_id} = this.models.Tag.get_or_create({ alias_tag_id: null, name: tag.name, tag_group_id: tag_group.id, description: tag.description, metadata: tag.metadata })
-        const media_reference_tag = this.models.MediaReferenceTag.create({ media_reference_id: media_reference.id, tag_id })
+        this.models.MediaReferenceTag.create({ media_reference_id: media_reference.id, tag_id })
 
         const tag_record = this.models.Tag.select_one({id: tag_id}, {or_raise: true})
         tags.push(tag_record)
       }
 
+      // TODO currently we dont output enough information from ffmpeg when generating thumbnails to know what timestamp they are for
+      for (const thumbnail of thumbnails.thumbnails) {
+        this.models.MediaThumbnail.create({
+          media_file_id: media_file.id,
+          filepath: thumbnail.destination_filepath,
+          media_timestamp: thumbnail.timestamp,
+        })
+      }
+
       // copy the thumbnails into the configured folder (we wait until the database writes to do this to keep the generated thumbnail folder clean)
       // add the storage folder checksum here to merge the new files into whatever files already exist in that directory
-      const thumbnail_destination_folder = file_processor.get_storage_folder(checksum)
-      await fs.copy(thumbnails.folder, path.join(this.ctx.config.thumbnail_folder, thumbnail_destination_folder))
+      await fs.copy(thumbnails.source_folder, thumbnails.destination_folder)
       return { media_reference, tags }
     })
 
     const transaction_result = await transaction()
     return {
+      media_type: 'media_file',
       media_reference: this.models.MediaReference.select_one({id: transaction_result.media_reference.id}, {or_raise: true}),
       media_file: this.models.MediaFile.select_one({media_reference_id: transaction_result.media_reference.id}, {or_raise: true}),
       tags: transaction_result.tags,
+      thumbnails: this.models.MediaThumbnail.select_many({media_file_id: transaction_result.media_reference.id, limit: 1}),
     }
   }
 
@@ -101,7 +120,7 @@ class MediaActions extends Actions {
     */
   }
 
-  search = (params?: inputs.PaginatedSearch) => {
+  search = (params?: inputs.PaginatedSearch): result_types.PaginatedResult<MediaFileResponse | MediaSeriesResponse> => {
     const parsed = {
       params: parsers.PaginatedSearch.parse(params ?? {}),
     }
@@ -128,25 +147,35 @@ class MediaActions extends Actions {
       unread: parsed.params.query.unread,
     })
 
+    const results: (MediaFileResponse | MediaSeriesResponse)[] =  records.result.map(row => {
+      const tags = this.models.Tag.select_many({media_reference_id: row.id})
+
+      if (row.media_series_reference) {
+        const thumbnails = this.models.MediaThumbnail.select_many({series_id: row.id, limit: parsed.params.thumbnail_limit})
+        return {
+          media_type: 'media_series',
+          media_reference: row,
+          tags,
+          thumbnails,
+        }
+      } else {
+        const media_file = this.models.MediaFile.select_one({media_reference_id: row.id})
+        if (media_file === undefined) throw new Error(`reference error: MediaReference id ${row.id} has no media_file`)
+        const thumbnails = this.models.MediaThumbnail.select_many({media_file_id: media_file.id, limit: parsed.params.thumbnail_limit})
+        return {
+          media_type: 'media_file',
+          media_reference: row,
+          media_file,
+          tags,
+          thumbnails,
+        }
+      }
+    })
+
     return {
       total: records.total,
       cursor: records.cursor,
-      result: records.result.map(row => {
-        if (row.media_series_reference) {
-          return {
-            result_type: 'media_series',
-            media_reference: row,
-          }
-        } else {
-          const media_file = this.models.MediaFile.select_one({media_reference_id: row.id})
-          if (media_file === undefined) throw new Error(`reference error: MediaReference id ${row.id} has no media_file`)
-          return {
-            result_type: 'media_file',
-            media_reference: row,
-            media_file,
-          }
-        }
-      })
+      result: results,
     }
   }
 
