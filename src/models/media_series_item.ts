@@ -8,12 +8,12 @@ interface ModelTypes {
 
 class MediaSeriesItem extends Model {
   static schema = torm.schema('media_series_item', {
-    id:                        field.number(),
-    media_reference_id:        field.number(),
-    series_id: field.number(),
-    series_index:              field.number(),
-    updated_at:                field.datetime(),
-    created_at:                field.datetime(),
+    id:                 field.number(),
+    media_reference_id: field.number(),
+    series_id:          field.number(),
+    series_index:       field.number(),
+    updated_at:         field.datetime(),
+    created_at:         field.datetime(),
   })
   static params = this.schema.params
   static result = this.schema.result

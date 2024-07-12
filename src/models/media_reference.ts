@@ -152,7 +152,6 @@ SELECT media_reference.*, cursor_id FROM (
     }
 
     if (params.unread !== false) {
-      console.log({params})
       throw new Error('unimplemented')
     }
 

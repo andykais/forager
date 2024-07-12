@@ -1,51 +1,100 @@
-import { Model, field, schema } from 'torm'
-import { type SelectOneOptions } from '~/models/lib/base.ts'
-import { NotFoundError } from '~/lib/errors.ts'
+import * as torm from 'torm'
+import * as errors from '~/lib/errors.ts'
+import { Model, field, PaginationVars, type PaginatedResult } from '~/models/lib/base.ts'
+import { MediaReference } from '~/models/media_reference.ts'
 
-interface SelectManyParams {
-  media_reference_id?: number
-}
-type Row = typeof MediaThumbnail.schema_types.result
+class MediaThumbnail extends Model {
+  static schema = torm.schema('media_thumbnail', {
+    id:              field.number(),
+    media_file_id:   field.number(),
+    filepath:        field.string(),
+    media_timestamp: field.number(),
+    updated_at:      field.datetime(),
+    created_at:      field.datetime(),
+  })
+  static params = MediaThumbnail.schema.params
+  static result = MediaThumbnail.schema.result
 
-class MediaThumbnail extends Model('media_thumbnail', {
-  id:                        field.number(),
-  filepath:                  field.string(),
-}) {
-
-  create = this.query.one`
+  #create = this.query.one`
     INSERT INTO media_thumbnail (
-      media_reference_id,
-      series_id,
-      series_index
+      media_file_id,
+      filepath,
+      media_timestamp
     )
     VALUES (${[
-      MediaThumbnail.schema.params.media_reference_id,
-      MediaThumbnail.schema.params.series_id,
-      MediaThumbnail.schema.params.series_index,
+      MediaThumbnail.params.media_file_id,
+      MediaThumbnail.params.filepath,
+      MediaThumbnail.params.media_timestamp,
     ]})
     RETURNING ${MediaThumbnail.result.id}`
 
-  #select_by_id = this.query`
-    SELECT ${MediaThumbnail.result['*']} FROM media_series_item
-    WHERE id = ${MediaThumbnail.params.id}`
+  #count_by_media_file_id = this.query.one`
+    SELECT COUNT(1) AS ${PaginationVars.result.total} FROM media_thumbnail
+    WHERE media_file_id = ${MediaThumbnail.params.media_file_id}`
 
-  public select_many(params: SelectOneParams, options?: SelectOneOptions): Row | undefined {
-    let row: Row | undefined
-    if (
-      params.id !== undefined &&
-      Object.keys(params).length === 1
-    ) {
-      row = this.#select_by_id.one({id: params.id})
-    } else {
-      throw new Error(`unimplemented`)
-    }
+  #select_by_media_file_id = this.query`
+    SELECT ${MediaThumbnail.result['*']} FROM media_thumbnail
+    WHERE media_file_id = ${MediaThumbnail.params.media_file_id}
+    ORDER BY media_timestamp
+    LIMIT ${PaginationVars.params.limit}`
 
-    if (options?.or_raise && row === undefined) {
-      throw new NotFoundError('Tag', 'select_one', params)
-    }
+  #count_by_series_id = this.query.one`
+    SELECT COUNT(1) AS ${PaginationVars.result.total} FROM media_thumbnail
+    INNER JOIN media_file ON media_file.id = media_thumbnail.media_file_id
+    INNER JOIN media_series_item ON media_series_item.media_reference_id = media_file.media_reference_id
+    WHERE media_series_item.series_id = ${MediaReference.params.id.as('series_id')}`
 
-    return row
+  #select_by_series_id = this.query`
+    SELECT ${MediaThumbnail.result['*']} FROM media_thumbnail
+    INNER JOIN media_file ON media_file.id = media_thumbnail.media_file_id
+    INNER JOIN media_series_item ON media_series_item.media_reference_id = media_file.media_reference_id
+    WHERE media_series_item.series_id = ${MediaReference.params.id.as('series_id')}
+    ORDER BY media_series_item.series_index
+    LIMIT ${PaginationVars.params.limit}`
+
+  public create = this.create_fn(this.#create)
+
+  #select_one_impl(params: {
+    media_file_id: number
+  }) {
+    return this.#select_by_media_file_id.one({
+      media_file_id: params.media_file_id,
+      limit: 1,
+    })
   }
+  public select_one = this.select_one_fn(this.#select_one_impl.bind(this))
+
+  public select_many(params: {
+    media_file_id?: number
+    series_id?: number
+    limit: number
+  }): PaginatedResult<torm.InferSchemaTypes<typeof MediaThumbnail.result>> {
+    const { media_file_id, series_id, limit } = params
+
+    if (media_file_id && series_id) {
+      throw new errors.BadInputError(`Cannot supply both media_file_id & series_id`)
+    } else if (media_file_id !== undefined) {
+      const { total } = this.#count_by_media_file_id({ media_file_id })!
+      const rows = this.#select_by_media_file_id.all({ media_file_id, limit })
+      return {
+        total,
+        result: rows,
+        // pagination isnt technically implemented for thumbnails since the number is fairly small for now. We will need to implement this for very long sequences though
+        cursor: undefined
+      }
+    } else if (series_id !== undefined) {
+      const { total } = this.#count_by_series_id({ series_id })!
+      const rows = this.#select_by_series_id.all({ series_id, limit })
+      return {
+        total,
+        result: rows,
+        cursor: undefined
+      }
+    } else {
+      throw new Error('unimplemented')
+    }
+  }
+
 }
 
-export { MediaSeriesItem }
+export { MediaThumbnail }

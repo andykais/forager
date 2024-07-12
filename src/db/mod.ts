@@ -37,7 +37,19 @@ class Database {
     return this.#torm.models
   }
 
-  public transaction_async = <T>(fn: () => Promise<T>) => async () => {
+  public transaction_sync = <T>(fn: () => T) => (): T => {
+    try {
+      this.#torm.driver.exec('BEGIN TRANSACTION')
+      const result = fn()
+      this.#torm.driver.exec('COMMIT')
+      return result
+    } catch(e) {
+      this.#torm.driver.exec('ROLLBACK')
+      throw e
+    }
+  }
+
+  public transaction_async = <T>(fn: () => Promise<T>) => async (): Promise<T> => {
     try {
       this.#torm.driver.exec('BEGIN TRANSACTION')
       const result = await fn()

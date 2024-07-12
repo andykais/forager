@@ -34,16 +34,11 @@ const resources = {
 }
 
 
-type ForagerMediaSearchResult = ReturnType<Forager['media']['search']>
-interface SearchResultAssertions {
-  total?: number
-  cursor?: number | undefined
-  result?: {
-    result_type?: string
-    media_reference?: Partial<ForagerMediaSearchResult['result'][0]['media_reference']>
-    media_file?: Partial<ForagerMediaSearchResult['result'][0]['media_file']>
-  }[]
+type DeepPartial<T> = {
+  [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K]
 }
+type ForagerMediaSearchResult = ReturnType<Forager['media']['search']>
+type SearchResultAssertions = DeepPartial<ReturnType<Forager['media']['search']>>
 
 class Assertions {
   equals = asserts.assertEquals

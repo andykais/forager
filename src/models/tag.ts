@@ -1,6 +1,7 @@
 import * as torm from 'torm'
 import { Model, field } from '~/models/lib/base.ts'
 import {TagGroup} from './tag_group.ts'
+import {MediaReferenceTag} from './media_reference_tag.ts'
 
 class Tag extends Model {
   static schema = torm.schema('tag', {
@@ -50,6 +51,11 @@ class Tag extends Model {
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
     WHERE tag_group_id = ${Tag.params.tag_group_id} AND tag.name = ${Tag.params.name}`
 
+  #select_by_media_reference_id = this.query`
+    SELECT ${Tag.result['*']} FROM tag
+    INNER JOIN media_reference_tag ON media_reference_tag.tag_id = tag.id
+    WHERE media_reference_tag.media_reference_id = ${MediaReferenceTag.params.media_reference_id}`
+
   #select_one_impl(params: {
     id?: number
     name?: string
@@ -81,6 +87,10 @@ class Tag extends Model {
   public select_one = this.select_one_fn(this.#select_one_impl.bind(this))
 
   public create = this.create_fn(this.#create)
+
+  public select_many(params: {media_reference_id: number}) {
+    return this.#select_by_media_reference_id.all({media_reference_id: params.media_reference_id})
+  }
 
   public get_or_create(params: Parameters<Tag['create']>[0]) {
     try {
