@@ -31,7 +31,7 @@ class MediaFile extends Model {
     SELECT ${MediaFile.result['*']} FROM media_file
     WHERE checksum = ${MediaFile.params.checksum}`
 
-  create = this.query.one`INSERT INTO media_file (
+  #create = this.query.one`INSERT INTO media_file (
     filepath,
     filename,
     file_size_bytes,
@@ -77,6 +77,8 @@ class MediaFile extends Model {
   }
 
   public select_one = this.select_one_fn(this.#select_one_impl.bind(this))
+
+  public create = this.create_fn(this.#create)
 }
 
 export { MediaFile }

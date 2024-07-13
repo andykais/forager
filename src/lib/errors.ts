@@ -30,4 +30,8 @@ class SubprocessError extends Error {
   }
 }
 
-export { BadInputError, NotFoundError, DuplicateMediaError, SubprocessError }
+class UnExpectedError extends Error {
+  name = 'UnExpectedError'
+}
+
+export { BadInputError, NotFoundError, DuplicateMediaError, SubprocessError, UnExpectedError }

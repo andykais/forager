@@ -17,12 +17,21 @@ export const MediaInfo = z.object({
 export const PaginatedSearch = PaginatedQuery.extend({
   query: z.object({
     series_id: z.number().optional(),
+    filesystem: z.boolean().optional(),
+    directory: z.string().optional(),
     media_reference_id: z.number().optional(),
     tags: z.array(Tag).optional(),
     stars: z.number().gte(0).lte(5).optional(),
     stars_equality: z.enum(['gte', 'eq']).default(('gte')),
     unread: z.boolean().default(false),
-  }).strict().optional().transform(q => ({unread: false, ...q})),
+  }).strict()
+    .refine(q => !(q.filesystem === false && q.directory), 'query.directory cannot be used with query.filesystem: false')
+    .refine(q => !(q.series_id && q.directory), 'query.series_id and query.directory cannot be used in conjunction')
+    .optional()
+    .transform(q => {
+      if (q?.directory) q.filesystem = true
+      return {unread: false, ...q}
+    }),
   sort_by: z.enum(['created_at', 'updated_at', 'source_created_at', 'view_count']).default('source_created_at'),
   order: z.enum(['desc', 'asc']).default('desc'),
 }).strict()

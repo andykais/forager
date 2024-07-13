@@ -80,7 +80,8 @@ class FileProcessor {
   public constructor(ctx: Context, filepath: string) {
     this.#ctx = ctx
     this.#decoder = new TextDecoder()
-    this.#filepath = filepath
+    // we want to store files with absolute paths in forager. It just simplifies some of the server steps later
+    this.#filepath = path.resolve(filepath)
   }
 
   public async get_info(): Promise<FileInfo> {
@@ -191,6 +192,8 @@ class FileProcessor {
         throw new errors.SubprocessError(output, 'generating thumbnails failed')
       }
     } else if (file_info.media_type === 'VIDEO') {
+      // TODO currently we dont output enough information from ffmpeg when generating thumbnails to know what timestamp they are for
+      // general thought is make ffprobe output the timestamps we care about, then use ffmpeg -vf select=(...) to capture the specific frames
       throw new Error('unimplemented')
     } else {
       throw new Error('unexpected code path')

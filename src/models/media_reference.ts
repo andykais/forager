@@ -17,6 +17,9 @@ class MediaReference extends Model {
     stars:                  field.number().optional(),
     view_count:             field.number().optional(),
     media_series_reference: field.boolean(),
+    directory_reference:    field.boolean().default(false),
+    directory_path:         field.string().optional(),
+    directory_root:         field.boolean().default(false),
     // auto generated fields
     media_series_length:    field.number(),
     tag_count:              field.number(),
@@ -29,6 +32,9 @@ class MediaReference extends Model {
   #create = this.query.one`
     INSERT INTO media_reference (
       media_series_reference,
+      directory_reference,
+      directory_path,
+      directory_root,
       media_sequence_id,
       media_sequence_index,
       source_url,
@@ -40,6 +46,9 @@ class MediaReference extends Model {
       view_count
     ) VALUES (${[
       MediaReference.params.media_series_reference,
+      MediaReference.params.directory_reference,
+      MediaReference.params.directory_path,
+      MediaReference.params.directory_root,
       MediaReference.params.media_sequence_id,
       MediaReference.params.media_sequence_index,
       MediaReference.params.source_url,
@@ -55,8 +64,21 @@ class MediaReference extends Model {
     SELECT ${MediaReference.result['*']} FROM media_reference
     WHERE id = ${MediaReference.params.id}`
 
-  #select_one_impl(params: {id: number}) {
-    return this.#select_by_id.one(params)
+  #select_by_directory_path = this.query`
+    SELECT ${MediaReference.result['*']} FROM media_reference
+    WHERE directory_path = ${MediaReference.params.directory_path}`
+
+  #select_one_impl(params: {
+    id?: number
+    directory_path?: string
+  }) {
+    if (params.id !== undefined && Object.keys(params).length === 1) {
+      return this.#select_by_id.one({id: params.id})
+    } else if (params.directory_path !== undefined && Object.keys(params).length === 1) {
+      return this.#select_by_directory_path.one({directory_path: params.directory_path})
+    } else {
+      throw new errors.UnExpectedError(JSON.stringify(params))
+    }
   }
 
   public select_many(params: {
@@ -70,6 +92,8 @@ class MediaReference extends Model {
     stars: number | undefined
     stars_equality: 'gte' | 'eq' | undefined
     unread: boolean
+    filesystem: boolean | undefined
+    // directory_path: string | undefined
   }): PaginatedResult<torm.InferSchemaTypes<typeof MediaReference.result>> {
 
     const records_arguments: Record<string, any> = {}
@@ -108,6 +132,17 @@ SELECT media_reference.*, cursor_id FROM (
         .add_where_clause(`id = :id`)
         .add_param_fields({id: MediaReference.params.id})
       count_arguments.id = params.id
+    }
+
+    if (params.filesystem) {
+      if (params.series_id === undefined) {
+        // implicitly this implies listing the root dirs
+        records_builder.add_where_clause('directory_root = 1')
+        count_builder.add_where_clause('directory_root = 1')
+      }
+    } else {
+      records_builder.add_where_clause('directory_reference = 0')
+      count_builder.add_where_clause('directory_reference = 0')
     }
 
     if (params.series_id !== undefined) {
@@ -169,10 +204,15 @@ SELECT media_reference.*, cursor_id FROM (
     const count_query = count_builder.build()
     const { total } = count_query.stmt.one(count_arguments)! as {total: number}
 
-    const next_cursor = result.at(-1)?.cursor_id
-    // for (const row of result) {
-    //   delete (row as any).cursor_id
-    // }
+    let next_cursor: number | undefined
+    // if we return less results than the limit, theres no next page
+    if (params.limit && params.limit !== -1 && result.length === params.limit) {
+      next_cursor = result.at(-1)?.cursor_id
+    }
+    for (const row of result) {
+      // now that we grabbed the last cursor_id, we can pop these columns off (minor optimization, maybe we skip this step?)
+      delete (row as any).cursor_id
+    }
     return {
       result,
       cursor: next_cursor,
@@ -186,6 +226,32 @@ SELECT media_reference.*, cursor_id FROM (
       throw new errors.BadInputError(`series_id ${series_id} does not reference a series MediaReference`)
     }
     return media_series_reference
+  }
+
+  public media_series_select_one(params: {
+    id?: number
+    directory_path?: string
+  }) {
+    const media_series_reference = this.select_one(params, { or_raise: true })
+    if (!media_series_reference.media_series_reference) {
+      throw new errors.BadInputError(`${JSON.stringify(params)} does not reference a series MediaReference`)
+    }
+    return media_series_reference
+  }
+
+  public get_or_create(params: Parameters<MediaReference['create']>[0]) {
+    try {
+      return this.create(params)
+    } catch (e) {
+      if (e instanceof torm.errors.UniqueConstraintError) {
+        if (!params.directory_path) {
+          throw new errors.UnExpectedError("UniqueConstraintError should only be raised on media reference create when directory_path is supplied")
+        }
+        return this.select_one({directory_path: params.directory_path}, {or_raise: true})
+      } else {
+        throw e
+      }
+    }
   }
 
   public create = this.create_fn(this.#create)

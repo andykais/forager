@@ -28,7 +28,9 @@ const media_files = resource_file_mapper([
   // 'cityscape-timelapse.mp4',
 ] as const)
 
+if (!import.meta.dirname) throw new Error(`unexpected value in import.meta.dirname`)
 const resources = {
+  resources_directory: path.join(path.resolve(import.meta.dirname, '..'), 'resources'),
   media_files,
   books_db_1_0_0: 'test/resources/migrations_1.0.0.db',
 }
@@ -42,6 +44,7 @@ type SearchResultAssertions = DeepPartial<ReturnType<Forager['media']['search']>
 
 class Assertions {
   equals = asserts.assertEquals
+  not_equals = asserts.assertNotEquals
   rejects = asserts.assertRejects
   throws = asserts.assertThrows
   object_match = asserts.assertObjectMatch
@@ -49,7 +52,7 @@ class Assertions {
     if (assertions.total) {
       this.equals(search_result.total, assertions.total)
     }
-    if (assertions.cursor) {
+    if ('cursor' in assertions) {
       this.equals(search_result.cursor, assertions.cursor)
     }
 

@@ -6,28 +6,35 @@ interface ModelTypes {
   params: torm.InferSchemaTypes<typeof MediaSeriesItem.schema.params>
 }
 
+const QueryVars = torm.schema('', {
+  max_series_index: field.number(),
+})
+
 class MediaSeriesItem extends Model {
   static schema = torm.schema('media_series_item', {
-    id:                 field.number(),
-    media_reference_id: field.number(),
-    series_id:          field.number(),
-    series_index:       field.number(),
-    updated_at:         field.datetime(),
-    created_at:         field.datetime(),
+    id:                   field.number(),
+    media_reference_id:   field.number(),
+    series_id:            field.number(),
+    filesystem_reference: field.boolean().default(false),
+    series_index:         field.number(),
+    updated_at:           field.datetime(),
+    created_at:           field.datetime(),
   })
   static params = this.schema.params
   static result = this.schema.result
 
-  #create = this.query`
+  #create = this.query.one`
     INSERT INTO media_series_item (
       media_reference_id,
       series_id,
-      series_index
+      series_index,
+      filesystem_reference
     )
     VALUES (${[
       MediaSeriesItem.params.media_reference_id,
       MediaSeriesItem.params.series_id,
       MediaSeriesItem.params.series_index,
+      MediaSeriesItem.params.filesystem_reference,
     ]})
     RETURNING ${MediaSeriesItem.result.id}`
 
@@ -35,15 +42,54 @@ class MediaSeriesItem extends Model {
     SELECT ${MediaSeriesItem.result['*']} FROM media_series_item
     WHERE id = ${MediaSeriesItem.params.id}`
 
+  #select_by_series_and_media_reference = this.query`
+    SELECT ${MediaSeriesItem.result['*']} FROM media_series_item
+    WHERE series_id = ${MediaSeriesItem.params.series_id} AND media_reference_id = ${MediaSeriesItem.params.media_reference_id}`
+
+  #select_max_series_index_by_series_id = this.query.one`
+    SELECT MAX(media_series_item.series_index) AS ${QueryVars.result.max_series_index} FROM media_series_item
+    WHERE series_id = ${MediaSeriesItem.params.series_id}`
+
   #select_one_impl(params: {
-    id: number
+    id?: number
+    series_id?: number
+    media_reference_id?: number
   }) {
-    return this.#select_by_id.one({id: params.id})
+    if (params.id !== undefined && Object.keys(params).length === 1) {
+      return this.#select_by_id.one({id: params.id})
+    } else if (params.series_id !== undefined && params.media_reference_id !== undefined && Object.keys(params).length === 2) {
+      return this.#select_by_series_and_media_reference.one({
+        series_id: params.series_id,
+        media_reference_id: params.media_reference_id,
+      })
+    }
   }
 
   public select_one = this.select_one_fn(this.#select_one_impl.bind(this))
 
-  public create = this.create_fn(this.#create.one)
+  public create = this.create_fn(this.#create)
+
+  public create_series(params: {
+    media_reference_id: number
+    series_id: number
+  }) {
+    const { media_reference_id, series_id } = params
+    const result = this.#select_max_series_index_by_series_id({ series_id })
+    const series_index = result?.max_series_index ?? 0
+    try {
+      return this.create({
+        media_reference_id,
+        series_id,
+        series_index,
+        filesystem_reference: true,
+      })
+    } catch(e) {
+      if (e instanceof torm.errors.UniqueConstraintError) {
+        return this.select_one(params)
+      }
+      throw e
+    }
+  }
 }
 
 export { MediaSeriesItem }
