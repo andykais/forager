@@ -1,14 +1,6 @@
-import { Actions } from '~/actions/lib/base.ts'
+import { Actions, type MediaSeriesResponse } from '~/actions/lib/base.ts'
 import { inputs, parsers } from '~/inputs/mod.ts'
 import * as result_types from '~/models/lib/result_types.ts'
-
-
-export interface MediaSeriesResponse {
-  media_type: 'media_series'
-  media_reference: result_types.MediaReference
-  tags: result_types.Tag[]
-  thumbnails: result_types.PaginatedResult<result_types.MediaThumbnail>
-}
 
 
 class SeriesActions extends Actions {

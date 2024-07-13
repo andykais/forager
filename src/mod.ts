@@ -13,6 +13,7 @@ class Forager {
   public config: ForagerConfig
   public media: actions.MediaActions
   public series: actions.SeriesActions
+  public filesystem: actions.FileSystemActions
   #ctx: Context
 
   public constructor(config: ForagerConfig) {
@@ -20,6 +21,7 @@ class Forager {
     this.#ctx = new Context(config)
     this.media = new actions.MediaActions(this.#ctx)
     this.series = new actions.SeriesActions(this.#ctx)
+    this.filesystem = new actions.FileSystemActions(this.#ctx)
   }
 
   public init() {
