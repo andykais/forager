@@ -101,7 +101,6 @@ test('media actions', async (ctx) => {
 
   await ctx.subtest('search pagination', () => {
     const media_list_page_1 = forager.media.search({limit: 2})
-    const media_list_page_2 = forager.media.search({cursor: media_list_page_1.cursor, limit: 2})
     ctx.assert.search_result(media_list_page_1, {
       result: [
         {media_reference: {title: 'Cat Doodle'}},
@@ -109,13 +108,14 @@ test('media actions', async (ctx) => {
       ],
       total: 3
     })
+    ctx.assert.not_equals(media_list_page_1.cursor, undefined)
 
+    const media_list_page_2 = forager.media.search({cursor: media_list_page_1.cursor, limit: 2})
     ctx.assert.object_match(media_list_page_2, {
       result: [
         {media_reference: {title: 'Generated Art'}},
       ]
     })
-
   })
 
   await ctx.subtest('search filters media_reference_id', () => {
@@ -160,7 +160,9 @@ test('media actions', async (ctx) => {
 
     // check that pagination works with tag filters
     const wallpaper_media_page_1 = forager.media.search({query: { tags: ['wallpaper'] }, limit: 1})
+    ctx.assert.not_equals(wallpaper_media_page_1.cursor, undefined)
     const wallpaper_media_page_2 = forager.media.search({query: { tags: ['wallpaper'] }, limit: 1, cursor: wallpaper_media_page_1.cursor})
+    ctx.assert.not_equals(wallpaper_media_page_2.cursor, undefined)
     const wallpaper_media_page_3 = forager.media.search({query: { tags: ['wallpaper'] }, limit: 1, cursor: wallpaper_media_page_2.cursor})
     ctx.assert.search_result(wallpaper_media_page_1, {
       total: 2,
@@ -212,6 +214,36 @@ test('media actions', async (ctx) => {
     })
 
     // TODO add more variable sorting tests with view_count once we can update media references
+  })
+
+  await ctx.subtest('filesystem browsing', () => {
+    // basic workflows: starting at the top level dir
+    const root_dir = path.parse(Deno.cwd()).root
+    const root_result = forager.media.search({query: {filesystem: true}})
+    ctx.assert.search_result(root_result, {
+      total: 1,
+      result: [
+        {
+          media_reference: { directory_path: root_dir }
+        }
+      ]
+    })
+    // then lets query the contents of that dir (directory: string implies filesystem: true)
+    ctx.assert.search_result(forager.media.search({query: {directory: root_dir}}), {
+      // a test might be ran from anywhere, so we can really only verify that something exists below the root here
+      total: 1,
+    })
+
+    ctx.assert.search_result(forager.media.search({query: {directory: ctx.resources.resources_directory}}), {
+      total: 3,
+      result: [
+        {media_reference: {id: media_generated_art.media_reference.id}},
+        {media_reference: {id: media_cartoon.media_reference.id}},
+        {media_reference: {id: media_doodle.media_reference.id}},
+      ]
+    })
+
+    // TODO support a decent "cd .." workflow. Currently its only easy to go "down" directories
   })
 
   forager.close()

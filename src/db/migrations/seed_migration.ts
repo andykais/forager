@@ -55,7 +55,7 @@ export class Migration extends torm.SeedMigration {
       id INTEGER PRIMARY KEY NOT NULL,
       media_timestamp FLOAT NOT NULL,
       media_file_id INTEGER NOT NULL,
-      filepath TEXT NOT NULL,
+      filepath TEXT NOT NULL UNIQUE,
       updated_at ${TIMESTAMP_COLUMN},
       created_at ${TIMESTAMP_COLUMN},
 
@@ -67,6 +67,7 @@ export class Migration extends torm.SeedMigration {
       media_reference_id INTEGER NOT NULL,
       series_id INTEGER NOT NULL,
       series_index INTEGER NOT NULL,
+      filesystem_reference BOOLEAN NOT NULL,
 
       updated_at ${TIMESTAMP_COLUMN},
       created_at ${TIMESTAMP_COLUMN},
@@ -104,6 +105,9 @@ export class Migration extends torm.SeedMigration {
 
       -- media series reference fields
       media_series_reference BOOLEAN NOT NULL,
+      directory_reference BOOLEAN NOT NULL,
+      directory_path TEXT,
+      directory_root BOOLEAN NOT NULL,
 
       updated_at ${TIMESTAMP_COLUMN},
       created_at ${TIMESTAMP_COLUMN},
@@ -231,7 +235,11 @@ export class Migration extends torm.SeedMigration {
     CREATE UNIQUE INDEX tag_name ON tag (name, tag_group_id);
     CREATE UNIQUE INDEX media_file_reference ON media_file (media_reference_id);
     CREATE INDEX media_file_type ON media_file (media_type, animated);
+    CREATE UNIQUE INDEX media_filepath ON media_file (filepath);
     CREATE UNIQUE INDEX media_chunk_range ON media_chunk (media_file_id, bytes_start, bytes_end);
+    -- it seems like sqlite doesnt count NULL values as unique? This works for our use case so whatevs
+    CREATE UNIQUE INDEX media_reference_directory_path ON media_reference (directory_path);
+    CREATE UNIQUE INDEX directory_media_series_item ON media_series_item (series_id, media_reference_id) WHERE media_series_item.filesystem_reference = 1;
     `
 
 
