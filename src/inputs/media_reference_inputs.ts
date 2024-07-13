@@ -3,6 +3,9 @@ import { type Json, JsonInput, StringDateTime, PaginatedQuery } from '~/lib/inpu
 import { Tag } from './tag_inputs.ts'
 
 
+export const Filepath = z.string()
+
+
 export const MediaInfo = z.object({
   title: z.string().optional(),
   description: z.string().optional(),

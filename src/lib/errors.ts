@@ -1,8 +1,8 @@
-class BadInputError extends Error {
+export class BadInputError extends Error {
   name = 'BadInputError'
 }
 
-class NotFoundError extends Error {
+export class NotFoundError extends Error {
   name = 'NotFoundError'
 
   constructor(model: string, query_name: string, params: any) {
@@ -10,15 +10,23 @@ class NotFoundError extends Error {
   }
 }
 
-class DuplicateMediaError extends Error {
+export class DuplicateMediaError extends Error {
   name = 'DuplicateMediaError'
 
-  constructor(filepath: string, checksum: string) {
+  constructor(public filepath: string, public checksum: string, public existing_media_filepath: string) {
+    super(`file '${filepath}' checksum ${checksum} is a duplicate of ${existing_media_filepath}`)
+  }
+}
+
+export class MediaAlreadyExistsError extends Error {
+  name = 'MediaAlreadyExistsError'
+
+  constructor(public filepath: string, public checksum: string) {
     super(`file '${filepath}' checksum ${checksum} already exists`)
   }
 }
 
-class SubprocessError extends Error {
+export class SubprocessError extends Error {
   name = 'SubprocessError'
   public output: Deno.CommandOutput
   public constructor(output: Deno.CommandOutput, message: string) {
@@ -30,8 +38,6 @@ class SubprocessError extends Error {
   }
 }
 
-class UnExpectedError extends Error {
+export class UnExpectedError extends Error {
   name = 'UnExpectedError'
 }
-
-export { BadInputError, NotFoundError, DuplicateMediaError, SubprocessError, UnExpectedError }

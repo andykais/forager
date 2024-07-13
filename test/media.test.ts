@@ -65,7 +65,7 @@ test('media actions', async (ctx) => {
   await ctx.subtest('duplicate media creation guards', async () => {
     await ctx.assert.rejects(
       async () => forager.media.create(ctx.resources.media_files['koch.tif']),
-      errors.DuplicateMediaError
+      errors.MediaAlreadyExistsError
     )
   })
 
@@ -388,5 +388,24 @@ test('media series', async (ctx) => {
       tags: [],
       thumbnails: { total: 2, result: [] },
     })
+  })
+})
+
+
+test('filesystem discovery', async (ctx) => {
+  const database_path = ctx.create_fixture_path('forager.db')
+  const thumbnail_folder = ctx.create_fixture_path('thumbnails')
+  using forager = new Forager({ database_path, thumbnail_folder })
+  forager.init()
+
+  await forager.filesystem.discover({path: ctx.resources.resources_directory, extensions: ['jpg', 'tif', 'png']})
+  ctx.assert.search_result(forager.media.search(), {
+    total: 3,
+    // TODO we may need to sort these results since we dont get a lot of say in the order that filesystem.discover will walk & create these
+    result: [
+      {media_file: {filepath: ctx.resources.media_files['cat_doodle.jpg']}},
+      {media_file: {filepath: ctx.resources.media_files['koch.tif']}},
+      {media_file: {filepath: ctx.resources.media_files['ed-edd-eddy.png']}},
+    ]
   })
 })
