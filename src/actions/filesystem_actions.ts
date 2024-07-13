@@ -7,8 +7,6 @@ import * as errors from '~/lib/errors.ts'
 import * as result_types from '~/models/lib/result_types.ts'
 
 
-import * as fmt_bytes from 'jsr:@std/fmt/bytes'
-
 class FileSystemActions extends Actions {
   discover = async (params: inputs.FileSystemDiscover) => {
     const start_time = performance.now()

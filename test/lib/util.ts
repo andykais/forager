@@ -103,7 +103,12 @@ class TestContext {
 // NOTE this overrides everyone's console.debug with detailed logging
 Debugger.attach_console_debug()
 
-function test(test_name: string, fn: (test_context: TestContext) => void, only = false) {
+interface TestOptions {
+  only?: boolean
+  skip?: { os: typeof Deno.build.os }
+}
+
+function test(test_name: string, fn: (test_context: TestContext) => void, options?: TestOptions) {
 
   const test_fn = async (t: Deno.TestContext) => {
       const test_context = new TestContext(test_name, t)
@@ -115,12 +120,19 @@ function test(test_name: string, fn: (test_context: TestContext) => void, only =
     const result = await fn(test_context)
     return result
   }
-  Deno.test({
+
+  const deno_test_options: Deno.TestDefinition = {
     name: test_name,
     fn: test_fn,
-    only
-  })
+  }
+  if (options?.skip?.os === Deno.build.os) {
+    deno_test_options.ignore = true
+  }
+  if (options?.only) {
+    deno_test_options.only = true
+  }
+  Deno.test(deno_test_options)
 }
-test.only = (name: string, fn: (test_context: TestContext) => void) => { test(name, fn, true) }
+test.only = (name: string, fn: (test_context: TestContext) => void, options?: TestOptions) => { test(name, fn, {...options, only: true}) }
 
 export { test }
