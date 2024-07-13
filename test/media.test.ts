@@ -398,33 +398,37 @@ test('filesystem discovery', async (ctx) => {
   using forager = new Forager({ database_path, thumbnail_folder })
   forager.init()
 
-  // lets test filepath globbing first
-  await forager.filesystem.discover({path: ctx.resources.resources_directory + path.SEPARATOR + '*.jpg' })
-  ctx.assert.search_result(forager.media.search(), {
-    total: 1,
-    result: [
-      {media_file: {filepath: ctx.resources.media_files['cat_doodle.jpg']}},
-    ]
+  await ctx.subtest('filepath globbing', async () => {
+    await forager.filesystem.discover({path: ctx.resources.resources_directory + path.SEPARATOR + '*.jpg' })
+    ctx.assert.search_result(forager.media.search(), {
+      total: 1,
+      result: [
+        {media_file: {filepath: ctx.resources.media_files['cat_doodle.jpg']}},
+      ]
+    })
   })
 
-  // next lets test file extension filtering
-  // note that we circumvent the issue of out-of-order assertion results by making each file get added one at a time
-  await forager.filesystem.discover({path: ctx.resources.resources_directory, extensions: ['jpg', 'tif']})
-  ctx.assert.search_result(forager.media.search(), {
-    total: 2,
-    result: [
-      {media_file: {filepath: ctx.resources.media_files['koch.tif']}},
-      {media_file: {filepath: ctx.resources.media_files['cat_doodle.jpg']}},
-    ]
-  })
+  await ctx.subtest('file extension filtering', async () => {
+    // note that we circumvent the issue of out-of-order assertion results by making each file get added one at a time
+    await forager.filesystem.discover({path: ctx.resources.resources_directory, extensions: ['jpg', 'tif']})
+    ctx.assert.search_result(forager.media.search(), {
+      total: 2,
+      result: [
+        {media_file: {filepath: ctx.resources.media_files['koch.tif']}},
+        {media_file: {filepath: ctx.resources.media_files['cat_doodle.jpg']}},
+      ]
+    })
 
-  await forager.filesystem.discover({path: ctx.resources.resources_directory, extensions: ['jpg', 'tif', 'png']})
-  ctx.assert.search_result(forager.media.search(), {
-    total: 3,
-    result: [
-      {media_file: {filepath: ctx.resources.media_files['ed-edd-eddy.png']}},
-      {media_file: {filepath: ctx.resources.media_files['koch.tif']}},
-      {media_file: {filepath: ctx.resources.media_files['cat_doodle.jpg']}},
-    ]
+    await forager.filesystem.discover({path: ctx.resources.resources_directory, extensions: ['jpg', 'tif', 'png']})
+    ctx.assert.search_result(forager.media.search(), {
+      total: 3,
+      result: [
+        {media_file: {filepath: ctx.resources.media_files['ed-edd-eddy.png']}},
+        {media_file: {filepath: ctx.resources.media_files['koch.tif']}},
+        {media_file: {filepath: ctx.resources.media_files['cat_doodle.jpg']}},
+      ]
+    })
   })
-})
+  // windows currently doesnt support glob syntax, so for the time being lets just disable filesystem discovery in the windows test suite
+  // gh issue: https://github.com/denoland/deno_std/issues/5434
+}, {skip: {os: 'windows'}})
