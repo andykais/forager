@@ -398,14 +398,24 @@ test('filesystem discovery', async (ctx) => {
   using forager = new Forager({ database_path, thumbnail_folder })
   forager.init()
 
+  // lets test filepath globbing first
+  await forager.filesystem.discover({path: ctx.resources.resources_directory + path.SEPARATOR + '*.jpg' })
+  ctx.assert.search_result(forager.media.search(), {
+    total: 1,
+    result: [
+      {media_file: {filepath: ctx.resources.media_files['cat_doodle.jpg']}},
+    ]
+  })
+
+  // next lets test file extension filtering
   await forager.filesystem.discover({path: ctx.resources.resources_directory, extensions: ['jpg', 'tif', 'png']})
   ctx.assert.search_result(forager.media.search(), {
     total: 3,
     // TODO we may need to sort these results since we dont get a lot of say in the order that filesystem.discover will walk & create these
     result: [
-      {media_file: {filepath: ctx.resources.media_files['cat_doodle.jpg']}},
       {media_file: {filepath: ctx.resources.media_files['koch.tif']}},
       {media_file: {filepath: ctx.resources.media_files['ed-edd-eddy.png']}},
+      {media_file: {filepath: ctx.resources.media_files['cat_doodle.jpg']}},
     ]
   })
 })
