@@ -1,20 +1,11 @@
-import * as path from '@std/path'
-import * as fs from '@std/fs'
 import { Actions, type MediaFileResponse, type MediaSeriesResponse } from '~/actions/lib/base.ts'
 import { inputs, parsers } from '~/inputs/mod.ts'
 import * as result_types from '~/models/lib/result_types.ts'
-import { FileProcessor } from '../lib/file_processor.ts'
-import * as errors from '~/lib/errors.ts'
 
 class MediaActions extends Actions {
 
   create = async (filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.Tag[]): Promise<MediaFileResponse> => {
-    const parsed = {
-      filepath: parsers.Filepath.parse(filepath),
-      media_info: parsers.MediaReferenceUpdate.parse(media_info ?? {}),
-      tags: tags?.map(t => parsers.Tag.parse(t)) ?? [],
-    }
-    return this.media_create(parsed.filepath, parsed.media_info, parsed.tags)
+    return await this.media_create(filepath, media_info, tags)
   }
 
   update = (media_reference_id: number, media_info: inputs.MediaInfo) => {

@@ -7,6 +7,7 @@ interface ForagerConfig {
   database_path: string
   thumbnail_folder: string
   log_level?: LogLevel
+  // allow_multiprocess_read_access?: boolean
 }
 
 class Forager {

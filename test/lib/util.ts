@@ -24,8 +24,9 @@ const media_files = resource_file_mapper([
   'koch.tif',
   'ed-edd-eddy.png',
   'cat_doodle.jpg',
-  // 'Succulentsaur.mp4',
-  // 'cityscape-timelapse.mp4',
+  'Succulentsaur.mp4',
+  'cityscape-timelapse.mp4',
+  'cat_cronch.mp4',
 ] as const)
 
 if (!import.meta.dirname) throw new Error(`unexpected value in import.meta.dirname`)

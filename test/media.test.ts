@@ -250,6 +250,52 @@ test('media actions', async (ctx) => {
 })
 
 
+test('video media', async ctx => {
+  const database_path = ctx.create_fixture_path('forager.db')
+  const thumbnail_folder = ctx.create_fixture_path('thumbnails')
+  using forager = new Forager({ database_path, thumbnail_folder })
+  forager.init()
+
+  const media_cronch = await forager.media.create(ctx.resources.media_files['cat_cronch.mp4'], {}, ['cat'])
+  // ensure we have the exact right amount
+  ctx.assert.equals(media_cronch.thumbnails.total, 18)
+  ctx.assert.equals(media_cronch.thumbnails.result.length, 1)
+  ctx.assert.equals(media_cronch.media_file.media_type, 'VIDEO')
+  ctx.assert.equals(media_cronch.media_file.content_type, 'video/mp4')
+  ctx.assert.equals(media_cronch.thumbnails.result[0].media_timestamp, 0)
+
+  const media_art_timelapse = await forager.media.create(ctx.resources.media_files['Succulentsaur.mp4'], {}, ['art', 'timelapse'])
+  ctx.assert.equals(media_art_timelapse.thumbnails.total, 18)
+  ctx.assert.equals(media_art_timelapse.thumbnails.result.length, 1)
+  ctx.assert.equals(media_art_timelapse.media_file.media_type, 'VIDEO')
+  ctx.assert.equals(media_art_timelapse.media_file.content_type, 'video/mp4')
+  ctx.assert.equals(media_art_timelapse.thumbnails.result[0].media_timestamp, 0)
+
+  // console.debug(forager.media.search({thumbnail_limit: -1}).result[0])
+  ctx.assert.search_result(forager.media.search({ query: {tags: ['cat']}}), {
+    total: 1,
+    result: [
+      {
+        thumbnails: {
+          result: [
+            {
+              media_timestamp: 0,
+            }
+          ]
+      }}
+    ]
+  })
+
+  const media_cronch_thumbnails_all_search = forager.media.search({query: {tags: ['cat']}, thumbnail_limit: -1 })
+  const media_cronch_thumbnails_all = media_cronch_thumbnails_all_search.result[0].thumbnails.result
+
+  // just some basic assumptions about thumbnail timestamp distribution
+  ctx.assert.equals(media_cronch_thumbnails_all.at(0)?.media_timestamp, 0)
+  ctx.assert.equals(media_cronch_thumbnails_all.at(-1)?.media_timestamp! > 0, true)
+  ctx.assert.equals(media_cronch_thumbnails_all.at(-1)?.media_timestamp! < media_cronch.media_file.duration, true)
+})
+
+
 test('media series', async (ctx) => {
   const database_path = ctx.create_fixture_path('forager.db')
   const thumbnail_folder = ctx.create_fixture_path('thumbnails')

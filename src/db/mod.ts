@@ -31,6 +31,7 @@ class Database {
 
   public init() {
     this.#torm.init()
+    this.#torm.driver.exec(`PRAGMA journal_mode=WAL`)
   }
 
   get models() {

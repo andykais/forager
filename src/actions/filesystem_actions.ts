@@ -39,8 +39,10 @@ class FileSystemActions extends Actions {
         stats.created += 1
       } catch (e) {
         if (e instanceof errors.DuplicateMediaError) {
+          this.ctx.logger.warn(`${e.filepath} has a duplicate checksum (${e.checksum}) to ${e.existing_media_filepath}, skipping`)
           stats.duplicate += 1
         } else if (e instanceof errors.MediaAlreadyExistsError) {
+          this.ctx.logger.info(`${e.filepath} already exists in database, skipping`)
           stats.existing += 1
         } else {
           throw e
