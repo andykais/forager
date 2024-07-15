@@ -1,6 +1,8 @@
 import type { Context } from '~/context.ts'
 import * as fs from '@std/fs'
 import * as path from '@std/path'
+import * as fmt_bytes from 'jsr:@std/fmt/bytes'
+import * as fmt_duration from 'jsr:@std/fmt/duration'
 import { inputs, parsers } from '~/inputs/mod.ts'
 import * as result_types from '~/models/lib/result_types.ts'
 import { FileProcessor } from '~/lib/file_processor.ts'
@@ -32,6 +34,7 @@ class Actions {
   }
 
   protected async media_create(filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.Tag[]): Promise<MediaFileResponse> {
+    const start_time = performance.now()
     const parsed = {
       filepath: parsers.Filepath.parse(filepath),
       media_info: parsers.MediaReferenceUpdate.parse(media_info ?? {}),
@@ -98,17 +101,20 @@ class Actions {
       // copy the thumbnails into the configured folder (we wait until the database writes to do this to keep the generated thumbnail folder clean)
       // add the storage folder checksum here to merge the new files into whatever files already exist in that directory
       await fs.copy(thumbnails.source_folder, thumbnails.destination_folder)
-      return { media_reference, tags }
+      return { media_reference, tags, media_file }
     })
 
     const transaction_result = await transaction()
-    return {
-      media_type: 'media_file',
+    const output_result = {
+      media_type: 'media_file' as const,
       media_reference: this.models.MediaReference.select_one({id: transaction_result.media_reference.id}, {or_raise: true}),
       media_file: this.models.MediaFile.select_one({media_reference_id: transaction_result.media_reference.id}, {or_raise: true}),
       tags: this.models.Tag.select_many({media_reference_id: transaction_result.media_reference.id}),
-      thumbnails: this.models.MediaThumbnail.select_many({media_file_id: transaction_result.media_reference.id, limit: 1}),
+      thumbnails: this.models.MediaThumbnail.select_many({media_file_id: transaction_result.media_file.id, limit: 1}),
     }
+    const creation_duration = performance.now() - start_time
+    this.ctx.logger.info(`Created ${parsed.filepath} (type: ${output_result.media_file.media_type} size: ${fmt_bytes.format(output_result.media_file.file_size_bytes)}) in ${fmt_duration.format(creation_duration, {ignoreZero: true})}`)
+    return output_result
   }
 
   #create_series_for_media_directories(params: {
