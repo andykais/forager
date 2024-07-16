@@ -6,6 +6,9 @@ import { Tag } from './tag_inputs.ts'
 export const Filepath = z.string()
 
 
+export const MediaReferenceId = z.number()
+
+
 export const MediaInfo = z.object({
   title: z.string().optional(),
   description: z.string().optional(),
