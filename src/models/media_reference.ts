@@ -7,8 +7,6 @@ import { MediaSeriesItem } from '~/models/media_series_item.ts'
 class MediaReference extends Model {
   static schema = torm.schema('media_reference', {
     id:                     field.number(),
-    media_sequence_id:      field.number().optional(),
-    media_sequence_index:   field.number().default(0),
     source_url:             field.string().optional(),
     source_created_at:      field.datetime().optional(),
     title:                  field.string().optional(),
@@ -35,8 +33,6 @@ class MediaReference extends Model {
       directory_reference,
       directory_path,
       directory_root,
-      media_sequence_id,
-      media_sequence_index,
       source_url,
       source_created_at,
       title,
@@ -49,8 +45,6 @@ class MediaReference extends Model {
       MediaReference.params.directory_reference,
       MediaReference.params.directory_path,
       MediaReference.params.directory_root,
-      MediaReference.params.media_sequence_id,
-      MediaReference.params.media_sequence_index,
       MediaReference.params.source_url,
       MediaReference.params.source_created_at,
       MediaReference.params.title,

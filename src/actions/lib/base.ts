@@ -63,7 +63,6 @@ class Actions {
     const transaction = this.ctx.db.transaction_async(async () => {
       const media_reference = this.models.MediaReference.create({
         media_series_reference: false,
-        media_sequence_index: 0,
         stars: 0,
         view_count: 0,
         ...media_info 
@@ -139,7 +138,6 @@ class Actions {
         directory_reference: true,
         directory_path: path_segment,
         directory_root: directory_root,
-        media_sequence_index: 0,
         stars: 0,
         view_count: 0,
       })
