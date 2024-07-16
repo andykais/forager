@@ -1,4 +1,4 @@
-import * as torm from 'torm'
+import * as torm from '@torm/sqlite'
 import type { Context } from '../context.ts'
 import * as forager_models from '../models/mod.ts'
 

@@ -1,4 +1,4 @@
-import * as torm from 'torm'
+import * as torm from '@torm/sqlite'
 import * as errors from '~/lib/errors.ts'
 import { Model, field, PaginationVars, type PaginatedResult } from '~/models/lib/base.ts'
 import { SQLBuilder } from '~/models/lib/sql_builder.ts'

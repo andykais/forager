@@ -1,4 +1,4 @@
-import { InferSchemaTypes } from 'torm'
+import { InferSchemaTypes } from '@torm/sqlite'
 import * as models from '../mod.ts'
 
 export type MediaReference = InferSchemaTypes<typeof models.MediaReference.result>
