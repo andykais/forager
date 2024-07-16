@@ -6,24 +6,15 @@ const TIMESTAMP_SQLITE = `STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'NOW')`
 const TIMESTAMP_COLUMN = `TIMESTAMP DATETIME DEFAULT(${TIMESTAMP_SQLITE})`
 
 
+// this function is a noop "identity" tagged template literal. It exists purely because some editors pick up the 'sql`....`' template literal to syntax highly the SQL below
+const sql = (strings: TemplateStringsArray, ...values: any[]) => String.raw({ raw: strings }, ...values);
+
+
 @ForagerTorm.migrations.register()
 export class Migration extends torm.SeedMigration {
   version = '1.0.0'
 
-  sql = `
-    CREATE TABLE media_chunk (
-      id INTEGER PRIMARY KEY NOT NULL,
-      media_file_id INTEGER NOT NULL,
-      chunk BLOB NOT NULL,
-      bytes_start INTEGER NOT NULL,
-      bytes_end INTEGER NOT NULL,
-      updated_at ${TIMESTAMP_COLUMN},
-      created_at ${TIMESTAMP_COLUMN},
-
-      FOREIGN KEY (media_file_id) REFERENCES media_file(id)
-    );
-
-
+  sql = sql`
     CREATE TABLE media_file (
       id INTEGER PRIMARY KEY NOT NULL,
       filepath TEXT NOT NULL,
@@ -76,23 +67,11 @@ export class Migration extends torm.SeedMigration {
       FOREIGN KEY (series_id) REFERENCES media_reference(id)
     );
 
-    CREATE TABLE media_sequence (
-      id INTEGER PRIMARY KEY NOT NULL,
-      media_reference_id INTEGER NOT NULL,
-      updated_at ${TIMESTAMP_COLUMN},
-      created_at ${TIMESTAMP_COLUMN},
-
-      FOREIGN KEY (media_reference_id) REFERENCES media_reference(id)
-    );
-
 
     -- Polymorphic table referenced by either media files or media sequences
     -- NOTE we do not enforce that a media_reference is only referenced by either media_sequence or media_file, nor do we constrain it to always reference one
     CREATE TABLE media_reference (
       id INTEGER PRIMARY KEY NOT NULL,
-
-      media_sequence_id INTEGER,
-      media_sequence_index INTEGER NOT NULL DEFAULT 0,
 
       source_url TEXT,
       source_created_at DATETIME,
@@ -114,9 +93,7 @@ export class Migration extends torm.SeedMigration {
 
       -- denormalized fields
       tag_count INTEGER NOT NULL DEFAULT 0,
-      media_series_length INTEGER NOT NULL DEFAULT 0,
-
-      FOREIGN KEY (media_sequence_id) REFERENCES media_sequence(id)
+      media_series_length INTEGER NOT NULL DEFAULT 0
     );
 
 
@@ -234,9 +211,7 @@ export class Migration extends torm.SeedMigration {
     CREATE UNIQUE INDEX media_tag_by_reference ON media_reference_tag (tag_id, media_reference_id);
     CREATE UNIQUE INDEX tag_name ON tag (name, tag_group_id);
     CREATE UNIQUE INDEX media_file_reference ON media_file (media_reference_id);
-    CREATE INDEX media_file_type ON media_file (media_type, animated);
     CREATE UNIQUE INDEX media_filepath ON media_file (filepath);
-    CREATE UNIQUE INDEX media_chunk_range ON media_chunk (media_file_id, bytes_start, bytes_end);
     -- it seems like sqlite doesnt count NULL values as unique? This works for our use case so whatevs
     CREATE UNIQUE INDEX media_reference_directory_path ON media_reference (directory_path);
     CREATE UNIQUE INDEX directory_media_series_item ON media_series_item (series_id, media_reference_id) WHERE media_series_item.filesystem_reference = 1;

@@ -271,7 +271,6 @@ test('video media', async ctx => {
   ctx.assert.equals(media_art_timelapse.media_file.content_type, 'video/mp4')
   ctx.assert.equals(media_art_timelapse.thumbnails.result[0].media_timestamp, 0)
 
-  // console.debug(forager.media.search({thumbnail_limit: -1}).result[0])
   ctx.assert.search_result(forager.media.search({ query: {tags: ['cat']}}), {
     total: 1,
     result: [

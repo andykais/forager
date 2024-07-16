@@ -13,8 +13,6 @@ class SeriesActions extends Actions {
     const transaction = this.ctx.db.transaction_sync(() => {
       const media_reference = this.models.MediaReference.create({
         media_series_reference: true,
-
-        media_sequence_index: 0,
         stars: 0,
         view_count: 0,
         ...media_info 
