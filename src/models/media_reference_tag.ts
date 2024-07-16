@@ -22,7 +22,25 @@ class MediaReferenceTag extends Model {
       MediaReferenceTag.params.tag_id,
     ]}) RETURNING ${MediaReferenceTag.result.media_reference_id}, ${MediaReferenceTag.result.tag_id}`
 
-  create = this.create_fn(this.#create.one)
+  #select_one_by_media_reference_and_tag = this.query.one`
+    SELECT ${MediaReferenceTag.result['*']} FROM media_reference_tag
+    WHERE media_reference_id = ${MediaReferenceTag.params.media_reference_id} AND tag_id = ${MediaReferenceTag.params.tag_id}`
+
+  public create = this.create_fn(this.#create.one)
+
+  public select_one = this.select_one_fn(this.#select_one_by_media_reference_and_tag)
+
+  public get_or_create(params: Parameters<MediaReferenceTag['create']>[0]) {
+    try {
+      return this.create(params)
+    } catch (e) {
+      if (e instanceof torm.errors.UniqueConstraintError) {
+        return this.select_one({ media_reference_id: params.media_reference_id, tag_id: params.tag_id }, {or_raise: true})
+      } else {
+        throw e
+      }
+    }
+  }
 }
 
 export { MediaReferenceTag }

@@ -54,6 +54,15 @@ class MediaReference extends Model {
       MediaReference.params.view_count,
     ]}) RETURNING ${MediaReference.result.id}`
 
+  #update = this.query`UPDATE media_reference SET
+      title = IFNULL(${MediaReference.params.title}, title),
+      description = IFNULL(${MediaReference.params.description}, description),
+      metadata = IFNULL(${MediaReference.params.metadata}, metadata),
+      source_url = IFNULL(${MediaReference.params.source_url}, source_url),
+      source_created_at = IFNULL(${MediaReference.params.source_created_at}, source_created_at),
+      stars = IFNULL(${MediaReference.params.stars}, stars)
+    WHERE id = ${MediaReference.params.id}`
+
   #select_by_id = this.query`
     SELECT ${MediaReference.result['*']} FROM media_reference
     WHERE id = ${MediaReference.params.id}`
@@ -249,6 +258,8 @@ SELECT media_reference.*, cursor_id FROM (
   }
 
   public create = this.create_fn(this.#create)
+
+  public update = this.#update.exec
 
   public select_one = this.select_one_fn(this.#select_one_impl.bind(this))
 }

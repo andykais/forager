@@ -65,7 +65,7 @@ class Actions {
         media_series_reference: false,
         stars: 0,
         view_count: 0,
-        ...media_info 
+        ...parsed.media_info 
       })
 
       const media_file = this.models.MediaFile.create({
@@ -104,16 +104,29 @@ class Actions {
     })
 
     const transaction_result = await transaction()
-    const output_result = {
-      media_type: 'media_file' as const,
-      media_reference: this.models.MediaReference.select_one({id: transaction_result.media_reference.id}, {or_raise: true}),
-      media_file: this.models.MediaFile.select_one({media_reference_id: transaction_result.media_reference.id}, {or_raise: true}),
-      tags: this.models.Tag.select_many({media_reference_id: transaction_result.media_reference.id}),
-      thumbnails: this.models.MediaThumbnail.select_many({media_file_id: transaction_result.media_file.id, limit: 1}),
-    }
+    const output_result = this.get_media_file_result({
+      media_reference_id: transaction_result.media_reference.id,
+      media_file_id: transaction_result.media_file.id,
+      thumbnail_limit: 1,
+    })
     const creation_duration = performance.now() - start_time
     this.ctx.logger.info(`Created ${parsed.filepath} (type: ${output_result.media_file.media_type} size: ${fmt_bytes.format(output_result.media_file.file_size_bytes)}) in ${fmt_duration.format(creation_duration, {ignoreZero: true})}`)
     return output_result
+  }
+
+  protected get_media_file_result(params: {
+    media_reference_id: number,
+    media_file_id: number,
+    thumbnail_limit: number
+  }) {
+    const { media_reference_id, media_file_id, thumbnail_limit } = params
+    return {
+      media_type: 'media_file' as const,
+      media_reference: this.models.MediaReference.select_one({id: media_reference_id}, {or_raise: true}),
+      media_file: this.models.MediaFile.select_one({media_reference_id: media_reference_id}, {or_raise: true}),
+      tags: this.models.Tag.select_many({media_reference_id: media_reference_id}),
+      thumbnails: this.models.MediaThumbnail.select_many({media_file_id: media_file_id, limit: thumbnail_limit}),
+    }
   }
 
   #create_series_for_media_directories(params: {

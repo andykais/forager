@@ -33,13 +33,13 @@ test('media actions', async (ctx) => {
     {name: 'wallpaper', group: ''},
   ])
 
-  const media_cartoon = await forager.media.create(ctx.resources.media_files["ed-edd-eddy.png"], {title: 'Ed Edd Eddy Screengrab'}, ['cartoon', 'wallpaper'])
+  let media_cartoon = await forager.media.create(ctx.resources.media_files["ed-edd-eddy.png"], {title: 'Ed Edd Eddy Screengrab'}, ['cartoon', 'wallpaper'])
   ctx.assert.equals(media_cartoon.media_file.filepath, ctx.resources.media_files["ed-edd-eddy.png"])
   ctx.assert.list_partial(media_cartoon.tags, [
     {name: 'cartoon', group: ''},
     {name: 'wallpaper', group: ''},
   ])
-  const media_doodle = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {title: 'Cat Doodle'}, [])
+  let media_doodle = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {title: 'Cat Doodle'}, [])
 
   await ctx.subtest('thumbnail generation', async () => {
     const checksums = {
@@ -244,6 +244,30 @@ test('media actions', async (ctx) => {
     })
 
     // TODO support a decent "cd .." workflow. Currently its only easy to go "down" directories
+  })
+
+  await ctx.subtest('media update', async () => {
+    media_doodle = await forager.media.update(media_doodle.media_reference.id, {}, ['cat'])
+    ctx.assert.object_match(media_doodle, {
+      tags: [{name: 'cat'}]
+    })
+
+    // ensure we can add the same tag twice in an update without duplicating the tag
+    media_doodle = await forager.media.update(media_doodle.media_reference.id, {}, ['cat', 'doodle'])
+
+    ctx.assert.object_match(media_doodle, {
+      tags: [{name: 'cat'}, {name: 'doodle'}]
+    })
+  })
+
+  await ctx.subtest('media upsert', async () => {
+    // test creating new media with upsert
+    const media_cat_cronch = await forager.media.upsert(ctx.resources.media_files['cat_cronch.mp4'], {}, ['cat'])
+
+    // test updating existing media with upsert
+    ctx.assert.equals(media_cartoon.media_reference.title, 'Ed Edd Eddy Screengrab')
+    media_cartoon = await forager.media.upsert(ctx.resources.media_files["ed-edd-eddy.png"], {title: 'Ed Sparrow'}, ['cartoon', 'wallpaper'])
+    ctx.assert.equals(media_cartoon.media_reference.title, 'Ed Sparrow')
   })
 
   forager.close()
