@@ -1,4 +1,4 @@
-import * as torm from 'torm'
+import * as torm from '@torm/sqlite'
 import { ForagerTorm } from '~/db/mod.ts'
 
 

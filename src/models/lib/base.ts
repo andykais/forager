@@ -1,5 +1,5 @@
-import * as torm from 'torm'
-import { Vars, field, DriverModel } from 'torm'
+import * as torm from '@torm/sqlite'
+import { Vars, field, DriverModel } from '@torm/sqlite'
 import { NotFoundError } from '~/lib/errors.ts'
 export type { PaginatedResult } from './result_types.ts'
 

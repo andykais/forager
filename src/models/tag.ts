@@ -1,4 +1,4 @@
-import * as torm from 'torm'
+import * as torm from '@torm/sqlite'
 import { Model, field } from '~/models/lib/base.ts'
 import {TagGroup} from './tag_group.ts'
 import {MediaReferenceTag} from './media_reference_tag.ts'

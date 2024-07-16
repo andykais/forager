@@ -1,5 +1,4 @@
-import { Statement, Fields, Driver } from 'torm'
-import { SchemaFieldGeneric } from 'torm/schema.ts'
+import { Statement, Fields, Driver, type SchemaFieldGeneric } from '@torm/sqlite'
 
 class SQLBuilder {
   #driver: Driver
