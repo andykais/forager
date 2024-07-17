@@ -19,5 +19,9 @@
     "~/": "./src/",
     // used by the test suite
     "forager": "./src/mod.ts",
+  },
+
+  "exports": {
+    ".": "./src/mod.ts"
   }
 }

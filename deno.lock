@@ -128,6 +128,11 @@
     "https://deno.land/std@0.155.0/testing/asserts.ts": "ac295f7fd22a7af107580e2475402a8c386cb1bf18bf837ae266ac0665786026"
   },
   "workspace": {
+    "dependencies": [
+      "jsr:@std/fs@0.229.3",
+      "jsr:@std/media-types@0.224.0",
+      "jsr:@std/path@1.0.0"
+    ],
     "members": {
       "packages/core": {
         "dependencies": [

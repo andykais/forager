@@ -1,4 +1,4 @@
-import { test } from './lib/util.ts'
+import { test } from '../../../lib/test/lib/util.ts'
 import * as fs from '@std/fs'
 import * as path from '@std/path'
 import { Forager, errors } from '~/mod.ts'
