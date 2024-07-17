@@ -2,8 +2,8 @@ import * as asserts from 'https://deno.land/std@0.155.0/testing/asserts.ts'
 export { expectType as expect_type } from "npm:ts-expect"
 import * as colors from 'jsr:@std/fmt@0.225.4/colors'
 import * as path from '@std/path'
-import { Forager } from '~/mod.ts'
 import { Debugger } from './debugger.ts'
+import { Forager } from '../../../packages/core/src/mod.ts'
 
 type ValueOf<T> = T extends Array<infer V>
   ? V
