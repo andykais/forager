@@ -360,6 +360,24 @@ test('media series', async (ctx) => {
     ]
   })
 
+  await ctx.subtest('series crud operations', () => {
+    // update
+    ctx.assert.equals(cool_art_series.media_reference.title, 'cool art collection')
+    cool_art_series = forager.series.update(cool_art_series.media_reference.id, {}, ['art'])
+    ctx.assert.equals(cool_art_series.media_reference.title, 'cool art collection')
+    ctx.assert.object_match(cool_art_series, {
+      tags: [{name: 'art'}]
+    })
+
+    // ensure it appears in search
+    ctx.assert.search_result(forager.media.search({query: {tags: ['art']}}), {
+      total: 1,
+      result: [
+        {media_type: 'media_series', media_reference: {title: 'cool art collection'}},
+      ]
+    })
+  })
+
   await ctx.subtest('nested series', () => {
     let doodle_series = forager.series.create({title: 'doodles'}, ['doodle_list'])
     forager.series.add({
