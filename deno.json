@@ -1,11 +1,13 @@
 {
   "workspace": [
     "./packages/core",
+    "./packages/cli",
   ],
 
   "imports": {
     "@std/path": "jsr:@std/path@1.0.0",
     "@std/fs": "jsr:@std/fs@0.229.3",
     "@std/media-types": "jsr:@std/media-types@0.224.0",
+    "forager-test": "./lib/test/lib/util.ts"
   }
 }
