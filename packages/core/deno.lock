@@ -1,0 +1,176 @@
+{
+  "version": "3",
+  "packages": {
+    "specifiers": {
+      "jsr:@db/sqlite@0.11": "jsr:@db/sqlite@0.11.1",
+      "jsr:@denosaurs/plug@1": "jsr:@denosaurs/plug@1.0.6",
+      "jsr:@std/assert@^0.217.0": "jsr:@std/assert@0.217.0",
+      "jsr:@std/assert@^0.221.0": "jsr:@std/assert@0.221.0",
+      "jsr:@std/bytes@^1.0.0-rc.3": "jsr:@std/bytes@1.0.0",
+      "jsr:@std/bytes@^1.0.1-rc.3": "jsr:@std/bytes@1.0.2",
+      "jsr:@std/encoding@^0.221.0": "jsr:@std/encoding@0.221.0",
+      "jsr:@std/fmt": "jsr:@std/fmt@0.225.4",
+      "jsr:@std/fmt@0.225.4": "jsr:@std/fmt@0.225.4",
+      "jsr:@std/fmt@^0.221.0": "jsr:@std/fmt@0.221.0",
+      "jsr:@std/fs@0.229.3": "jsr:@std/fs@0.229.3",
+      "jsr:@std/fs@^0.221.0": "jsr:@std/fs@0.221.0",
+      "jsr:@std/io": "jsr:@std/io@0.224.1",
+      "jsr:@std/io@0.224.3": "jsr:@std/io@0.224.3",
+      "jsr:@std/media-types@0.224.0": "jsr:@std/media-types@0.224.0",
+      "jsr:@std/path@0.217": "jsr:@std/path@0.217.0",
+      "jsr:@std/path@1.0.0": "jsr:@std/path@1.0.0",
+      "jsr:@std/path@1.0.0-rc.1": "jsr:@std/path@1.0.0-rc.1",
+      "jsr:@std/path@^0.221.0": "jsr:@std/path@0.221.0",
+      "jsr:@std/semver@0.200.0": "jsr:@std/semver@0.200.0",
+      "jsr:@torm/sqlite@1.4.1": "jsr:@torm/sqlite@1.4.1",
+      "npm:@types/node": "npm:@types/node@18.16.19",
+      "npm:ts-expect": "npm:ts-expect@1.3.0",
+      "npm:zod@3.18.0": "npm:zod@3.18.0",
+      "npm:zod@3.23.8": "npm:zod@3.23.8"
+    },
+    "jsr": {
+      "@db/sqlite@0.11.1": {
+        "integrity": "546434e7ed762db07e6ade0f963540dd5e06723b802937bf260ff855b21ef9c5",
+        "dependencies": [
+          "jsr:@denosaurs/plug@1",
+          "jsr:@std/path@0.217"
+        ]
+      },
+      "@denosaurs/plug@1.0.6": {
+        "integrity": "6cf5b9daba7799837b9ffbe89f3450510f588fafef8115ddab1ff0be9cb7c1a7",
+        "dependencies": [
+          "jsr:@std/encoding@^0.221.0",
+          "jsr:@std/fmt@^0.221.0",
+          "jsr:@std/fs@^0.221.0",
+          "jsr:@std/path@^0.221.0"
+        ]
+      },
+      "@std/assert@0.217.0": {
+        "integrity": "c98e279362ca6982d5285c3b89517b757c1e3477ee9f14eb2fdf80a45aaa9642"
+      },
+      "@std/assert@0.221.0": {
+        "integrity": "a5f1aa6e7909dbea271754fd4ab3f4e687aeff4873b4cef9a320af813adb489a"
+      },
+      "@std/bytes@1.0.0": {
+        "integrity": "9392e72af80adccaa1197912fa19990ed091cb98d5c9c4344b0c301b22d7c632"
+      },
+      "@std/bytes@1.0.2": {
+        "integrity": "fbdee322bbd8c599a6af186a1603b3355e59a5fb1baa139f8f4c3c9a1b3e3d57"
+      },
+      "@std/encoding@0.221.0": {
+        "integrity": "d1dd76ef0dc5d14088411e6dc1dede53bf8308c95d1537df1214c97137208e45"
+      },
+      "@std/fmt@0.221.0": {
+        "integrity": "379fed69bdd9731110f26b9085aeb740606b20428ce6af31ef6bd45ef8efa62a"
+      },
+      "@std/fmt@0.225.4": {
+        "integrity": "584c681cf422b70e28959b57e59012823609c087384cbf12d05f67814797fda3"
+      },
+      "@std/fs@0.221.0": {
+        "integrity": "028044450299de8ed5a716ade4e6d524399f035513b85913794f4e81f07da286",
+        "dependencies": [
+          "jsr:@std/assert@^0.221.0",
+          "jsr:@std/path@^0.221.0"
+        ]
+      },
+      "@std/fs@0.229.3": {
+        "integrity": "783bca21f24da92e04c3893c9e79653227ab016c48e96b3078377ebd5222e6eb",
+        "dependencies": [
+          "jsr:@std/path@1.0.0-rc.1"
+        ]
+      },
+      "@std/io@0.224.1": {
+        "integrity": "73de242551a5c0965eb33e36b1fc7df4834ffbc836a1a643a410ccd11253d6be",
+        "dependencies": [
+          "jsr:@std/bytes@^1.0.0-rc.3"
+        ]
+      },
+      "@std/io@0.224.3": {
+        "integrity": "b402edeb99c6b3778d9ae3e9927bc9085b170b41e5a09bbb7064ab2ee394ae2f",
+        "dependencies": [
+          "jsr:@std/bytes@^1.0.1-rc.3"
+        ]
+      },
+      "@std/media-types@0.224.0": {
+        "integrity": "5ac87989393f8cb1c81bee02aef6f5d4c8289b416deabc04f9ad25dff292d0b0"
+      },
+      "@std/path@0.217.0": {
+        "integrity": "1217cc25534bca9a2f672d7fe7c6f356e4027df400c0e85c0ef3e4343bc67d11",
+        "dependencies": [
+          "jsr:@std/assert@^0.217.0"
+        ]
+      },
+      "@std/path@0.221.0": {
+        "integrity": "0a36f6b17314ef653a3a1649740cc8db51b25a133ecfe838f20b79a56ebe0095",
+        "dependencies": [
+          "jsr:@std/assert@^0.221.0"
+        ]
+      },
+      "@std/path@1.0.0": {
+        "integrity": "77fcb858b6e38777d1154df0f02245ba0b07e2c40ca3c0eec57c9233188c2d21"
+      },
+      "@std/path@1.0.0-rc.1": {
+        "integrity": "b8c00ae2f19106a6bb7cbf1ab9be52aa70de1605daeb2dbdc4f87a7cbaf10ff6"
+      },
+      "@std/semver@0.200.0": {
+        "integrity": "24dbcf555b801a84c2cb7f07e0634cb971fb148f1a9576543f0b0009386469d4"
+      },
+      "@torm/sqlite@1.4.1": {
+        "integrity": "0657b3aeb4fe87de2f9d2c5afd6284c10f7db4769992de575d0b8edbe963b06e",
+        "dependencies": [
+          "jsr:@db/sqlite@0.11",
+          "jsr:@std/semver@0.200.0",
+          "npm:zod@3.18.0"
+        ]
+      }
+    },
+    "npm": {
+      "@types/node@18.16.19": {
+        "integrity": "sha512-IXl7o+R9iti9eBW4Wg2hx1xQDig183jj7YLn8F7udNceyfkbn1ZxmzZXuak20gR40D7pIkIY1kYGx5VIGbaHKA==",
+        "dependencies": {}
+      },
+      "ts-expect@1.3.0": {
+        "integrity": "sha512-e4g0EJtAjk64xgnFPD6kTBUtpnMVzDrMb12N1YZV0VvSlhnVT3SGxiYTLdGy8Q5cYHOIC/FAHmZ10eGrAguicQ==",
+        "dependencies": {}
+      },
+      "zod@3.18.0": {
+        "integrity": "sha512-gwTm8RfUCe8l9rDwN5r2A17DkAa8Ez4Yl4yXqc5VqeGaXaJahzYYXbTwvhroZi0SNBqTwh/bKm2N0mpCzuw4bA==",
+        "dependencies": {}
+      },
+      "zod@3.23.8": {
+        "integrity": "sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==",
+        "dependencies": {}
+      }
+    }
+  },
+  "remote": {
+    "https://deno.land/std@0.155.0/fmt/colors.ts": "ff7dc9c9f33a72bd48bc24b21bbc1b4545d8494a431f17894dbc5fe92a938fc4",
+    "https://deno.land/std@0.155.0/testing/_diff.ts": "a23e7fc2b4d8daa3e158fa06856bedf5334ce2a2831e8bf9e509717f455adb2c",
+    "https://deno.land/std@0.155.0/testing/_format.ts": "cd11136e1797791045e639e9f0f4640d5b4166148796cad37e6ef75f7d7f3832",
+    "https://deno.land/std@0.155.0/testing/asserts.ts": "ac295f7fd22a7af107580e2475402a8c386cb1bf18bf837ae266ac0665786026",
+    "https://raw.githubusercontent.com/andykais/torm/96807fac75f5a993d66d2c026b25d220e2c984ec/drivers/sqlite.ts": "9559bfdf6b314ed6e1eb5072fcf00b2f7ce0a07f90d6703cb9c1c1a359777b0f",
+    "https://raw.githubusercontent.com/andykais/torm/96807fac75f5a993d66d2c026b25d220e2c984ec/src/deps.ts": "3609c3aaf3cf4af84031d3d827f86b526f2dddeb45e5b1b89be0ef5f21765725",
+    "https://raw.githubusercontent.com/andykais/torm/96807fac75f5a993d66d2c026b25d220e2c984ec/src/errors.ts": "deaf8a7fe6ec3650ee7b6cdfae352418d055a99596287bf6aeff909d82740a97",
+    "https://raw.githubusercontent.com/andykais/torm/96807fac75f5a993d66d2c026b25d220e2c984ec/src/field.ts": "81d07824f66d962584d4e8116863361ff2467a8d235ce690ae3c860a694596fd",
+    "https://raw.githubusercontent.com/andykais/torm/96807fac75f5a993d66d2c026b25d220e2c984ec/src/migration.ts": "fa8b575a517e4351d268bc041b566135afa32a2b30482f06f7693a48d26d86d2",
+    "https://raw.githubusercontent.com/andykais/torm/96807fac75f5a993d66d2c026b25d220e2c984ec/src/mod.ts": "95cc1f40912ed07d62b411099e44075304c50ddeb800dc70c4bf16373e468a5e",
+    "https://raw.githubusercontent.com/andykais/torm/96807fac75f5a993d66d2c026b25d220e2c984ec/src/model.ts": "15a17a3906084c1ee0430eb6ae7d1538d19085a9cf2e981996b776d4fb667d83",
+    "https://raw.githubusercontent.com/andykais/torm/96807fac75f5a993d66d2c026b25d220e2c984ec/src/query.ts": "a6d82b606f8da9be900899d86c8008c1d6156451f3639790a0bccea47adab90b",
+    "https://raw.githubusercontent.com/andykais/torm/96807fac75f5a993d66d2c026b25d220e2c984ec/src/schema.ts": "d71dec5d51d6941a9ac053e4a6a9dc2848799347c6597813a1460d5b5d567340",
+    "https://raw.githubusercontent.com/andykais/torm/96807fac75f5a993d66d2c026b25d220e2c984ec/src/statement.ts": "41323eb6ec1735e792297b9488fad50fe642df1dcc3294468d5bb9ee4d72abc2",
+    "https://raw.githubusercontent.com/andykais/torm/96807fac75f5a993d66d2c026b25d220e2c984ec/src/static_registry_decorator.ts": "457d6c6375e4007c1966d201b851a9d02c35a81d1617226f7c4782ee24f95fe5",
+    "https://raw.githubusercontent.com/andykais/torm/96807fac75f5a993d66d2c026b25d220e2c984ec/src/torm.ts": "5dd28d31003527b9199e1b796628c8934beae22e92654ff5335b6c42b06d4867",
+    "https://raw.githubusercontent.com/andykais/torm/96807fac75f5a993d66d2c026b25d220e2c984ec/src/util.ts": "083f6c5331b2dd8d1e0762c0fd5fcc3bac662d1ac395602d47ddf00f810efd11"
+  },
+  "workspace": {
+    "dependencies": [
+      "jsr:@std/fmt@0.225.6",
+      "jsr:@std/fs@0.229.3",
+      "jsr:@std/media-types@0.224.0",
+      "jsr:@std/path@1.0.0",
+      "jsr:@torm/sqlite@1.4.1",
+      "npm:ts-pattern@5.2.0",
+      "npm:zod@3.23.8"
+    ]
+  }
+}
