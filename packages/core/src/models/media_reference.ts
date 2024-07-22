@@ -88,6 +88,7 @@ class MediaReference extends Model {
     id: number | undefined
     series_id: number| undefined
     tag_ids: number[] | undefined
+    keypoint_tag_id: number | undefined
     limit: number | undefined
     cursor: number | undefined
     sort_by: 'created_at' | 'updated_at' | 'source_created_at' | 'view_count'
@@ -180,6 +181,15 @@ SELECT media_reference.*, cursor_id FROM (
         .add_where_clause(`tag.id IN (${tag_ids_str})`)
         .add_group_clause('GROUP BY media_reference.id')
         .add_group_clause(`HAVING COUNT(tag.id) >= ${params.tag_ids.length}`)
+    }
+
+    if (params.keypoint_tag_id !== undefined) {
+      count_builder
+        .add_join_clause(`INNER JOIN media_keypoint ON media_keypoint.media_reference_id = media_reference.id`)
+        .add_where_clause(`media_keypoint.tag_id = ${params.keypoint_tag_id}`)
+      records_builder
+        .add_join_clause(`INNER JOIN media_keypoint ON media_keypoint.media_reference_id = media_reference.id`)
+        .add_where_clause(`media_keypoint.tag_id = ${params.keypoint_tag_id}`)
     }
 
     if (params.stars !== undefined) {

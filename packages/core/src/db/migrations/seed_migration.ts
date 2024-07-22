@@ -45,6 +45,7 @@ export class Migration extends torm.SeedMigration {
     CREATE TABLE media_thumbnail (
       id INTEGER PRIMARY KEY NOT NULL,
       media_timestamp FLOAT NOT NULL,
+      kind TEXT NOT NULL CHECK( kind IN ('standard', 'keypoint') ),
       media_file_id INTEGER NOT NULL,
       filepath TEXT NOT NULL UNIQUE,
       updated_at ${TIMESTAMP_COLUMN},

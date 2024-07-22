@@ -49,6 +49,7 @@ class Assertions {
   rejects = asserts.assertRejects
   throws = asserts.assertThrows
   object_match = asserts.assertObjectMatch
+  list_includes = asserts.assertArrayIncludes
   search_result(search_result: ForagerMediaSearchResult, assertions: SearchResultAssertions) {
     if (assertions.total) {
       this.equals(search_result.total, assertions.total)
@@ -66,11 +67,17 @@ class Assertions {
       })
     }
   }
-  list_partial(actual_list: any[], expected_list: any[]) {
+  list_partial<T extends object>(actual_list: T[], expected_list: Partial<T>[], sort_fn?: (a: T, b: T) => number) {
     this.equals(actual_list.length, expected_list.length, `Expected list length to be ${actual_list.length} but is actually ${expected_list.length}`)
-    const actual_list_sorted = [...actual_list].sort((a, b) => a - b)
-    const expected_list_sorted = [...actual_list].sort((a, b) => a - b)
-    this.object_match(actual_list_sorted as any, expected_list_sorted as any)
+    const expected_list_keys = expected_list.map(item => Object.keys(item))
+    for (const expected_keys of expected_list_keys) this.equals(expected_keys, expected_list_keys[0], 'list_partial must supply the same keys for each element')
+    const expected_keys = expected_list_keys[0]
+    let massaged_actual_list = actual_list.map(item => {
+      const partial_entries = Object.entries(item).filter(entry => expected_keys.includes(entry[0]))
+      return Object.fromEntries(partial_entries)
+    })
+    if (sort_fn) massaged_actual_list = massaged_actual_list.sort(sort_fn as any)
+    this.equals(massaged_actual_list as any, expected_list as any)
   }
 }
 
