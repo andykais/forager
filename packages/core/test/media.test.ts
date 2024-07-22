@@ -274,7 +274,7 @@ test('media actions', async (ctx) => {
 })
 
 
-test.only('video media', async ctx => {
+test('video media', async ctx => {
   const database_path = ctx.create_fixture_path('forager.db')
   const thumbnail_folder = ctx.create_fixture_path('thumbnails')
   using forager = new Forager({ database_path, thumbnail_folder })
@@ -338,6 +338,39 @@ test.only('video media', async ctx => {
     // just documenting some weird floating point arithmetic here, if we use a non js language to ingest this keypoint data, things might not work as expected
     ctx.assert.equals(4.7 + 0.39999999999999947, 5.1)
     ctx.assert.equals(bite_keypoint.media_timestamp, 4.7)
+  })
+
+  await ctx.subtest('keypoint thumbnail generation', async () => {
+    const checksums = {
+      cronch: '92a575edcc4c5b5b4dd2b3b0908aded951b8c022e0c85ecd6a5a78a4f30fefce',
+    }
+    const cronch_thumbnails_folder = path.join(thumbnail_folder, '92', checksums.cronch)
+    const read_thumbnails = await Array.fromAsync(fs.walk(cronch_thumbnails_folder))
+    const read_thumbnails_sorted = read_thumbnails.map(entry => entry.path).sort((a,b) => a.localeCompare(b))
+    ctx.assert.equals(read_thumbnails_sorted, [
+      cronch_thumbnails_folder,
+      path.join(cronch_thumbnails_folder, '0001.jpg'),
+      path.join(cronch_thumbnails_folder, '0002.jpg'),
+      path.join(cronch_thumbnails_folder, '0003.jpg'),
+      path.join(cronch_thumbnails_folder, '0004.jpg'),
+      path.join(cronch_thumbnails_folder, '0005.jpg'),
+      path.join(cronch_thumbnails_folder, '0006.jpg'),
+      path.join(cronch_thumbnails_folder, '0007.jpg'),
+      path.join(cronch_thumbnails_folder, '0008.jpg'),
+      path.join(cronch_thumbnails_folder, '0009.jpg'),
+      path.join(cronch_thumbnails_folder, '0010.jpg'),
+      path.join(cronch_thumbnails_folder, '0011.jpg'),
+      path.join(cronch_thumbnails_folder, '0012.jpg'),
+      path.join(cronch_thumbnails_folder, '0013.jpg'),
+      path.join(cronch_thumbnails_folder, '0014.jpg'),
+      path.join(cronch_thumbnails_folder, '0015.jpg'),
+      path.join(cronch_thumbnails_folder, '0016.jpg'),
+      path.join(cronch_thumbnails_folder, '0017.jpg'),
+      path.join(cronch_thumbnails_folder, '0018.jpg'),
+      path.join(cronch_thumbnails_folder, 'keypoints'),
+      path.join(cronch_thumbnails_folder, 'keypoints', '0004.7.jpg'),
+      path.join(cronch_thumbnails_folder, 'keypoints', '0005.2.jpg'),
+    ])
   })
 })
 

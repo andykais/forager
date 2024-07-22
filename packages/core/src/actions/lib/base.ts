@@ -97,6 +97,7 @@ class Actions {
       // copy the thumbnails into the configured folder (we wait until the database writes to do this to keep the generated thumbnail folder clean)
       // add the storage folder checksum here to merge the new files into whatever files already exist in that directory
       await fs.copy(thumbnails.source_folder, thumbnails.destination_folder)
+      await Deno.remove(thumbnails.source_folder, {recursive: true})
       return { media_reference, tags, media_file }
     })
 
