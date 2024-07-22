@@ -11,6 +11,10 @@ on:
 env:
   DENO_DIR: deno_dependency_cache
 
+defaults:
+  run:
+    working-directory: './packages/core/'
+
 
 jobs:
   test:
