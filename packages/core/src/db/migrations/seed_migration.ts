@@ -53,6 +53,19 @@ export class Migration extends torm.SeedMigration {
       FOREIGN KEY (media_file_id) REFERENCES media_file(id)
     );
 
+    CREATE TABLE media_keypoint (
+      id INTEGER PRIMARY KEY NOT NULL,
+      media_timestamp FLOAT NOT NULL,
+      duration FLOAT NOT NULL,
+      media_reference_id INTEGER NOT NULL,
+      tag_id INTEGER NOT NULL,
+      updated_at ${TIMESTAMP_COLUMN},
+      created_at ${TIMESTAMP_COLUMN},
+
+      FOREIGN KEY (media_reference_id) REFERENCES media_reference(id)
+      FOREIGN KEY (tag_id) REFERENCES tag(id)
+    );
+
     CREATE TABLE media_series_item (
       id INTEGER PRIMARY KEY NOT NULL,
       media_reference_id INTEGER NOT NULL,

@@ -274,13 +274,13 @@ test('media actions', async (ctx) => {
 })
 
 
-test('video media', async ctx => {
+test.only('video media', async ctx => {
   const database_path = ctx.create_fixture_path('forager.db')
   const thumbnail_folder = ctx.create_fixture_path('thumbnails')
   using forager = new Forager({ database_path, thumbnail_folder })
   forager.init()
 
-  const media_cronch = await forager.media.create(ctx.resources.media_files['cat_cronch.mp4'], {}, ['cat'])
+  let media_cronch = await forager.media.create(ctx.resources.media_files['cat_cronch.mp4'], {}, ['cat'])
   // ensure we have the exact right amount
   ctx.assert.equals(media_cronch.thumbnails.total, 18)
   ctx.assert.equals(media_cronch.thumbnails.result.length, 1)
@@ -316,6 +316,29 @@ test('video media', async ctx => {
   ctx.assert.equals(media_cronch_thumbnails_all.at(0)?.media_timestamp, 0)
   ctx.assert.equals(media_cronch_thumbnails_all.at(-1)?.media_timestamp! > 0, true)
   ctx.assert.equals(media_cronch_thumbnails_all.at(-1)?.media_timestamp! < media_cronch.media_file.duration, true)
+
+  await ctx.subtest('keypoints', async () => {
+    // media_cronch = await forager.media.update(media_cronch.media_reference.id, {}, [])
+    // media_cronch = await forager.media.keypoints(media_cronch.media_reference.id, {'add': [{tag: 'crunch', timestamp: 1.4}]})
+    const sound_byte_keypoint = await forager.keypoints.create({
+      media_reference_id: media_cronch.media_reference.id,
+      tag: 'sound_byte',
+      start_timestamp: 5.200
+    })
+    ctx.assert.equals(sound_byte_keypoint.duration, 0)
+    ctx.assert.equals(sound_byte_keypoint.media_timestamp, 5.2)
+
+    const bite_keypoint = await forager.keypoints.create({
+      media_reference_id: media_cronch.media_reference.id,
+      tag: 'bite',
+      start_timestamp: 4.700,
+      end_timestamp: 5.100,
+    })
+    ctx.assert.equals(bite_keypoint.duration, 0.39999999999999947)
+    // just documenting some weird floating point arithmetic here, if we use a non js language to ingest this keypoint data, things might not work as expected
+    ctx.assert.equals(4.7 + 0.39999999999999947, 5.1)
+    ctx.assert.equals(bite_keypoint.media_timestamp, 4.7)
+  })
 })
 
 
