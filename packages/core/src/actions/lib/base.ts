@@ -1,3 +1,4 @@
+import z from 'zod'
 import type { Context } from '~/context.ts'
 import * as fs from '@std/fs'
 import * as path from '@std/path'
@@ -76,11 +77,7 @@ class Actions {
       })!
 
       for (const tag of parsed.tags) {
-        const group = tag.group ?? ''
-        // const color = get_hash_color(group, 'hsl')
-        const color = ''
-        const tag_group = this.models.TagGroup.get_or_create({ name: group, color })!
-        const tag_record = this.models.Tag.get_or_create({ alias_tag_id: null, name: tag.name, tag_group_id: tag_group.id, description: tag.description, metadata: tag.metadata })
+        const tag_record = this.tag_create(tag)
         this.models.MediaReferenceTag.create({ media_reference_id: media_reference.id, tag_id: tag_record.id })
       }
 
@@ -112,6 +109,15 @@ class Actions {
     const creation_duration = performance.now() - start_time
     this.ctx.logger.info(`Created ${parsed.filepath} (type: ${output_result.media_file.media_type} size: ${fmt_bytes.format(output_result.media_file.file_size_bytes)}) in ${fmt_duration.format(creation_duration, {ignoreZero: true})}`)
     return output_result
+  }
+
+  protected tag_create(tag: z.output<typeof parsers.Tag>) {
+    const group = tag.group ?? ''
+    // const color = get_hash_color(group, 'hsl')
+    const color = ''
+    const tag_group = this.models.TagGroup.get_or_create({ name: group, color })!
+    const tag_record = this.models.Tag.get_or_create({ alias_tag_id: null, name: tag.name, tag_group_id: tag_group.id, description: tag.description, metadata: tag.metadata })
+    return tag_record
   }
 
   protected get_media_file_result(params: {

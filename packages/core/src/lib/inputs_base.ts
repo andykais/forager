@@ -16,5 +16,7 @@ export const PaginatedQuery = z.object({
 }).strict()
 
 
+export const Timestamp = z.number()
+
 
 export const StringDateTime = z.string().transform(date_str => Temporal.PlainDate.from(date_str))
