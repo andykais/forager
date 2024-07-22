@@ -72,6 +72,7 @@ class FileProcessor {
   #THUMBNAILS_NUM_CAPTURED_FRAMES = 18
   #THUMBNAILS_MAX_WIDTH = 500
   #THUMBNAILS_MAX_HEIGHT = 500
+  #THUMBNAILS_FILENAME_ZERO_PAD_SIZE = 4
 
   #ctx: Context
   #decoder: TextDecoder
@@ -176,7 +177,7 @@ class FileProcessor {
     const preview_position = file_info.duration > 1 ? file_info.duration * 0.25 : 0
 
     const tmp_folder = await Deno.makeTempDir({prefix: 'forager-thumbnails-'})
-    const tmp_thumbnail_filepath = path.join(tmp_folder, '%04d.jpg')
+    const tmp_thumbnail_filepath = path.join(tmp_folder, `%0${this.#THUMBNAILS_FILENAME_ZERO_PAD_SIZE}d.jpg`)
 
     const thumbnail_timestamps: number[] = []
     let expected_thumbnail_count = 0
@@ -227,6 +228,9 @@ class FileProcessor {
           // we should better understand what that happens so we dont need this flag
           '-frames:v', `${this.#THUMBNAILS_NUM_CAPTURED_FRAMES}`,
           '-f', 'image2',
+          // NOTE another option for reading the output timestamps is writing one of these files
+          // the upside of not doing this is less file management. The downside is brittle regex parsing
+          // '-stats_enc_post:v', './stream-data.txt',
           tmp_thumbnail_filepath
         ],
         stdout: 'null',
@@ -255,18 +259,78 @@ class FileProcessor {
       throw new errors.UnExpectedError()
     }
 
+    if (thumbnail_timestamps.length !== expected_thumbnail_count) {
+      throw new Error(`thumbnail generation error. Expected ${expected_thumbnail_count} thumbnail timestamps, but ${thumbnail_timestamps.length} thumbnail timestamps were found [\n  ${thumbnail_timestamps.join('\n  ')}\n]`)
+    }
+    const thumbnail_destination_folder = path.join(this.#ctx.config.thumbnail_folder, this.get_storage_folder(checksum))
+    return this.#assert_thumbnail_generation(tmp_folder, thumbnail_destination_folder, thumbnail_timestamps)
+  }
+
+  public async create_thumbnails_at_timestamp(file_info: FileInfo, checksum: string, timestamp: number): Promise<Thumbnails> {
+    if (file_info.media_type !== 'VIDEO') {
+      throw new errors.UnExpectedError(`Can only generate thumbnail at timestamp for 'VIDEO' media. Received ${file_info.media_type} media`)
+    }
+    const [timestamp_integer, timestamp_decimal] = timestamp.toString().split('.')
+    const timestamp_str_parts = [timestamp_integer.padStart(this.#THUMBNAILS_FILENAME_ZERO_PAD_SIZE, '0')]
+    if (timestamp_decimal !== undefined) timestamp_str_parts.push(timestamp_decimal)
+    const thumbnail_filename = `${timestamp_str_parts.join('.')}.jpg`
+    const tmp_folder = await Deno.makeTempDir({prefix: 'forager-thumbnails-'})
+    const tmp_thumbnail_filepath = path.join(tmp_folder, thumbnail_filename)
+    const max_width_or_height = this.#calculate_max_thumbnail_size(file_info)
+    const cmd = new Deno.Command('ffmpeg', {
+      args: [
+        '-v', 'info',
+        '-ss', timestamp.toString(),
+        // '-an', // As an input option, blocks all audio streams of a file from being filtered or being  automatically  selected or mapped for any output.
+        '-i', this.#filepath,
+        '-vf', [
+          `scale=${max_width_or_height}`,
+          'showinfo',
+        ].join(','),
+        '-update', '1',
+        '-frames:v', '1',
+        '-f', 'image2',
+        tmp_thumbnail_filepath
+      ],
+      stdout: 'null',
+      stderr: 'null',
+    })
+    const status = await cmd.output()
+    if (!status.success) {
+      throw new errors.SubprocessError({} as any, 'generating thumbnails failed')
+    }
+
+    // we cannot parse output timestamps from ffmpeg when using `-ss`
+    const thumbnail_timestamps = [timestamp]
+    const thumbnail_destination_folder = path.join(this.#ctx.config.thumbnail_folder, this.get_storage_folder(checksum), 'keypoints')
+
+    return this.#assert_thumbnail_generation(tmp_folder, thumbnail_destination_folder, thumbnail_timestamps)
+  }
+
+  #calculate_max_thumbnail_size(file_info: FileInfo) {
+    if (file_info.media_type === 'AUDIO') {
+      throw new errors.UnExpectedError(`Cannot calculate max thumbnaul size for media type 'AUDIO'`)
+    }
+
+    const { width, height } = file_info
+    const max_width_or_height = width > height
+      ? `${this.#THUMBNAILS_MAX_WIDTH}x${Math.floor((height*this.#THUMBNAILS_MAX_HEIGHT)/width)}`
+      : `${Math.floor((width*this.#THUMBNAILS_MAX_WIDTH)/height)}x${this.#THUMBNAILS_MAX_WIDTH}`
+
+    return max_width_or_height
+  }
+
+  async #assert_thumbnail_generation(tmp_folder: string, thumbnail_destination_folder: string, thumbnail_timestamps: number[]) {
     // assert that ffmpeg did what we expect
     const read_thumbnails = await Array.fromAsync(Deno.readDir(tmp_folder))
     const tmp_thumbnail_filepaths = read_thumbnails.map(entry => path.join(tmp_folder, entry.name))
 
-    if (thumbnail_timestamps.length !== expected_thumbnail_count) {
-      throw new Error(`thumbnail generation error. Expected ${expected_thumbnail_count} thumbnail timestamps, but ${thumbnail_timestamps.length} thumbnail timestamps were found [\n  ${thumbnail_timestamps.join('\n  ')}\n]`)
-    }
+    const expected_thumbnail_count = thumbnail_timestamps.length
+
     if (tmp_thumbnail_filepaths.length !== expected_thumbnail_count) {
       throw new Error(`thumbnail generation error. Expected ${expected_thumbnail_count} thumbnail files, but ${tmp_thumbnail_filepaths.length} thumbnails were generated [\n  ${tmp_thumbnail_filepaths.join('\n  ')}\n]`)
     }
 
-    const thumbnail_destination_folder = path.join(this.#ctx.config.thumbnail_folder, this.get_storage_folder(checksum))
     return {
       source_folder: tmp_folder,
       destination_folder: thumbnail_destination_folder,
