@@ -9,6 +9,7 @@ export type MediaThumbnail = InferSchemaTypes<typeof models.MediaThumbnail.resul
 export type Tag = InferSchemaTypes<typeof models.Tag.result>
 export type TagGroup = InferSchemaTypes<typeof models.TagGroup.result>
 export type MediaKeypoint = InferSchemaTypes<typeof models.MediaKeypoint.result>
+export type View = InferSchemaTypes<typeof models.View.result>
 
 export type PaginatedResult<T> = {
   cursor: number | undefined

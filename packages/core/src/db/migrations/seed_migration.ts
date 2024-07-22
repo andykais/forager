@@ -154,6 +154,19 @@ export class Migration extends torm.SeedMigration {
       tag_count INTEGER NOT NULL DEFAULT 0
     );
 
+    CREATE TABLE view (
+      id INTEGER PRIMARY KEY NOT NULL,
+      media_reference_id INTEGER NOT NULL,
+      start_timestamp FLOAT NOT NULL,
+      end_timestamp FLOAT,
+      num_loops INTEGER NOT NULL,
+      duration FLOAT NOT NULL,
+      updated_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
+      created_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
+
+      FOREIGN KEY (media_reference_id) REFERENCES media_reference(id)
+    );
+
 
     CREATE TABLE forager (
       -- id INTEGER PRIMARY KEY NOT NULL,
