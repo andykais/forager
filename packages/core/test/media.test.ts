@@ -654,3 +654,46 @@ test('filesystem discovery', async (ctx) => {
   // windows currently doesnt support glob syntax, so for the time being lets just disable filesystem discovery in the windows test suite
   // gh issue: https://github.com/denoland/deno_std/issues/5434
 }, {skip: {os: 'windows'}})
+
+
+test('views', async (ctx) => {
+  const database_path = ctx.create_fixture_path('forager.db')
+  const thumbnail_folder = ctx.create_fixture_path('thumbnails')
+  using forager = new Forager({ database_path, thumbnail_folder })
+  forager.init()
+
+  const media_generated_art = await forager.media.create(ctx.resources.media_files['koch.tif'], {title: 'Generated Art'}, [])
+  const media_cartoon = await forager.media.create(ctx.resources.media_files["ed-edd-eddy.png"], {title: 'Ed Edd Eddy Screengrab'}, ['cartoon', 'wallpaper'])
+  const media_doodle = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {title: 'Cat Doodle'}, [])
+
+  let cartoon_view = forager.views.start({
+    media_reference_id: media_cartoon.media_reference.id,
+  })
+  ctx.assert.object_match(cartoon_view, {
+    media_reference_id: media_cartoon.media_reference.id,
+    // a image view is fairly uninteresting. None of these will change over the lifetime of the view
+    start_timestamp: 0,
+    duration: 0,
+    end_timestamp: null,
+    num_loops: 0,
+  })
+
+  cartoon_view = forager.views.update({
+    view_id: cartoon_view.id,
+    view_duration: 5
+  })
+  ctx.assert.object_match(cartoon_view, {
+    media_reference_id: media_cartoon.media_reference.id,
+    start_timestamp: 0,
+    duration: 5,
+    end_timestamp: null,
+    num_loops: 0,
+  })
+
+  // we cant set animated-only field on an image
+  ctx.assert.throws(() => forager.views.update({
+    view_id: cartoon_view.id,
+    view_duration: 6,
+    start_timestamp: 2,
+  }), errors.BadInputError)
+})

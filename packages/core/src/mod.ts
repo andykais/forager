@@ -16,6 +16,7 @@ class Forager {
   public series: actions.SeriesActions
   public filesystem: actions.FileSystemActions
   public keypoints: actions.KeypointActions
+  public views: actions.ViewActions
   #ctx: Context
 
   public constructor(config: ForagerConfig) {
@@ -25,6 +26,7 @@ class Forager {
     this.series = new actions.SeriesActions(this.#ctx)
     this.filesystem = new actions.FileSystemActions(this.#ctx)
     this.keypoints = new actions.KeypointActions(this.#ctx)
+    this.views = new actions.ViewActions(this.#ctx)
   }
 
   public init() {
