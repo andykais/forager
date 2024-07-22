@@ -46,8 +46,8 @@ class KeypointActions extends Actions {
         kind: 'keypoint',
         media_timestamp: thumbnail.timestamp,
       })
-      await fs.move(thumbnail.source_filepath, thumbnail.destination_filepath, {overwrite: true})
-      await Deno.remove(thumbnails.source_folder)
+      await fs.copy(thumbnail.source_filepath, thumbnail.destination_filepath, {overwrite: true})
+      await Deno.remove(thumbnails.source_folder, {recursive: true})
 
       return keypoint
     })
