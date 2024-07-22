@@ -9,6 +9,11 @@ export const Filepath = z.string()
 export const MediaReferenceId = z.number()
 
 
+export const MediaReferenceGet = z.object({
+  media_reference_id: MediaReferenceId,
+})
+
+
 export const MediaInfo = z.object({
   title: z.string().optional(),
   description: z.string().optional(),
@@ -27,6 +32,7 @@ export const PaginatedSearch = PaginatedQuery.extend({
     directory: z.string().optional(),
     media_reference_id: z.number().optional(),
     tags: z.array(Tag).optional(),
+    keypoint: Tag.optional(),
     stars: z.number().gte(0).lte(5).optional(),
     stars_equality: z.enum(['gte', 'eq']).default(('gte')),
     unread: z.boolean().default(false),

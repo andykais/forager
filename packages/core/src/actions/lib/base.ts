@@ -1,11 +1,11 @@
-import z from 'zod'
+import type z from 'zod'
 import type { Context } from '~/context.ts'
 import * as fs from '@std/fs'
 import * as path from '@std/path'
 import * as fmt_bytes from 'jsr:@std/fmt/bytes'
 import * as fmt_duration from 'jsr:@std/fmt/duration'
-import { inputs, parsers } from '~/inputs/mod.ts'
-import * as result_types from '~/models/lib/result_types.ts'
+import { type inputs, parsers } from '~/inputs/mod.ts'
+import type * as result_types from '~/models/lib/result_types.ts'
 import { FileProcessor } from '~/lib/file_processor.ts'
 import * as errors from '~/lib/errors.ts'
 
@@ -23,6 +23,8 @@ export interface MediaFileResponse {
   tags: result_types.Tag[]
   thumbnails: result_types.PaginatedResult<result_types.MediaThumbnail>
 }
+
+export type MediaResponse = MediaFileResponse | MediaSeriesResponse
 
 class Actions {
   protected ctx: Context
@@ -90,6 +92,7 @@ class Actions {
         this.models.MediaThumbnail.create({
           media_file_id: media_file.id,
           filepath: thumbnail.destination_filepath,
+          kind: 'standard',
           media_timestamp: thumbnail.timestamp,
         })
       }
@@ -110,6 +113,26 @@ class Actions {
     const creation_duration = performance.now() - start_time
     this.ctx.logger.info(`Created ${parsed.filepath} (type: ${output_result.media_file.media_type} size: ${fmt_bytes.format(output_result.media_file.file_size_bytes)}) in ${fmt_duration.format(creation_duration, {ignoreZero: true})}`)
     return output_result
+  }
+
+  protected media_get(params: {
+    media_reference_id: number,
+    thumbnail_limit: number
+  }): MediaResponse {
+    const { media_reference_id, thumbnail_limit } = params
+    const media_reference = this.models.MediaReference.select_one({id: media_reference_id}, {or_raise: true})
+    if (media_reference.media_series_reference) {
+      throw new Error('unimplemented')
+    } else {
+      const media_file = this.models.MediaFile.select_one({media_reference_id: media_reference_id}, {or_raise: true})
+      return {
+        media_type: 'media_file',
+        media_reference,
+        media_file,
+        tags: this.models.Tag.select_many({media_reference_id: media_reference_id}),
+        thumbnails: this.models.MediaThumbnail.select_many({media_file_id: media_file.id, limit: thumbnail_limit}),
+      }
+    }
   }
 
   protected tag_create(tag: z.output<typeof parsers.Tag>) {

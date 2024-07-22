@@ -2,6 +2,7 @@ import * as fs from '@std/fs'
 import { Actions } from '~/actions/lib/base.ts'
 import { type inputs, parsers } from '~/inputs/mod.ts'
 import { FileProcessor } from '~/lib/file_processor.ts'
+import * as errors from '~/lib/errors.ts'
 
 
 class KeypointActions extends Actions {
@@ -19,6 +20,10 @@ class KeypointActions extends Actions {
 
     const transaction = this.ctx.db.transaction_async(async () => {
       const tag_record = this.tag_create(parsed.tag)
+      // creating a keypoint implicitly adds a linked tag
+      // TODO handle multiple keypoints with the same tag
+      this.models.MediaReferenceTag.create({ media_reference_id: media_reference.id, tag_id: tag_record.id })
+
       let duration = 0
       if (params.end_timestamp !== undefined) {
         // NOTE its possible that we are storing a 'lossy' version of the end timestamp by storing it as duration
@@ -38,6 +43,7 @@ class KeypointActions extends Actions {
       this.models.MediaThumbnail.create({
         media_file_id: media_file.id,
         filepath: thumbnail.destination_filepath,
+        kind: 'keypoint',
         media_timestamp: thumbnail.timestamp,
       })
       await fs.move(thumbnail.source_filepath, thumbnail.destination_filepath, {overwrite: true})

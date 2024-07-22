@@ -9,6 +9,7 @@ class MediaThumbnail extends Model {
     media_file_id:   field.number(),
     filepath:        field.string(),
     media_timestamp: field.number(),
+    kind:            field.string(),  // TODO add enum support ('standard', 'keypoint')
     updated_at:      field.datetime(),
     created_at:      field.datetime(),
   })
@@ -19,11 +20,13 @@ class MediaThumbnail extends Model {
     INSERT INTO media_thumbnail (
       media_file_id,
       filepath,
+      kind,
       media_timestamp
     )
     VALUES (${[
       MediaThumbnail.params.media_file_id,
       MediaThumbnail.params.filepath,
+      MediaThumbnail.params.kind,
       MediaThumbnail.params.media_timestamp,
     ]})
     RETURNING ${MediaThumbnail.result.id}`
@@ -35,6 +38,13 @@ class MediaThumbnail extends Model {
   #select_by_media_file_id = this.query`
     SELECT ${MediaThumbnail.result['*']} FROM media_thumbnail
     WHERE media_file_id = ${MediaThumbnail.params.media_file_id}
+    ORDER BY media_timestamp
+    LIMIT ${PaginationVars.params.limit}`
+
+  #select_by_media_file_id_and_timestamp = this.query`
+    SELECT ${MediaThumbnail.result['*']} FROM media_thumbnail
+    WHERE media_file_id = ${MediaThumbnail.params.media_file_id}
+      AND media_timestamp >= ${MediaThumbnail.params.media_timestamp}
     ORDER BY media_timestamp
     LIMIT ${PaginationVars.params.limit}`
 
@@ -67,15 +77,18 @@ class MediaThumbnail extends Model {
   public select_many(params: {
     media_file_id?: number
     series_id?: number
+    keypoint_timestamp?: number
     limit: number
   }): PaginatedResult<torm.InferSchemaTypes<typeof MediaThumbnail.result>> {
-    const { media_file_id, series_id, limit } = params
+    const { media_file_id, series_id, keypoint_timestamp, limit } = params
 
     if (media_file_id && series_id) {
       throw new errors.BadInputError(`Cannot supply both media_file_id & series_id`)
     } else if (media_file_id !== undefined) {
       const { total } = this.#count_by_media_file_id({ media_file_id })!
-      const rows = this.#select_by_media_file_id.all({ media_file_id, limit })
+      const rows = keypoint_timestamp === undefined
+        ? this.#select_by_media_file_id.all({ media_file_id, limit })
+        : this.#select_by_media_file_id_and_timestamp.all({ media_file_id, limit, media_timestamp: keypoint_timestamp })
       return {
         total,
         result: rows,
@@ -83,6 +96,9 @@ class MediaThumbnail extends Model {
         cursor: undefined
       }
     } else if (series_id !== undefined) {
+      if (series_id && keypoint_timestamp !== undefined) {
+        throw new Error('unimplemented')
+      }
       const { total } = this.#count_by_series_id({ series_id })!
       const rows = this.#select_by_series_id.all({ series_id, limit })
       return {
