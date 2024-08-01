@@ -23,6 +23,8 @@ export type KeypointCreate = z.input<typeof parsers.KeypointCreate>
 export type ViewCreate = z.input<typeof parsers.ViewCreate>
 export type ViewUpdate = z.input<typeof parsers.ViewUpdate>
 
+export type ForagerConfig = z.input<typeof parsers.ForagerConfig>
+
 /* TODO neat idea here, but this doesnt export a namespace so typescript cannot access these as tersley as explicit exports
 type ParsersToInputType<T extends Record<string, z.ZodType<any, any, any>>> = {
   [K in keyof T]: z.infer<T[K]>
