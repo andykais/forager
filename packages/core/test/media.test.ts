@@ -697,3 +697,9 @@ test('views', async (ctx) => {
     start_timestamp: 2,
   }), errors.BadInputError)
 })
+
+
+test('forager class', async ctx => {
+  // assert that we error out when passing bad data to the forager class
+  ctx.assert.throws(() => new Forager({foo: 'bar'} as any))
+})
