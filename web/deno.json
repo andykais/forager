@@ -1,0 +1,12 @@
+{
+  "tasks": {
+    "d:develop": "deno run -A --unstable-ffi npm:vite build"
+    "d:build":   "deno run -A --unstable-ffi npm:vite dev"
+    "d:preview": "deno run --config=build/deno.json -A --unstable-ffi build/mod.ts"
+  },
+  "imports": {
+    "cookie": "npm:cookie@^0.6.0",
+    "devalue": "npm:devalue@^5.0.0",
+    "set-cookie-parser": "npm:set-cookie-parser@^2.6.0"
+  }
+}
