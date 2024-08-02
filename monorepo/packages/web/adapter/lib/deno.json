@@ -1,0 +1,10 @@
+{
+  "imports": {
+    "@forager/core": "jsr:@forager/core@^0.0.0",
+    "@std/http/file-server": "jsr:@std/http@0.224.5/file-server",
+    "@std/path": "jsr:@std/path@1.0.2",
+    "cookie": "npm:cookie@^0.6.0",
+    "devalue": "npm:devalue@^5.0.0",
+    "set-cookie-parser": "npm:set-cookie-parser@^2.6.0"
+  }
+}
