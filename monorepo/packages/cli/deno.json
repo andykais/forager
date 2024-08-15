@@ -3,10 +3,16 @@
   "version": "0.0.0",
 
   "tasks": {
-    "install":    "deno install --allow-run=ffprobe,ffmpeg --unstable-ffi --check --allow-read --allow-write --allow-ffi --allow-env=HOME,DENO_DIR,XDG_CACHE_HOME --allow-net --name forager src/mod.ts",
-    "test":       "deno test --check --allow-run=deno --allow-write --allow-read --trace-leaks test",
+    "install": "deno install --allow-run=ffprobe,ffmpeg --unstable-ffi --check --allow-read --allow-write --allow-ffi --allow-env=HOME,DENO_DIR,XDG_CACHE_HOME --allow-net --name forager src/mod.ts",
+    "test": "deno test --check --allow-run=deno --allow-write --allow-read --trace-leaks test",
     "test:watch": "deno test --check --allow-run=deno --allow-write --allow-read --trace-leaks --watch src"
   },
 
-  "exports": "./src/mod.ts"
+  "imports": {
+    "@cliffy/command": "jsr:@cliffy/command@1.0.0-rc.4",
+    "@std/cli": "jsr:@std/cli@^1.0.2",
+    "zod": "npm:zod@^3.23.8"
+  },
+
+  "exports": "./src/cli.ts"
 }

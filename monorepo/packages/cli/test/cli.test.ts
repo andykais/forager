@@ -1,4 +1,5 @@
 import * as path from '@std/path'
+import { ForagerConfig } from '@forager/core'
 import { test } from 'forager-test'
 
 async function forager_exec(...args: string[]) {
@@ -9,7 +10,7 @@ async function forager_exec(...args: string[]) {
       '--check',
       '-A',
       '--unstable-ffi',
-      'src/mod.ts',
+      'src/cli.ts',
       ...args
     ],
     stdout: 'inherit',
@@ -20,7 +21,13 @@ async function forager_exec(...args: string[]) {
 
 test('cli basics', async ctx => {
   await ctx.subtest('create subcommand', async () => {
-    await forager_exec('create', ctx.resources.media_files["cat_doodle.jpg"])
+    const forager_config: ForagerConfig = {
+      database_path: ctx.create_fixture_path('forager.db'),
+      thumbnail_folder: ctx.create_fixture_path('thumbnails'),
+    }
+    const forager_config_path = ctx.create_fixture_path('forager.yml')
+    await Deno.writeTextFile(forager_config_path, JSON.stringify(forager_config))
+    await forager_exec('create', '--config', forager_config_path, ctx.resources.media_files["cat_doodle.jpg"])
     // const cmd = new Deno.Command('forager', {
     //   args: ['create', ctx.resources.media_files["cat_doodle.jpg"]],
     //   stdout: 'inherit',
