@@ -4,6 +4,63 @@ import * as path from '@std/path'
 import { Forager, errors } from '~/mod.ts'
 
 
+/* A note about future test suite improvements:
+ * currently tests have one setup that is shared amongst subtests.
+ * It may be smarter to move this setup to a "before" step for each subtest.
+ * An Alternative if we dont like "before" steps, we can move all this initialization to helper functions.
+ * This second approach lends itself well to a class structure. Im not sure what that would look like though
+
+ ` ````````````````````````````````````````````````````````````````````````````````````````````````````````````````
+ `  class MediaActionTests(TestSuite) {
+ `
+ `    test_setup() {
+ `      const database_path = ctx.create_fixture_path('forager.db')
+ `      const thumbnail_folder = ctx.create_fixture_path('thumbnails')
+ `      const forager = new Forager({ database_path, thumbnail_folder })
+ `      forager.init()
+ `      // do the rest of your setup...
+ `    }
+ `
+ `    /* we could let the method name prefix determine what a test is like python's unittest
+ `
+ `     ` ````````````````````````````````````````````````````````````````````````````````````````````````````````````````
+ `     `  tests = {
+ `     `    'search sort order': () => {
+ `     `      ctx.assert.search_result(forager.media.search({sort_by: 'created_at'}), {
+ `     `        result: [
+ `     `          {media_reference: {id: media_doodle.media_reference.id}},
+ `     `          {media_reference: {id: media_cartoon.media_reference.id}},
+ `     `          {media_reference: {id: media_generated_art.media_reference.id}},
+ `     `        ]
+ `     `      })
+ `     `    }
+ `     `  }
+ `     `
+ `     ` ````````````````````````````````````````````````````````````````````````````````````````````````````````````````
+ `
+ `     * we could use a decorator to register tests
+ `
+ `
+ `     ` ````````````````````````````````````````````````````````````````````````````````````````````````````````````````
+ `     `  @test()
+ `     `  test_sort_order() {
+ `     `    ctx.assert.search_result(forager.media.search({sort_by: 'created_at'}), {
+ `     `      result: [
+ `     `        {media_reference: {id: media_doodle.media_reference.id}},
+ `     `        {media_reference: {id: media_cartoon.media_reference.id}},
+ `     `        {media_reference: {id: media_generated_art.media_reference.id}},
+ `     `      ]
+ `     `    })
+ `     `  }
+ `     `
+ `     ` ````````````````````````````````````````````````````````````````````````````````````````````````````````````````
+ `     * ONLY issue with nested code blocks is that you cant close the inner comment block and have valid js syntax
+ `
+ `  }
+ `
+ ` ````````````````````````````````````````````````````````````````````````````````````````````````````````````````
+ */
+
 test('media actions', async (ctx) => {
   const database_path = ctx.create_fixture_path('forager.db')
   const thumbnail_folder = ctx.create_fixture_path('thumbnails')
@@ -220,6 +277,27 @@ test('media actions', async (ctx) => {
     })
 
     // TODO add more variable sorting tests with view_count once we can update media references
+  })
+
+  await ctx.subtest('search media grouping', async () => {
+    /* two design proposals here. Just comment them out to get rid of compiler errors.
+     * Ideally we should commit to one before building our UI
+     *
+     * So heres my logic with adding it to the MediaAction::search api.
+     * Avoiding inputs changing the type returned by an output is useful,
+     * but the ui display isnt going to care about different top level types.
+     * It just needs to know how to render a particular item in the results
+
+      ````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
+      ` // My TS type returns grouped search results alongside 'media_series' | 'media_file'
+      ` const result = forager.media.search({group_by: {tag_group: 'art'}, query: {}})
+      `
+      ` // My TS type only returns grouped search results
+      ` const result = forager.media.search_group_by({tag_group: 'art', query: {directory: ctx.resources.resources_directory}})
+        console.log(result)
+      `
+      ````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
+     */
   })
 
   await ctx.subtest('filesystem browsing', () => {
