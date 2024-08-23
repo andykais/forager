@@ -2,6 +2,8 @@
   import * as rpc from '@andykais/ts-rpc/client.ts'
 
   export let rpc_keys = Object.keys(rpc)
+  const client = rpc.create(`${window.location}/rpc`)
+  console.log({client})
 </script>
 
 <h1>Welcome to SvelteKit</h1>

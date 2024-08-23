@@ -15,6 +15,7 @@
       "npm:svelte@^5.0.0-next.1": "npm:svelte@5.0.0-next.199_acorn@8.12.1",
       "npm:typescript@^5.0.0": "npm:typescript@5.5.4",
       "npm:vite": "npm:vite@5.3.5",
+      "npm:vite@5.3.5": "npm:vite@5.3.5",
       "npm:vite@^5.0.3": "npm:vite@5.3.5"
     },
     "npm": {

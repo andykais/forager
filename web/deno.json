@@ -1,7 +1,7 @@
 {
   "tasks": {
-    "d:develop": "deno run -A --unstable-ffi npm:vite build"
-    "d:build":   "deno run -A --unstable-ffi npm:vite dev"
+    "d:develop": "deno run -A --unstable-ffi npm:vite dev"
+    "d:build":   "deno run -A --unstable-ffi npm:vite build"
     "d:preview": "deno run --config=build/deno.json -A --unstable-ffi build/mod.ts"
   },
   "imports": {
