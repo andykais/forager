@@ -1143,6 +1143,11 @@
         ]
       },
       "packages/web": {
+        "dependencies": [
+          "npm:cookie@^0.6.0",
+          "npm:devalue@^5.0.0",
+          "npm:set-cookie-parser@^2.6.0"
+        ],
         "packageJson": {
           "dependencies": [
             "npm:@jsr/andykais__ts-rpc@^0.1.1",
