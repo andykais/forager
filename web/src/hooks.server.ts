@@ -6,4 +6,7 @@ import * as private_env from '$env/dynamic/private';
 // console.log({env: {...private_env}})
 // const forager = new Forager({database_path: 'forager.db'})
 // console.log('importing forager...')
+console.log(private_env.FORAGER_CONFIG)
 console.log({Forager})
+const forager = new Forager({database_path: 'forager.db'})
+// console.log({forager})
