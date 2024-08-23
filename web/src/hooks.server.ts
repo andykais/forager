@@ -1,12 +1,22 @@
+import * as sveltekit from '@sveltejs/kit'
 import {Forager} from '@forager/core'
-// import * as rpc from '@andykais/ts-rpc/server.ts'
 import * as private_env from '$env/dynamic/private';
 
 // console.log('i was loaded!')
 // console.log({env: {...private_env}})
 // const forager = new Forager({database_path: 'forager.db'})
 // console.log('importing forager...')
-console.log(private_env.FORAGER_CONFIG)
-console.log({Forager})
-const forager = new Forager({database_path: 'forager.db'})
 // console.log({forager})
+
+let forager: Forager
+if (private_env.FORAGER_CONFIG) {
+  throw new Error('unimplemented')
+} else {
+  forager = new Forager({database_path: 'forager.db'})
+}
+
+export const handle: sveltekit.Handle = async ({ event, resolve }) => {
+  event.locals.forager = forager
+	const response = await resolve(event);
+	return response;
+}

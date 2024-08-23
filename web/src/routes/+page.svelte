@@ -1,11 +1,17 @@
 <script lang="ts">
+  import * as svelte from 'svelte'
+  import {type ApiSpec} from '$lib/api.ts'
   import * as rpc from '@andykais/ts-rpc/client.ts'
 
-  export let rpc_keys = Object.keys(rpc)
-  const client = rpc.create(`${window.location}/rpc`)
-  console.log({client})
+  const client = rpc.create<ApiSpec>(`${window.location}rpc/:signature`)
+  svelte.onMount(async () => {
+    server_time = await client.server_time()
+    setInterval(async () => {
+      server_time = await client.server_time()
+    }, 1000)
+  })
+
+  export let server_time: Date
 </script>
 
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
-rpc keys: {rpc_keys}
+server time: {server_time}

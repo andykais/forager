@@ -3,7 +3,7 @@
 	"version": "0.0.1",
 	"private": true,
 	"scripts": {
-    "develop": "deno run -A --unstable-ffi npm:vite dev",
+		"develop": "deno run -A --unstable-ffi --check npm:vite dev",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
 	},
@@ -15,11 +15,12 @@
 		"svelte": "^5.0.0-next.1",
 		"svelte-check": "^3.6.0",
 		"typescript": "^5.0.0",
+		"typescript-svelte-plugin": "^0.3.40",
 		"vite": "^5.0.3"
 	},
 	"type": "module",
 	"dependencies": {
-		"@andykais/ts-rpc": "npm:@jsr/andykais__ts-rpc@^0.1.1",
+		"@andykais/ts-rpc": "npm:@jsr/andykais__ts-rpc@^0.2.2",
 		"@forager/core": "npm:@jsr/forager__core@^0.0.0"
 	}
 }
