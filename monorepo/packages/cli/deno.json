@@ -1,9 +1,9 @@
 {
   "name": "@forager/cli",
-  "version": "0.0.0",
+  "version": "0.1.0",
 
   "tasks": {
-    "install": "deno install --allow-run=ffprobe,ffmpeg --unstable-ffi --check --allow-read --allow-write --allow-ffi --allow-env=HOME,DENO_DIR,XDG_CACHE_HOME --allow-net --name forager src/mod.ts",
+    "install": "deno install --global --allow-run=ffprobe,ffmpeg --unstable-ffi --check --allow-read --allow-write --allow-ffi --allow-env=HOME,DENO_DIR,XDG_CACHE_HOME --allow-net --name forager-cli --force src/cli.ts",
     "test":       "deno test --check --allow-run=deno --allow-write --allow-read --allow-ffi --trace-leaks --unstable-ffi --allow-env test",
     "test:watch": "deno test --check --allow-run=deno --allow-write --allow-read --allow-ffi --trace-leaks --unstable-ffi --allow-env --watch src"
   },
@@ -15,5 +15,7 @@
     "zod": "npm:zod@^3.23.8"
   },
 
-  "exports": "./src/cli.ts"
+  "exports": "./src/cli.ts",
+
+  "license": "MIT"
 }
