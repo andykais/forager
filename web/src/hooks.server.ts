@@ -14,6 +14,7 @@ if (private_env.FORAGER_CONFIG) {
 } else {
   forager = new Forager({database_path: 'forager.db'})
 }
+forager.init()
 
 export const handle: sveltekit.Handle = async ({ event, resolve }) => {
   event.locals.forager = forager
