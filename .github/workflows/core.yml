@@ -43,7 +43,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.DENO_DIR }}
-          key: ${{ hashFiles('deno.lock') }}
+          key: ${{ hashFiles('../../deno.lock') }}
 
       # - name: Lint
       # lint source code & jsr publish requirements. Currently disabled because we should get jsr published before addressing
@@ -77,6 +77,7 @@ jobs:
   #       with:
   #         path: ${{ env.DENO_DIR }}
   #         key: ${{ hashFiles('deno.lock') }}
+  #         key: ${{ hashFiles('../../deno.lock') }}
 
   #     - name: Publish package
   #       if: github.ref == 'refs/heads/main'
