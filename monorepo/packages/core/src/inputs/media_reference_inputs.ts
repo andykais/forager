@@ -10,7 +10,8 @@ export const MediaReferenceId = z.number()
 
 
 export const MediaReferenceGet = z.object({
-  media_reference_id: MediaReferenceId,
+  media_reference_id: MediaReferenceId.optional(),
+  filepath: Filepath.optional(),
 })
 
 

@@ -30,19 +30,27 @@ class FileSystemActions extends Actions {
 
     let stats = {
       created: 0,
+      updated: 0,
       existing: 0,
       duplicate: 0,
     }
     for await (const entry of fs.walk(walk_path, walk_options)) {
       try {
-        const {media_file, media_reference} = await this.media_create(entry.path)
+        const {media_file, media_reference} = await this.media_create(entry.path, parsed.params.set?.media_info, parsed.params.set?.tags)
         stats.created += 1
       } catch (e) {
         if (e instanceof errors.DuplicateMediaError) {
           this.ctx.logger.warn(`${e.filepath} has a duplicate checksum (${e.checksum}) to ${e.existing_media_filepath}, skipping`)
           stats.duplicate += 1
         } else if (e instanceof errors.MediaAlreadyExistsError) {
-          this.ctx.logger.info(`${e.filepath} already exists in database, skipping`)
+          if (params.set?.media_info || params.set?.tags) {
+            this.ctx.logger.info(`${e.filepath} already exists in database, updating`)
+            const media_reference = this.models.MediaFile.select_one({filepath: e.filepath}, {or_raise: true})
+            this.media_update(media_reference.id, params.set?.media_info, params.set?.tags)
+            stats.updated += 1
+          } else {
+            this.ctx.logger.info(`${e.filepath} already exists in database, skipping`)
+          }
           stats.existing += 1
         } else {
           throw e
