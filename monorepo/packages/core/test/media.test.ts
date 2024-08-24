@@ -729,6 +729,26 @@ test('filesystem discovery', async (ctx) => {
       ]
     })
   })
+
+  await ctx.subtest('set metadata during file system discovery', async () => {
+    await forager.filesystem.discover({
+      path: ctx.resources.resources_directory + path.SEPARATOR + '*cat*',
+      set: {
+        media_info: {title: 'sample title'},
+        tags: ['cat']
+      }
+    })
+
+    const cat_doodle_media = forager.media.get({filepath: ctx.resources.media_files['cat_doodle.jpg']})
+    ctx.assert.list_partial(cat_doodle_media.tags, [{
+      name: 'cat',
+    }])
+
+    const cat_cronch_media = forager.media.get({filepath: ctx.resources.media_files['cat_cronch.mp4']})
+    ctx.assert.list_partial(cat_cronch_media.tags, [{
+      name: 'cat',
+    }])
+  })
   // windows currently doesnt support glob syntax, so for the time being lets just disable filesystem discovery in the windows test suite
   // gh issue: https://github.com/denoland/deno_std/issues/5434
 }, {skip: {os: 'windows'}})

@@ -27,6 +27,10 @@ class MediaFile extends Model {
     SELECT ${MediaFile.result['*']} FROM media_file
     WHERE media_reference_id = ${MediaFile.params.media_reference_id}`
 
+  #select_by_filepath = this.query`
+    SELECT ${MediaFile.result['*']} FROM media_file
+    WHERE filepath = ${MediaFile.params.filepath}`
+
   #select_by_checksum = this.query`
     SELECT ${MediaFile.result['*']} FROM media_file
     WHERE checksum = ${MediaFile.params.checksum}`
@@ -63,8 +67,13 @@ class MediaFile extends Model {
 
   #select_one_impl(params: {
     media_reference_id?: number
+    filepath?: string
     checksum?: string
   }) {
+    if (params.filepath !== undefined && Object.keys(params).length === 1) {
+      return this.#select_by_filepath.one({filepath: params.filepath})
+    }
+
     if (params.checksum !== undefined && Object.keys(params).length === 1) {
       return this.#select_by_checksum.one({checksum: params.checksum})
     }

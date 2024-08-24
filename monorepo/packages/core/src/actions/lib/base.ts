@@ -115,21 +115,70 @@ class Actions {
     return output_result
   }
 
+  media_update(media_reference_id: number, media_info?: inputs.MediaInfo, tags?: inputs.Tag[]) {
+    const parsed = {
+      media_reference_id: parsers.MediaReferenceId.parse(media_reference_id),
+      media_info: parsers.MediaInfo.parse(media_info ?? {}),
+      tags: parsers.TagList.parse(tags ?? []),
+    }
+
+    const transaction = this.ctx.db.transaction_sync(() => {
+      this.models.MediaReference.update({
+        id: media_reference_id,
+        ...parsed.media_info,
+      })
+      for (const tag of parsed.tags) {
+        const group = tag.group ?? ''
+        // const color = get_hash_color(group, 'hsl')
+        const color = ''
+        const tag_group = this.models.TagGroup.get_or_create({ name: group, color })!
+        const tag_record = this.models.Tag.get_or_create({ alias_tag_id: null, name: tag.name, tag_group_id: tag_group.id, description: tag.description, metadata: tag.metadata })
+        this.models.MediaReferenceTag.get_or_create({ media_reference_id: parsed.media_reference_id, tag_id: tag_record.id })
+      }
+    })
+
+    transaction()
+
+    // TODO this will currently error when we pass in a series media reference. We need to handle that
+    const media_file = this.models.MediaFile.select_one({media_reference_id}, {or_raise: true})
+    return this.get_media_file_result({
+      media_reference_id,
+      media_file_id: media_file.id,
+      thumbnail_limit: 1,
+    })
+  }
   protected media_get(params: {
-    media_reference_id: number,
+    media_reference_id?: number,
+    filepath?: string
     thumbnail_limit: number
   }): MediaResponse {
-    const { media_reference_id, thumbnail_limit } = params
-    const media_reference = this.models.MediaReference.select_one({id: media_reference_id}, {or_raise: true})
+    const { media_reference_id, filepath, thumbnail_limit } = params
+    if (media_reference_id && filepath) {
+      throw new errors.BadInputError(`Cannot supply both media_reference_id and filepath`)
+    }
+
+    let media_reference: result_types.MediaReference
+    let media_file: result_types.MediaFile | undefined
+    if (media_reference_id !== undefined) {
+      media_reference = this.models.MediaReference.select_one({id: media_reference_id}, {or_raise: true})
+    } else if (filepath !== undefined) {
+      media_file = this.models.MediaFile.select_one({filepath}, {or_raise: true})
+      media_reference = this.models.MediaReference.select_one({id: media_file.media_reference_id}, {or_raise: true})
+    } else {
+      throw new errors.BadInputError(`Either media_reference_id or filepath is required`)
+    }
+
     if (media_reference.media_series_reference) {
       throw new Error('unimplemented')
     } else {
-      const media_file = this.models.MediaFile.select_one({media_reference_id: media_reference_id}, {or_raise: true})
+      if (media_file === undefined) {
+        media_file = this.models.MediaFile.select_one({media_reference_id: media_reference.id}, {or_raise: true})
+      }
       return {
         media_type: 'media_file',
         media_reference,
         media_file,
-        tags: this.models.Tag.select_many({media_reference_id: media_reference_id}),
+        tags: this.models.Tag.select_many({media_reference_id: media_reference.id}),
         thumbnails: this.models.MediaThumbnail.select_many({media_file_id: media_file.id, limit: thumbnail_limit}),
       }
     }
