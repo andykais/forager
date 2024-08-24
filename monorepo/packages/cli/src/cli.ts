@@ -28,21 +28,29 @@ const cli = new cliffy.Command()
     })
 
   .command('discover <globpath>', 'Discover media with a provided glob to the forager database')
+    .option('--tags=<tags>', 'A comma separated list of tags to set on media')
     .option('--exts=<extensions>', 'A comma separated list of file extensions to look for')
     .action(async (opts, globpath) => {
       const forager_helpers = new ForagerHelpers(opts)
       const forager = await forager_helpers.launch_forager()
       const extensions = opts.exts?.split(',')
+      if (opts.tags) {
+        throw new Error('unimplemented')
+      }
       const result = await forager.filesystem.discover({ path: globpath, extensions })
       forager_helpers.print_output(result)
     })
 
   .command('create <filepath>', 'add a file to the forager database')
+    .option('--title=<title>', 'The title of a piece of media')
     .option('--tags=<tags>', 'A comma separated list of tags to create media with')
     .action(async (opts, filepath) => {
       const forager_helpers = new ForagerHelpers(opts)
       const forager = await forager_helpers.launch_forager()
-      const result = await forager.media.create(filepath)
+      const tags = opts.tags?.split(',')
+      const result = await forager.media.create(filepath, {
+        title: opts.title,
+      }, tags)
       forager_helpers.print_output(result)
     })
 

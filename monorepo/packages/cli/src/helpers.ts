@@ -24,11 +24,11 @@ class ForagerHelpers {
 
     const answer = prompt(`forager has not been set up at ${this.config_filepath}. Create a config now? (Y/n)`)
     const answer_safe = z.enum(['n', 'Y', 'y', '']).parse(answer)
+
     if (answer_safe === 'n') {
       console.log('Aborting.')
       Deno.exit(0)
     }
-
     // everything else means go
 
     const config_dir = path.dirname(this.config_filepath)
@@ -40,13 +40,6 @@ class ForagerHelpers {
 
       log_level: 'info',
     }
-
-    // // default_config.database_path =  prompt(`# Hit Enter or set a custom database path.\ndatabase_filepath: "${default_config.database_path}"`) ?? default_config.database_path
-    // default_config.database_path =  this.#cli_prompt_answer({
-    //   help: '# The location of the application sqlite database.',
-    //   config_key: 'database_path',
-    //   default_value: default_config.database_path,
-    // })
 
     await Deno.writeTextFile(this.config_filepath, yaml.stringify(default_config))
   }
