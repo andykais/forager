@@ -44,7 +44,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.DENO_DIR }}
-          key: ${{ hashFiles($DENO_LOCKFILE) }}
+          key: ${{ hashFiles(env.DENO_LOCKFILE) }}
 
       # - name: Lint
       # lint source code & jsr publish requirements. Currently disabled because we should get jsr published before addressing
