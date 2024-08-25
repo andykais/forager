@@ -4,8 +4,8 @@
 
   "tasks": {
     "install": "deno install --global --allow-run=ffprobe,ffmpeg --unstable-ffi --check --allow-read --allow-write --allow-ffi --allow-env=HOME,DENO_DIR,XDG_CACHE_HOME --allow-net --name forager-cli --force src/cli.ts",
-    "test":       "deno test --check --allow-run=deno --allow-write --allow-read --allow-ffi --trace-leaks --unstable-ffi --allow-env test",
-    "test:watch": "deno test --check --allow-run=deno --allow-write --allow-read --allow-ffi --trace-leaks --unstable-ffi --allow-env --watch src"
+    "test":       "deno test --check --allow-run=deno --allow-write --allow-read --allow-ffi --trace-leaks --unstable-ffi --allow-net=github.com --allow-env test",
+    "test:watch": "deno test --check --allow-run=deno --allow-write --allow-read --allow-ffi --trace-leaks --unstable-ffi --allow-net=github.com --allow-env --watch src"
   },
 
   "imports": {
