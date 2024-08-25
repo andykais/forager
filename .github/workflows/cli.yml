@@ -10,10 +10,11 @@ on:
     branches: ["main"]
 env:
   DENO_DIR: deno_dependency_cache
+  DENO_LOCKFILE: ${{ github.workspace }}/monorepo/deno.lock
 
 defaults:
   run:
-    working-directory: './packages/cli/'
+    working-directory: './monorepo/packages/cli/'
 
 
 jobs:
@@ -43,7 +44,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.DENO_DIR }}
-          key: ${{ hashFiles('../../deno.lock') }}
+          key: ${{ hashFiles(env.DENO_LOCKFILE) }}
 
       # - name: Lint
       # lint source code & jsr publish requirements. Currently disabled because we should get jsr published before addressing
@@ -76,7 +77,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.DENO_DIR }}
-          key: ${{ hashFiles('../../deno.lock') }}
+          key: ${{ hashFiles(env.DENO_LOCKFILE) }}
 
       - name: Publish package
         if: github.ref == 'refs/heads/main'
