@@ -3,8 +3,8 @@
   "version": "0.1.0",
 
   "tasks": {
-    "test":       "deno test --allow-run=ffprobe,ffmpeg --unstable-ffi --check --allow-read --allow-write --allow-ffi --allow-env=HOME,DENO_DIR,XDG_CACHE_HOME --allow-net=github.com --trace-leaks test",
-    "test:watch": "deno test --allow-run=ffprobe,ffmpeg --unstable-ffi --check --allow-read --allow-write --allow-ffi --allow-env=HOME,DENO_DIR,XDG_CACHE_HOME --allow-net=github.com --trace-leaks --watch"
+    "test":       "deno test --allow-run=ffprobe,ffmpeg --unstable-ffi --check --allow-read --allow-write --allow-ffi --allow-env=HOME,DENO_DIR,XDG_CACHE_HOME --allow-net=github.com,objects.githubusercontent.com --trace-leaks test",
+    "test:watch": "deno test --allow-run=ffprobe,ffmpeg --unstable-ffi --check --allow-read --allow-write --allow-ffi --allow-env=HOME,DENO_DIR,XDG_CACHE_HOME --allow-net=github.com,objects.githubusercontent.com --trace-leaks --watch"
   },
 
   "imports": {
