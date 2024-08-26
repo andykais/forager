@@ -73,6 +73,7 @@ class Actions {
 
       const media_file = this.models.MediaFile.create({
         ...media_file_info,
+        thumbnail_directory_path: thumbnails.destination_folder,
         file_size_bytes: file_size,
         checksum,
         media_reference_id: media_reference.id,

@@ -26,6 +26,35 @@ class MediaActions extends Actions {
     }
   }
 
+  delete = async (params: inputs.MediaReferenceGet) => {
+    const parsed = parsers.MediaReferenceGet.parse(params)
+    const transaction = this.ctx.db.transaction_async(async () => {
+      const result = this.media_get({...params, thumbnail_limit: 0})
+      if (result.media_type === 'media_file') {
+        this.models.MediaReferenceTag.delete({media_reference_id: result.media_reference.id}, {expected_deletes: result.tags.length})
+        this.models.MediaThumbnail.delete({media_file_id: result.media_file.id}, {expected_deletes: result.thumbnails.total})
+        this.models.MediaFile.delete({id: result.media_file.id}, {expected_deletes: 1})
+        this.models.MediaKeypoint.delete({media_reference_id: result.media_reference.id})
+        this.models.MediaSeriesItem.delete({media_reference_id: result.media_reference.id})
+        this.models.MediaReference.delete({id: result.media_reference.id}, {expected_deletes: 1})
+        // TODO return views and count them here
+        this.models.View.delete({media_reference_id: result.media_reference.id})
+
+        // TODO remove the thumbnails
+        await Deno.remove(result.media_file.thumbnail_directory_path, {recursive: true})
+      } else {
+        throw new Error('unimplemented')
+      }
+    })
+
+    try {
+      await transaction()
+    } catch (e) {
+      this.ctx.logger.error(`Error "${e.name}" during media delete for ${JSON.stringify(params)}, delete aborted.`)
+      throw e
+    }
+  }
+
   search = (params?: inputs.PaginatedSearch): result_types.PaginatedResult<MediaResponse> => {
     const parsed = parsers.PaginatedSearch.parse(params ?? {})
     const { query, limit, cursor } = parsed

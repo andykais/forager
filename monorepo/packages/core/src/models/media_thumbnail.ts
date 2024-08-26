@@ -31,6 +31,11 @@ class MediaThumbnail extends Model {
     ]})
     RETURNING ${MediaThumbnail.result.id}`
 
+  #delete_by_media_file_id = this.query.exec`
+    DELETE FROM media_thumbnail
+    WHERE media_file_id = ${MediaThumbnail.params.media_file_id}
+  `
+
   #count_by_media_file_id = this.query.one`
     SELECT COUNT(1) AS ${PaginationVars.result.total} FROM media_thumbnail
     WHERE media_file_id = ${MediaThumbnail.params.media_file_id}`
@@ -63,6 +68,8 @@ class MediaThumbnail extends Model {
     LIMIT ${PaginationVars.params.limit}`
 
   public create = this.create_fn(this.#create)
+
+  public delete = this.delete_fn(this.#delete_by_media_file_id)
 
   #select_one_impl(params: {
     media_file_id: number

@@ -362,6 +362,23 @@ test('media actions', async (ctx) => {
     ctx.assert.equals(media_cartoon.media_reference.title, 'Ed Sparrow')
   })
 
+  await ctx.subtest('media delete', async () => {
+    ctx.assert.search_result(forager.media.search(), {
+      total: 4,
+    })
+
+    forager.media.delete({media_reference_id: media_doodle.media_reference.id})
+
+    ctx.assert.search_result(forager.media.search(), {
+      total: 3,
+      result: [
+        {media_file: {filepath: ctx.resources.media_files["cat_cronch.mp4"]}},
+        {media_reference: {title: 'Ed Sparrow'}},
+        {media_reference: {title: 'Generated Art'}},
+      ]
+    })
+  })
+
   forager.close()
 })
 
@@ -536,6 +553,18 @@ test('video media', async ctx => {
       }]
     })
 
+  })
+
+  await ctx.subtest('media deletes', async () => {
+    // ensure that deletes work with video
+    await forager.media.delete({media_reference_id: media_cronch.media_reference.id})
+    media_cronch = await forager.media.create(ctx.resources.media_files['cat_cronch.mp4'], {}, ['cat'])
+
+    ctx.assert.equals(media_cronch.thumbnails.total, 18)
+    ctx.assert.equals(media_cronch.thumbnails.result.length, 1)
+    ctx.assert.equals(media_cronch.media_file.media_type, 'VIDEO')
+    ctx.assert.equals(media_cronch.media_file.content_type, 'video/mp4')
+    ctx.assert.equals(media_cronch.thumbnails.result[0].media_timestamp, 0)
   })
 })
 

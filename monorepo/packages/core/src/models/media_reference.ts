@@ -71,6 +71,10 @@ class MediaReference extends Model {
     SELECT ${MediaReference.result['*']} FROM media_reference
     WHERE directory_path = ${MediaReference.params.directory_path}`
 
+  #delete_by_id = this.query.exec`
+    DELETE FROM media_reference
+    WHERE id = ${MediaReference.params.id}`
+
   #select_one_impl(params: {
     id?: number
     directory_path?: string
@@ -281,6 +285,8 @@ ${count_query.stmt.sql}
   public create = this.create_fn(this.#create)
 
   public update = this.#update.exec
+
+  public delete = this.delete_fn(this.#delete_by_id)
 
   public select_one = this.select_one_fn(this.#select_one_impl.bind(this))
 }

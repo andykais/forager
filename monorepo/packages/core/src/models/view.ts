@@ -31,6 +31,10 @@ class View extends Model {
       View.params.duration
     ]}) RETURNING ${View.result['*']}`
 
+  #delete_by_media_reference_id = this.query.exec`
+    DELETE FROM view
+    WHERE media_reference_id = ${View.params.media_reference_id}`
+
   #select_by_id = this.query.one`
     SELECT ${View.result["*"]} FROM view
     WHERE id = ${View.params.id}`
@@ -48,6 +52,8 @@ class View extends Model {
   public select_one = this.select_one_fn(this.#select_by_id)
 
   public update = this.#update_by_id.exec
+
+  public delete = this.delete_fn(this.#delete_by_media_reference_id)
 }
 
 export { View }

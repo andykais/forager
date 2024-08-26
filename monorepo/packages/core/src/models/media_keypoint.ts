@@ -28,12 +28,18 @@ class MediaKeypoint extends Model {
     MediaKeypoint.params.duration,
   ]}) RETURNING ${MediaKeypoint.result['*']}`
 
+  #delete_by_media_reference_id = this.query.exec`
+    DELETE FROM media_keypoint
+    WHERE media_reference_id = ${MediaKeypoint.params.media_reference_id}`
+
   #select_by_tag_and_media_reference = this.query`
     SELECT ${MediaKeypoint.result['*']}
     FROM media_keypoint
     WHERE media_reference_id = ${MediaKeypoint.params.media_reference_id} AND tag_id = ${MediaKeypoint.params.tag_id}`
 
   public create = this.create_fn(this.#create)
+
+  public delete = this.delete_fn(this.#delete_by_media_reference_id)
 
   public select_one = this.select_one_fn(this.#select_by_tag_and_media_reference.one)
 }

@@ -1,6 +1,7 @@
 import * as torm from '@torm/sqlite'
-import { Vars, field, DriverModel } from '@torm/sqlite'
+import { Vars, field, DriverModel, type Statement } from '@torm/sqlite'
 import { NotFoundError } from '~/lib/errors.ts'
+import { errors } from "~/mod.ts";
 export type { PaginatedResult } from './result_types.ts'
 
 
@@ -12,6 +13,10 @@ export const PaginationVars = Vars({
 
 interface SelectOneOptions {
   or_raise?: boolean
+}
+
+interface DeleteOptions {
+  expected_deletes?: number
 }
 
 interface SelectOneOptionsAllowUndefined extends SelectOneOptions {
@@ -45,6 +50,15 @@ abstract class Model extends DriverModel {
       throw new Error('unexpected missing returned row from create')
     }
     return row
+  }
+
+  protected delete_fn = <T>(delete_impl: (params: T) => ReturnType<Statement<any, any>['exec']>) => (params: T, options?: DeleteOptions): void => {
+    const info = delete_impl(params)
+    if (options?.expected_deletes !== undefined) {
+      if (info.changes !== options.expected_deletes) {
+        throw new errors.UnExpectedError(`Delete operation expected ${options.expected_deletes} but actually deleted ${info.changes}`)
+      }
+    }
   }
 }
 

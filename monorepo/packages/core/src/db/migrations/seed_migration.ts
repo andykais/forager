@@ -19,6 +19,7 @@ export class Migration extends torm.SeedMigration {
       id INTEGER PRIMARY KEY NOT NULL,
       filepath TEXT NOT NULL,
       filename TEXT NOT NULL,
+      thumbnail_directory_path TEXT NOT NULL UNIQUE,
       -- mime_type TEXT NOT NULL,
       file_size_bytes INTEGER NOT NULL,
       checksum TEXT NOT NULL UNIQUE,
@@ -228,7 +229,7 @@ export class Migration extends torm.SeedMigration {
     END;
 
     CREATE TRIGGER media_series_length_dec AFTER DELETE ON media_series_item BEGIN
-      UPDATE media_reference SET media_series_length = media_series_length - 1 WHERE NEW.series_id = id;
+      UPDATE media_reference SET media_series_length = media_series_length - 1 WHERE OLD.series_id = id;
     END;
 
 

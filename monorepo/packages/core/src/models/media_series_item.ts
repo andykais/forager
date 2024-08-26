@@ -38,6 +38,10 @@ class MediaSeriesItem extends Model {
     ]})
     RETURNING ${MediaSeriesItem.result.id}`
 
+  #delete_by_media_reference_id = this.query.exec`
+    DELETE FROM media_series_item
+    WHERE media_reference_id = ${MediaSeriesItem.params.media_reference_id}`
+
   #select_by_id = this.query`
     SELECT ${MediaSeriesItem.result['*']} FROM media_series_item
     WHERE id = ${MediaSeriesItem.params.id}`
@@ -68,6 +72,8 @@ class MediaSeriesItem extends Model {
   public select_one = this.select_one_fn(this.#select_one_impl.bind(this))
 
   public create = this.create_fn(this.#create)
+
+  public delete = this.delete_fn(this.#delete_by_media_reference_id)
 
   public create_series(params: {
     media_reference_id: number

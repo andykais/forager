@@ -260,7 +260,15 @@ class FileProcessor {
     }
 
     if (thumbnail_timestamps.length !== expected_thumbnail_count) {
-      throw new Error(`thumbnail generation error. Expected ${expected_thumbnail_count} thumbnail timestamps, but ${thumbnail_timestamps.length} thumbnail timestamps were found [\n  ${thumbnail_timestamps.join('\n  ')}\n]`)
+      throw new errors.UnExpectedError(`thumbnail generation error. Expected ${expected_thumbnail_count} thumbnail timestamps, but ${thumbnail_timestamps.length} thumbnail timestamps were found [\n  ${thumbnail_timestamps.join('\n  ')}\n]`)
+    }
+    if (thumbnail_timestamps.at(0) !== 0) {
+      throw new errors.UnExpectedError(`first thumbnail timestamps should always be 0. Actual thumbnail timestamps: [\n  ${thumbnail_timestamps.join('\n  ')}\n]`)
+    }
+    for (let i = 0; i < thumbnail_timestamps.length - 1; i++) {
+      if (thumbnail_timestamps[i] >= thumbnail_timestamps[i+1]) {
+        throw new errors.UnExpectedError(`thumbnail at index ${i} > thumbnail at index ${i+1}. Thumbnails: [\n  ${thumbnail_timestamps.join('\n  ')}\n]`)
+      }
     }
     const thumbnail_destination_folder = path.join(this.#ctx.config.thumbnail_folder, this.get_storage_folder(checksum))
     return this.#assert_thumbnail_generation(tmp_folder, thumbnail_destination_folder, thumbnail_timestamps)
