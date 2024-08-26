@@ -1,4 +1,5 @@
 import z from 'zod'
+import { errors } from "~/mod.ts";
 
 
 function sanitize_name(name: string) {
@@ -13,8 +14,13 @@ export const TagShorthand = z.string().transform(tag_str => {
       group: '',
     }
   }
-  else {
-    throw new Error('unimplemented')
+  else if (tag_split.length === 2) {
+    return {
+      group: tag_split[0],
+      name: tag_split[1],
+    }
+  } else {
+    throw new errors.BadInputError(`Failed to parse tag shorthand "${tag_str}"`)
   }
 })
 

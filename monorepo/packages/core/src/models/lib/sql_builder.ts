@@ -6,6 +6,7 @@ class SQLBuilder {
   #result_fields: Fields = {}
   #default_arguments: Record<string, any> = {}
   fragments: {
+    select_wrapper: string
     select_clause: string
     where_clauses: string[]
     group_clauses: string[]
@@ -17,6 +18,7 @@ class SQLBuilder {
   constructor(driver: Driver) {
     this.#driver = driver
     this.fragments = {
+      select_wrapper: '',
       select_clause: '',
       where_clauses: [],
       join_clauses: [],
@@ -26,6 +28,10 @@ class SQLBuilder {
     }
   }
 
+  set_select_wrapper(sql: string) {
+    this.fragments.select_wrapper = sql
+    return this
+  }
   set_select_clause(sql: string) {
     this.fragments.select_clause = sql
     return this
@@ -85,13 +91,21 @@ class SQLBuilder {
     const join_clause = this.fragments.join_clauses.join('\n')
     const group_clause = this.fragments.group_clauses.join('\n')
 
-    return `
+    let sql = `
 ${this.fragments.select_clause}
 ${join_clause}
 ${where_clause}
+${group_clause}
 ${this.fragments.order_by_clause}
 ${this.fragments.limit_clause}
     `
+
+    if (this.fragments.select_wrapper) {
+      sql = `${this.fragments.select_wrapper} (
+${sql}
+)`
+    }
+    return sql
   }
 
   build() {

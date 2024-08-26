@@ -104,6 +104,8 @@ class MediaReference extends Model {
     const count_arguments: Record<string, any> = {}
 
     const records_builder = new SQLBuilder(this.driver)
+    // this nested select clause exists so that we can create a reliable cursor_id for pagination
+    // it uses ROW_NUMBER with an explicit order clause to ensure that we can reliably paginate
     records_builder
       .set_select_clause(`
 SELECT media_reference.*, cursor_id FROM (
@@ -117,7 +119,8 @@ SELECT media_reference.*, cursor_id FROM (
 
     const count_builder = new SQLBuilder(this.driver)
     count_builder
-      .set_select_clause(`SELECT COUNT(1) AS total FROM media_reference`)
+      .set_select_wrapper(`SELECT COUNT(1) AS total FROM`)
+      .set_select_clause(`SELECT media_reference.id FROM media_reference`)
       .add_result_fields({total: PaginationVars.result.total})
 
     if (params.limit !== undefined) {
@@ -217,6 +220,14 @@ SELECT media_reference.*, cursor_id FROM (
     const count_query = count_builder.build()
     const { total } = count_query.stmt.one(count_arguments)! as {total: number}
 
+    if (total < result.length) {
+      throw new errors.UnExpectedError(`Selected media references (${result.length}) exceeds total count (${total})
+SELECT SQL:
+${records_query.stmt.sql}
+COUNT SQL:
+${count_query.stmt.sql}
+`)
+    }
     let next_cursor: number | undefined
     // if we return less results than the limit, theres no next page
     if (params.limit && params.limit !== -1 && result.length === params.limit) {

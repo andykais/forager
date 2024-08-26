@@ -211,6 +211,14 @@ test('media actions', async (ctx) => {
       ]
     })
 
+    // test using multiple tags in a search
+    ctx.assert.search_result(forager.media.search({query: { tags: ['wallpaper', 'colors:black'] }}), {
+      total: 1,
+      result: [
+        {media_reference: {id: media_generated_art.media_reference.id}},
+      ]
+    })
+
     // an empty list should act like a noop
     ctx.assert.search_result(forager.media.search({query: { tags: [] }}), {
       total: 3,
