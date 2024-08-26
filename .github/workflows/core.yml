@@ -53,33 +53,30 @@ jobs:
       - name: Test
         run: deno task test
 
-      # - name: Lint Publish JSR
-      #   run: deno publish --dry-run
+  publish:
+    runs-on: ubuntu-latest
+    needs: test
 
-  # publish:
-  #   runs-on: ubuntu-latest
-  #   needs: test
+    permissions:
+      contents: read
+      id-token: write
 
-  #   permissions:
-  #     contents: read
-  #     id-token: write
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v4
 
-  #   steps:
-  #     - name: Setup repo
-  #       uses: actions/checkout@v4
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
 
-  #     - name: Setup Deno
-  #       uses: denoland/setup-deno@v1
-  #       with:
-  #         deno-version: v1.x
+      - name: Cache Deno dependencies 
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.DENO_DIR }}
+          key: ${{ hashFiles(env.DENO_LOCKFILE) }}
 
-  #     - name: Cache Deno dependencies 
-  #       uses: actions/cache@v3
-  #       with:
-  #         path: ${{ env.DENO_DIR }}
-  #         key: ${{ hashFiles('deno.lock') }}
-  #         key: ${{ hashFiles('../../deno.lock') }}
 
-  #     - name: Publish package
-  #       if: github.ref == 'refs/heads/main'
-  #       run: deno publish --allow-slow-types
+      - name: Publish package
+        if: github.ref == 'refs/heads/main'
+        run: deno publish --allow-slow-types
