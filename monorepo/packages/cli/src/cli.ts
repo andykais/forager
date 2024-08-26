@@ -18,13 +18,24 @@ const cli = new cliffy.Command()
   .command('init', 'Initialize a forager database and set up a config file')
     .action(async opts => {
       const forager_helpers = new ForagerHelpers(opts)
-      await forager_helpers.ensure_config()
+      await forager_helpers.launch_forager()
     })
 
   .command('search', 'search for media in the forager database')
     .option('--tags=<tags>', 'A comma separated list of tags to search with')
+    .option('--directory=<directory>', 'Find media files in forager within a directory on the file system')
+    .option('--media-reference-id=<media_reference_id>', 'A forager database media reference id')
     .action(async opts => {
-      throw new Error('unimplemented')
+      const forager_helpers = new ForagerHelpers(opts)
+      const forager = await forager_helpers.launch_forager()
+      const result = forager.media.search({
+        query: {
+          media_reference_id: opts.mediaReferenceId ? parseInt(opts.mediaReferenceId) : undefined,
+          directory: opts.directory,
+          tags: opts.tags?.split(','),
+        }
+      })
+      forager_helpers.print_output(result)
     })
 
   .command('discover <globpath>', 'Discover media with a provided glob to the forager database')

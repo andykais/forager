@@ -44,9 +44,11 @@ class ForagerHelpers {
     await Deno.writeTextFile(this.config_filepath, yaml.stringify(default_config))
   }
 
-  print_output(json: any) {
+  print_output(output: any) {
     if (this.#should_print_json()) {
-      console.log(json)
+      console.log(JSON.stringify(output))
+    } else {
+      console.log(output)
     }
   }
 
@@ -89,6 +91,10 @@ class ForagerHelpers {
   #get_config_dir() {
     if (Deno.build.os === 'linux') {
       // const standard_config_dir = Deno.env.get('XDG_CONFIG_<i forget>')
+      const homedir = z.string().parse(Deno.env.get('HOME'))
+      const config_dir = path.join(homedir, '.config')
+      return config_dir
+    } else if (Deno.build.os === 'darwin') {
       const homedir = z.string().parse(Deno.env.get('HOME'))
       const config_dir = path.join(homedir, '.config')
       return config_dir
