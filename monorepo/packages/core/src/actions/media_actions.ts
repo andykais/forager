@@ -94,7 +94,7 @@ class MediaActions extends Actions {
       filesystem: query.filesystem,
     })
 
-    const results: (MediaFileResponse | MediaSeriesResponse)[] =  records.result.map(row => {
+    const results: (MediaFileResponse | MediaSeriesResponse)[] =  records.results.map(row => {
       const tags = this.models.Tag.select_many({media_reference_id: row.id})
 
       if (row.media_series_reference) {
@@ -126,7 +126,7 @@ class MediaActions extends Actions {
     return {
       total: records.total,
       cursor: records.cursor,
-      result: results,
+      results: results,
     }
   }
 

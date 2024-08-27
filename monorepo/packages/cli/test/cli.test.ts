@@ -33,7 +33,7 @@ test('cli basics', async ctx => {
   forager.init()
   ctx.assert.search_result(forager.media.search(), {
     total: 1,
-    result: [
+    results: [
       {media_file: {filepath: ctx.resources.media_files['cat_doodle.jpg']}},
     ],
   })
@@ -41,14 +41,14 @@ test('cli basics', async ctx => {
   await forager_cli`--config ${config_path} create ${ctx.resources.media_files['cat_cronch.mp4']} --title "cat cronch" --tags=cat,funny`
   ctx.assert.search_result(forager.media.search(), {
     total: 2,
-    result: [
+    results: [
       {media_reference: {title: 'cat cronch'}, media_file: {filepath: ctx.resources.media_files['cat_cronch.mp4']}},
       {media_file: {filepath: ctx.resources.media_files['cat_doodle.jpg']}},
     ],
   })
   ctx.assert.search_result(forager.media.search({query: {tags: ['cat']}}), {
     total: 1,
-    result: [
+    results: [
       {media_reference: {title: 'cat cronch'}},
     ]
   })
@@ -57,7 +57,7 @@ test('cli basics', async ctx => {
     const search_result = await forager_cli`--log-level json --config ${config_path} search --tags cat,funny`.json()
     ctx.assert.search_result(search_result, {
       total: 1,
-      result: [
+      results: [
         {media_file: {filepath: ctx.resources.media_files["cat_cronch.mp4"]}},
       ]
 

@@ -1,6 +1,10 @@
 <script lang="ts">
+  import type { Forager } from '@forager/core'
 
-  let {search_result} = $props()
+  interface Props {
+    search_result: Awaited<ReturnType<Forager['media']['search']>>
+  }
+  let {search_result}: Props = $props()
 </script>
 
 <style>
@@ -15,7 +19,7 @@
 
 
 <div class="container-masonry p-4">
-  {#each search_result.result as result}
+  {#each search_result.results as result}
   {#if result.media_type === 'media_file'}
     <button class="
       p-1

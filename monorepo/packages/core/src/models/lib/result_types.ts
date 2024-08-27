@@ -14,6 +14,6 @@ export type View = InferSchemaTypes<typeof models.View.result>
 export type PaginatedResult<T> = {
   cursor: number | undefined
   total: number
-  result: T[]
+  results: T[]
 }
 

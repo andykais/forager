@@ -219,13 +219,13 @@ SELECT media_reference.*, cursor_id FROM (
 
     const records_query = records_builder.build()
     type PaginatedRow = torm.InferSchemaTypes<typeof MediaReference.result> & {cursor_id: number}
-    const result: PaginatedRow[] = records_query.stmt.all(records_arguments)
+    const results: PaginatedRow[] = records_query.stmt.all(records_arguments)
 
     const count_query = count_builder.build()
     const { total } = count_query.stmt.one(count_arguments)! as {total: number}
 
-    if (total < result.length) {
-      throw new errors.UnExpectedError(`Selected media references (${result.length}) exceeds total count (${total})
+    if (total < results.length) {
+      throw new errors.UnExpectedError(`Selected media references (${results.length}) exceeds total count (${total})
 SELECT SQL:
 ${records_query.stmt.sql}
 COUNT SQL:
@@ -234,15 +234,15 @@ ${count_query.stmt.sql}
     }
     let next_cursor: number | undefined
     // if we return less results than the limit, theres no next page
-    if (params.limit && params.limit !== -1 && result.length === params.limit) {
-      next_cursor = result.at(-1)?.cursor_id
+    if (params.limit && params.limit !== -1 && results.length === params.limit) {
+      next_cursor = results.at(-1)?.cursor_id
     }
-    for (const row of result) {
+    for (const row of results) {
       // now that we grabbed the last cursor_id, we can pop these columns off (minor optimization, maybe we skip this step?)
       delete (row as any).cursor_id
     }
     return {
-      result,
+      results,
       cursor: next_cursor,
       total,
     }

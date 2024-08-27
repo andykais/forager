@@ -13,8 +13,6 @@
       await search_fetcher.fetch()
     }
   })
-  /*
-  */
 
   let server_time: Date = $state(new Date())
 </script>

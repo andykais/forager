@@ -98,7 +98,7 @@ class MediaThumbnail extends Model {
         : this.#select_by_media_file_id_and_timestamp.all({ media_file_id, limit, media_timestamp: keypoint_timestamp })
       return {
         total,
-        result: rows,
+        results: rows,
         // pagination isnt technically implemented for thumbnails since the number is fairly small for now. We will need to implement this for very long sequences though
         cursor: undefined
       }
@@ -110,7 +110,7 @@ class MediaThumbnail extends Model {
       const rows = this.#select_by_series_id.all({ series_id, limit })
       return {
         total,
-        result: rows,
+        results: rows,
         cursor: undefined
       }
     } else {

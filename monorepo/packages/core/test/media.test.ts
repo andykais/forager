@@ -27,7 +27,7 @@ import { Forager, errors } from '~/mod.ts'
  `     `  tests = {
  `     `    'search sort order': () => {
  `     `      ctx.assert.search_result(forager.media.search({sort_by: 'created_at'}), {
- `     `        result: [
+ `     `        results: [
  `     `          {media_reference: {id: media_doodle.media_reference.id}},
  `     `          {media_reference: {id: media_cartoon.media_reference.id}},
  `     `          {media_reference: {id: media_generated_art.media_reference.id}},
@@ -45,7 +45,7 @@ import { Forager, errors } from '~/mod.ts'
  `     `  @test()
  `     `  test_sort_order() {
  `     `    ctx.assert.search_result(forager.media.search({sort_by: 'created_at'}), {
- `     `      result: [
+ `     `      results: [
  `     `        {media_reference: {id: media_doodle.media_reference.id}},
  `     `        {media_reference: {id: media_cartoon.media_reference.id}},
  `     `        {media_reference: {id: media_generated_art.media_reference.id}},
@@ -135,7 +135,7 @@ test('media actions', async (ctx) => {
   await ctx.subtest('default search behavior', () => {
     ctx.assert.search_result(forager.media.search(), {
       total: 3,
-      result: [
+      results: [
         {media_reference: {title: 'Cat Doodle'}},
         {media_reference: {title: 'Ed Edd Eddy Screengrab'}},
         {media_reference: {title: 'Generated Art'}},
@@ -146,7 +146,7 @@ test('media actions', async (ctx) => {
   await ctx.subtest('default search arguments', () => {
     ctx.assert.search_result(forager.media.search({cursor: 0, limit: -1}), {
       total: 3,
-      result: [
+      results: [
         {media_reference: {title: 'Cat Doodle'}},
         {media_reference: {title: 'Ed Edd Eddy Screengrab'}},
         {media_reference: {title: 'Generated Art'}},
@@ -158,14 +158,14 @@ test('media actions', async (ctx) => {
     ctx.assert.search_result(forager.media.search({limit: 0}), {
       total: 3,
       cursor: undefined,
-      result: []
+      results: []
     })
   })
 
   await ctx.subtest('search pagination', () => {
     const media_list_page_1 = forager.media.search({limit: 2})
     ctx.assert.search_result(media_list_page_1, {
-      result: [
+      results: [
         {media_reference: {title: 'Cat Doodle'}},
         {media_reference: {title: 'Ed Edd Eddy Screengrab'}},
       ],
@@ -175,7 +175,7 @@ test('media actions', async (ctx) => {
 
     const media_list_page_2 = forager.media.search({cursor: media_list_page_1.cursor, limit: 2})
     ctx.assert.object_match(media_list_page_2, {
-      result: [
+      results: [
         {media_reference: {title: 'Generated Art'}},
       ]
     })
@@ -184,14 +184,14 @@ test('media actions', async (ctx) => {
   await ctx.subtest('search filters media_reference_id', () => {
     ctx.assert.search_result(forager.media.search({query: {media_reference_id: media_generated_art.media_reference.id}}), {
       total: 1,
-      result: [
+      results: [
         {media_reference: {id: media_generated_art.media_reference.id, title: 'Generated Art'}}
       ],
     })
 
     // assert filepaths
     ctx.assert.search_result(forager.media.search({query: {media_reference_id: media_generated_art.media_reference.id}}), {
-      result: [
+      results: [
         {media_file: {filepath: ctx.resources.media_files["koch.tif"]}}
       ]
     })
@@ -200,12 +200,12 @@ test('media actions', async (ctx) => {
   await ctx.subtest('search filters tags', () => {
     ctx.assert.search_result(forager.media.search({query: { tags: ['procedural_generation'] }}), {
       total: 1,
-      result: [{media_reference: {id: media_generated_art.media_reference.id}}]
+      results: [{media_reference: {id: media_generated_art.media_reference.id}}]
     })
 
     ctx.assert.search_result(forager.media.search({query: { tags: ['wallpaper'] }}), {
       total: 2,
-      result: [
+      results: [
         {media_reference: {id: media_cartoon.media_reference.id}},
         {media_reference: {id: media_generated_art.media_reference.id}},
       ]
@@ -214,7 +214,7 @@ test('media actions', async (ctx) => {
     // test using multiple tags in a search
     ctx.assert.search_result(forager.media.search({query: { tags: ['wallpaper', 'colors:black'] }}), {
       total: 1,
-      result: [
+      results: [
         {media_reference: {id: media_generated_art.media_reference.id}},
       ]
     })
@@ -222,7 +222,7 @@ test('media actions', async (ctx) => {
     // an empty list should act like a noop
     ctx.assert.search_result(forager.media.search({query: { tags: [] }}), {
       total: 3,
-      result: [
+      results: [
         {media_reference: {id: media_doodle.media_reference.id}},
         {media_reference: {id: media_cartoon.media_reference.id}},
         {media_reference: {id: media_generated_art.media_reference.id}},
@@ -237,19 +237,19 @@ test('media actions', async (ctx) => {
     const wallpaper_media_page_3 = forager.media.search({query: { tags: ['wallpaper'] }, limit: 1, cursor: wallpaper_media_page_2.cursor})
     ctx.assert.search_result(wallpaper_media_page_1, {
       total: 2,
-      result: [
+      results: [
         {media_reference: {id: media_cartoon.media_reference.id}},
       ]
     })
     ctx.assert.search_result(wallpaper_media_page_2, {
       total: 2,
-      result: [
+      results: [
         {media_reference: {id: media_generated_art.media_reference.id}},
       ]
     })
     ctx.assert.search_result(wallpaper_media_page_3, {
       total: 2,
-      result: []
+      results: []
     })
 
     // non existent tags should bubble up NotFoundError on the tag
@@ -263,21 +263,21 @@ test('media actions', async (ctx) => {
   await ctx.subtest('search sort order', () => {
     // descending is the default sort order
     ctx.assert.search_result(forager.media.search({sort_by: 'created_at'}), {
-      result: [
+      results: [
         {media_reference: {id: media_doodle.media_reference.id}},
         {media_reference: {id: media_cartoon.media_reference.id}},
         {media_reference: {id: media_generated_art.media_reference.id}},
       ]
     })
     ctx.assert.search_result(forager.media.search({sort_by: 'created_at', order: 'asc'}), {
-      result: [
+      results: [
         {media_reference: {id: media_generated_art.media_reference.id}},
         {media_reference: {id: media_cartoon.media_reference.id}},
         {media_reference: {id: media_doodle.media_reference.id}},
       ]
     })
     ctx.assert.search_result(forager.media.search({sort_by: 'created_at', order: 'desc'}), {
-      result: [
+      results: [
         {media_reference: {id: media_doodle.media_reference.id}},
         {media_reference: {id: media_cartoon.media_reference.id}},
         {media_reference: {id: media_generated_art.media_reference.id}},
@@ -314,7 +314,7 @@ test('media actions', async (ctx) => {
     const root_result = forager.media.search({query: {filesystem: true}})
     ctx.assert.search_result(root_result, {
       total: 1,
-      result: [
+      results: [
         {
           media_reference: { directory_path: root_dir }
         }
@@ -328,7 +328,7 @@ test('media actions', async (ctx) => {
 
     ctx.assert.search_result(forager.media.search({query: {directory: ctx.resources.resources_directory}}), {
       total: 3,
-      result: [
+      results: [
         {media_reference: {id: media_generated_art.media_reference.id}},
         {media_reference: {id: media_cartoon.media_reference.id}},
         {media_reference: {id: media_doodle.media_reference.id}},
@@ -371,7 +371,7 @@ test('media actions', async (ctx) => {
 
     ctx.assert.search_result(forager.media.search(), {
       total: 3,
-      result: [
+      results: [
         {media_file: {filepath: ctx.resources.media_files["cat_cronch.mp4"]}},
         {media_reference: {title: 'Ed Sparrow'}},
         {media_reference: {title: 'Generated Art'}},
@@ -392,24 +392,24 @@ test('video media', async ctx => {
   let media_cronch = await forager.media.create(ctx.resources.media_files['cat_cronch.mp4'], {}, ['cat'])
   // ensure we have the exact right amount
   ctx.assert.equals(media_cronch.thumbnails.total, 18)
-  ctx.assert.equals(media_cronch.thumbnails.result.length, 1)
+  ctx.assert.equals(media_cronch.thumbnails.results.length, 1)
   ctx.assert.equals(media_cronch.media_file.media_type, 'VIDEO')
   ctx.assert.equals(media_cronch.media_file.content_type, 'video/mp4')
-  ctx.assert.equals(media_cronch.thumbnails.result[0].media_timestamp, 0)
+  ctx.assert.equals(media_cronch.thumbnails.results[0].media_timestamp, 0)
 
   const media_art_timelapse = await forager.media.create(ctx.resources.media_files['Succulentsaur.mp4'], {}, ['art', 'timelapse'])
   ctx.assert.equals(media_art_timelapse.thumbnails.total, 18)
-  ctx.assert.equals(media_art_timelapse.thumbnails.result.length, 1)
+  ctx.assert.equals(media_art_timelapse.thumbnails.results.length, 1)
   ctx.assert.equals(media_art_timelapse.media_file.media_type, 'VIDEO')
   ctx.assert.equals(media_art_timelapse.media_file.content_type, 'video/mp4')
-  ctx.assert.equals(media_art_timelapse.thumbnails.result[0].media_timestamp, 0)
+  ctx.assert.equals(media_art_timelapse.thumbnails.results[0].media_timestamp, 0)
 
   ctx.assert.search_result(forager.media.search({ query: {tags: ['cat']}}), {
     total: 1,
-    result: [
+    results: [
       {
         thumbnails: {
-          result: [
+          results: [
             {
               media_timestamp: 0,
             }
@@ -419,7 +419,7 @@ test('video media', async ctx => {
   })
 
   const media_cronch_thumbnails_all_search = forager.media.search({query: {tags: ['cat']}, thumbnail_limit: -1 })
-  const media_cronch_thumbnails_all = media_cronch_thumbnails_all_search.result[0].thumbnails.result
+  const media_cronch_thumbnails_all = media_cronch_thumbnails_all_search.results[0].thumbnails.results
 
   // just some basic assumptions about thumbnail timestamp distribution
   ctx.assert.equals(media_cronch_thumbnails_all.at(0)?.media_timestamp, 0)
@@ -448,7 +448,7 @@ test('video media', async ctx => {
     ctx.assert.equals(4.7 + 0.39999999999999947, 5.1)
     ctx.assert.equals(bite_keypoint.media_timestamp, 4.7)
 
-    ctx.assert.list_partial(forager.media.get({media_reference_id: media_cronch.media_reference.id}).thumbnails.result, [
+    ctx.assert.list_partial(forager.media.get({media_reference_id: media_cronch.media_reference.id}).thumbnails.results, [
       {kind: 'standard', media_timestamp: 0},
       {kind: 'standard', media_timestamp: 0.375722},
       {kind: 'standard', media_timestamp: 0.751444},
@@ -516,7 +516,7 @@ test('video media', async ctx => {
     // basic search, just ensure there are two files in the db
     ctx.assert.search_result(forager.media.search(), {
       total: 2,
-      result: [
+      results: [
         {media_file: {filepath: ctx.resources.media_files["Succulentsaur.mp4"]}},
         {media_file: {filepath: ctx.resources.media_files["cat_cronch.mp4"]}},
       ]
@@ -525,11 +525,11 @@ test('video media', async ctx => {
     // assert that when specifying a keypoint, we return the keypoint thumbnail
     ctx.assert.search_result(forager.media.search({query: {keypoint: 'bite'}}), {
       total: 1,
-      result: [{
+      results: [{
         media_file: {filepath: ctx.resources.media_files["cat_cronch.mp4"]},
         thumbnails: {
           total: 20,
-          result: [
+          results: [
             {
               // assert that the first returned timestamp is the keypoint (this just makes previews nicer in the gui)
               media_timestamp: 4.7
@@ -541,10 +541,10 @@ test('video media', async ctx => {
 
     // when we dont use keypoints in search, assert that we return the first timestamp thumbnail (default behavior)
     ctx.assert.search_result(forager.media.search({query: {tags: ['cat']}}), {
-      result: [{
+      results: [{
         thumbnails: {
           total: 20,
-          result: [
+          results: [
             {
               media_timestamp: 0,
             }
@@ -561,10 +561,10 @@ test('video media', async ctx => {
     media_cronch = await forager.media.create(ctx.resources.media_files['cat_cronch.mp4'], {}, ['cat'])
 
     ctx.assert.equals(media_cronch.thumbnails.total, 18)
-    ctx.assert.equals(media_cronch.thumbnails.result.length, 1)
+    ctx.assert.equals(media_cronch.thumbnails.results.length, 1)
     ctx.assert.equals(media_cronch.media_file.media_type, 'VIDEO')
     ctx.assert.equals(media_cronch.media_file.content_type, 'video/mp4')
-    ctx.assert.equals(media_cronch.thumbnails.result[0].media_timestamp, 0)
+    ctx.assert.equals(media_cronch.thumbnails.results[0].media_timestamp, 0)
   })
 })
 
@@ -604,7 +604,7 @@ test('media series', async (ctx) => {
 
   ctx.assert.search_result(forager.media.search({query: {series_id: cool_art_series.media_reference.id}}), {
     total: 2,
-    result: [
+    results: [
       {media_reference: {title: 'Generated Art'}},
       {media_reference: {title: 'Ed Edd Eddy Screengrab'}},
     ]
@@ -622,7 +622,7 @@ test('media series', async (ctx) => {
     // ensure it appears in search
     ctx.assert.search_result(forager.media.search({query: {tags: ['art']}}), {
       total: 1,
-      result: [
+      results: [
         {media_type: 'media_series', media_reference: {title: 'cool art collection'}},
       ]
     })
@@ -646,7 +646,7 @@ test('media series', async (ctx) => {
     ctx.assert.equals(cool_art_series.media_reference.media_series_length, 2)
     ctx.assert.search_result(forager.media.search({query: {series_id: doodle_series.media_reference.id}}), {
       total: 2,
-      result: [
+      results: [
         {media_reference: {title: 'Cat Doodle'}},
         {media_reference: {title: 'Cat Doodle'}},
       ]
@@ -659,7 +659,7 @@ test('media series', async (ctx) => {
 
     ctx.assert.search_result(forager.media.search({ query: {series_id: cool_art_series.media_reference.id} }), {
       total: 3,
-      result: [
+      results: [
         {media_type: 'media_file', media_reference: {id: media_generated_art.media_reference.id}},
         {media_type: 'media_file', media_reference: {id: media_cartoon.media_reference.id}},
         {media_type: 'media_series', media_reference: {id: doodle_series.media_reference.id}},
@@ -684,18 +684,18 @@ test('media series', async (ctx) => {
     // first we need to grab the doodle series id
     const doodle_series_search = forager.media.search({query: {tags: ['doodle_list']}})
     ctx.assert.equals(doodle_series_search.total, 1)
-    ctx.assert.equals(doodle_series_search.result[0].media_reference.title, 'doodles')
-    const doodle_series = doodle_series_search.result[0]
+    ctx.assert.equals(doodle_series_search.results[0].media_reference.title, 'doodles')
+    const doodle_series = doodle_series_search.results[0]
 
     ctx.assert.search_result(forager.media.search({query: {series_id: cool_art_series.media_reference.id}, thumbnail_limit: -1}), {
       total: 3,
-      result: [
+      results: [
         {
           media_type: 'media_file',
           media_reference: {id: media_generated_art.media_reference.id},
           thumbnails: {
             total: 1,
-            result: [{media_file_id: media_generated_art.media_file.id}]
+            results: [{media_file_id: media_generated_art.media_file.id}]
           }
         },
         {
@@ -703,7 +703,7 @@ test('media series', async (ctx) => {
           media_reference: {id: media_cartoon.media_reference.id},
           thumbnails: {
             total: 1,
-            result: [{media_file_id: media_cartoon.media_file.id}]
+            results: [{media_file_id: media_cartoon.media_file.id}]
           }
         },
         {
@@ -711,7 +711,7 @@ test('media series', async (ctx) => {
           media_reference: {id: doodle_series.media_reference.id},
           thumbnails: {
             total: 2,
-            result: [
+            results: [
               {media_file_id: media_doodle.media_file.id},
               {media_file_id: media_doodle.media_file.id}
             ]
@@ -723,7 +723,7 @@ test('media series', async (ctx) => {
     ctx.assert.object_match(forager.series.get({series_id: cool_art_series.media_reference.id}), {
       media_type: 'media_series',
       tags: [],
-      thumbnails: { total: 2, result: [] },
+      thumbnails: { total: 2, results: [] },
     })
   })
 })
@@ -739,7 +739,7 @@ test('filesystem discovery', async (ctx) => {
     await forager.filesystem.discover({path: ctx.resources.resources_directory + path.SEPARATOR + '*.jpg' })
     ctx.assert.search_result(forager.media.search(), {
       total: 1,
-      result: [
+      results: [
         {media_file: {filepath: ctx.resources.media_files['cat_doodle.jpg']}},
       ]
     })
@@ -750,7 +750,7 @@ test('filesystem discovery', async (ctx) => {
     await forager.filesystem.discover({path: ctx.resources.resources_directory, extensions: ['jpg', 'tif']})
     ctx.assert.search_result(forager.media.search(), {
       total: 2,
-      result: [
+      results: [
         {media_file: {filepath: ctx.resources.media_files['koch.tif']}},
         {media_file: {filepath: ctx.resources.media_files['cat_doodle.jpg']}},
       ]
@@ -759,7 +759,7 @@ test('filesystem discovery', async (ctx) => {
     await forager.filesystem.discover({path: ctx.resources.resources_directory, extensions: ['jpg', 'tif', 'png']})
     ctx.assert.search_result(forager.media.search(), {
       total: 3,
-      result: [
+      results: [
         {media_file: {filepath: ctx.resources.media_files['ed-edd-eddy.png']}},
         {media_file: {filepath: ctx.resources.media_files['koch.tif']}},
         {media_file: {filepath: ctx.resources.media_files['cat_doodle.jpg']}},

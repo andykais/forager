@@ -58,12 +58,12 @@ class Assertions {
       this.equals(search_result.cursor, assertions.cursor)
     }
 
-    if (assertions.result) {
-      this.equals(search_result.result.length, assertions.result.length, `Expected search result length to be ${assertions.result.length} but is actually ${search_result.result.length}`)
+    if (assertions.results) {
+      this.equals(search_result.results.length, assertions.results.length, `Expected search results length to be ${assertions.results.length} but is actually ${search_result.results.length}`)
       this.object_match({
-        result: search_result.result
+        results: search_result.results
       }, {
-        result: assertions.result
+        results: assertions.results
       })
     }
   }
