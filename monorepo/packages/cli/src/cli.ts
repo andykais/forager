@@ -65,4 +65,16 @@ const cli = new cliffy.Command()
       forager_helpers.print_output(result)
     })
 
+  .command('delete', 'delete a file from the forager database')
+    .option('--filepath=<filepath>', 'Match media based on a filepath')
+    .option('--media-reference-id=<media_reference_id>', 'Match media based on a MediaReference::id')
+    .action(async (opts) => {
+      const forager_helpers = new ForagerHelpers(opts)
+      const forager = await forager_helpers.launch_forager()
+      await forager.media.delete({
+        filepath: opts.filepath,
+        media_reference_id: opts.mediaReferenceId ? parseInt(opts.mediaReferenceId) : undefined,
+      })
+    })
+
 await cli.parse()
