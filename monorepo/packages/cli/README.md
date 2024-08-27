@@ -12,7 +12,7 @@ deno install -A --unstable-ffi -n forager jsr:@forager/cli
 Use `forager --help` and `forager <subcommand> --help` for detailed cli documentation.
 ```
 Usage:   forager
-Version: 0.2.0
+Version: 0.3.1
 
 Description:
 
@@ -29,8 +29,9 @@ Options:
 
 Commands:
 
-  init                  - Initialize a forager database and set up a config file
+  init                  - set up a forager config file and initialize a the database
   search                - search for media in the forager database
-  discover  <globpath>  - Discover media with a provided glob to the forager database
+  discover  <globpath>  - add media to the forager database with a provided file glob
   create    <filepath>  - add a file to the forager database
+  delete                - delete a file from the forager database
 ```

@@ -15,7 +15,7 @@ const cli = new cliffy.Command()
   .option('-l, --log-level <level:log-level>', 'The log level forager will output.', { default: 'info', global: true })
   .option('-q, --quiet', 'Shorthand for --log-level=error', { global: true })
 
-  .command('init', 'Initialize a forager database and set up a config file')
+  .command('init', 'set up a forager config file and initialize a the database')
     .action(async opts => {
       const forager_helpers = new ForagerHelpers(opts)
       await forager_helpers.launch_forager()
@@ -38,7 +38,7 @@ const cli = new cliffy.Command()
       forager_helpers.print_output(result)
     })
 
-  .command('discover <globpath>', 'Discover media with a provided glob to the forager database')
+  .command('discover <globpath>', 'add media to the forager database with a provided file glob')
     .option('--tags=<tags>', 'A comma separated list of tags to set on media')
     .option('--exts=<extensions>', 'A comma separated list of file extensions to look for')
     .action(async (opts, globpath) => {
