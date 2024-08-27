@@ -21,6 +21,7 @@
 	"type": "module",
 	"dependencies": {
 		"@andykais/ts-rpc": "npm:@jsr/andykais__ts-rpc@^0.2.2",
-		"@forager/core": "npm:@jsr/forager__core@^0.0.0"
+		"@forager/core": "npm:@jsr/forager__core@^0.2.0",
+		"@std/yaml": "npm:@jsr/std__yaml@^1.0.4"
 	}
 }

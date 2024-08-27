@@ -130,26 +130,6 @@ class MediaActions extends Actions {
     }
   }
 
-  search_group_by = () => {
-    throw new Error('unimplemented')
-  /*
-    return {
-      total: 2,
-      cursor: '',
-      results: [
-        {
-          group: '',
-          count: 10
-        },
-        {
-          group: 'medium',
-          count: 3
-        }
-      ]
-    }
-  */
-  }
-
   get = (params: inputs.MediaReferenceGet) => {
     const parsed = parsers.MediaReferenceGet.parse(params)
     return this.media_get({
