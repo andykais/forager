@@ -30,8 +30,8 @@
       rounded-md">
       <img
         style="max-width:100px; max-height: 100px"
-        src="/files/thumbnail{result.thumbnails.result[0].filepath}"
-        alt="Failed to load /files/thumbnail{result.thumbnails.result[0].filepath}"/>
+        src="/files/thumbnail{result.thumbnails.results[0].filepath}"
+        alt="Failed to load /files/thumbnail{result.thumbnails.results[0].filepath}"/>
     </button>
   {:else}
     <div>unimplemented</div>
