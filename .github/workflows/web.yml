@@ -1,0 +1,86 @@
+name: Web CI
+
+
+permissions:
+  contents: read
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+env:
+  DENO_DIR: deno_dependency_cache
+  DENO_LOCKFILE: ${{ github.workspace }}/web/deno.lock
+
+defaults:
+  run:
+    working-directory: './web
+
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-12, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Setup FFMPEG
+        uses: FedericoCarboni/setup-ffmpeg@v3
+        id: setup-ffmpeg
+        with:
+          ffmpeg-version: 7.0.1
+
+      - name: Cache Deno dependencies 
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.DENO_DIR }}
+          key: ${{ hashFiles(env.DENO_LOCKFILE) }}
+
+      # - name: Lint
+      # run: deno task lint
+
+      # - name: Typecheck
+      # run: deno task check
+
+      - name: Build
+        run: deno task build
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: test
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Cache Deno dependencies 
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.DENO_DIR }}
+          key: ${{ hashFiles(env.DENO_LOCKFILE) }}
+
+      - name: Build
+        run: deno task build
+
+      - name: Publish package
+        if: github.ref == 'refs/heads/main'
+        run: cd build && deno publish
