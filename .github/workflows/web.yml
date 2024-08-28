@@ -21,7 +21,9 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-12, windows-latest]
+        # windows & mac is overkill for web tests, which essentially just builds the sveltekit project and type checks it
+        # os: [ubuntu-latest, macos-12, windows-latest]
+        os: [ubuntu-latest]
 
     runs-on: ${{ matrix.os }}
 
