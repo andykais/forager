@@ -1,5 +1,6 @@
 import * as cliffy from '@cliffy/command'
 import {Forager, type ForagerConfig} from '@forager/core'
+import * as web from '@forager/web'
 import deno_json from '../deno.json' with { type: "json" };
 import { ForagerHelpers } from './helpers.ts'
 
@@ -75,6 +76,21 @@ const cli = new cliffy.Command()
         filepath: opts.filepath,
         media_reference_id: opts.mediaReferenceId ? parseInt(opts.mediaReferenceId) : undefined,
       })
+    })
+
+  .command('gui', 'launch the forager graphical web interface')
+    .action(async (opts) => {
+      const forager_helpers = new ForagerHelpers(opts)
+      const forager = await forager_helpers.launch_forager()
+      forager.close()
+      const server = new web.Server({
+        kit: {
+          env: {
+            FORAGER_CONFIG: forager_helpers.config_filepath,
+          }
+        }
+      })
+      await server.start()
     })
 
 await cli.parse()
