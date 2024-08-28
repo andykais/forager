@@ -83,5 +83,5 @@ jobs:
 
       - name: Publish package
         if: github.ref == 'refs/heads/main'
-        working-directory: '${{ github.workspace }}/web/build'
-        run: 'deno publish'
+        run: deno publish
+        working-directory: ./build
