@@ -1,5 +1,9 @@
 <script lang="ts">
   import type { Forager } from '@forager/core'
+  import * as theme from '$lib/theme.ts'
+  import Icon from '$lib/components/icon.svelte'
+  import PlayCircle from '$lib/icons/play-circle.svg?raw'
+  import Photo from '$lib/icons/photo.svg?raw'
 
   interface Props {
     search_result: Awaited<ReturnType<Forager['media']['search']>>
@@ -15,7 +19,17 @@
     grid-template-rows: masonry;
     masonry-auto-flow: next ;
   }
+
+  .container-media-tile {
+    display: grid;
+    gap: 2px;
+    grid-template-rows: 1fr max-content;
+    height: 100%;
+    width: 100%;
+    align-items: center;
+  }
 </style>
+
 
 
 <div class="container-masonry p-4">
@@ -28,10 +42,24 @@
       border-2 border-slate-500
       hover:border-slate-200 hover:border-2
       rounded-md">
-      <img
-        style="max-width:100px; max-height: 100px"
-        src="/files/thumbnail{result.thumbnails.results[0].filepath}"
-        alt="Failed to load /files/thumbnail{result.thumbnails.results[0].filepath}"/>
+      <div class="container-media-tile">
+        <img
+          class="justify-self-center"
+          style="max-width:100px; max-height: 100px"
+          src="/files/thumbnail{result.thumbnails.results[0].filepath}"
+          alt="Failed to load /files/thumbnail{result.thumbnails.results[0].filepath}"/>
+
+        <!-- info chips -->
+        <div>
+          {#if result.media_file.media_type === 'VIDEO'}
+            <Icon data={PlayCircle} fill={theme.colors.green[200]} stroke="none" />
+          {:else if result.media_file.media_type === 'IMAGE'}
+            <Icon data={Photo} fill={theme.colors.green[200]} stroke="none" />
+          {:else}
+            unknown
+          {/if}
+        </div>
+      </div>
     </button>
   {:else}
     <div>unimplemented</div>
