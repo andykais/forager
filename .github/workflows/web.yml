@@ -84,4 +84,4 @@ jobs:
       - name: Publish package
         if: github.ref == 'refs/heads/main'
         run: deno publish
-        working-directory: ./build
+        working-directory: ./web/build
