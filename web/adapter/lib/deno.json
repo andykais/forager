@@ -1,10 +1,28 @@
 {
+  "name": "@forager/web",
+  "version": "0.0.0",
+  "license": "MIT",
+
   "imports": {
-    "@forager/core": "jsr:@forager/core@^0.0.0",
+    "@andykais/ts-rpc": "jsr:@andykais/ts-rpc@^0.2.2",
+    "@forager/core": "jsr:@forager/core@^0.2.1",
     "@std/http/file-server": "jsr:@std/http@0.224.5/file-server",
     "@std/path": "jsr:@std/path@1.0.2",
+    "@std/yaml": "jsr:@std/yaml@^1.0.4",
     "cookie": "npm:cookie@^0.6.0",
     "devalue": "npm:devalue@^5.0.0",
     "set-cookie-parser": "npm:set-cookie-parser@^2.6.0"
+  },
+
+  "exports": "./mod.ts",
+
+  "publish": {
+    "include": [
+      "README.md",
+      "LICENSE",
+      "mod.ts",
+      "static/**/*",
+      "server/**/*"
+    ],
   }
 }

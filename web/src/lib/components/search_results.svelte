@@ -9,6 +9,12 @@
     search_result: Awaited<ReturnType<Forager['media']['search']>>
   }
   let {search_result}: Props = $props()
+  /*
+  for (const r of search_result.results) {
+    console.log({r})
+  }
+  console.log({search_result})
+  */
 </script>
 
 <style>
@@ -34,35 +40,35 @@
 
 <div class="container-masonry p-4">
   {#each search_result.results as result}
-  {#if result.media_type === 'media_file'}
-    <button class="
-      p-1
-      inline-flex items-center justify-center
-      shadow shadow-slate-700 bg-slate-500
-      border-2 border-slate-500
-      hover:border-slate-200 hover:border-2
-      rounded-md">
-      <div class="container-media-tile">
-        <img
-          class="justify-self-center"
-          style="max-width:100px; max-height: 100px"
-          src="/files/thumbnail{result.thumbnails.results[0].filepath}"
-          alt="Failed to load /files/thumbnail{result.thumbnails.results[0].filepath}"/>
+    {#if result.media_type === 'media_file'}
+      <button class="
+        p-1
+        inline-flex items-center justify-center
+        shadow shadow-slate-700 bg-slate-500
+        border-2 border-slate-500
+        hover:border-slate-200 hover:border-2
+        rounded-md">
+        <div class="container-media-tile">
+          <img
+            class="justify-self-center"
+            style="max-width:100px; max-height: 100px"
+            src="/files/thumbnail{result.thumbnails.results[0].filepath}"
+            alt="Failed to load /files/thumbnail{result.thumbnails.results[0].filepath}"/>
 
-        <!-- info chips -->
-        <div>
-          {#if result.media_file.media_type === 'VIDEO'}
-            <Icon data={PlayCircle} fill={theme.colors.green[200]} stroke="none" />
-          {:else if result.media_file.media_type === 'IMAGE'}
-            <Icon data={Photo} fill={theme.colors.green[200]} stroke="none" />
-          {:else}
-            unknown
-          {/if}
+          <!-- info chips -->
+          <div>
+            {#if result.media_file.media_type === 'VIDEO'}
+              <Icon data={PlayCircle} fill={theme.colors.green[200]} stroke="none" />
+            {:else if result.media_file.media_type === 'IMAGE'}
+              <Icon data={Photo} fill={theme.colors.green[200]} stroke="none" />
+            {:else}
+              unknown
+            {/if}
+          </div>
         </div>
-      </div>
-    </button>
-  {:else}
-    <div>unimplemented</div>
-  {/if}
+      </button>
+    {:else}
+      <div>unimplemented</div>
+    {/if}
   {/each}
 </div>

@@ -1,4 +1,5 @@
 import {fileURLToPath} from 'node:url';
+import * as path from 'jsr:@std/path'
 import {build} from 'esbuild';
 
 /** @type {import('.').default} */
@@ -35,35 +36,39 @@ export default function (opts = {}) {
         }
       });
 
-      const defaultOptions = {
-        entryPoints: [`${out}/server.js`],
-        outfile: `${out}/server.js`,
-        bundle: true,
-        format: 'esm',
-        target: 'esnext',
-        platform: 'node',
-        allowOverwrite: true
-      };
+      const webPackageRoot = path.resolve(import.meta.dirname, '..')
+      builder.copy(path.join(webPackageRoot, 'README.md'), path.join(out, 'README.md'))
+      builder.copy(path.join(webPackageRoot, 'LICENSE'), path.join(out, 'LICENSE'))
 
-      for (const key of Object.keys(buildOptions)) {
-        if (Object.hasOwn(defaultOptions, key)) {
-          console.warn(
-            `Warning: "buildOptions" has override for default "${key}" this may break deployment.`
-          );
-        }
-      }
+      // const defaultOptions = {
+      //   entryPoints: [`${out}/server.js`],
+      //   outfile: `${out}/server.js`,
+      //   bundle: true,
+      //   format: 'esm',
+      //   target: 'esnext',
+      //   platform: 'node',
+      //   allowOverwrite: true
+      // };
 
-      try {
-        await build({
-          ...defaultOptions,
-          ...buildOptions
-        });
-      } catch (err) {
-        console.error(err);
-        process.exit(1);
-      } finally {
-        // builder.rimraf(`${out}/server`);
-      }
+      // for (const key of Object.keys(buildOptions)) {
+      //   if (Object.hasOwn(defaultOptions, key)) {
+      //     console.warn(
+      //       `Warning: "buildOptions" has override for default "${key}" this may break deployment.`
+      //     );
+      //   }
+      // }
+
+      // try {
+      //   await build({
+      //     ...defaultOptions,
+      //     ...buildOptions
+      //   });
+      // } catch (err) {
+      //   console.error(err);
+      //   process.exit(1);
+      // } finally {
+      //   // builder.rimraf(`${out}/server`);
+      // }
     }
   };
 }
