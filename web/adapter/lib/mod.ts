@@ -105,7 +105,7 @@ class Server {
     }
   }
 
-  start() {
+  start(): Promise<void> {
     const env = this.#options?.kit?.env ?? Deno.env.toObject()
     this.#kitServerInitialized = kitServer.init({ env })
 
@@ -121,7 +121,7 @@ class Server {
       },
     }, this.#handle_request)
 
-    return this.status!
+    return this.#server.finished
   }
 
   get status(): Promise<void> | undefined {
