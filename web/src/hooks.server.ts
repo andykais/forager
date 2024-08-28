@@ -6,6 +6,7 @@ import * as yaml from '@std/yaml'
 
 let forager: Forager
 if (env.FORAGER_CONFIG) {
+  // TODO make this dev-only
   const file_contents = await Deno.readTextFile(env.FORAGER_CONFIG)
   const config = yaml.parse(file_contents)
   forager = new Forager(config)

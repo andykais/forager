@@ -1,4 +1,5 @@
 import {fileURLToPath} from 'node:url';
+import * as fs from 'jsr:@std/fs';
 import * as path from 'jsr:@std/path'
 import {build} from 'esbuild';
 
@@ -40,35 +41,37 @@ export default function (opts = {}) {
       builder.copy(path.join(webPackageRoot, 'README.md'), path.join(out, 'README.md'))
       builder.copy(path.join(webPackageRoot, 'LICENSE'), path.join(out, 'LICENSE'))
 
-      // const defaultOptions = {
-      //   entryPoints: [`${out}/server.js`],
-      //   outfile: `${out}/server.js`,
-      //   bundle: true,
-      //   format: 'esm',
-      //   target: 'esnext',
-      //   platform: 'node',
-      //   allowOverwrite: true
-      // };
+      /*
+      const defaultOptions = {
+        entryPoints: [`${out}/server.js`],
+        outfile: `${out}/server.js`,
+        bundle: true,
+        format: 'esm',
+        target: 'esnext',
+        platform: 'node',
+        allowOverwrite: true
+      };
 
-      // for (const key of Object.keys(buildOptions)) {
-      //   if (Object.hasOwn(defaultOptions, key)) {
-      //     console.warn(
-      //       `Warning: "buildOptions" has override for default "${key}" this may break deployment.`
-      //     );
-      //   }
-      // }
+      for (const key of Object.keys(buildOptions)) {
+        if (Object.hasOwn(defaultOptions, key)) {
+          console.warn(
+            `Warning: "buildOptions" has override for default "${key}" this may break deployment.`
+          );
+        }
+      }
 
-      // try {
-      //   await build({
-      //     ...defaultOptions,
-      //     ...buildOptions
-      //   });
-      // } catch (err) {
-      //   console.error(err);
-      //   process.exit(1);
-      // } finally {
-      //   // builder.rimraf(`${out}/server`);
-      // }
+      try {
+        await build({
+          ...defaultOptions,
+          ...buildOptions
+        });
+      } catch (err) {
+        console.error(err);
+        process.exit(1);
+      } finally {
+        // builder.rimraf(`${out}/server`);
+      }
+      */
     }
   };
 }

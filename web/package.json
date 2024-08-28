@@ -1,11 +1,11 @@
 {
 	"name": "deno-sveltekit",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"private": true,
 	"scripts": {
 		"develop": "deno run -A --unstable-ffi --check npm:vite dev",
-		"build": "deno run -A --unstable-ffi --check npm:vite build",
-		"preview": "deno run --config=build/deno.json -A --unstable-ffi --check build/mod.ts",
+		"build": "deno run -A --unstable-ffi --check npm:vite build && cd build && deno check mod.ts",
+		"preview": "deno run --config=build/deno.json -A --unstable-ffi build/mod.ts",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
 	},
@@ -26,7 +26,7 @@
 	"type": "module",
 	"dependencies": {
 		"@andykais/ts-rpc": "npm:@jsr/andykais__ts-rpc@^0.2.2",
-		"@forager/core": "npm:@jsr/forager__core@^0.2.1",
+		"@forager/core": "npm:@jsr/forager__core@^0.2.2",
 		"@std/yaml": "npm:@jsr/std__yaml@^1.0.4"
 	}
 }
