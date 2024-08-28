@@ -1,6 +1,6 @@
 {
-	"name": "deno-sveltekit",
-	"version": "0.0.2",
+	"name": "@forager/web",
+	"version": "0.0.0",
 	"private": true,
 	"scripts": {
 		"develop": "deno run -A --unstable-ffi --check npm:vite dev",
