@@ -1,6 +1,3 @@
-import type { Context } from '~/context.ts'
-
-
 type LogLevel = 'error' | 'warn' | 'info' | 'debug'
 
 const LEVEL_MAP: Record<LogLevel, number> = { error: 0, warn: 1, info: 2, debug: 3 }
@@ -8,8 +5,8 @@ const LEVEL_MAP: Record<LogLevel, number> = { error: 0, warn: 1, info: 2, debug:
 class Logger {
   private level: number = 0
 
-  public constructor(ctx: Context) {
-    this.set_level(ctx.config.log_level ?? 'error')
+  public constructor(log_level?: LogLevel) {
+    this.set_level(log_level ?? 'error')
   }
 
   public error = (...args: any[]) => this.log('error', args, console.error)
@@ -32,4 +29,3 @@ class Logger {
 
 export { Logger }
 export type { LogLevel }
-

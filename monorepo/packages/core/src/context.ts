@@ -12,7 +12,7 @@ class Context {
 
   public constructor(config: ForagerConfig) {
     this.config = config
-    this.logger = new Logger(this)
+    this.logger = new Logger(this.config.log_level)
     this.db = new Database(this)
   }
 }
