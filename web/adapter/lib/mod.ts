@@ -51,7 +51,7 @@ class Server {
     this.#appDir = 'APP_DIR';
     this.#baseDir = path.dirname(new URL(import.meta.url).pathname);
     // this.#rootDir = path.join(this.#baseDir, 'static');
-    this.#rootDir = path.join(this.#options.asset_folder, '0.0.0', 'static')
+    this.#rootDir = path.join(this.#options.asset_folder, deno_json.version, 'static')
   }
 
   async init() {
