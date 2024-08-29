@@ -38,3 +38,5 @@ class Forager {
 export { Forager }
 export * as errors from './lib/errors.ts'
 export type ForagerConfig = inputs.ForagerConfig
+export { type inputs }
+export { parsers }

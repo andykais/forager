@@ -1,5 +1,6 @@
 import * as cliffy from '@cliffy/command'
 import {Forager, type ForagerConfig} from '@forager/core'
+import * as web from '@forager/web'
 import deno_json from '../deno.json' with { type: "json" };
 import { ForagerHelpers } from './helpers.ts'
 
@@ -18,19 +19,31 @@ const cli = new cliffy.Command()
   .command('init', 'set up a forager config file and initialize a the database')
     .action(async opts => {
       const forager_helpers = new ForagerHelpers(opts)
-      await forager_helpers.launch_forager()
+      const forager = await forager_helpers.launch_forager()
+      const server = new web.Server({
+        asset_folder: forager_helpers.config.web.asset_folder,
+        port: forager_helpers.config.web.port,
+        log_level: forager_helpers.config.web.log_level,
+        kit: {
+          env: {
+            FORAGER_INSTANCE: forager as any,
+            // FORAGER_CONFIG: forager_helpers.config_filepath,
+          }
+        }
+      })
+      await server.init()
     })
 
   .command('search', 'search for media in the forager database')
     .option('--tags=<tags>', 'A comma separated list of tags to search with')
     .option('--directory=<directory>', 'Find media files in forager within a directory on the file system')
-    .option('--media-reference-id=<media_reference_id>', 'A forager database media reference id')
+    .option('--media-reference-id=<media_reference_id:number>', 'A forager database media reference id')
     .action(async opts => {
       const forager_helpers = new ForagerHelpers(opts)
       const forager = await forager_helpers.launch_forager()
       const result = forager.media.search({
         query: {
-          media_reference_id: opts.mediaReferenceId ? parseInt(opts.mediaReferenceId) : undefined,
+          media_reference_id: opts.mediaReferenceId,
           directory: opts.directory,
           tags: opts.tags?.split(','),
         }
@@ -67,14 +80,35 @@ const cli = new cliffy.Command()
 
   .command('delete', 'delete a file from the forager database')
     .option('--filepath=<filepath>', 'Match media based on a filepath')
-    .option('--media-reference-id=<media_reference_id>', 'Match media based on a MediaReference::id')
+    .option('--media-reference-id=<media_reference_id:number>', 'Match media based on a MediaReference::id')
     .action(async (opts) => {
       const forager_helpers = new ForagerHelpers(opts)
       const forager = await forager_helpers.launch_forager()
       await forager.media.delete({
         filepath: opts.filepath,
-        media_reference_id: opts.mediaReferenceId ? parseInt(opts.mediaReferenceId) : undefined,
+        media_reference_id: opts.mediaReferenceId,
       })
     })
+
+  .command('gui', 'launch the forager graphical web interface')
+    .option('--port=<port:number>', 'The port the web app will be hosted from')
+    .action(async (opts) => {
+      const forager_helpers = new ForagerHelpers(opts)
+      const forager = await forager_helpers.launch_forager()
+      const server = new web.Server({
+        asset_folder: forager_helpers.config.web.asset_folder,
+        port: forager_helpers.config.web.port,
+        log_level: forager_helpers.config.web.log_level,
+        kit: {
+          env: {
+            FORAGER_INSTANCE: forager as any,
+            // FORAGER_CONFIG: forager_helpers.config_filepath,
+          }
+        }
+      })
+      await server.init()
+      await server.start()
+    })
+
 
 await cli.parse()

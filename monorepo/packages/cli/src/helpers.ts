@@ -1,9 +1,10 @@
+import z from 'zod'
 import * as cli from '@std/cli'
 import {Forager, type ForagerConfig} from '@forager/core'
+import {Config} from './inputs.ts'
 import * as fs from '@std/fs'
 import * as path from '@std/path'
 import * as yaml from '@std/yaml'
-import z from 'zod'
 
 interface ForagerHelpersOptions {
   config?: string
@@ -13,12 +14,15 @@ interface ForagerHelpersOptions {
 
 class ForagerHelpers {
   public config_filepath: string
-  constructor(public config: ForagerHelpersOptions) {
-    this.config_filepath = config.config ?? this.#get_config_filepath() 
+  #config: z.infer<typeof Config> | undefined
+
+  constructor(public options: ForagerHelpersOptions) {
+    this.config_filepath = options.config ?? this.#get_config_filepath() 
   }
 
   async ensure_config() {
     if (await fs.exists(this.config_filepath)) {
+      await this.#read_config()
       return
     }
 
@@ -33,15 +37,23 @@ class ForagerHelpers {
 
     const config_dir = path.dirname(this.config_filepath)
     await Deno.mkdir(config_dir, {recursive: true})
-    const default_config: ForagerConfig = {
-      database_path: path.join(config_dir, 'forager.db'),
-      // TODO add prompt options for each of these
-      thumbnail_folder: path.join(config_dir, 'thumbnails'),
+    const default_config: z.infer<typeof Config> = {
+      core: {
+        database_path: path.join(config_dir, 'forager.db'),
+        // TODO add prompt options for each of these
+        thumbnail_folder: path.join(config_dir, 'thumbnails'),
 
-      log_level: 'info',
+        log_level: 'info',
+      },
+      web: {
+        port: 8000,
+        asset_folder: path.join(config_dir, 'static_assets'),
+        log_level: 'info',
+      }
     }
 
     await Deno.writeTextFile(this.config_filepath, yaml.stringify(default_config))
+    await this.#read_config()
   }
 
   print_output(output: any) {
@@ -53,22 +65,27 @@ class ForagerHelpers {
   }
 
   #should_print_json() {
-    return this.config.logLevel === 'json' || this.config.quiet
+    return this.options.logLevel === 'json' || this.options.quiet
+  }
+
+  get config() {
+    if (this.#config) return this.#config
+    else throw new Error('config not yet initialized')
   }
 
   async #read_config() {
     const file_contents = await Deno.readTextFile(this.config_filepath)
-    const config = yaml.parse(file_contents) as ForagerConfig
+    const raw_config = yaml.parse(file_contents)
+    const config = Config.parse(raw_config)
     if (this.#should_print_json()) {
-      config.log_level = 'error'
+      config.core.log_level = 'error'
     }
-    return config
+    this.#config = config
   }
 
   async launch_forager() {
     await this.ensure_config()
-    const forager_config = await this.#read_config()
-    const forager = new Forager(forager_config as ForagerConfig)
+    const forager = new Forager(this.config.core)
     forager.init()
     return forager
   }
