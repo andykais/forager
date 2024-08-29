@@ -1,4 +1,4 @@
-import {serveDir, serveFile} from '@std/http/file-server';
+import {serveDir, serveFile, type ServeDirOptions} from '@std/http/file-server';
 import * as path from '@std/path'
 import {Logger, type LogLevel} from '@forager/core/logger'
 
@@ -43,6 +43,12 @@ class Server {
   #rootDir: string
   #kitServerInitialized!: Promise<void>
   #logger: Logger
+  #routes: {
+    favicon: URLPattern
+    immutable_asset: URLPattern
+    static_asset: URLPattern
+  }
+  #serve_dir_options: ServeDirOptions
 
   constructor(options: ServerOptions) {
     this.#logger = new Logger(options?.log_level)
@@ -52,6 +58,21 @@ class Server {
     this.#baseDir = path.dirname(new URL(import.meta.url).pathname);
     // this.#rootDir = path.join(this.#baseDir, 'static');
     this.#rootDir = path.join(this.#options.asset_folder, deno_json.version, 'static')
+    this.#routes = {
+      favicon: new URLPattern({
+        pathname: '/favicon.png',
+      }),
+      immutable_asset: new URLPattern({
+        pathname: `/${this.#appDir}/immutable/*`,
+      }),
+      static_asset: new URLPattern({
+        pathname: `/${this.#appDir}/*`,
+      })
+    }
+    this.#serve_dir_options = {
+      fsRoot: this.#rootDir,
+      quiet: this.#options.log_level !== 'debug',
+    }
   }
 
   async init() {
@@ -138,11 +159,9 @@ class Server {
   #handle_request = async (request: Request, info: Deno.ServeHandlerInfo): Promise<Response> => {
     this.#logger.debug(`${request.method} ${request.url}`)
 
-    // Get client IP address
-    const clientAddress = request.headers.get('x-forwarded-for') ?? info.remoteAddr.hostname;
+    const url = new URL(request.url)
 
-    const {pathname} = new URL(request.url);
-
+    /*
     // Path has trailing slash
     const slashed = pathname.at(-1) === '/';
 
@@ -158,7 +177,6 @@ class Server {
       });
     }
 
-    /*
     // Try prerendered route with html extension
     if (!slashed && !path.extname(pathname) && this.#prerendered.has(pathname)) {
       const response = await serveFile(
@@ -172,25 +190,18 @@ class Server {
     */
 
     // Try static files (ignore redirects and errors)
-    const response = await serveDir(request, {
-      fsRoot: this.#rootDir,
-      // quiet: true
-    });
-    console.log(`static files response.ok: ${response.ok}`)
-    if (response.ok || response.status === 304) {
-      if (
-        pathname.startsWith(`/${this.#appDir}/immutable/`) &&
-        response.status === 200
-      ) {
-        response.headers.set(
-          'cache-control',
-          'public, max-age=31536000, immutable'
-        );
+    if (this.#routes.static_asset.test(url) || this.#routes.favicon.test(url)) {
+      const response = await serveDir(request, this.#serve_dir_options)
+      if (response.ok || response.status === 304) {
+        if (this.#routes.immutable_asset.test(url)) {
+          response.headers.set('cache-control', 'public, max-age=31536000, immutable')
+        }
+        return response
       }
-      return response;
     }
 
-    console.log(`The kit handles this one...`)
+    // Get client IP address
+    const clientAddress = request.headers.get('x-forwarded-for') ?? info.remoteAddr.hostname;
 
     // Pass to the SvelteKit server
     await this.#kitServerInitialized
