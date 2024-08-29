@@ -69,6 +69,7 @@
       "jsr:@std/yaml@^1.0.4": "jsr:@std/yaml@1.0.4",
       "jsr:@torm/sqlite@1.4.1": "jsr:@torm/sqlite@1.4.1",
       "npm:@sveltejs/kit@2.5.24": "npm:@sveltejs/kit@2.5.24_@sveltejs+vite-plugin-svelte@3.1.2__svelte@4.2.19__vite@5.4.2_svelte@4.2.19_vite@5.4.2",
+      "npm:@types/node": "npm:@types/node@18.16.19",
       "npm:cookie@^0.6.0": "npm:cookie@0.6.0",
       "npm:path-to-regexp@6.2.1": "npm:path-to-regexp@6.2.1",
       "npm:ts-expect": "npm:ts-expect@1.3.0",
@@ -615,6 +616,10 @@
       },
       "@types/estree@1.0.5": {
         "integrity": "sha512-/kYRxGDLWzHOB7q+wtSUQlFrtcdUccpfy+X+9iMBpHK8QLLhx2wIPYuS5DYtR9Wa/YlZAbIovy7qVdB1Aq6Lyw==",
+        "dependencies": {}
+      },
+      "@types/node@18.16.19": {
+        "integrity": "sha512-IXl7o+R9iti9eBW4Wg2hx1xQDig183jj7YLn8F7udNceyfkbn1ZxmzZXuak20gR40D7pIkIY1kYGx5VIGbaHKA==",
         "dependencies": {}
       },
       "acorn@8.12.1": {

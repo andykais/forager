@@ -10,6 +10,6 @@ export const Config = z.object({
   web: z.object({
     port: z.number().default(8000),
     asset_folder: z.string(),
-    log_level: LogLevel,
+    log_level: LogLevel.default('info'),
   })
 })

@@ -1,5 +1,7 @@
 import $ from 'jsr:@david/dax'
+import z from 'zod'
 import * as path from '@std/path'
+import { Config } from '../src/inputs.ts'
 import { errors, Forager, ForagerConfig } from '@forager/core'
 import * as yaml from '@std/yaml'
 import { test } from 'forager-test'
@@ -20,16 +22,23 @@ function forager_cli(strings: TemplateStringsArray, ...params: any[]) {
 }
 
 test('cli basics', async ctx => {
-  const forager_config: ForagerConfig = {
-    database_path: ctx.create_fixture_path('forager.db'),
-    thumbnail_folder: ctx.create_fixture_path('thumbnails'),
+  const forager_config: z.input<typeof Config> = {
+    core: {
+      database_path: ctx.create_fixture_path('forager.db'),
+      thumbnail_folder: ctx.create_fixture_path('thumbnails'),
+      log_level: 'error',
+    },
+    web: {
+      asset_folder: ctx.create_fixture_path('assets'),
+      log_level: 'error',
+    }
   }
   const config_path = ctx.create_fixture_path('forager.yml')
   await Deno.writeTextFile(config_path, yaml.stringify(forager_config))
   await forager_cli`create --config ${config_path} ${ctx.resources.media_files["cat_doodle.jpg"]}`
 
   // now verify that it exists
-  const forager = new Forager(forager_config)
+  const forager = new Forager(forager_config.core)
   forager.init()
   ctx.assert.search_result(forager.media.search(), {
     total: 1,
@@ -77,15 +86,21 @@ test('cli basics', async ctx => {
 })
 
 test('cli filesystem discover subcommand', async ctx => {
-  const forager_config: ForagerConfig = {
-    database_path: ctx.create_fixture_path('forager.db'),
-    thumbnail_folder: ctx.create_fixture_path('thumbnails'),
+  const forager_config: z.input<typeof Config> = {
+    core: {
+      database_path: ctx.create_fixture_path('forager.db'),
+      thumbnail_folder: ctx.create_fixture_path('thumbnails'),
+    },
+    web: {
+      asset_folder: ctx.create_fixture_path('assets'),
+      log_level: 'error',
+    }
   }
   const config_path = ctx.create_fixture_path('forager.yml')
   await Deno.writeTextFile(config_path, yaml.stringify(forager_config))
   await forager_cli`--config ${config_path} discover ${ctx.resources.resources_directory}`
 
-  const forager = new Forager(forager_config)
+  const forager = new Forager(forager_config.core)
   forager.init()
   ctx.assert.search_result(forager.media.search(), {
     total: 5,

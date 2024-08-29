@@ -9,6 +9,16 @@ deno install -A --unstable-ffi -n forager jsr:@forager/cli
 ```
 
 ## Usage
+```bash
+# initialize the forager config, database and pull down the web app assets
+forager init
+# add some media into the forager database
+forager discover ~/Downloads
+# launch the web app to view and edit media
+forager gui
+```
+
+
 Use `forager --help` and `forager <subcommand> --help` for detailed cli documentation.
 ```
 Usage:   forager
