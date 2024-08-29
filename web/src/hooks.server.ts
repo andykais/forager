@@ -10,7 +10,9 @@ if (env.FORAGER_CONFIG) {
   const file_contents = await Deno.readTextFile(env.FORAGER_CONFIG)
   const config = yaml.parse(file_contents)
   forager = new Forager(config)
-} else {
+} else if (env.FORAGER_INSTANCE) {
+  forager = env.FORAGER_INSTANCE
+}else {
   forager = new Forager({database_path: 'forager.db', thumbnail_folder: 'thumbnails/', log_level: 'info'})
 }
 forager.init()
