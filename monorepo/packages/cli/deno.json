@@ -11,7 +11,7 @@
 
   "imports": {
     "@cliffy/command": "jsr:@cliffy/command@1.0.0-rc.4",
-    "@forager/web": "jsr:@forager/web@^0.0.5",
+    "@forager/web": "jsr:@forager/web@^0.0.6",
     "@std/cli": "jsr:@std/cli@^1.0.2",
     "@std/yaml": "jsr:@std/yaml@^1.0.3",
     "zod": "npm:zod@^3.23.8"
