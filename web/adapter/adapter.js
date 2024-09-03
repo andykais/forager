@@ -41,7 +41,7 @@ export default function (opts = {}) {
       builder.copy(path.join(webPackageRoot, 'README.md'), path.join(out, 'README.md'))
       builder.copy(path.join(webPackageRoot, 'LICENSE'), path.join(out, 'LICENSE'))
 
-      /*
+      // transpile build/server.js and build/server/* into a single esm compatible bundle
       const defaultOptions = {
         entryPoints: [`${out}/server.js`],
         outfile: `${out}/server.js`,
@@ -71,6 +71,7 @@ export default function (opts = {}) {
       } finally {
         // builder.rimraf(`${out}/server`);
       }
+      /*
       */
     }
   };

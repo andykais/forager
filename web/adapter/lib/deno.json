@@ -1,6 +1,6 @@
 {
   "name": "@forager/web",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "license": "MIT",
 
   "imports": {
@@ -22,7 +22,7 @@
       "LICENSE",
       "mod.ts",
       "static/**/*",
-      "server/**/*"
+      "server.js"
     ]
   }
 }
