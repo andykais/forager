@@ -1,6 +1,6 @@
 {
   "name": "@forager/cli",
-  "version": "0.4.1",
+  "version": "0.4.2",
 
   "tasks": {
     "install": "deno install --global --allow-run=ffprobe,ffmpeg --unstable-ffi --check --allow-read --allow-write --allow-ffi --allow-env=HOME,DENO_DIR,XDG_CACHE_HOME --allow-net --name forager-cli --force src/cli.ts",
