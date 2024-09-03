@@ -22,7 +22,7 @@ forager gui
 Use `forager --help` and `forager <subcommand> --help` for detailed cli documentation.
 ```
 Usage:   forager
-Version: 0.3.1
+Version: 0.4.0
 
 Description:
 
@@ -34,8 +34,10 @@ Options:
   -V, --version              - Show the version number for this program.
   --config         <config>  - The path to a config file. If not specified, forager will look in the default
                                config directory
-  -l, --log-level  <level>   - The log level forager will output.                                             (Default: "info", Values: "debug", "info", "error", "json")
-  -q, --quiet                - Shorthand for --log-level=error
+  -l, --log-level  <level>   - The log level forager will output.                                             (Default: "INFO", Values: "DEBUG", "INFO", "ERROR",
+                                                                                                              "SILENT")
+  --json                     - Silence logs and print structured json after a command completes
+  -q, --quiet                - Shorthand for --log-level=SILENT
 
 Commands:
 
@@ -44,4 +46,5 @@ Commands:
   discover  <globpath>  - add media to the forager database with a provided file glob
   create    <filepath>  - add a file to the forager database
   delete                - delete a file from the forager database
+  gui                   - launch the forager graphical web interface
 ```

@@ -4,7 +4,7 @@ import * as web from '@forager/web'
 import deno_json from '../deno.json' with { type: "json" };
 import { ForagerHelpers } from './helpers.ts'
 
-const LOG_LEVEL_TYPE = new cliffy.EnumType(["debug", "info", "error", "json"]);
+const LOG_LEVEL_TYPE = new cliffy.EnumType(["DEBUG", "INFO", "ERROR", 'SILENT']);
 
 
 const cli = new cliffy.Command()
@@ -13,8 +13,9 @@ const cli = new cliffy.Command()
   .version(deno_json.version)
   .option('--config=<config>', 'The path to a config file. If not specified, forager will look in the default config directory', {global: true})
   .type("log-level", LOG_LEVEL_TYPE)
-  .option('-l, --log-level <level:log-level>', 'The log level forager will output.', { default: 'info', global: true })
-  .option('-q, --quiet', 'Shorthand for --log-level=error', { global: true })
+  .option('-l, --log-level <level:log-level>', 'The log level forager will output.', { default: 'INFO', global: true })
+  .option('--json', 'Silence logs and print structured json after a command completes', { global: true })
+  .option('-q, --quiet', 'Shorthand for --log-level=SILENT', { global: true })
 
   .command('init', 'set up a forager config file and initialize a the database')
     .action(async opts => {

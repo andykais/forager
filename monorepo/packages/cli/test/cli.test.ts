@@ -26,11 +26,11 @@ test('cli basics', async ctx => {
     core: {
       database_path: ctx.create_fixture_path('forager.db'),
       thumbnail_folder: ctx.create_fixture_path('thumbnails'),
-      log_level: 'error',
+      log_level: 'ERROR',
     },
     web: {
       asset_folder: ctx.create_fixture_path('assets'),
-      log_level: 'error',
+      log_level: 'ERROR',
     }
   }
   const config_path = ctx.create_fixture_path('forager.yml')
@@ -63,7 +63,7 @@ test('cli basics', async ctx => {
   })
 
   await ctx.subtest('search subcommand', async () => {
-    const search_result = await forager_cli`--log-level json --config ${config_path} search --tags cat,funny`.json()
+    const search_result = await forager_cli`--json --config ${config_path} search --tags cat,funny`.json()
     ctx.assert.search_result(search_result, {
       total: 1,
       results: [
@@ -93,7 +93,7 @@ test('cli filesystem discover subcommand', async ctx => {
     },
     web: {
       asset_folder: ctx.create_fixture_path('assets'),
-      log_level: 'error',
+      log_level: 'ERROR',
     }
   }
   const config_path = ctx.create_fixture_path('forager.yml')

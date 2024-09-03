@@ -8,7 +8,8 @@ import * as yaml from '@std/yaml'
 
 interface ForagerHelpersOptions {
   config?: string
-  logLevel: 'debug' | 'info' | 'error' | 'json'
+  json?: boolean
+  logLevel: 'SILENT' | 'ERROR' | 'WARN' | 'INFO' | 'DEBUG'
   quiet?: boolean
 }
 
@@ -43,12 +44,12 @@ class ForagerHelpers {
         // TODO add prompt options for each of these
         thumbnail_folder: path.join(config_dir, 'thumbnails'),
 
-        log_level: 'info',
+        log_level: 'INFO',
       },
       web: {
         port: 8000,
         asset_folder: path.join(config_dir, 'static_assets'),
-        log_level: 'info',
+        log_level: 'INFO',
       }
     }
 
@@ -65,7 +66,7 @@ class ForagerHelpers {
   }
 
   #should_print_json() {
-    return this.options.logLevel === 'json' || this.options.quiet
+    return this.options.json
   }
 
   get config() {
@@ -78,7 +79,7 @@ class ForagerHelpers {
     const raw_config = yaml.parse(file_contents)
     const config = Config.parse(raw_config)
     if (this.#should_print_json()) {
-      config.core.log_level = 'error'
+      config.core.log_level = 'SILENT'
     }
     this.#config = config
   }

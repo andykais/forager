@@ -2,7 +2,7 @@ import z from 'zod'
 import * as forager from '@forager/core'
 
 
-const LogLevel = z.enum(['debug', 'info', 'warn', 'error'])
+const LogLevel = z.enum(['SILENT', 'ERROR', 'WARN', 'INFO'])
 
 export const Config = z.object({
   core: forager.parsers.ForagerConfig,
@@ -10,6 +10,6 @@ export const Config = z.object({
   web: z.object({
     port: z.number().default(8000),
     asset_folder: z.string(),
-    log_level: LogLevel.default('info'),
+    log_level: LogLevel.default('INFO'),
   })
 })
