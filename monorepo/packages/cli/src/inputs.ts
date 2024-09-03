@@ -2,7 +2,7 @@ import z from 'zod'
 import * as forager from '@forager/core'
 
 
-const LogLevel = z.enum(['SILENT', 'ERROR', 'WARN', 'INFO'])
+const LogLevel = z.enum(['SILENT', 'ERROR', 'WARN', 'INFO', 'DEBUG'])
 
 export const Config = z.object({
   core: forager.parsers.ForagerConfig,
