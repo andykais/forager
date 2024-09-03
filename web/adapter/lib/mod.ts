@@ -51,7 +51,7 @@ class Server {
   #serve_dir_options: ServeDirOptions
 
   constructor(options: ServerOptions) {
-    this.#logger = new Logger(options?.log_level)
+    this.#logger = new Logger('forager.web', options?.log_level)
     this.#options = options ?? {}
     this.#prerendered = new Set(PRERENDERED);
     this.#appDir = 'APP_DIR';
@@ -71,7 +71,7 @@ class Server {
     }
     this.#serve_dir_options = {
       fsRoot: this.#rootDir,
-      quiet: this.#options.log_level !== 'debug',
+      quiet: this.#options.log_level !== 'DEBUG',
     }
   }
 
@@ -219,7 +219,7 @@ if (import.meta.main) {
     env.FORAGER_CONFIG = FORAGER_CONFIG
   }
   const server = new Server({
-    log_level: 'debug',
+    log_level: 'DEBUG',
     asset_folder: path.join(Deno.cwd(), 'static_assets'),
     kit: {
       env,
