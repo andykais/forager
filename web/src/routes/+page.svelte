@@ -1,25 +1,23 @@
 <script lang="ts">
   import * as svelte from 'svelte'
-  import SearchResult from '$lib/components/search_results.svelte'
+  import Scroller from '$lib/components/Scroller.svelte'
+  import SearchResult from '$lib/components/SearchResults.svelte'
   import type {ApiSpec} from '$lib/api.ts'
-  import {create_content_fetcher} from '$lib/content_fetcher.svelte.ts'
+  import {create_pagination_fetcher} from '$lib/runes/index.ts'
+  import {create_content_fetcher} from '$lib/runes/content_fetcher.svelte.ts'
   import * as rpc from '@andykais/ts-rpc/client.ts'
 
   const client = rpc.create<ApiSpec>(`${window.location}rpc/:signature`)
-  const search_fetcher = create_content_fetcher(client.forager.search)
+  const search_fetcher = create_pagination_fetcher(client.forager.search)
 
-  svelte.onMount(async () => {
-    if (search_fetcher.content === null) {
-      await search_fetcher.fetch()
-    }
-  })
-
-  let server_time: Date = $state(new Date())
+  async function handle_scroller_more() {
+    await search_fetcher.fetch()
+  }
 </script>
 
-{#if search_fetcher.loading}
-  Loading...
-{:else}
-  <SearchResult search_result={search_fetcher.content} />
-{/if}
-server time: {server_time}
+<Scroller on:more={handle_scroller_more}>
+  <SearchResult results={search_fetcher.results} />
+  {#if search_fetcher.loading}
+    Loading...
+  {/if}
+</Scroller>

@@ -1,20 +1,17 @@
 <script lang="ts">
   import type { Forager } from '@forager/core'
   import * as theme from '$lib/theme.ts'
-  import Icon from '$lib/components/icon.svelte'
+  import Icon from '$lib/components/Icon.svelte'
   import PlayCircle from '$lib/icons/play-circle.svg?raw'
   import Photo from '$lib/icons/photo.svg?raw'
 
   interface Props {
-    search_result: Awaited<ReturnType<Forager['media']['search']>>
+    results: Awaited<ReturnType<Forager['media']['search']>['results']>
   }
-  let {search_result}: Props = $props()
-  /*
-  for (const r of search_result.results) {
-    console.log({r})
-  }
-  console.log({search_result})
-  */
+  let {results}: Props = $props()
+
+  let width = 100
+  let height = 100
 </script>
 
 <style>
@@ -39,7 +36,7 @@
 
 
 <div class="container-masonry p-4">
-  {#each search_result.results as result}
+  {#each results as result}
     {#if result.media_type === 'media_file'}
       <button class="
         p-1
@@ -49,11 +46,14 @@
         hover:border-slate-200 hover:border-2
         rounded-md">
         <div class="container-media-tile">
-          <img
-            class="justify-self-center"
-            style="max-width:100px; max-height: 100px"
-            src="/files/thumbnail{result.thumbnails.results[0].filepath}"
-            alt="Failed to load /files/thumbnail{result.thumbnails.results[0].filepath}"/>
+          <div
+            class="grid justify-items-center items-center"
+            style="width:{width}px; height: {height}px">
+            <img
+              class="max-w-full max-h-full"
+              src="/files/thumbnail{result.thumbnails.results[0].filepath}"
+              alt="Failed to load /files/thumbnail{result.thumbnails.results[0].filepath}"/>
+          </div>
 
           <!-- info chips -->
           <div>
