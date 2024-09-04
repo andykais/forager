@@ -21,8 +21,9 @@
       "README.md",
       "LICENSE",
       "mod.ts",
+      "server.js",
       "static/**/*",
-      "server.js"
+      "server/**/*"
     ]
   }
 }
