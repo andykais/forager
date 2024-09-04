@@ -1,6 +1,6 @@
 {
   "name": "@forager/web",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "license": "MIT",
 
   "imports": {
@@ -11,7 +11,7 @@
     "@std/yaml": "jsr:@std/yaml@^1.0.4",
     "cookie": "npm:cookie@^0.6.0",
     "devalue": "npm:devalue@^5.0.0",
-    "set-cookie-parser": "npm:set-cookie-parser@^2.6.0"
+    "set-cookie-parser": "npm:set-cookie-parser@^2.7.0"
   },
 
   "exports": "./mod.ts",
