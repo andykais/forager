@@ -31,7 +31,7 @@ export default function (opts = {}) {
       );
       builder.copy(modPath, `${out}/mod.ts`, {
         replace: {
-          SERVER: './server.js',
+          // SERVER: './server.js',
           APP_DIR: builder.getAppPath(),
           PRERENDERED: JSON.stringify(builder.prerendered.paths)
         }
@@ -41,6 +41,7 @@ export default function (opts = {}) {
       builder.copy(path.join(webPackageRoot, 'README.md'), path.join(out, 'README.md'))
       builder.copy(path.join(webPackageRoot, 'LICENSE'), path.join(out, 'LICENSE'))
 
+      /*
       // transpile build/server.js and build/server/* into a single esm compatible bundle
       const defaultOptions = {
         entryPoints: [`${out}/server.js`],
@@ -71,7 +72,6 @@ export default function (opts = {}) {
       } finally {
         // builder.rimraf(`${out}/server`);
       }
-      /*
       */
     }
   };
