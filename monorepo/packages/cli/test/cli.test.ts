@@ -103,6 +103,6 @@ test('cli filesystem discover subcommand', async ctx => {
   const forager = new Forager(forager_config.core)
   forager.init()
   ctx.assert.search_result(forager.media.search(), {
-    total: 5,
+    total: 6,
   })
 })
