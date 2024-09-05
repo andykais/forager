@@ -395,6 +395,7 @@ test('video media', async ctx => {
   ctx.assert.equals(media_cronch.thumbnails.results.length, 1)
   ctx.assert.equals(media_cronch.media_file.media_type, 'VIDEO')
   ctx.assert.equals(media_cronch.media_file.content_type, 'video/mp4')
+  ctx.assert.equals(media_cronch.media_file.audio, true)
   ctx.assert.equals(media_cronch.thumbnails.results[0].media_timestamp, 0)
 
   const media_art_timelapse = await forager.media.create(ctx.resources.media_files['Succulentsaur.mp4'], {}, ['art', 'timelapse'])
@@ -402,6 +403,7 @@ test('video media', async ctx => {
   ctx.assert.equals(media_art_timelapse.thumbnails.results.length, 1)
   ctx.assert.equals(media_art_timelapse.media_file.media_type, 'VIDEO')
   ctx.assert.equals(media_art_timelapse.media_file.content_type, 'video/mp4')
+  ctx.assert.equals(media_art_timelapse.media_file.audio, false)
   ctx.assert.equals(media_art_timelapse.thumbnails.results[0].media_timestamp, 0)
 
   ctx.assert.search_result(forager.media.search({ query: {tags: ['cat']}}), {

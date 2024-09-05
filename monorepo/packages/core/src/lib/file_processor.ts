@@ -18,6 +18,7 @@ interface FileInfoBase {
 
 interface AudioFileInfo extends FileInfoBase {
   media_type: 'AUDIO'
+  audio: true
   width: undefined
   height: undefined
   animated: false
@@ -30,6 +31,7 @@ interface GraphicalFileInfo extends FileInfoBase {
   height: number
   // video/gif/audio fields
   animated: boolean
+  audio: boolean
   duration: number
   framerate: number
 }
@@ -63,8 +65,13 @@ const FFProbeOutputAudioStream = z.object({
 }).passthrough()
 
 
+const FFProbeOutputBinDataStream = z.object({
+    codec_type: z.literal('data'),
+}).passthrough()
+
+
 const FFProbeOutput = z.object({
-  streams: z.union([FFProbeOutputVideoStream, FFProbeOutputAudioStream]).array().min(1)
+  streams: z.union([FFProbeOutputVideoStream, FFProbeOutputAudioStream, FFProbeOutputBinDataStream ]).array().min(1)
 }).passthrough()
 
 
@@ -93,7 +100,10 @@ class FileProcessor {
     })
     const output = await cmd.output()
     const ffprobe_data = FFProbeOutput.parse(JSON.parse(this.#decoder.decode(output.stdout)))
-    const stream_codec_info = ffprobe_data.streams.map((s: any) => CODECS.get_codec(s.codec_name))
+    // these are typically subtitle metadata streams. For now, we ignore these
+    const ffprobe_streams = ffprobe_data.streams.filter(stream => stream.codec_type !== 'data')
+    const stream_codec_info = ffprobe_streams
+      .map((s: any) => CODECS.get_codec(s.codec_name))
     const codec_info = stream_codec_info.length === 1 ? stream_codec_info[0] : stream_codec_info.find(s => s.media_type === 'VIDEO')
     if (codec_info === undefined) throw new Error('Error parsing codecs. Received multi-stream file without video codec')
     const media_type = codec_info.media_type
@@ -103,14 +113,15 @@ class FileProcessor {
     let animated = false
     let duration = 0
     let framerate = 0
+    let audio = false
 
-    for (const stream of ffprobe_data.streams) {
+    for (const stream of ffprobe_streams) {
       switch(stream.codec_type) {
         case 'video': {
           width = stream.width
           height = stream.height
           if (media_type === 'VIDEO') {
-            duration = z.number().parse(stream.duration)
+            duration = Math.max(duration, z.number().parse(stream.duration))
             animated = true
             framerate = eval(stream.avg_frame_rate)
             if (Number.isNaN(framerate)) throw new Error(`Unable to parse framerate for ${this.#filepath} from ${stream.avg_frame_rate}`)
@@ -118,7 +129,8 @@ class FileProcessor {
           break
         }
         case 'audio': {
-          duration = stream.duration
+          audio = true
+          duration = Math.max(duration, z.number().parse(stream.duration))
           break
         }
         default: {
@@ -135,7 +147,8 @@ class FileProcessor {
       height,
       animated,
       duration,
-      framerate
+      framerate,
+      audio,
     } as FileInfo // we use "as" here because typescript gets confused about unions
     return file_info
   }

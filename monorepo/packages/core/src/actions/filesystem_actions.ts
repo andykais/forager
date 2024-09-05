@@ -53,6 +53,7 @@ class FileSystemActions extends Actions {
           }
           stats.existing += 1
         } else {
+          this.ctx.logger.error(`${entry.path} import failed.`)
           throw e
         }
       }

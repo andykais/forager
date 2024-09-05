@@ -33,6 +33,7 @@ const CODECS = new Codecs()
 CODECS.add_codec('VIDEO', 'h264', 'video/mp4')
 CODECS.add_codec('IMAGE', 'tiff', 'image/png')
 CODECS.add_codec('IMAGE', 'png', 'image/png')
+CODECS.add_codec('IMAGE', 'apng', 'image/apng')
 CODECS.add_codec('IMAGE', 'mjpeg', 'image/jpeg')
 CODECS.add_codec('AUDIO', 'aac', 'audio/x-aac')
 
