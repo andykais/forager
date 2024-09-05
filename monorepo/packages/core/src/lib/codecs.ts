@@ -31,6 +31,7 @@ class Codecs extends Map<Codec, CodecInfo> {
 
 const CODECS = new Codecs()
 CODECS.add_codec('VIDEO', 'h264', 'video/mp4')
+CODECS.add_codec('IMAGE', 'gif', 'image/gif')
 CODECS.add_codec('IMAGE', 'tiff', 'image/png')
 CODECS.add_codec('IMAGE', 'png', 'image/png')
 CODECS.add_codec('IMAGE', 'apng', 'image/apng')

@@ -51,6 +51,7 @@ interface Thumbnails {
 
 const FFProbeOutputVideoStream = z.object({
     codec_type: z.literal('video'),
+    codec_name: z.string(),
     width: z.number(),
     height: z.number(),
     duration: z.coerce.number().optional(),
@@ -61,6 +62,7 @@ const FFProbeOutputVideoStream = z.object({
 
 const FFProbeOutputAudioStream = z.object({
     codec_type: z.literal('audio'),
+    codec_name: z.string(),
     duration: z.coerce.number(),
 }).passthrough()
 
@@ -120,7 +122,7 @@ class FileProcessor {
         case 'video': {
           width = stream.width
           height = stream.height
-          if (media_type === 'VIDEO') {
+          if (media_type === 'VIDEO' || stream.codec_name === 'gif') {
             duration = Math.max(duration, z.number().parse(stream.duration))
             animated = true
             framerate = eval(stream.avg_frame_rate)
@@ -194,7 +196,7 @@ class FileProcessor {
 
     const thumbnail_timestamps: number[] = []
     let expected_thumbnail_count = 0
-    if (file_info.media_type  === 'IMAGE') {
+    if (file_info.duration === 0) {
       thumbnail_timestamps.push(0)
 
       const cmd = new Deno.Command('ffmpeg', {
@@ -207,7 +209,7 @@ class FileProcessor {
         throw new errors.SubprocessError(output, 'generating thumbnails failed')
       }
       expected_thumbnail_count = 1
-    } else if (file_info.media_type === 'VIDEO') {
+    } else {
       /*
        * some interesting ideas about generating video thumbnails:
        *
@@ -268,8 +270,6 @@ class FileProcessor {
         throw new errors.SubprocessError({} as any, 'generating thumbnails failed')
       }
       expected_thumbnail_count = this.#THUMBNAILS_NUM_CAPTURED_FRAMES
-    } else {
-      throw new errors.UnExpectedError()
     }
 
     if (thumbnail_timestamps.length !== expected_thumbnail_count) {

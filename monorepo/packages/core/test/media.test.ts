@@ -571,6 +571,42 @@ test('video media', async ctx => {
 })
 
 
+test('gif', async ctx => {
+  const database_path = ctx.create_fixture_path('forager.db')
+  const thumbnail_folder = ctx.create_fixture_path('thumbnails')
+  using forager = new Forager({ database_path, thumbnail_folder })
+  forager.init()
+
+  const media_gif = await forager.media.create(ctx.resources.media_files['blink.gif'])
+  ctx.assert.equals(media_gif.media_file.codec, 'gif')
+  ctx.assert.equals(media_gif.media_file.media_type, 'IMAGE')
+  ctx.assert.equals(media_gif.media_file.animated, true)
+  ctx.assert.equals(media_gif.media_file.duration, 3.18)
+
+  const {thumbnails} = forager.media.get({media_reference_id: media_gif.media_reference.id})
+  ctx.assert.list_partial(thumbnails.results, [
+    {kind: 'standard', media_timestamp: 0},
+    {kind: 'standard', media_timestamp: 0.176667},
+    {kind: 'standard', media_timestamp: 0.353333},
+    {kind: 'standard', media_timestamp: 0.53},
+    {kind: 'standard', media_timestamp: 0.706667},
+    {kind: 'standard', media_timestamp: 0.883333},
+    {kind: 'standard', media_timestamp: 1.06},
+    {kind: 'standard', media_timestamp: 1.236667},
+    {kind: 'standard', media_timestamp: 1.413333},
+    {kind: 'standard', media_timestamp: 1.59},
+    {kind: 'standard', media_timestamp: 1.766667},
+    {kind: 'standard', media_timestamp: 1.943333},
+    {kind: 'standard', media_timestamp: 2.12},
+    {kind: 'standard', media_timestamp: 2.296667},
+    {kind: 'standard', media_timestamp: 2.473333},
+    {kind: 'standard', media_timestamp: 2.65},
+    {kind: 'standard', media_timestamp: 2.826667},
+    {kind: 'standard', media_timestamp: 3.003333},
+  ], (a, b) => a.media_timestamp - b.media_timestamp)
+})
+
+
 test('media series', async (ctx) => {
   const database_path = ctx.create_fixture_path('forager.db')
   const thumbnail_folder = ctx.create_fixture_path('thumbnails')

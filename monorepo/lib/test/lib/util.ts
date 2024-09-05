@@ -27,6 +27,7 @@ const media_files = resource_file_mapper([
   'Succulentsaur.mp4',
   'cityscape-timelapse.mp4',
   'cat_cronch.mp4',
+  'blink.gif',
 ] as const)
 
 if (!import.meta.dirname) throw new Error(`unexpected value in import.meta.dirname`)
