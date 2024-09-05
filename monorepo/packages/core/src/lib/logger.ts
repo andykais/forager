@@ -1,3 +1,9 @@
+/**
+  * @module
+*
+  * Logging utility shared across the @forager packages. Mostly internal, this just wraps the @std/log interface
+  */
+
 import * as log from '@std/log'
 
 
