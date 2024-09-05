@@ -6,7 +6,7 @@
       "jsr:@std/path": "jsr:@std/path@1.0.4",
       "jsr:@std/path@^1.0.4": "jsr:@std/path@1.0.4",
       "npm:@jsr/andykais__ts-rpc@^0.2.2": "npm:@jsr/andykais__ts-rpc@0.2.2_@sveltejs+vite-plugin-svelte@3.1.2__svelte@5.0.0-next.243___acorn@8.12.1__vite@5.4.3_svelte@5.0.0-next.243__acorn@8.12.1_vite@5.4.3",
-      "npm:@jsr/forager__core@^0.2.3": "npm:@jsr/forager__core@0.2.3",
+      "npm:@jsr/forager__core@^0.4.1": "npm:@jsr/forager__core@0.4.1",
       "npm:@jsr/std__yaml@^1.0.4": "npm:@jsr/std__yaml@1.0.5",
       "npm:@sveltejs/adapter-auto@^3.0.0": "npm:@sveltejs/adapter-auto@3.2.4_@sveltejs+kit@2.5.25__@sveltejs+vite-plugin-svelte@3.1.2___svelte@5.0.0-next.243____acorn@8.12.1___vite@5.4.3__svelte@5.0.0-next.243___acorn@8.12.1__vite@5.4.3_@sveltejs+vite-plugin-svelte@3.1.2__svelte@5.0.0-next.243___acorn@8.12.1__vite@5.4.3_svelte@5.0.0-next.243__acorn@8.12.1_vite@5.4.3",
       "npm:@sveltejs/kit@2.5.25": "npm:@sveltejs/kit@2.5.25_@sveltejs+vite-plugin-svelte@3.1.2__svelte@5.0.0-next.243___acorn@8.12.1__vite@5.4.3_svelte@5.0.0-next.243__acorn@8.12.1_vite@5.4.3",
@@ -294,8 +294,8 @@
           "@jsr/std__path": "@jsr/std__path@0.221.0"
         }
       },
-      "@jsr/forager__core@0.2.3": {
-        "integrity": "sha512-TEVfMZemSzwMqSmUxvIEJyNXa0eO4ouZEqiRquuWm0WN2PFCbA6Mm5b2neGJ+G8wvsKaCuH5IzsdImEBdstAMw==",
+      "@jsr/forager__core@0.4.1": {
+        "integrity": "sha512-grO3ij8l1zY7dLj+DLiY5jt3EzTcxSl7yQxwQr6Yr1QiX/nBeXS4Iak7kLlv2dSQBJwebvCTVNwuTdL4Oz0GJg==",
         "dependencies": {
           "@jsr/std__fmt": "@jsr/std__fmt@0.225.6",
           "@jsr/std__fs": "@jsr/std__fs@0.229.3",
@@ -1759,7 +1759,7 @@
     "packageJson": {
       "dependencies": [
         "npm:@jsr/andykais__ts-rpc@^0.2.2",
-        "npm:@jsr/forager__core@^0.2.3",
+        "npm:@jsr/forager__core@^0.4.1",
         "npm:@jsr/std__yaml@^1.0.4",
         "npm:@sveltejs/adapter-auto@^3.0.0",
         "npm:@sveltejs/kit@2.5.25",
