@@ -126,7 +126,6 @@ class FileProcessor {
             duration = Math.max(duration, z.number().parse(stream.duration))
             animated = true
             framerate = eval(stream.avg_frame_rate)
-            if (Number.isNaN(framerate)) throw new Error(`Unable to parse framerate for ${this.#filepath} from ${stream.avg_frame_rate}`)
           }
           break
         }
@@ -140,6 +139,15 @@ class FileProcessor {
         }
       }
     }
+    if (Number.isNaN(framerate)) {
+      if (duration === 0) {
+        // if duration is zero, we dont actually care what the framerate is
+        framerate = 0
+      } else {
+        throw new Error(`Unable to parse framerate for ${this.#filepath} from ${JSON.stringify(ffprobe_streams)}`)
+      }
+    }
+
     const filename = path.basename(this.#filepath)
     const file_info = {
       filepath: this.#filepath,
