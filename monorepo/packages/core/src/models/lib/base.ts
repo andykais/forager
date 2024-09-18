@@ -11,6 +11,11 @@ export const PaginationVars = Vars({
   total: field.number(),
 })
 
+export const GroupByVars = Vars({
+  group_value: field.string(),
+  count_value: field.number(),
+})
+
 interface SelectOneOptions {
   or_raise?: boolean
 }

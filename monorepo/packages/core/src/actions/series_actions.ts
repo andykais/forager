@@ -26,7 +26,7 @@ class SeriesActions extends Actions {
         const color = ''
         const tag_group = this.models.TagGroup.get_or_create({ name: group, color })!
         const {id: tag_id} = this.models.Tag.get_or_create({ alias_tag_id: null, name: tag.name, tag_group_id: tag_group.id, description: tag.description, metadata: tag.metadata })
-        this.models.MediaReferenceTag.create({ media_reference_id: media_reference.id, tag_id })
+        this.models.MediaReferenceTag.create({ media_reference_id: media_reference.id, tag_id, tag_group_id: tag_group.id })
 
         const tag_record = this.models.Tag.select_one({id: tag_id}, {or_raise: true})
         tags.push(tag_record)
@@ -66,7 +66,7 @@ class SeriesActions extends Actions {
         const color = ''
         const tag_group = this.models.TagGroup.get_or_create({ name: group, color })!
         const tag_record = this.models.Tag.get_or_create({ alias_tag_id: null, name: tag.name, tag_group_id: tag_group.id, description: tag.description, metadata: tag.metadata })
-        this.models.MediaReferenceTag.get_or_create({ media_reference_id: parsed.series_id, tag_id: tag_record.id })
+        this.models.MediaReferenceTag.get_or_create({ media_reference_id: parsed.series_id, tag_id: tag_record.id, tag_group_id: tag_record.tag_group_id })
       }
     })
 

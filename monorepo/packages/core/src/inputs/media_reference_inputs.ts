@@ -50,4 +50,12 @@ export const PaginatedSearch = PaginatedQuery.extend({
 }).strict()
 
 
+export const PaginatedSearchGroupBy = PaginatedSearch.extend({
+  group_by: z.object({
+    tag_group: z.string(),
+  }),
+  sort_by: z.enum(['count']).default('count'),
+})
+
+
 export const MediaReferenceUpdate = MediaInfo

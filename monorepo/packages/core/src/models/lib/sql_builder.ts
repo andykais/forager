@@ -6,11 +6,12 @@ class SQLBuilder {
   #result_fields: Fields = {}
   #default_arguments: Record<string, any> = {}
   fragments: {
-    select_wrapper: string
+    select_wrappers: string[]
     select_clause: string
     where_clauses: string[]
     group_clauses: string[]
-    join_clauses: string[]
+    having_clauses: string[]
+    join_clauses: Record<string, string>
     limit_clause: string
     order_by_clause: string
   }
@@ -18,18 +19,19 @@ class SQLBuilder {
   constructor(driver: Driver) {
     this.#driver = driver
     this.fragments = {
-      select_wrapper: '',
+      select_wrappers: [],
       select_clause: '',
       where_clauses: [],
-      join_clauses: [],
+      join_clauses: {},
       group_clauses: [],
+      having_clauses: [],
       limit_clause: '',
       order_by_clause: '',
     }
   }
 
-  set_select_wrapper(sql: string) {
-    this.fragments.select_wrapper = sql
+  add_select_wrapper(sql: string) {
+    this.fragments.select_wrappers.push(sql)
     return this
   }
   set_select_clause(sql: string) {
@@ -37,8 +39,8 @@ class SQLBuilder {
     return this
   }
 
-  add_join_clause(sql: string) {
-    this.fragments.join_clauses.push(sql)
+  add_join_clause(join_type: string, table: string, condition: string) {
+    this.fragments.join_clauses[table] = `${join_type} ${table} ON ${condition}`
     return this
   }
 
@@ -49,6 +51,11 @@ class SQLBuilder {
 
   add_group_clause(sql: string) {
     this.fragments.group_clauses.push(sql)
+    return this
+  }
+
+  add_having_clause(sql: string) {
+    this.fragments.having_clauses.push(sql)
     return this
   }
 
@@ -88,20 +95,25 @@ class SQLBuilder {
     if (this.fragments.where_clauses.length) {
       where_clause = `WHERE ${this.fragments.where_clauses.join(' AND ')}`
     }
-    const join_clause = this.fragments.join_clauses.join('\n')
+    const join_clause = Object.values(this.fragments.join_clauses).join('\n')
     const group_clause = this.fragments.group_clauses.join('\n')
+
+    let having_clause = ''
+    if (this.fragments.having_clauses.length) {
+      having_clause = `HAVING ${this.fragments.having_clauses.join(' AND ')}`
+    }
 
     let sql = `
 ${this.fragments.select_clause}
 ${join_clause}
 ${where_clause}
 ${group_clause}
+${having_clause}
 ${this.fragments.order_by_clause}
-${this.fragments.limit_clause}
-    `
+${this.fragments.limit_clause}`
 
-    if (this.fragments.select_wrapper) {
-      sql = `${this.fragments.select_wrapper} (
+    for (const select_wrapper of this.fragments.select_wrappers) {
+      sql = `${select_wrapper} (
 ${sql}
 )`
     }

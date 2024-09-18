@@ -42,7 +42,9 @@ type DeepPartial<T> = {
   [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K]
 }
 type ForagerMediaSearchResult = ReturnType<Forager['media']['search']>
+type ForagerMediaGroupResult = ReturnType<Forager['media']['group']>
 type SearchResultAssertions = DeepPartial<ReturnType<Forager['media']['search']>>
+type GroupResultAssertions = DeepPartial<ReturnType<Forager['media']['group']>>
 
 class Assertions {
   equals = asserts.assertEquals
@@ -63,6 +65,23 @@ class Assertions {
       this.equals(search_result.results.length, assertions.results.length, `Expected search results length to be ${assertions.results.length} but is actually ${search_result.results.length}`)
       this.object_match({
         results: search_result.results
+      }, {
+        results: assertions.results
+      })
+    }
+  }
+  group_result(group_result: ForagerMediaGroupResult, assertions: GroupResultAssertions) {
+    if (assertions.total) {
+      this.equals(group_result.total, assertions.total)
+    }
+    if ('cursor' in assertions) {
+      this.equals(group_result.cursor, assertions.cursor)
+    }
+
+    if (assertions.results) {
+      this.equals(group_result.results.length, assertions.results.length, `Expected group results length to be ${assertions.results.length} but is actually ${group_result.results.length}`)
+      this.object_match({
+        results: group_result.results
       }, {
         results: assertions.results
       })

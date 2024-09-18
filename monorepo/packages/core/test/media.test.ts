@@ -383,6 +383,118 @@ test('media actions', async (ctx) => {
 })
 
 
+test('search group by', async ctx => {
+  const database_path = ctx.create_fixture_path('forager.db')
+  const thumbnail_folder = ctx.create_fixture_path('thumbnails')
+  using forager = new Forager({ database_path, thumbnail_folder })
+  forager.init()
+
+  await forager.media.create(
+    ctx.resources.media_files['koch.tif'],
+    { title: 'Generated Art', stars: 2 },
+    ['artist:andrew', 'generated', 'colors:black', 'wallpaper']
+  )
+  await forager.media.create(
+    ctx.resources.media_files["ed-edd-eddy.png"],
+    {title: 'Ed Edd Eddy Screengrab'},
+    ['artist:bob']
+  )
+  await forager.media.create(
+    ctx.resources.media_files['cat_doodle.jpg'],
+    {title: 'Cat Doodle'},
+    ['artist:andrew']
+  )
+
+  await forager.media.create(
+    ctx.resources.media_files['cat_cronch.mp4'],
+    {title: 'Cat Video'},
+    ['artist:alice']
+  )
+
+  // also add media without any tags that shouldnt show up in the group calls
+  await forager.media.create(
+    ctx.resources.media_files['blink.gif'],
+    {},
+    ['meme']
+  )
+
+
+  ctx.assert.group_result(
+    forager.media.group({
+      group_by: {tag_group: 'artist'}
+    }),
+    {
+      total: 3,
+      results: [
+        { media_type: 'grouped', group: {value: 'andrew', count: 2} },
+        { media_type: 'grouped', group: {value: 'bob', count: 1} },
+        { media_type: 'grouped', group: {value: 'alice', count: 1} },
+      ]
+    }
+  )
+
+  await ctx.subtest('pagination', () => {
+    const results_1_2 = forager.media.group({ group_by: {tag_group: 'artist'}, limit: 2})
+    const results_3 = forager.media.group({ group_by: {tag_group: 'artist'}, limit: 2, cursor: results_1_2.cursor})
+    ctx.assert.group_result(results_1_2, {
+      total: 3,
+      results: [
+        { media_type: 'grouped', group: {value: 'andrew', count: 2} },
+        { media_type: 'grouped', group: {value: 'bob', count: 1} },
+      ]
+    })
+    ctx.assert.group_result(results_3, {
+      total: 3,
+      results: [
+        { media_type: 'grouped', group: {value: 'alice', count: 1} },
+      ]
+    })
+  })
+
+  await ctx.subtest('with tag filter', () => {
+    // assert adding a tag filter will strip out the other media with 'artist:' tags but no ':generated' tag
+    ctx.assert.group_result(
+      forager.media.group({
+        group_by: {tag_group: 'artist'},
+        query: { tags: ['generated']}
+      }),
+      {
+        total: 1,
+        results: [
+          { media_type: 'grouped', group: {value: 'andrew', count: 1} },
+        ]
+      }
+    )
+
+    // assert this still works with multiple tags
+    ctx.assert.group_result(
+      forager.media.group({
+        group_by: {tag_group: 'artist'},
+        query: { tags: ['generated', 'colors:black']}
+      }),
+      {
+        total: 1,
+        results: [
+          { media_type: 'grouped', group: {value: 'andrew', count: 1} },
+        ]
+      }
+    )
+
+    // assert that a non matching tag has no results
+    ctx.assert.group_result(
+      forager.media.group({
+        group_by: {tag_group: 'artist'},
+        query: { tags: ['meme']}
+      }),
+      {
+        total: 0,
+        results: []
+      }
+    )
+  })
+})
+
+
 test('video media', async ctx => {
   const database_path = ctx.create_fixture_path('forager.db')
   const thumbnail_folder = ctx.create_fixture_path('thumbnails')

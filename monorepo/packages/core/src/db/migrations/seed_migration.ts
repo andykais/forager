@@ -116,6 +116,7 @@ export class Migration extends torm.SeedMigration {
     CREATE TABLE media_reference_tag (
       media_reference_id INTEGER NOT NULL,
       tag_id INTEGER NOT NULL,
+      tag_group_id INTEGER NOT NULL,
       updated_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
       created_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
 

@@ -81,7 +81,11 @@ class Actions {
 
       for (const tag of parsed.tags) {
         const tag_record = this.tag_create(tag)
-        this.models.MediaReferenceTag.create({ media_reference_id: media_reference.id, tag_id: tag_record.id })
+        this.models.MediaReferenceTag.create({
+          media_reference_id: media_reference.id,
+          tag_id: tag_record.id,
+          tag_group_id: tag_record.tag_group_id,
+        })
       }
 
       this.#create_series_for_media_directories({
@@ -134,7 +138,7 @@ class Actions {
         const color = ''
         const tag_group = this.models.TagGroup.get_or_create({ name: group, color })!
         const tag_record = this.models.Tag.get_or_create({ alias_tag_id: null, name: tag.name, tag_group_id: tag_group.id, description: tag.description, metadata: tag.metadata })
-        this.models.MediaReferenceTag.get_or_create({ media_reference_id: parsed.media_reference_id, tag_id: tag_record.id })
+        this.models.MediaReferenceTag.get_or_create({ media_reference_id: parsed.media_reference_id, tag_id: tag_record.id, tag_group_id: tag_record.tag_group_id })
       }
     })
 

@@ -6,6 +6,7 @@ class MediaReferenceTag extends Model {
   static schema = torm.schema('media_reference_tag', {
     media_reference_id:           field.number(),
     tag_id:                       field.number(),
+    tag_group_id:                 field.number(),
     // auto generated fields
     updated_at:                   field.datetime(),
     created_at:                   field.datetime(),
@@ -16,11 +17,13 @@ class MediaReferenceTag extends Model {
   #create = this.query`
     INSERT INTO media_reference_tag (
       media_reference_id,
-      tag_id
+      tag_id,
+      tag_group_id
     ) VALUES (${[
       MediaReferenceTag.params.media_reference_id,
       MediaReferenceTag.params.tag_id,
-    ]}) RETURNING ${MediaReferenceTag.result.media_reference_id}, ${MediaReferenceTag.result.tag_id}`
+      MediaReferenceTag.params.tag_group_id,
+    ]}) RETURNING ${MediaReferenceTag.result['*']}`
 
   #select_one_by_media_reference_and_tag = this.query.one`
     SELECT ${MediaReferenceTag.result['*']} FROM media_reference_tag

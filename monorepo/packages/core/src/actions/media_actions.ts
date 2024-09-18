@@ -2,6 +2,8 @@ import { Actions, type MediaFileResponse, type MediaSeriesResponse, type MediaRe
 import { type inputs, parsers } from '~/inputs/mod.ts'
 import type * as result_types from '~/models/lib/result_types.ts'
 import { errors } from "~/mod.ts";
+import { MediaReference } from "~/models/media_reference.ts";
+import { PaginatedSearch } from "~/inputs/media_reference_inputs.ts";
 
 
 class MediaActions extends Actions {
@@ -127,6 +129,68 @@ class MediaActions extends Actions {
       total: records.total,
       cursor: records.cursor,
       results: results,
+    }
+  }
+
+  // TODO different params for group by ({group_by: {tag_group: string}, sort_by: 'count'})
+  group = (params: inputs.PaginatedSearchGroupBy) => {
+    const parsed = parsers.PaginatedSearchGroupBy.parse(params ?? {})
+    const { query, limit, cursor } = parsed
+
+    const tag_ids: number[] | undefined = query.tags
+      ?.map(tag => this.models.Tag.select_one({name: tag.name, group: tag.group }, {or_raise: true}).id)
+      .filter((tag): tag is number => tag !== undefined)
+
+    let keypoint_tag_id: number | undefined
+    if (query.keypoint) {
+      keypoint_tag_id = this.models.Tag.select_one({name: query.keypoint.name, group: query.keypoint.group}, {or_raise: true}).id
+    }
+
+    let series_id: number | undefined
+    if (query.series_id) {
+      // ensure that a series id actually exists and is a series id
+      this.models.MediaReference.media_series_select_one({id: query.series_id})
+      series_id = query.series_id
+    }
+
+    if (query.directory) {
+      const directory_reference = this.models.MediaReference.media_series_select_one({directory_path: query.directory})
+      series_id = directory_reference.id
+    }
+
+    const tag_group = this.models.TagGroup.select_one({name: parsed.group_by.tag_group}, {or_raise: true})
+    const group_by = { tag_group_id: tag_group.id }
+    const records = this.models.MediaReference.select_many_group_by_tags({
+      id: query.media_reference_id,
+      series_id,
+      tag_ids,
+      keypoint_tag_id,
+      cursor: parsed.cursor,
+      limit: parsed.limit,
+      sort_by: parsed.sort_by,
+      group_by,
+      order: parsed.order,
+      stars: query.stars,
+      stars_equality: query.stars_equality,
+      unread: query.unread,
+      filesystem: query.filesystem,
+    })
+
+    const results = records.results.map(record => {
+
+      return {
+        media_type: 'grouped',
+        group: {
+          value: record.group_value,
+          count: record.count_value,
+        },
+      }
+    })
+
+    return {
+      total: records.total,
+      cursor: records.cursor,
+      results,
     }
   }
 

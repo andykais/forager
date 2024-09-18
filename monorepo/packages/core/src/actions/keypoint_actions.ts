@@ -22,7 +22,7 @@ class KeypointActions extends Actions {
       const tag_record = this.tag_create(parsed.tag)
       // creating a keypoint implicitly adds a linked tag
       // TODO handle multiple keypoints with the same tag
-      this.models.MediaReferenceTag.create({ media_reference_id: media_reference.id, tag_id: tag_record.id })
+      this.models.MediaReferenceTag.create({ media_reference_id: media_reference.id, tag_id: tag_record.id, tag_group_id: tag_record.tag_group_id })
 
       let duration = 0
       if (params.end_timestamp !== undefined) {

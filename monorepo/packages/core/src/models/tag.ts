@@ -34,7 +34,7 @@ class Tag extends Model {
         Tag.params.alias_tag_id,
         Tag.params.description,
         Tag.params.metadata
-    ]}) RETURNING ${Tag.result.id}`
+    ]}) RETURNING ${Tag.result.id}, ${Tag.result.tag_group_id}`
 
   #select_by_id = this.query`
     SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')} FROM tag
