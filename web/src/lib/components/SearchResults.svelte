@@ -45,7 +45,7 @@
         border-2 border-slate-500
         hover:border-slate-200 hover:border-2
         rounded-md">
-        <div class="container-media-tile">
+        <div class="container-media-tile" style="width:{width}px">
           <div
             class="grid justify-items-center items-center"
             style="width:{width}px; height: {height}px">

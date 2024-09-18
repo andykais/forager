@@ -39,6 +39,7 @@ export default function (opts = {}) {
 
       const webPackageRoot = path.resolve(import.meta.dirname, '..')
       builder.copy(path.join(webPackageRoot, 'README.md'), path.join(out, 'README.md'))
+      builder.copy(path.join(webPackageRoot, 'src/lib/server/config.ts'), path.join(out, 'config.ts'))
       builder.copy(path.join(webPackageRoot, 'LICENSE'), path.join(out, 'LICENSE'))
 
       /*

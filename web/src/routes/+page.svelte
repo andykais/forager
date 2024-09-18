@@ -10,6 +10,10 @@
   const client = rpc.create<ApiSpec>(`${window.location}rpc/:signature`)
   const search_fetcher = create_pagination_fetcher(client.forager.search)
 
+  svelte.onMount(async () => {
+    const config = await client.config()
+  })
+
   async function handle_scroller_more() {
     await search_fetcher.fetch()
   }
