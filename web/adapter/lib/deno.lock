@@ -5,7 +5,7 @@
       "jsr:@andykais/ts-rpc@^0.2.2": "jsr:@andykais/ts-rpc@0.2.2",
       "jsr:@db/sqlite@0.11": "jsr:@db/sqlite@0.11.1",
       "jsr:@denosaurs/plug@1": "jsr:@denosaurs/plug@1.0.6",
-      "jsr:@forager/core@^0.4.1": "jsr:@forager/core@0.4.2",
+      "jsr:@forager/core@^0.5.0": "jsr:@forager/core@0.5.0",
       "jsr:@oak/commons@0.10": "jsr:@oak/commons@0.10.2",
       "jsr:@oak/oak@16.0.0": "jsr:@oak/oak@16.0.0",
       "jsr:@std/assert@0.223": "jsr:@std/assert@0.223.0",
@@ -78,8 +78,8 @@
           "jsr:@std/path@^0.221.0"
         ]
       },
-      "@forager/core@0.4.2": {
-        "integrity": "e92a0829c7ae317be2a4815215c67310acc58d3e218c7deb0ba339968bbe1f20",
+      "@forager/core@0.5.0": {
+        "integrity": "4ef2412a9602c4140cd94ed406477fec0ccd995266c2f8351ef835a3ad406fd6",
         "dependencies": [
           "jsr:@std/fmt@0.225.6",
           "jsr:@std/fs@0.229.3",
@@ -785,7 +785,7 @@
   "workspace": {
     "dependencies": [
       "jsr:@andykais/ts-rpc@^0.2.2",
-      "jsr:@forager/core@^0.4.1",
+      "jsr:@forager/core@^0.5.0",
       "jsr:@std/http@0.224.5",
       "jsr:@std/path@^1.0.3",
       "jsr:@std/yaml@^1.0.4",
