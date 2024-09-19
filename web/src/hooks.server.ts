@@ -2,7 +2,7 @@ import * as sveltekit from '@sveltejs/kit'
 import {Forager} from '@forager/core'
 import {env} from '$env/dynamic/private'
 import { dev } from '$app/environment'
-import { type Config, load_config } from '$lib/server/config.ts'
+import { type Config, load_config, PackagesConfig } from '$lib/server/config.ts'
 
 
 let forager: Forager
@@ -13,7 +13,11 @@ if (dev) {
     config = await load_config(env.FORAGER_CONFIG_PATH)
     forager = new Forager(config.core)
   } else {
-    forager = new Forager({database_path: 'forager.db', thumbnail_folder: 'thumbnails/', log_level: 'info'})
+    config = PackagesConfig.parse({
+      core: {database_path: 'forager.db', thumbnail_folder: 'thumbnails/', log_level: 'info'},
+      web: {asset_path: 'static_assets', log_level: 'info'}
+    })
+    forager = new Forager(config.core)
   }
 } else {
   if (env.FORAGER_INSTANCE) {

@@ -15,7 +15,10 @@
     "zod": "npm:zod@^3.23.8"
   },
 
-  "exports": "./mod.ts",
+  "exports": {
+    ".": "./mod.ts",
+    "config": "./config.ts"
+  }
 
   "publish": {
     "include": [
