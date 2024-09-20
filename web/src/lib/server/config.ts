@@ -3,9 +3,9 @@ import z from 'zod'
 import * as forager from '@forager/core'
 
 
-const LogLevel = z.enum(['SILENT', 'ERROR', 'WARN', 'INFO', 'DEBUG'])
+const LogLevel: z.ZodEnum<["SILENT", "ERROR", "WARN", "INFO", "DEBUG"]>  = z.enum(['SILENT', 'ERROR', 'WARN', 'INFO', 'DEBUG'])
 
-const Keybind = (default_keybind: string) => z.string().default(default_keybind)
+const Keybind = (default_keybind: string): z.ZodDefault<z.ZodString> => z.string().default(default_keybind)
 
 export const PackagesConfig = z.object({
   core: forager.parsers.ForagerConfig,
@@ -46,7 +46,7 @@ export const PackagesConfig = z.object({
 export type Config = z.infer<typeof PackagesConfig>
 
 
-export async function load_config(config_filepath: string) {
+export async function load_config(config_filepath: string): Promise<Config> {
   const file_contents_string = await Deno.readTextFile(config_filepath)
   const file_contents = yaml.parse(file_contents_string)
   return PackagesConfig.parse(file_contents)

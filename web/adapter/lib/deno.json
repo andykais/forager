@@ -17,7 +17,7 @@
 
   "exports": {
     ".": "./mod.ts",
-    "config": "./config.ts"
+    "./config": "./config.ts"
   },
 
   "publish": {
@@ -25,6 +25,7 @@
       "README.md",
       "LICENSE",
       "mod.ts",
+      "config.ts",
       "server.js",
       "static/**/*",
       "server/**/*"
