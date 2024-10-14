@@ -43,8 +43,10 @@ type DeepPartial<T> = {
 }
 type ForagerMediaSearchResult = ReturnType<Forager['media']['search']>
 type ForagerMediaGroupResult = ReturnType<Forager['media']['group']>
-type SearchResultAssertions = DeepPartial<ReturnType<Forager['media']['search']>>
-type GroupResultAssertions = DeepPartial<ReturnType<Forager['media']['group']>>
+type ForagerTagSearchResult = ReturnType<Forager['tag']['search']>
+type SearchResultAssertions = DeepPartial<ForagerMediaSearchResult>
+type TagSearchResultAssertions = DeepPartial<ForagerTagSearchResult>
+type GroupResultAssertions = DeepPartial<ForagerMediaGroupResult>
 
 class Assertions {
   equals = asserts.assertEquals
@@ -53,6 +55,22 @@ class Assertions {
   throws = asserts.assertThrows
   object_match = asserts.assertObjectMatch
   list_includes = asserts.assertArrayIncludes
+  tag_search_result(search_result: ForagerTagSearchResult, assertions: TagSearchResultAssertions) {
+    if ('total' in assertions) {
+      this.equals(search_result.total, assertions.total)
+    }
+    if ('cursor' in assertions) {
+      this.equals(search_result.cursor, assertions.cursor)
+    }
+    if (assertions.results) {
+      this.equals(search_result.results.length, assertions.results.length, `Expected search results length to be ${assertions.results.length} but is actually ${search_result.results.length}`)
+      this.object_match({
+        results: search_result.results
+      }, {
+        results: assertions.results
+      })
+    }
+  }
   search_result(search_result: ForagerMediaSearchResult, assertions: SearchResultAssertions) {
     if (assertions.total) {
       this.equals(search_result.total, assertions.total)

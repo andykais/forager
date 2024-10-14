@@ -46,9 +46,8 @@ jobs:
           path: ${{ env.DENO_DIR }}
           key: ${{ hashFiles(env.DENO_LOCKFILE) }}
 
-      # - name: Lint
-      # lint source code & jsr publish requirements. Currently disabled because we should get jsr published before addressing
-      #   run: deno lint --ignore=deno_dependency_cache
+      - name: Lint
+        run: deno task lint
 
       - name: Test
         run: deno task test
