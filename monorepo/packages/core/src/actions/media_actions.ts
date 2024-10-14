@@ -97,7 +97,7 @@ class MediaActions extends Actions {
     })
 
     const results: (MediaFileResponse | MediaSeriesResponse)[] =  records.results.map(row => {
-      const tags = this.models.Tag.select_many({media_reference_id: row.id})
+      const tags = this.models.Tag.select_all({media_reference_id: row.id})
 
       if (row.media_series_reference) {
         const thumbnails = this.models.MediaThumbnail.select_many({series_id: row.id, limit: parsed.thumbnail_limit})

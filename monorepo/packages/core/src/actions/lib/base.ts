@@ -120,7 +120,7 @@ class Actions {
     return output_result
   }
 
-  media_update(media_reference_id: number, media_info?: inputs.MediaInfo, tags?: inputs.Tag[]) {
+  protected media_update(media_reference_id: number, media_info?: inputs.MediaInfo, tags?: inputs.Tag[]) {
     const parsed = {
       media_reference_id: parsers.MediaReferenceId.parse(media_reference_id),
       media_info: parsers.MediaInfo.parse(media_info ?? {}),
@@ -183,7 +183,7 @@ class Actions {
         media_type: 'media_file',
         media_reference,
         media_file,
-        tags: this.models.Tag.select_many({media_reference_id: media_reference.id}),
+        tags: this.models.Tag.select_all({media_reference_id: media_reference.id}),
         thumbnails: this.models.MediaThumbnail.select_many({media_file_id: media_file.id, limit: thumbnail_limit}),
       }
     }
@@ -208,7 +208,7 @@ class Actions {
       media_type: 'media_file' as const,
       media_reference: this.models.MediaReference.select_one({id: media_reference_id}, {or_raise: true}),
       media_file: this.models.MediaFile.select_one({media_reference_id: media_reference_id}, {or_raise: true}),
-      tags: this.models.Tag.select_many({media_reference_id: media_reference_id}),
+      tags: this.models.Tag.select_all({media_reference_id: media_reference_id}),
       thumbnails: this.models.MediaThumbnail.select_many({media_file_id: media_file_id, limit: thumbnail_limit}),
     }
   }

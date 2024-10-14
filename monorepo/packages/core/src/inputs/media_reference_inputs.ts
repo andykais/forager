@@ -45,6 +45,7 @@ export const PaginatedSearch = PaginatedQuery.extend({
       if (q?.directory) q.filesystem = true
       return {unread: false, ...q}
     }),
+  thumbnail_limit: z.number().default(1),
   sort_by: z.enum(['created_at', 'updated_at', 'source_created_at', 'view_count']).default('source_created_at'),
   order: z.enum(['desc', 'asc']).default('desc'),
 }).strict()

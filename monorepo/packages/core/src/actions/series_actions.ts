@@ -98,7 +98,7 @@ class SeriesActions extends Actions {
 
   #get_media_series_response(series_id: number): MediaSeriesResponse {
     const media_reference = this.models.MediaReference.select_one_media_series(series_id)
-    const tags = this.models.Tag.select_many({media_reference_id: series_id})
+    const tags = this.models.Tag.select_all({media_reference_id: series_id})
     return {
       media_type: 'media_series',
       media_reference,

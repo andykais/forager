@@ -1,7 +1,11 @@
 import * as torm from '@torm/sqlite'
-import { Model, field } from '~/models/lib/base.ts'
+import { Model, field, PaginatedResult, PaginationVars } from '~/models/lib/base.ts'
 import {TagGroup} from './tag_group.ts'
 import {MediaReferenceTag} from './media_reference_tag.ts'
+
+export type TagJoin =
+  & torm.InferSchemaTypes<typeof Tag.result>
+  & {group: torm.InferSchemaTypes<typeof TagGroup.result>['name']}
 
 class Tag extends Model {
   static schema = torm.schema('tag', {
@@ -36,6 +40,13 @@ class Tag extends Model {
         Tag.params.metadata
     ]}) RETURNING ${Tag.result.id}, ${Tag.result.tag_group_id}`
 
+  #count = this.query`
+    SELECT COUNT(1) AS ${PaginationVars.result.total} FROM tag`
+
+  #select = this.query`
+    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')} FROM tag
+    INNER JOIN tag_group ON tag_group.id = tag.tag_group_id`
+
   #select_by_id = this.query`
     SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')} FROM tag
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
@@ -52,16 +63,41 @@ class Tag extends Model {
     WHERE tag_group_id = ${Tag.params.tag_group_id} AND tag.name = ${Tag.params.name}`
 
   #select_by_media_reference_id = this.query`
-    SELECT ${Tag.result['*']} FROM tag
+    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')} FROM tag
     INNER JOIN media_reference_tag ON media_reference_tag.tag_id = tag.id
+    INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
     WHERE media_reference_tag.media_reference_id = ${MediaReferenceTag.params.media_reference_id}`
+
+  #select_by_match_group_and_name = this.query`
+    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')} FROM tag
+    INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
+    WHERE tag.name GLOB ${Tag.params.name} AND tag_group.name GLOB ${TagGroup.params.name.as('group')}
+    LIMIT ${PaginationVars.params.limit}`
+
+  #count_by_match_group_and_name = this.query`
+    SELECT COUNT(1) AS ${PaginationVars.result.total} FROM tag
+    INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
+    WHERE tag.name GLOB ${Tag.params.name} AND tag_group.name GLOB ${TagGroup.params.name.as('group')}
+    LIMIT ${PaginationVars.params.limit}`
+
+  #select_by_match_name = this.query`
+    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')} FROM tag
+    INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
+    WHERE tag.name GLOB ${Tag.params.name}
+    LIMIT ${PaginationVars.params.limit}`
+
+  #count_by_match_name = this.query`
+    SELECT COUNT(1) AS ${PaginationVars.result.total} FROM tag
+    INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
+    WHERE tag.name GLOB ${Tag.params.name}
+    LIMIT ${PaginationVars.params.limit}`
 
   #select_one_impl(params: {
     id?: number
     name?: string
     tag_group_id?: number
     group?: string
-  }): torm.InferSchemaTypes<typeof Tag.result> | undefined {
+  }): (torm.InferSchemaTypes<typeof Tag.result> & {group: string}) | undefined {
     if (
       params.id !== undefined &&
       Object.keys(params).length === 1
@@ -88,7 +124,44 @@ class Tag extends Model {
 
   public create = this.create_fn(this.#create)
 
-  public select_many(params: {media_reference_id: number}) {
+  public select_paginated(params: {
+    limit: number
+    cursor: number | undefined
+    tag_match?: {
+      name: string
+      group: string | undefined
+    } | undefined
+  }): PaginatedResult<TagJoin> {
+    if (params.cursor !== undefined) {
+      throw new Error('unimplemented')
+    }
+
+    let results: TagJoin[]
+    let total = -1
+    if (params.tag_match !== undefined) {
+      const {name, group} = params.tag_match
+      if (group === undefined) {
+        results = this.#select_by_match_name.all({name, limit: params.limit})
+        total = this.#count_by_match_name.one({name, limit: params.limit})!.total
+      } else {
+        results = this.#select_by_match_group_and_name.all({name, group, limit: params.limit})
+        total = this.#count_by_match_group_and_name.one({name, group, limit: params.limit})!.total
+      }
+    } else {
+      results = this.#select.all({})
+      total = this.#count.one({})!.total
+    }
+
+    return {
+      results,
+      // TODO this sets up the contract, we dont need to build this now though
+      total,
+      cursor: undefined,
+    }
+  }
+  public select_all(params: {
+    media_reference_id: number,
+  }): TagJoin[] {
     return this.#select_by_media_reference_id.all({media_reference_id: params.media_reference_id})
   }
 
