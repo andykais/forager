@@ -354,7 +354,7 @@ test('media actions', async (ctx) => {
 
   await ctx.subtest('media upsert', async () => {
     // test creating new media with upsert
-    const media_cat_cronch = await forager.media.upsert(ctx.resources.media_files['cat_cronch.mp4'], {}, ['cat'])
+    await forager.media.upsert(ctx.resources.media_files['cat_cronch.mp4'], {}, ['cat'])
 
     // test updating existing media with upsert
     ctx.assert.equals(media_cartoon.media_reference.title, 'Ed Edd Eddy Screengrab')
@@ -947,9 +947,9 @@ test('views', async (ctx) => {
   using forager = new Forager({ database_path, thumbnail_folder })
   forager.init()
 
-  const media_generated_art = await forager.media.create(ctx.resources.media_files['koch.tif'], {title: 'Generated Art'}, [])
+  await forager.media.create(ctx.resources.media_files['koch.tif'], {title: 'Generated Art'}, [])
   const media_cartoon = await forager.media.create(ctx.resources.media_files["ed-edd-eddy.png"], {title: 'Ed Edd Eddy Screengrab'}, ['cartoon', 'wallpaper'])
-  const media_doodle = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {title: 'Cat Doodle'}, [])
+  await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {title: 'Cat Doodle'}, [])
 
   let cartoon_view = forager.views.start({
     media_reference_id: media_cartoon.media_reference.id,

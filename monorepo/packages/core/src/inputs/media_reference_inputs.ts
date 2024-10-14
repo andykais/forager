@@ -1,5 +1,5 @@
 import z from 'zod'
-import { type Json, JsonInput, StringDateTime, PaginatedQuery } from '~/lib/inputs_base.ts'
+import { JsonInput, StringDateTime, PaginatedQuery } from '~/lib/inputs_base.ts'
 import { Tag } from './tag_inputs.ts'
 
 

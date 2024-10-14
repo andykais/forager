@@ -25,7 +25,6 @@
   */
 
 import { Context } from './context.ts'
-import type { LogLevel } from '~/lib/logger.ts'
 import * as actions from './actions/mod.ts'
 import { type inputs, parsers } from '~/inputs/mod.ts'
 

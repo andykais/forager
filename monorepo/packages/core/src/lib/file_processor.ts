@@ -1,5 +1,4 @@
 import * as node_crypto from 'node:crypto'
-import * as fs from '@std/fs'
 import * as path from '@std/path'
 import z from 'zod'
 
@@ -196,8 +195,9 @@ class FileProcessor {
       ? `${this.#THUMBNAILS_MAX_WIDTH}x${Math.floor((height*this.#THUMBNAILS_MAX_HEIGHT)/width)}`
       : `${Math.floor((width*this.#THUMBNAILS_MAX_WIDTH)/height)}x${this.#THUMBNAILS_MAX_WIDTH}`
 
-    // assuming that 1/4 of the way into a video is a good preview position
-    const preview_position = file_info.duration > 1 ? file_info.duration * 0.25 : 0
+    // // TODO make previews a supported field
+    // // assuming that 1/4 of the way into a video is a good preview position
+    // const preview_position = file_info.duration > 1 ? file_info.duration * 0.25 : 0
 
     const tmp_folder = await Deno.makeTempDir({prefix: 'forager-thumbnails-'})
     const tmp_thumbnail_filepath = path.join(tmp_folder, `%0${this.#THUMBNAILS_FILENAME_ZERO_PAD_SIZE}d.jpg`)

@@ -2,8 +2,6 @@ import { Actions, type MediaFileResponse, type MediaSeriesResponse, type MediaRe
 import { type inputs, parsers } from '~/inputs/mod.ts'
 import type * as result_types from '~/models/lib/result_types.ts'
 import { errors } from "~/mod.ts";
-import { MediaReference } from "~/models/media_reference.ts";
-import { PaginatedSearch } from "~/inputs/media_reference_inputs.ts";
 
 
 class MediaActions extends Actions {
@@ -31,7 +29,7 @@ class MediaActions extends Actions {
   delete = async (params: inputs.MediaReferenceGet) => {
     const parsed = parsers.MediaReferenceGet.parse(params)
     const transaction = this.ctx.db.transaction_async(async () => {
-      const result = this.media_get({...params, thumbnail_limit: 0})
+      const result = this.media_get({...parsed, thumbnail_limit: 0})
       if (result.media_type === 'media_file') {
         this.models.MediaReferenceTag.delete({media_reference_id: result.media_reference.id}, {expected_deletes: result.tags.length})
         this.models.MediaThumbnail.delete({media_file_id: result.media_file.id}, {expected_deletes: result.thumbnails.total})
@@ -58,7 +56,7 @@ class MediaActions extends Actions {
 
   search = (params?: inputs.PaginatedSearch): result_types.PaginatedResult<MediaResponse> => {
     const parsed = parsers.PaginatedSearch.parse(params ?? {})
-    const { query, limit, cursor } = parsed
+    const { query } = parsed
 
     const tag_ids: number[] | undefined = query.tags
       ?.map(tag => this.models.Tag.select_one({name: tag.name, group: tag.group }, {or_raise: true}).id)
@@ -135,7 +133,7 @@ class MediaActions extends Actions {
   // TODO different params for group by ({group_by: {tag_group: string}, sort_by: 'count'})
   group = (params: inputs.PaginatedSearchGroupBy) => {
     const parsed = parsers.PaginatedSearchGroupBy.parse(params ?? {})
-    const { query, limit, cursor } = parsed
+    const { query } = parsed
 
     const tag_ids: number[] | undefined = query.tags
       ?.map(tag => this.models.Tag.select_one({name: tag.name, group: tag.group }, {or_raise: true}).id)

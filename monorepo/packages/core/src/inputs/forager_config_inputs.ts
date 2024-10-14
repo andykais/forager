@@ -1,5 +1,4 @@
 import z from 'zod'
-import type { LogLevel } from '~/lib/logger.ts'
 
 export const ForagerConfig = z.object({
   /** Path to the forager sqlite database */

@@ -4,7 +4,7 @@ import { Actions } from '~/actions/lib/base.ts'
 import { inputs, parsers } from '~/inputs/mod.ts'
 import { CODECS } from '~/lib/codecs.ts'
 import * as errors from '~/lib/errors.ts'
-import * as result_types from '~/models/lib/result_types.ts'
+import * as fmt_duration from '@std/fmt/duration'
 
 
 class FileSystemActions extends Actions {
@@ -36,7 +36,7 @@ class FileSystemActions extends Actions {
     }
     for await (const entry of fs.walk(walk_path, walk_options)) {
       try {
-        const {media_file, media_reference} = await this.media_create(entry.path, parsed.params.set?.media_info, parsed.params.set?.tags)
+        await this.media_create(entry.path, parsed.params.set?.media_info, parsed.params.set?.tags)
         stats.created += 1
       } catch (e) {
         if (e instanceof errors.DuplicateMediaError) {
@@ -59,8 +59,8 @@ class FileSystemActions extends Actions {
       }
     }
 
-    const duration = (performance.now() - start_time) / 1000
-    this.ctx.logger.info(`Created ${stats.created} media files and ignored ${stats.existing} existing and ${stats.duplicate} duplicate files.`)
+    const duration = performance.now() - start_time
+    this.ctx.logger.info(`Created ${stats.created} media files and ignored ${stats.existing} existing and ${stats.duplicate} duplicate files in ${fmt_duration.format(duration, {ignoreZero: true})}.`)
     return { stats }
   }
 

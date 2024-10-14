@@ -69,7 +69,7 @@ class SQLBuilder {
     return this
   }
 
-  add_param(argument_name: string, param_field: SchemaFieldGeneric, default_value: any) {
+  add_param(argument_name: string, param_field: SchemaFieldGeneric) {
     this.#param_fields[argument_name] = param_field
     return this
   }

@@ -1,7 +1,5 @@
 import * as torm from '@torm/sqlite'
-import * as errors from '~/lib/errors.ts'
-import { Model, field, PaginationVars, type PaginatedResult } from '~/models/lib/base.ts'
-import { MediaReference } from '~/models/media_reference.ts'
+import { Model, field } from '~/models/lib/base.ts'
 
 class MediaKeypoint extends Model {
   static schema = torm.schema('media_keypoint', {

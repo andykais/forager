@@ -1,6 +1,5 @@
 import { Actions, type MediaSeriesResponse } from '~/actions/lib/base.ts'
 import { inputs, parsers } from '~/inputs/mod.ts'
-import * as result_types from '~/models/lib/result_types.ts'
 
 
 class SeriesActions extends Actions {

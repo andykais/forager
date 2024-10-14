@@ -1,4 +1,4 @@
-import { schema, field, errors } from '@torm/sqlite'
+import { schema, field } from '@torm/sqlite'
 import { Model } from '~/models/lib/base.ts'
 
 

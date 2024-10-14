@@ -2,7 +2,6 @@ import * as fs from '@std/fs'
 import { Actions } from '~/actions/lib/base.ts'
 import { type inputs, parsers } from '~/inputs/mod.ts'
 import { FileProcessor } from '~/lib/file_processor.ts'
-import * as errors from '~/lib/errors.ts'
 
 
 class KeypointActions extends Actions {
