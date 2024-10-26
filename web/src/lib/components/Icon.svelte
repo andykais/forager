@@ -10,7 +10,7 @@ export let fill = color;
 export let title = "";
 $: elements = data.replace(/<svg[ \n]([^>]*)>/, "").replace("</svg>", "");
 
-function extractViewBox(svg) {
+function extractViewBox(svg: string) {
   const regex = /viewBox="([\d\- \.]+)"/;
   const res = regex.exec(svg);
   if (!res)

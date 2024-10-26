@@ -2,8 +2,7 @@
   import type { Forager } from '@forager/core'
   import * as theme from '$lib/theme.ts'
   import Icon from '$lib/components/Icon.svelte'
-  import PlayCircle from '$lib/icons/play-circle.svg?raw'
-  import Photo from '$lib/icons/photo.svg?raw'
+  import { PlayCircle, Photo } from '$lib/icons/mod.ts'
 
   interface Props {
     results: Awaited<ReturnType<Forager['media']['search']>['results']>

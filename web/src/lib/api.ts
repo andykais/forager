@@ -8,10 +8,16 @@ interface Context {
   config: Config
 }
 
+class ForagerTagApi extends rpc.ApiController<Context> {
+  search = this.context.forager.tag.search
+}
+
 class ForagerApi extends rpc.ApiController<Context> {
   search: Forager['media']['search'] = (params) => {
     return this.context.forager.media.search(params)
   }
+
+  tag = this.module(ForagerTagApi)
 }
 
 export class Api extends rpc.ApiController<Context> {

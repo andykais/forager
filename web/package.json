@@ -13,6 +13,7 @@
 		"@sveltejs/adapter-auto": "^3.0.0",
 		"@sveltejs/kit": "2.5.28",
 		"@sveltejs/vite-plugin-svelte": "4.0.0-next.7",
+		"@types/deno": "^2.0.0",
 		"autoprefixer": "10.4.20",
 		"esbuild": "0.23.1",
 		"postcss": "8.4.45",
@@ -26,8 +27,9 @@
 	"type": "module",
 	"dependencies": {
 		"@andykais/ts-rpc": "npm:@jsr/andykais__ts-rpc@0.2.2",
-		"@forager/core": "npm:@jsr/forager__core@0.5.0",
+		"@forager/core": "npm:@jsr/forager__core@^0.6.0",
 		"@std/yaml": "npm:@jsr/std__yaml@1.0.4",
+		"simple-svelte-autocomplete": "^2.5.2",
 		"zod": "3.23.8"
 	}
 }

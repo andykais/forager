@@ -3,13 +3,12 @@
 
   const dispatch = createEventDispatcher()
   let first_mount = true
-  let observer
+  let observer: IntersectionObserver | undefined
   let viewport: HTMLDivElement
   let end_of_page_element: HTMLDivElement
 
   $: {
     if (!observer && viewport && end_of_page_element) {
-      const body = document.querySelector('body')
       observer = new IntersectionObserver((entries, observer) => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
