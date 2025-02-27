@@ -367,7 +367,7 @@ test('media actions', async (ctx) => {
       total: 4,
     })
 
-    forager.media.delete({media_reference_id: media_doodle.media_reference.id})
+    await forager.media.delete({media_reference_id: media_doodle.media_reference.id})
 
     ctx.assert.search_result(forager.media.search(), {
       total: 3,

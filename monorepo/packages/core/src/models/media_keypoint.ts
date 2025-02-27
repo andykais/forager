@@ -1,8 +1,7 @@
-import * as torm from '@torm/sqlite'
-import { Model, field } from '~/models/lib/base.ts'
+import { Model, schema, field } from '~/models/lib/base.ts'
 
 class MediaKeypoint extends Model {
-  static schema = torm.schema('media_keypoint', {
+  static schema = schema('media_keypoint', {
     id:                 field.number(),
     media_timestamp:    field.number(),
     duration:           field.number(),

@@ -1,5 +1,4 @@
-import * as torm from '@torm/sqlite'
-import { Vars, field, DriverModel, type Statement } from '@torm/sqlite'
+import { Vars, schema, field, Model as DriverModel, type Statement } from '@torm/sqlite'
 import { NotFoundError } from '~/lib/errors.ts'
 import { errors } from "~/mod.ts";
 export type { PaginatedResult } from './result_types.ts'
@@ -67,4 +66,4 @@ abstract class Model extends DriverModel {
   }
 }
 
-export { Model, torm, field }
+export { Model, schema, field }

@@ -1,5 +1,6 @@
 import * as torm from '@torm/sqlite'
 import { ForagerTorm } from '~/db/mod.ts'
+import { migrations } from './registry.ts'
 
 
 const TIMESTAMP_SQLITE = `STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'NOW')`
@@ -10,7 +11,7 @@ const TIMESTAMP_COLUMN = `TIMESTAMP DATETIME DEFAULT(${TIMESTAMP_SQLITE})`
 const sql = (strings: TemplateStringsArray, ...values: any[]) => String.raw({ raw: strings }, ...values);
 
 
-@ForagerTorm.migrations.register()
+@migrations.register()
 export class Migration extends torm.SeedMigration {
   version = '1.0.0'
 
@@ -253,4 +254,4 @@ export class Migration extends torm.SeedMigration {
   }
 }
 
-export { ForagerTorm }
+export { migrations }

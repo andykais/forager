@@ -1,6 +1,7 @@
 import * as torm from '@torm/sqlite'
 import type { Context } from '../context.ts'
 import * as forager_models from '../models/mod.ts'
+import {migrations} from '~/db/migrations/mod.ts'
 
 // import { ModelClass } from '/home/andrew/Code/development/torm/src/model.ts'
 // type ModelsBuilder<T extends Record<string, ModelClass>> = {
@@ -14,7 +15,7 @@ class ForagerTorm extends torm.Torm {
   models: ModelsBuilder<typeof forager_models>
 
   public constructor(database_path: string) {
-    super(database_path)
+    super(database_path, {migrations})
 
     this.models = Object.fromEntries(Object.entries(forager_models).map(entry => {
       return [entry[0], this.model(entry[1])]

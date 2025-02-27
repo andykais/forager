@@ -1,7 +1,6 @@
 import type { ForagerConfig } from './mod.ts'
 import { Logger } from '~/lib/logger.ts'
 import { Database } from '~/db/mod.ts'
-import '~/db/migrations/mod.ts'
 
 
 class Context {

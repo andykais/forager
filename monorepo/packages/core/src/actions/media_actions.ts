@@ -49,7 +49,7 @@ class MediaActions extends Actions {
     try {
       await transaction()
     } catch (e) {
-      this.ctx.logger.error(`Error "${e.name}" during media delete for ${JSON.stringify(params)}, delete aborted.`)
+      this.ctx.logger.error(`Error "${e}" during media delete for ${JSON.stringify(params)}, delete aborted.`)
       throw e
     }
   }
