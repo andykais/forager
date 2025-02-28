@@ -50,7 +50,6 @@ class Forager {
   }
 
   public init() {
-    console.log('initting database', this.#ctx.config.database_path)
     this.#ctx.db.init()
   }
 

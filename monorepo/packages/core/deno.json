@@ -4,8 +4,8 @@
 
   "tasks": {
     "lint": "deno lint",
-    "test": "deno test --allow-run=ffprobe,ffmpeg --unstable-ffi --check --allow-read --allow-write --allow-ffi --allow-env=HOME,DENO_DIR,XDG_CACHE_HOME --allow-net=github.com,objects.githubusercontent.com --trace-leaks test",
-    "test:watch": "deno test --allow-run=ffprobe,ffmpeg --unstable-ffi --check --allow-read --allow-write --allow-ffi --allow-env=HOME,DENO_DIR,XDG_CACHE_HOME --allow-net=github.com,objects.githubusercontent.com --trace-leaks --watch"
+    "test":       "deno test --allow-run=ffprobe,ffmpeg --check --allow-env=TMPDIR --allow-read=\"$TMPDIR\",../..,. --allow-write=\"$TMPDIR\",. --trace-leaks test",
+    "test:watch": "deno test --allow-run=ffprobe,ffmpeg --check --allow-env=TMPDIR --allow-read=\"$TMPDIR\",../..,. --allow-write=\"$TMPDIR\",. --trace-leaks --watch",
   },
 
   "imports": {
@@ -17,7 +17,7 @@
     "@torm/sqlite": "jsr:@torm/sqlite@^1.6.0",
     "forager": "./src/mod.ts",
     "ts-pattern": "npm:ts-pattern@5.2.0",
-    "zod": "npm:zod@3.23.8",
+    "zod": "npm:zod@^3.24.2",
     "~/": "./src/"
   },
 
