@@ -36,7 +36,8 @@ class ForagerHelpers {
     }
     // everything else means go
 
-    const config_dir = path.dirname(this.config_filepath)
+    // ensure we are dealing with absolute paths
+    const config_dir = path.resolve(path.dirname(this.config_filepath))
     await Deno.mkdir(config_dir, {recursive: true})
     const default_config: z.infer<typeof Config> = {
       core: {

@@ -28,7 +28,7 @@ const cli = new cliffy.Command()
         kit: {
           env: {
             FORAGER_INSTANCE: forager as any,
-            // FORAGER_CONFIG: forager_helpers.config_filepath,
+            FORAGER_CONFIG: forager_helpers.config as any,
           }
         }
       })
