@@ -29,12 +29,13 @@ test('tag actions', async (ctx) => {
 
   await ctx.subtest('validate tag parsing', () => {
     ctx.assert.list_partial(art.tags, [
-      {group: 'genre', name: 'procedural_generation', media_reference_count: 1},
-      {group: '', name: 'generated', media_reference_count: 1},
-      {group: 'colors', name: 'black', media_reference_count: 1},
       {group: '', name: 'wallpaper', media_reference_count: 1},
+      {group: 'colors', name: 'black', media_reference_count: 1},
+      {group: '', name: 'generated', media_reference_count: 1},
+      {group: 'genre', name: 'procedural_generation', media_reference_count: 1},
     ])
     ctx.assert.list_partial(screenshot.tags, [
+      // tags with more media references are ordered first
       {group: '', name: 'wallpaper', media_reference_count: 2},
       {group: 'genre', name: 'cartoon', media_reference_count: 1},
     ])
@@ -68,8 +69,8 @@ test('tag actions', async (ctx) => {
     }), {
       total: 2,
       results: [
-        {group: 'genre', name: 'procedural_generation'},
         {group: '', name: 'generated'},
+        {group: 'genre', name: 'procedural_generation'},
       ]
     })
 
@@ -78,8 +79,8 @@ test('tag actions', async (ctx) => {
     }), {
       total: 2,
       results: [
-        {group: 'genre', name: 'procedural_generation'},
         {group: '', name: 'generated'},
+        {group: 'genre', name: 'procedural_generation'},
       ]
     })
 
@@ -97,9 +98,9 @@ test('tag actions', async (ctx) => {
     }), {
       total: 3,
       results: [
-        {group: 'genre', name: 'procedural_generation'},
-        {group: 'colors', name: 'black'},
         {group: 'genre', name: 'cartoon'},
+        {group: 'colors', name: 'black'},
+        {group: 'genre', name: 'procedural_generation'},
       ]
     })
   })

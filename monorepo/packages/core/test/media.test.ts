@@ -348,7 +348,7 @@ test('media actions', async (ctx) => {
     media_doodle = await forager.media.update(media_doodle.media_reference.id, {}, ['cat', 'doodle'])
 
     ctx.assert.object_match(media_doodle, {
-      tags: [{name: 'cat'}, {name: 'doodle'}]
+      tags: [{name: 'doodle'}, {name: 'cat'}]
     })
   })
 

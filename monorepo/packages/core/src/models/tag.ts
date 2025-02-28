@@ -66,12 +66,14 @@ class Tag extends Model {
     SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')} FROM tag
     INNER JOIN media_reference_tag ON media_reference_tag.tag_id = tag.id
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
-    WHERE media_reference_tag.media_reference_id = ${MediaReferenceTag.params.media_reference_id}`
+    WHERE media_reference_tag.media_reference_id = ${MediaReferenceTag.params.media_reference_id}
+    ORDER BY tag.media_reference_count DESC, tag.updated_at DESC, tag.id DESC`
 
   #select_by_match_group_and_name = this.query`
     SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')} FROM tag
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
     WHERE tag.name GLOB ${Tag.params.name} AND tag_group.name GLOB ${TagGroup.params.name.as('group')}
+    ORDER BY tag.media_reference_count DESC, tag.updated_at DESC, tag.id DESC
     LIMIT ${PaginationVars.params.limit}`
 
   #count_by_match_group_and_name = this.query`
@@ -84,6 +86,7 @@ class Tag extends Model {
     SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')} FROM tag
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
     WHERE tag.name GLOB ${Tag.params.name}
+    ORDER BY tag.media_reference_count DESC, tag.updated_at DESC, tag.id DESC
     LIMIT ${PaginationVars.params.limit}`
 
   #count_by_match_name = this.query`
