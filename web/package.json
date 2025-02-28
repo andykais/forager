@@ -1,35 +1,32 @@
 {
 	"name": "@forager/web",
-	"version": "0.0.0",
 	"private": true,
+	"version": "0.0.1",
+	"type": "module",
 	"scripts": {
-		"develop": "deno run -A --unstable-ffi --check npm:vite dev",
-		"build": "deno run -A --unstable-ffi --check npm:vite build && cd build && deno check mod.ts",
-		"preview": "deno run --config=build/deno.json -A --unstable-ffi build/mod.ts",
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
 	},
 	"devDependencies": {
-		"@sveltejs/adapter-auto": "^3.0.0",
-		"@sveltejs/kit": "2.7.3",
-		"@sveltejs/vite-plugin-svelte": "4.0.0",
-		"@types/deno": "^2.0.0",
-		"autoprefixer": "10.4.20",
-		"esbuild": "0.24.0",
-		"postcss": "8.4.47",
-		"svelte": "5.1.3",
-		"svelte-check": "4.0.5",
-		"tailwindcss": "3.4.10",
+		"@deno/vite-plugin": "^1.0.4",
+		"@sveltejs/adapter-auto": "^4.0.0",
+		"@sveltejs/kit": "^2.16.0",
+		"@sveltejs/vite-plugin-svelte": "^5.0.0",
+		"@tailwindcss/vite": "^4.0.0",
+		"svelte": "^5.0.0",
+		"svelte-check": "^4.0.0",
+		"tailwindcss": "^4.0.0",
 		"typescript": "^5.0.0",
-		"typescript-svelte-plugin": "0.3.42",
-		"vite": "5.4.10"
+		"vite": "^6.0.0"
 	},
-	"type": "module",
 	"dependencies": {
-		"@andykais/ts-rpc": "npm:@jsr/andykais__ts-rpc@0.2.2",
-		"@forager/core": "npm:@jsr/forager__core@^0.6.0",
-		"@std/yaml": "npm:@jsr/std__yaml@1.0.4",
-		"simple-svelte-autocomplete": "^2.5.2",
-		"zod": "3.23.8"
+		"@andykais/ts-rpc": "npm:@jsr/andykais__ts-rpc@^0.2.2",
+		"@forager/core": "npm:@jsr/forager__core@^0.6.1",
+		"@std/yaml": "npm:@jsr/std__yaml@^1.0.5",
+		"zod": "^3.24.2"
 	}
 }

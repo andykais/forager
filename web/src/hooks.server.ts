@@ -14,8 +14,8 @@ if (dev) {
     forager = new Forager(config.core)
   } else {
     config = PackagesConfig.parse({
-      core: {database_path: 'forager.db', thumbnail_folder: 'thumbnails/', log_level: 'info'},
-      web: {asset_path: 'static_assets', log_level: 'info'}
+      core: {database_path: 'forager.db', thumbnail_folder: 'thumbnails/', log_level: 'INFO'},
+      web: {asset_folder: 'static_assets', log_level: 'INFO'}
     })
     forager = new Forager(config.core)
   }
