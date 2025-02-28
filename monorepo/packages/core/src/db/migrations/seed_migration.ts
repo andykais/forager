@@ -1,5 +1,4 @@
 import * as torm from '@torm/sqlite'
-import { ForagerTorm } from '~/db/mod.ts'
 import { migrations } from './registry.ts'
 
 
