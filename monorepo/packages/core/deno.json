@@ -4,8 +4,8 @@
 
   "tasks": {
     "lint": "deno lint",
-    "test":       "deno test --allow-run=ffprobe,ffmpeg --check --allow-env=TMPDIR --allow-read=\"$TMPDIR\",../..,. --allow-write=\"$TMPDIR\",. --trace-leaks test",
-    "test:watch": "deno test --allow-run=ffprobe,ffmpeg --check --allow-env=TMPDIR --allow-read=\"$TMPDIR\",../..,. --allow-write=\"$TMPDIR\",. --trace-leaks --watch",
+    "test":       "deno test --allow-run=ffprobe,ffmpeg --check --allow-read --allow-write --trace-leaks test",
+    "test:watch": "deno test --allow-run=ffprobe,ffmpeg --check --allow-read --allow-write --trace-leaks --watch",
   },
 
   "imports": {
