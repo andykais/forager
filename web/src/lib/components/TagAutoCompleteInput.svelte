@@ -123,14 +123,15 @@
       // the problem is that this focusout will get triggered before the onclick for the tag suggestion has a chance to fire
       // if we have a global focus though, we can say "if focus is not tag search OR tag suggestion, hide suggestions"
       // setTimeout(() => {
-      //   input_state.show_suggestions = false
-      // }, 100)
+      //   // input_state.show_suggestions = false
+      //   console.log('onfocusout')
+      // }, 90)
     }}
     value={search_string}
-    class="basis-full rounded px-1"
+    class="basis-full rounded px-1 bg-gray-200"
     type="text"
     name="search_bar"
-    placeholder="genre:adventure">
+    placeholder="genre:adventure...">
   <div class="relative w-full">
     <div class="absolute w-full">
       {#if input_state.show_suggestions}
