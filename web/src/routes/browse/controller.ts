@@ -1,10 +1,11 @@
 import {BaseController} from '$lib/base_controller.ts'
-import {create_pagination_fetcher} from '$lib/runes/index.ts'
+import {create_pagination_fetcher, create_focuser} from '$lib/runes/index.ts'
 
 
 class BrowseController extends BaseController {
   runes = {
-    search: create_pagination_fetcher(this.client.forager.search)
+    search: create_pagination_fetcher(this.client.forager.search),
+    focus: create_focuser(),
   }
 
   constructor() {

@@ -7,6 +7,7 @@
 
   const controller = new BrowseController()
   svelte.onMount(controller.onMount)
+  controller.runes.focus.stack({component: 'BrowsePage', focus: 'page'})
 
 </script>
 
