@@ -24,7 +24,7 @@
 
   let root_element: HTMLDivElement
   let input_element: HTMLInputElement
-  let suggestions_element: HTMLUListElement
+  let suggestions_element: HTMLUListElement | null = $state(null)
 
   let input_state = $state({
     show_suggestions: false,

@@ -14,7 +14,7 @@
 <header>
   <SearchParams {controller} />
 </header>
-<Scroller on:more={e => controller.handlers.paginate_media()}>
+<Scroller more={() => controller.handlers.paginate_media()}>
   <SearchResults results={controller.runes.search.results} />
   {#if controller.runes.search.loading}
     Loading...

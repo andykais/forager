@@ -1,18 +1,18 @@
 <script lang="ts">
-  import {createEventDispatcher, onMount} from 'svelte'
+  import {onMount} from 'svelte'
 
-  const dispatch = createEventDispatcher()
+  let { more, children } = $props()
   let first_mount = true
-  let observer: IntersectionObserver | undefined
-  let viewport: HTMLDivElement
-  let end_of_page_element: HTMLDivElement
+  let observer: IntersectionObserver | undefined = $state()
+  let viewport: HTMLDivElement | undefined = $state()
+  let end_of_page_element: HTMLDivElement | undefined = $state()
 
-  $: {
+  $effect(() => {
     if (!observer && viewport && end_of_page_element) {
-      observer = new IntersectionObserver((entries, observer) => {
+      observer = new IntersectionObserver((entries, _observer) => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
-            dispatch('more')
+            more()
           }
         }
       }, {
@@ -25,13 +25,13 @@
 
       observer.observe(end_of_page_element)
     }
-  }
+  })
 
   onMount(() => {
-      dispatch('more')
+      more()
     if (first_mount) {
       // always trigger one when the element is mounted (an empty page isnt reliable for the intersection observer)
-      dispatch('more')
+      more()
     }
     first_mount = false
   })
@@ -43,6 +43,6 @@
 -->
 
 <div bind:this={viewport} >
-  <slot />
+  {@render children?.()}
   <div class="observer" bind:this={end_of_page_element}></div>
 </div>

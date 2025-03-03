@@ -5,6 +5,40 @@ import * as forager from '@forager/core'
 
 const LogLevel: z.ZodEnum<["SILENT", "ERROR", "WARN", "INFO", "DEBUG"]>  = z.enum(['SILENT', 'ERROR', 'WARN', 'INFO', 'DEBUG'])
 
+const Key = z.enum([
+  'Enter',
+  'Escape',
+  'ArrowRight',
+  'ArrowLeft',
+  'Ctrl',
+  'Space',
+  'KeyA',
+  'KeyB',
+  'KeyC',
+  'KeyD',
+  'KeyE',
+  'KeyF',
+  'KeyG',
+  'KeyH',
+  'KeyI',
+  'KeyJ',
+  'KeyK',
+  'KeyL',
+  'KeyM',
+  'KeyN',
+  'KeyO',
+  'KeyP',
+  'KeyQ',
+  'KeyR',
+  'KeyS',
+  'KeyT',
+  'KeyU',
+  'KeyV',
+  'KeyW',
+  'KeyX',
+  'KeyY',
+  'KeyZ',
+])
 const Keybind = (default_keybind: string): z.ZodDefault<z.ZodString> => z.string().default(default_keybind)
 
 export const PackagesConfig = z.object({
