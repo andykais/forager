@@ -1,11 +1,16 @@
 import type {ApiSpec} from '$lib/api.ts'
 import * as rpc from '@andykais/ts-rpc/client.ts'
 import type { Config } from '$lib/server/config.ts'
+import {create_focuser} from '$lib/runes/index.ts'
 
 
 abstract class BaseController {
   client: ReturnType<typeof rpc.create<ApiSpec>>
   #config: Config | undefined
+
+  abstract runes: {
+    focus: ReturnType<typeof create_focuser>
+  }
 
   constructor() {
     this.client = rpc.create<ApiSpec>(`${window.location.protocol}${window.location.host}/rpc/:signature`)

@@ -7,9 +7,9 @@
   import Tag from '$lib/components/Tag.svelte'
   import { Filter } from '$lib/icons/mod.ts'
 
-  const debounce = <Args>(fn: (...args: Args) => void, pause: number) => {
+  const debounce = <Args>(fn: (...args: Args[]) => void, pause: number) => {
     let timer: number | undefined
-    return (...args: Args) => {
+    return (...args: Args[]) => {
       clearTimeout(timer)
       timer = setTimeout(() => {
         fn(...args)
@@ -24,7 +24,7 @@
 
   let root_element: HTMLDivElement
   let input_element: HTMLInputElement
-  let suggestions_element: HTMLDivElement
+  let suggestions_element: HTMLUListElement
 
   let input_state = $state({
     show_suggestions: false,
@@ -62,7 +62,6 @@
     }
 
     apply_suggestion(tag: TagModel) {
-      input_state.show_suggestions = false
       const text_snippet_position = this.text_snippet_under_cursor()
       const tag_str = parsers.Tag.encode(tag)
       let updated_search_string  = ''
@@ -109,16 +108,14 @@
   <input
     bind:this={input_element}
     onselectionchange={async e => {
-      console.log('onselectionchange')
       input_state.text_position = e.target.selectionStart
-      await tag_suggestions.refresh()
+      tag_suggestions.refresh()
       // await get_tag_suggestions_debounced(e.target.value, e.target.selectionStart)
     }}
     oninput={async e => {
-      console.log('oninput')
       input_state.show_suggestions = true
       search_string = e.target.value
-      await tag_suggestions.refresh()
+      tag_suggestions.refresh()
     }}
     onfocusin={async e => {
       // we got here from a manual input_element.focus() call, so we should ignore setting suggestions this time
@@ -127,10 +124,11 @@
         return
       }
       input_state.show_suggestions = true
-      await tag_suggestions.refresh()
+      tag_suggestions.refresh()
     }}
-    onfocusout={e => {
-      if (!root_element.contains(suggestions_element)) {
+    onfocusout={(e: FocusEvent) => {
+      if (suggestions_element && suggestions_element.contains(e.relatedTarget)) {
+      } else {
         input_state.show_suggestions = false
       }
     }}
@@ -140,15 +138,16 @@
     name="search_bar"
     placeholder="genre:adventure...">
   <div class="relative w-full">
-    <div class="absolute w-full" bind:this={suggestions_element}>
+    <div class="absolute w-full">
       {#if input_state.show_suggestions}
-      <ul class="bg-gray-200 floating-suggestions">
+      <ul class="bg-gray-200 floating-suggestions" bind:this={suggestions_element}>
         {#each tag_suggestions.state as tag (tag.id)}
           <li
-            class="px-1 hover:bg-gray-400 floating-suggestion-item">
+            class="hover:bg-gray-400 floating-suggestion-item">
             <button
               type="button"
-              class="w-full text-left"
+              class="px-1 w-full text-left focus:bg-gray-400 outline-none"
+              tabindex={0}
               onfocusout={e => {
                 controller.runes.focus.pop({component: 'TagAutoCompleteInput', focus: 'tag:suggestion:${tag.id}'})
               }}
@@ -156,7 +155,6 @@
                 controller.runes.focus.stack({component: 'TagAutoCompleteInput', focus: 'tag:suggestion:${tag.id}'})
               }}
               onclick={e => {
-                console.log('on click?')
                 tag_suggestions.apply_suggestion(tag)
               }}>
               <Tag {tag} />
