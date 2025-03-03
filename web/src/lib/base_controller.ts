@@ -21,6 +21,7 @@ abstract class BaseController {
 
   onMount = async () => {
     this.#config = await this.client.config()
+    this.keybinds.onMount(this.#config)
   }
 
   get config() {

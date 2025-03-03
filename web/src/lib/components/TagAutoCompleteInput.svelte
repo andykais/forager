@@ -1,11 +1,9 @@
 <script lang="ts">
+  import {onMount} from 'svelte'
   import * as parsers from '$lib/parsers.ts'
   import type { Forager } from '@forager/core'
   import type { BaseController } from "$lib/base_controller.ts";
-  import * as theme from '$lib/theme.ts'
-  import Icon from '$lib/components/Icon.svelte'
   import Tag from '$lib/components/Tag.svelte'
-  import { Filter } from '$lib/icons/mod.ts'
 
   const debounce = <Args>(fn: (...args: Args[]) => void, pause: number) => {
     let timer: number | undefined
@@ -17,21 +15,6 @@
     }
   }
 
-
-  type TagModel = Awaited<ReturnType<Forager['tag']['search']>>['results'][0]
-
-  let {controller, search_string = $bindable()}: {controller: BaseController; search_string: string} = $props()
-
-  let root_element: HTMLDivElement
-  let input_element: HTMLInputElement
-  let suggestions_element: HTMLUListElement | null = $state(null)
-
-  let input_state = $state({
-    show_suggestions: false,
-    // used when we want to grab the focus on the input element and _dont_ want to immediately show suggestions again
-    just_populated_suggestions: false,
-    text_position: 0,
-  })
   class TagSuggestions {
     state = $state<TagModel[]>([])
 
@@ -85,7 +68,42 @@
 
     refresh = debounce(this.refresh_internal, 50)
   }
+
+
+  type TagModel = Awaited<ReturnType<Forager['tag']['search']>>['results'][0]
+
+  let {controller, search_string = $bindable()}: {controller: BaseController; search_string: string} = $props()
+
+  let root_element: HTMLDivElement
+  let input_element: HTMLInputElement
+  let suggestions_element: HTMLUListElement | null = $state(null)
+
+  let input_state = $state({
+    show_suggestions: false,
+    // used when we want to grab the focus on the input element and _dont_ want to immediately show suggestions again
+    just_populated_suggestions: false,
+    text_position: 0,
+  })
+
   const tag_suggestions = new TagSuggestions()
+
+  onMount(() => {
+    // TODO this is cool, but we want to reuse this component, so we should be smart here
+    // controller.keybinds.listen('Search', (e) => {
+    //   e.preventDefault()
+    //   input_element.focus()
+    // })
+    const handler = controller.keybinds.listen('Escape', () => {
+      if (input_state.show_suggestions) {
+        input_state.show_suggestions = false
+        input_element.blur()
+      }
+    })
+
+    return () => {
+      controller.keybinds.remove_listener(handler)
+    }
+  })
 
 </script>
 

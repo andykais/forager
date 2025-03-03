@@ -20,3 +20,4 @@
     Loading...
   {/if}
 </Scroller>
+<svelte:window on:keydown={controller.keybinds.handler} />
