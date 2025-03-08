@@ -16,7 +16,6 @@ class BrowseController extends BaseController {
 
   handlers = {
     paginate_media: async (...params: Parameters<typeof this.runes.search.paginate>) => {
-      console.log('handlers::paginate_media', {params})
       await this.runes.search.paginate(...params)
     }
   }

@@ -42,14 +42,13 @@ export function create_selector() {
       current_selection.media_reference_id = media_reference_id
     },
     open_media(e: SubmitEvent) {
-      console.log('open media!')
       e.preventDefault()
-      if (current_selection) {
+      if (current_selection.media_reference_id) {
         current_selection.show = true
       }
     },
 
-    close_media(e: CloseEvent) {
+    close_media() {
       current_selection.show = false
     }
   }

@@ -14,7 +14,7 @@
   let {controller}: Props = $props()
   let width = 100
   let height = 100
-  const media_selections = create_selector()
+  const media_selections = controller.runes.media_selections
   let dialog: HTMLDialogElement
 
 </script>

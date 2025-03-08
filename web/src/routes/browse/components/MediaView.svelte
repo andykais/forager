@@ -5,10 +5,17 @@
     controller: BrowseController
   }
 
+  controller.keybinds.component_listen({
+    Escape: e => {
+      dialog.close()
+    }
+  })
+
   let {controller}: Props = $props()
+  let current_selection = controller.runes.media_selections.current_selection
 
   $effect(() => {
-    if (controller.runes.media_selections.current_selection.show) {
+    if (!dialog.open && current_selection.show) {
       dialog.show()
     }
   })

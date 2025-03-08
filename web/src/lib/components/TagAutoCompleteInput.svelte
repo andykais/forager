@@ -95,39 +95,17 @@
 
   const tag_suggestions = new TagSuggestions()
 
-  onMount(() => {
-    const handlers = {
-      Search: (e: KeyboardEvent) => {
-        if (focus_on_search_keybind) {
-          console.log('search pls', e instanceof KeyboardEvent, e.constructor.name)
-          console.log(e.detail)
-          // function stop_slash_keydown_once() {
-          //   console.log('stop slash keydown')
-          //   e.preventDefault()
-          //   input_element.removeEventListener('keydown', stop_slash_keydown_once)
-          // }
-          // input_element.addEventListener('keypress', stop_slash_keydown_once)
-          // e.stopPropagation()
-          // e.stopImmediatePropagation()
-          e.detail.data.keyboard_event.preventDefault()
-            input_element.focus()
-        }
-      },
-      Escape: (e: KeyboardEvent) => {
-        if (input_state.show_suggestions || document.activeElement === input_element) {
-          input_state.show_suggestions = false
-          input_element.blur()
-        }
+  controller.keybinds.component_listen({
+    Search: (e: KeyboardEvent) => {
+      if (focus_on_search_keybind) {
+        e.detail.data.keyboard_event.preventDefault()
+        input_element.focus()
       }
-    }
-
-    for (const [keybind_event, handler] of Object.entries(handlers)) {
-      controller.keybinds.listen(keybind_event, handler)
-    }
-
-    return () => {
-      for (const [keybind_event, handler] of Object.entries(handlers)) {
-        controller.keybinds.remove_listener(keybind_event, handler)
+    },
+    Escape: (e: KeyboardEvent) => {
+      if (input_state.show_suggestions || document.activeElement === input_element) {
+        input_state.show_suggestions = false
+        input_element.blur()
       }
     }
   })

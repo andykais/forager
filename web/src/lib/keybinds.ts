@@ -1,3 +1,4 @@
+import { onMount } from 'svelte'
 import type { Config } from '$lib/server/config.ts'
 
 
@@ -22,12 +23,25 @@ export class Keybinds {
 
   }
 
+  public component_listen(handlers: Record<KeybindAction, KeybindActionListener>) {
+    onMount(() => {
+      for (const [keybind_event, handler] of Object.entries(handlers)) {
+        this.listen(keybind_event, handler)
+      }
+
+      return () => {
+        for (const [keybind_event, handler] of Object.entries(handlers)) {
+          this.remove_listener(keybind_event, handler)
+        }
+      }
+    })
+  }
   public listen(event: KeybindAction, handler: KeybindActionListener) {
     this.emitter.addEventListener(event, handler)
     return handler
   }
 
-  public remove_listener(handler: KeybindActionListener) {
+  public remove_listener(event: KeybindAction, handler: KeybindActionListener) {
     this.emitter.removeEventListener(event, handler)
   }
 
@@ -42,11 +56,6 @@ export class Keybinds {
     })
 
     this.#keybind_mapper = new Map<string, KeybindAction>(keyboard_actions_entries)
-
-    // document.addEventListener('keydown', this.handler)
-    // return () => {
-    //   document.removeEventListener(this.handler)
-    // }
   }
 
   public handler = (e: KeyboardEvent) => {
