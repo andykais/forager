@@ -72,7 +72,15 @@
 
   type TagModel = Awaited<ReturnType<Forager['tag']['search']>>['results'][0]
 
-  let {controller, search_string = $bindable()}: {controller: BaseController; search_string: string} = $props()
+  let {
+    controller,
+    search_string = $bindable(),
+    focus_on_search_keybind,
+  }: {
+    controller: BaseController
+    search_string: string
+    focus_on_search_keybind: boolean
+  } = $props()
 
   let root_element: HTMLDivElement
   let input_element: HTMLInputElement
@@ -88,20 +96,39 @@
   const tag_suggestions = new TagSuggestions()
 
   onMount(() => {
-    // TODO this is cool, but we want to reuse this component, so we should be smart here
-    // controller.keybinds.listen('Search', (e) => {
-    //   e.preventDefault()
-    //   input_element.focus()
-    // })
-    const handler = controller.keybinds.listen('Escape', () => {
-      if (input_state.show_suggestions) {
-        input_state.show_suggestions = false
-        input_element.blur()
+    const handlers = {
+      Search: (e: KeyboardEvent) => {
+        if (focus_on_search_keybind) {
+          console.log('search pls', e instanceof KeyboardEvent, e.constructor.name)
+          console.log(e.detail)
+          // function stop_slash_keydown_once() {
+          //   console.log('stop slash keydown')
+          //   e.preventDefault()
+          //   input_element.removeEventListener('keydown', stop_slash_keydown_once)
+          // }
+          // input_element.addEventListener('keypress', stop_slash_keydown_once)
+          // e.stopPropagation()
+          // e.stopImmediatePropagation()
+          e.detail.data.keyboard_event.preventDefault()
+            input_element.focus()
+        }
+      },
+      Escape: (e: KeyboardEvent) => {
+        if (input_state.show_suggestions || document.activeElement === input_element) {
+          input_state.show_suggestions = false
+          input_element.blur()
+        }
       }
-    })
+    }
+
+    for (const [keybind_event, handler] of Object.entries(handlers)) {
+      controller.keybinds.listen(keybind_event, handler)
+    }
 
     return () => {
-      controller.keybinds.remove_listener(handler)
+      for (const [keybind_event, handler] of Object.entries(handlers)) {
+        controller.keybinds.remove_listener(keybind_event, handler)
+      }
     }
   })
 

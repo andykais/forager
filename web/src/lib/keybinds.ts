@@ -7,7 +7,7 @@ type KeybindAction =
   | 'PrevMedia'
   | 'NextMedia'
 
-type KeybindActionListener = () => void
+type KeybindActionListener = (e: KeyboardEvent) => void
 
 export class Keybinds {
   public emitter: EventTarget
@@ -42,6 +42,11 @@ export class Keybinds {
     })
 
     this.#keybind_mapper = new Map<string, KeybindAction>(keyboard_actions_entries)
+
+    // document.addEventListener('keydown', this.handler)
+    // return () => {
+    //   document.removeEventListener(this.handler)
+    // }
   }
 
   public handler = (e: KeyboardEvent) => {
@@ -62,11 +67,13 @@ export class Keybinds {
     keys_down.push(last_keycode)
     const code = keys_down.join('-')
 
-    console.log({code})
-
     const action = this.#keybind_mapper.get(code)
     if (action) {
-      this.emitter.dispatchEvent(new Event(action))
+      this.emitter.dispatchEvent(new CustomEvent(action, {
+        detail: {
+          data: { keyboard_event: e }
+        }
+      }))
     }
   }
 

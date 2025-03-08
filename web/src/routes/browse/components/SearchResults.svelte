@@ -1,16 +1,22 @@
 <script lang="ts">
+  import type { BrowseController } from '../controller.ts'
   import type { Forager } from '@forager/core'
   import * as theme from '$lib/theme.ts'
+  import { create_selector } from '../runes/media_selections.svelte.ts'
+  import MediaView from './MediaView.svelte'
   import Icon from '$lib/components/Icon.svelte'
   import { PlayCircle, Photo } from '$lib/icons/mod.ts'
 
   interface Props {
-    results: Awaited<ReturnType<Forager['media']['search']>['results']>
+    controller: BrowseController
   }
-  let {results}: Props = $props()
 
+  let {controller}: Props = $props()
   let width = 100
   let height = 100
+  const media_selections = create_selector()
+  let dialog: HTMLDialogElement
+
 </script>
 
 <style>
@@ -34,16 +40,21 @@
 
 
 
-<div class="container-masonry p-4">
-  {#each results as result}
+<form class="container-masonry p-4" onsubmit={media_selections.open_media}>
+  <MediaView {controller} />
+  {#each controller.runes.search.results as result}
     {#if result.media_type === 'media_file'}
       <button class="
         p-1
         inline-flex items-center justify-center
         shadow shadow-slate-700 bg-slate-500
-        border-2 border-slate-500
-        hover:border-slate-200 hover:border-2
-        rounded-md">
+        border-2
+        rounded-md"
+        class:hover:hover:border-slate-200={result.media_reference.id !== media_selections.current_selection.media_reference_id}
+        class:border-slate-500={result.media_reference.id !== media_selections.current_selection.media_reference_id}
+        class:border-green-300={result.media_reference.id === media_selections.current_selection.media_reference_id}
+        onclick={e => media_selections.set_current_selection(e, result.media_reference.id)}
+      >
         <div class="container-media-tile" style="width:{width}px">
           <div
             class="grid justify-items-center items-center"
@@ -70,4 +81,4 @@
       <div>unimplemented</div>
     {/if}
   {/each}
-</div>
+</form>

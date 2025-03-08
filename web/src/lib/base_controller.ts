@@ -21,7 +21,11 @@ abstract class BaseController {
 
   onMount = async () => {
     this.#config = await this.client.config()
-    this.keybinds.onMount(this.#config)
+    const keybinds_teardown = this.keybinds.onMount(this.#config)
+
+    return () => {
+      keybinds_teardown()
+    }
   }
 
   get config() {

@@ -34,5 +34,5 @@
     e.preventDefault()
     await onSubmit()
   }}>
-  <TagAutoCompleteInput {controller} bind:search_string={params.search_string} />
+  <TagAutoCompleteInput {controller} bind:search_string={params.search_string} focus_on_search_keybind={true} />
 </form>
