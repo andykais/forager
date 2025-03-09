@@ -22,10 +22,9 @@
 <style>
   .container-masonry {
     display: grid;
-    gap: 10px;
+    grid-gap: 10px;
+    grid-column-gap: 15px;
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    grid-template-rows: masonry;
-    masonry-auto-flow: next ;
   }
 
   .container-media-tile {
@@ -44,6 +43,7 @@
   <MediaView {controller} />
   {#each controller.runes.search.results as result}
     {#if result.media_type === 'media_file'}
+      <div>
       <button class="
         p-1
         inline-flex items-center justify-center
@@ -77,6 +77,7 @@
           </div>
         </div>
       </button>
+      </div>
     {:else}
       <div>unimplemented</div>
     {/if}

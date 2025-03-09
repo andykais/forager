@@ -30,7 +30,6 @@
 
 <form class="grid grid-rows-1 p-4 bg-gray-700"
   onsubmit={async e => {
-    console.log('onsubmit')
     e.preventDefault()
     await onSubmit()
   }}>

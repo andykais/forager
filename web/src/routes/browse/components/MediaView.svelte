@@ -24,6 +24,6 @@
 </script>
 
 
-<dialog bind:this={dialog} on:close={controller.runes.media_selections.close_media}>
+<dialog bind:this={dialog} onclose={controller.runes.media_selections.close_media}>
   show me some media for {controller.runes.media_selections.current_selection.media_reference_id}
 </dialog>
