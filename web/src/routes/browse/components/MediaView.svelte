@@ -21,6 +21,14 @@
     }
   })
 
+  function video_loader(node: HTMLVideoElement) {
+    return {
+      update(video_source_url: string) {
+        node.load()
+      }
+    }
+  }
+
   let dialog: HTMLDialogElement
 </script>
 
@@ -38,7 +46,15 @@
             class="object-contain max-h-full"
             src="/files/media_file{current_selection.media_response.media_file.filepath}" alt="">
         {:else if current_selection.media_response.media_file.media_type === 'VIDEO'}
-          video
+          <video
+            class="object-contain max-h-full"
+            autoplay
+            loop
+            use:video_loader={`/files/media_file${current_selection.media_response.media_file.filepath}`}
+            >
+            <source src="/files/media_file{current_selection.media_response.media_file.filepath}">
+            <track kind="captions"/> <!-- this exists purely to quiet down an A11y rule -->
+          </video>
         {/if}
       {:else}
         unhandled media type {current_selection.media_response.media_type}

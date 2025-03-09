@@ -161,7 +161,7 @@
     name="search_bar"
     placeholder="genre:adventure...">
   <div class="relative w-full">
-    <div class="absolute w-full">
+    <div class="absolute w-full z-10">
       {#if input_state.show_suggestions}
       <ul class="bg-gray-200 floating-suggestions" bind:this={suggestions_element}>
         {#each tag_suggestions.state as tag (tag.id)}

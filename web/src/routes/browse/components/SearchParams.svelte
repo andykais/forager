@@ -21,7 +21,6 @@
   })
 
   async function onSubmit() {
-    console.log('search_string:', params.search_string)
     const tags = params.search_string.split(' ').filter(t => t.length > 0)
     await controller.runes.search.clear()
     await controller.runes.search.paginate({query: {tags}})
