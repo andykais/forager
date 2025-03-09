@@ -203,6 +203,10 @@ class FileProcessor {
       ? `${this.#THUMBNAILS_MAX_WIDTH}x${Math.floor((height*this.#THUMBNAILS_MAX_HEIGHT)/width)}`
       : `${Math.floor((width*this.#THUMBNAILS_MAX_WIDTH)/height)}x${this.#THUMBNAILS_MAX_WIDTH}`
 
+    const algorithm = file_info.width > this.#THUMBNAILS_MAX_WIDTH || file_info.height < this.#THUMBNAILS_MAX_HEIGHT
+      ? 'neighbor' // linear looks nicer for upscaling tiny images
+      : 'bicubic'
+
     // // TODO make previews a supported field
     // // assuming that 1/4 of the way into a video is a good preview position
     // const preview_position = file_info.duration > 1 ? file_info.duration * 0.25 : 0
@@ -216,7 +220,7 @@ class FileProcessor {
       thumbnail_timestamps.push(0)
 
       const cmd = new Deno.Command('ffmpeg', {
-        args: ['-v', 'error', '-i', this.#filepath, '-an', '-s', max_width_or_height, '-frames:v', '1', '-ss', `${thumbnail_timestamps[0]}`, tmp_thumbnail_filepath],
+        args: ['-v', 'error', '-i', this.#filepath, '-an', '-vf', `scale=${max_width_or_height}:flags=${algorithm}`, '-frames:v', '1', '-ss', `${thumbnail_timestamps[0]}`, tmp_thumbnail_filepath],
         stdout: 'piped',
         stderr: 'piped',
       })
@@ -252,7 +256,7 @@ class FileProcessor {
           '-vf', [
             // `thumbnail=n=${frames_analysis_batch_size}`,
             `scale=${max_width_or_height}`,
-            `fps=${thumbnail_fps}`,
+            `fps=${thumbnail_fps}:flags=${algorithm}`,
             'showinfo',
           ].join(','),
           // NOTE this grabs the first N frames. I added this because occasionally we would see more frames than we expected with just the fps filter
