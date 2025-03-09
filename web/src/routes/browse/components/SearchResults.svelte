@@ -9,11 +9,13 @@
 
   interface Props {
     controller: BrowseController
+    height: number
+    media_list_position: number
   }
 
-  let {controller}: Props = $props()
-  let width = 100
-  let height = 100
+  let {controller, height, media_list_position}: Props = $props()
+
+  let tile_size = 100
   const media_selections = controller.runes.media_selections
   let dialog: HTMLDialogElement
 
@@ -25,6 +27,8 @@
     grid-gap: 10px;
     grid-column-gap: 15px;
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+
+    position: relative;
   }
 
   .container-media-tile {
@@ -39,8 +43,11 @@
 
 
 
-<form class="container-masonry p-4" onsubmit={media_selections.open_media}>
-  <MediaView {controller} />
+<form
+  class="container-masonry p-4"
+  onsubmit={media_selections.open_media}
+>
+  <MediaView {controller} {height} {media_list_position} />
   {#each controller.runes.search.results as result}
     {#if result.media_type === 'media_file'}
       <div>
@@ -50,15 +57,15 @@
         shadow shadow-slate-700 bg-slate-500
         border-2
         rounded-md"
-        class:hover:hover:border-slate-200={result.media_reference.id !== media_selections.current_selection.media_reference_id}
-        class:border-slate-500={result.media_reference.id !== media_selections.current_selection.media_reference_id}
-        class:border-green-300={result.media_reference.id === media_selections.current_selection.media_reference_id}
-        onclick={e => media_selections.set_current_selection(e, result.media_reference.id)}
+        class:hover:hover:border-slate-200={result.media_reference.id !== media_selections.current_selection.media_response?.media_reference_id}
+        class:border-slate-500={result.media_reference.id !== media_selections.current_selection.media_response?.media_reference_id}
+        class:border-green-300={result.media_reference.id === media_selections.current_selection.media_response?.media_reference_id}
+        onclick={e => media_selections.set_current_selection(e, result)}
       >
-        <div class="container-media-tile" style="width:{width}px">
+        <div class="container-media-tile" style="width:{tile_size}px">
           <div
             class="grid justify-items-center items-center"
-            style="width:{width}px; height: {height}px">
+            style="width:{tile_size}px; height: {tile_size}px">
             <img
               class="max-w-full max-h-full"
               src="/files/thumbnail{result.thumbnails.results[0].filepath}"
@@ -83,3 +90,6 @@
     {/if}
   {/each}
 </form>
+{#if controller.runes.search.loading}
+  Loading...
+{/if}

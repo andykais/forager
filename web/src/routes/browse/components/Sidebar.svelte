@@ -6,6 +6,8 @@
 
   let {controller}: {controller: BrowseController} = $props()
 
+  const icon_color = theme.colors.green[500]
+
   type SidebarState = 'hidden' | 'shown' | 'dragging'
   let sidebar_state = $state<SidebarState>('hidden')
   let widths = $state({
@@ -19,14 +21,15 @@
   })
   $effect(() => {
     widths.sidebar_max = widths.screen - widths.button
-    // console.log($state.snapshot(widths))
   })
 
 </script>
 
 <div class="grid grid-cols-[1fr_auto] bg-slate-600">
   {#if sidebar_state !== 'hidden'}
-    <div style="width: {widths.sidebar}px">
+    <div
+      class="overflow-x-hidden"
+      style="width: {widths.sidebar}px">
       I show details.
     </div>
   {/if}
@@ -35,7 +38,6 @@
     class="bg-slate-600 hover:bg-slate-500 border-r-2 border-x-slate-800"
     title="click to {sidebar_state === 'hidden' ? 'open' : 'close'}, drag to resize"
     onmouseup={e => {
-      console.log($state.snapshot(sidebar_state))
       widths.mousedown = false
       if (sidebar_state === 'dragging') {}
       else if (sidebar_state == 'shown') sidebar_state = 'hidden'
@@ -47,11 +49,11 @@
     }}
   >
     {#if sidebar_state === 'dragging'}
-      <Icon data={Pause} size="22px" fill={theme.colors.lime[600]} stroke={theme.colors.lime[600]} />
+      <Icon data={Pause} size="22px" fill={icon_color} stroke={icon_color} />
     {:else if sidebar_state  === 'hidden'}
-      <Icon data={ChevronRight} size="22px" fill={theme.colors.lime[600]} stroke={theme.colors.lime[600]} />
+      <Icon data={ChevronRight} size="22px" fill={icon_color} stroke={icon_color} />
     {:else}
-      <Icon data={ChevronLeft} size="22px" fill={theme.colors.lime[600]} stroke={theme.colors.lime[600]} />
+      <Icon data={ChevronLeft} size="22px" fill={icon_color} stroke={icon_color} />
     {/if}
 
   </button>

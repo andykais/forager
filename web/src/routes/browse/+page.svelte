@@ -18,6 +18,7 @@
     scroller: 0,
     footer: 0,
   })
+  let media_list_position = $state(0)
   $effect(() => {
     heights.scroller = heights.screen - heights.header - heights.footer
   })
@@ -31,13 +32,14 @@
     <Sidebar {controller} />
     <Scroller
       more={() => controller.handlers.paginate_media()}
-      class="overflow-y-scroll w-full focus:outline-none"
+      class={[
+        "w-full focus:outline-none",
+         controller.runes.media_selections.current_selection.show ? "overflow-hidden" : "overflow-y-scroll",
+      ]}
+      bind:position_y={media_list_position}
       style="height: {heights.scroller}px"
     >
-      <SearchResults {controller} />
-      {#if controller.runes.search.loading}
-        Loading...
-      {/if}
+      <SearchResults {controller} height={heights.scroller} {media_list_position} />
     </Scroller>
   </div>
   <Footer bind:height={heights.footer} {controller} />
