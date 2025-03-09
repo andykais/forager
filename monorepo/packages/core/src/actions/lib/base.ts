@@ -9,6 +9,9 @@ import type * as result_types from '~/models/lib/result_types.ts'
 import { FileProcessor } from '~/lib/file_processor.ts'
 import * as errors from '~/lib/errors.ts'
 
+/**
+ * A common return type from {@link Forager#media} and {@link Forager#series} actions. Contains a media reference for a series of media and its associated metadata.
+ */
 export interface MediaSeriesResponse {
   media_type: 'media_series'
   media_reference: result_types.MediaReference
@@ -16,6 +19,9 @@ export interface MediaSeriesResponse {
   thumbnails: result_types.PaginatedResult<result_types.MediaThumbnail>
 }
 
+/*
+ * A common return type from the {@link Forager#media} actions. Contains a media file and its associated metadata.
+ */
 export interface MediaFileResponse {
   media_type: 'media_file'
   media_reference: result_types.MediaReference
@@ -24,6 +30,9 @@ export interface MediaFileResponse {
   thumbnails: result_types.PaginatedResult<result_types.MediaThumbnail>
 }
 
+/**
+ * Structure returned from {@link forager.media.search}. Can be either a media series or an individual media file.
+  */
 export type MediaResponse = MediaFileResponse | MediaSeriesResponse
 
 class Actions {
