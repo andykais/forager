@@ -2,9 +2,6 @@
   import * as theme from '$lib/theme.ts'
   import Icon from '$lib/components/Icon.svelte'
   import { ChevronLeft, ChevronRight, Pause } from '$lib/icons/mod.ts'
-  import type { BrowseController } from '../controller.ts'
-
-  let {controller}: {controller: BrowseController} = $props()
 
   const icon_color = theme.colors.green[500]
 

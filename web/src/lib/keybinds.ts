@@ -7,6 +7,7 @@ type KeybindAction =
   | 'Search'
   | 'PrevMedia'
   | 'NextMedia'
+  | 'PlayPauseMedia'
 
 type KeybindActionListener = (e: KeyboardEvent) => void
 

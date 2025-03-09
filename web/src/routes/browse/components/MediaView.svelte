@@ -9,11 +9,15 @@
     Escape: e => {
       dialog.close()
       controller.runes.media_selections.close_media()
+    },
+    PlayPauseMedia: e => {
+      paused = !paused
     }
   })
 
   let {controller, media_list_position}: Props = $props()
   let current_selection = controller.runes.media_selections.current_selection
+  let paused = $state(false)
 
   $effect(() => {
     if (!dialog.open && current_selection.show) {
@@ -50,6 +54,7 @@
             class="object-contain max-h-full"
             autoplay
             loop
+            bind:paused
             use:video_loader={`/files/media_file${current_selection.media_response.media_file.filepath}`}
             >
             <source src="/files/media_file{current_selection.media_response.media_file.filepath}">
