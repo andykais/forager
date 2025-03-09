@@ -1,5 +1,4 @@
 <script lang="ts">
-  import * as svelte from 'svelte'
   import Scroller from '$lib/components/Scroller.svelte'
   import Sidebar from './components/Sidebar.svelte'
   import SearchParams from './components/SearchParams.svelte'
@@ -9,23 +8,12 @@
   import { BrowseController } from './controller.ts'
 
   const controller = new BrowseController()
-  svelte.onMount(controller.onMount)
   controller.runes.focus.stack({component: 'BrowsePage', focus: 'page'})
-
-  let heights = $state({
-    screen: 0,
-    header: 0,
-    scroller: 0,
-    footer: 0,
-  })
-  let media_list_position = $state(0)
-  $effect(() => {
-    heights.scroller = heights.screen - heights.header - heights.footer
-  })
+  let { dimensions } = controller.runes
 </script>
 
 <div class="h-dvh">
-  <header bind:clientHeight={heights.header}>
+  <header bind:clientHeight={dimensions.heights.header}>
     <SearchParams {controller} />
   </header>
   <div class="grid grid-cols-[auto_1fr]">
@@ -36,16 +24,15 @@
         "w-full focus:outline-none",
          controller.runes.media_selections.current_selection.show ? "overflow-hidden" : "overflow-y-scroll",
       ]}
-      bind:position_y={media_list_position}
-      style="height: {heights.scroller}px"
+      style="height: {dimensions.heights.media_list}px"
     >
-      <SearchResults {controller} height={heights.scroller} {media_list_position} />
+      <SearchResults {controller} />
     </Scroller>
   </div>
-  <Footer bind:height={heights.footer} {controller} />
+  <Footer bind:height={dimensions.heights.footer} {controller} />
 </div>
 
 <svelte:window
   on:keydown={controller.keybinds.handler}
-  bind:innerHeight={heights.screen} 
+  bind:innerHeight={dimensions.heights.screen} 
 />

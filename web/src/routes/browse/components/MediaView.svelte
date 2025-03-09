@@ -3,8 +3,6 @@
 
   interface Props {
     controller: BrowseController
-    height: number
-    media_list_position: number
   }
 
   controller.keybinds.component_listen({
@@ -13,7 +11,7 @@
     }
   })
 
-  let {controller, height, media_list_position}: Props = $props()
+  let {controller, media_list_position}: Props = $props()
   let current_selection = controller.runes.media_selections.current_selection
 
   $effect(() => {
@@ -28,8 +26,8 @@
 
 
 <dialog
-  class="absolute w-full"
-  style="height: {height}px; top: {media_list_position}px"
+  class="absolute w-full z-10"
+  style="height: {controller.runes.dimensions.heights.media_list}px;"
   bind:this={dialog}
   onclose={controller.runes.media_selections.close_media}>
   <div class="grid justify-items-center items-center h-full">

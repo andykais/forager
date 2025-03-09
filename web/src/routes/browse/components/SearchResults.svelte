@@ -9,11 +9,9 @@
 
   interface Props {
     controller: BrowseController
-    height: number
-    media_list_position: number
   }
 
-  let {controller, height, media_list_position}: Props = $props()
+  let {controller }: Props = $props()
 
   let tile_size = 100
   const media_selections = controller.runes.media_selections
@@ -43,11 +41,11 @@
 
 
 
+<MediaView {controller} />
 <form
   class="container-masonry p-4"
   onsubmit={media_selections.open_media}
 >
-  <MediaView {controller} {height} {media_list_position} />
   {#each controller.runes.search.results as result}
     {#if result.media_type === 'media_file'}
       <div>

@@ -36,6 +36,7 @@ export class Keybinds {
       }
     })
   }
+
   public listen(event: KeybindAction, handler: KeybindActionListener) {
     this.emitter.addEventListener(event, handler)
     return handler

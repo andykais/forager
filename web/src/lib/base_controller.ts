@@ -1,3 +1,4 @@
+import * as svelte from 'svelte'
 import type {ApiSpec} from '$lib/api.ts'
 import * as rpc from '@andykais/ts-rpc/client.ts'
 import type { Config } from '$lib/server/config.ts'
@@ -17,15 +18,11 @@ abstract class BaseController {
   constructor() {
     this.client = rpc.create<ApiSpec>(`${window.location.protocol}${window.location.host}/rpc/:signature`)
     this.keybinds = new Keybinds()
-  }
 
-  onMount = async () => {
-    this.#config = await this.client.config()
-    const keybinds_teardown = this.keybinds.onMount(this.#config)
-
-    return () => {
-      keybinds_teardown()
-    }
+    svelte.onMount(async () => {
+      this.#config = await this.client.config()
+      this.keybinds.onMount(this.#config)
+    })
   }
 
   get config() {

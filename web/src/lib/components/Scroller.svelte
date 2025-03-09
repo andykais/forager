@@ -1,7 +1,7 @@
 <script lang="ts">
   import {onMount} from 'svelte'
 
-  let { more, children, position_y = $bindable(), ...props } = $props()
+  let { more, children, ...props } = $props()
   let first_mount = true
   let observer: IntersectionObserver | undefined = $state()
   let viewport: HTMLDivElement | undefined = $state()
@@ -42,7 +42,7 @@
 <svelte:window on:resize={handle_resize} />
 -->
 
-<div bind:this={viewport} class={props.class} style={props.style} bind:offsetHeight={position_y} >
+<div bind:this={viewport} class={props.class} style={props.style}>
   {@render children?.()}
   <div class="observer" bind:this={end_of_page_element}></div>
 </div>
