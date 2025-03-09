@@ -7,8 +7,8 @@
   import { BrowseController } from './controller.ts'
 
   const controller = new BrowseController()
-  controller.runes.focus.stack({component: 'BrowsePage', focus: 'page'})
-  let { dimensions } = controller.runes
+  let { dimensions, focus } = controller.runes
+  focus.stack({component: 'BrowsePage', focus: 'page'})
 </script>
 
 <div class="h-dvh">

@@ -16,8 +16,8 @@
 
   $effect(() => {
     if (!dialog.open && current_selection.show) {
-      console.log('dialog show?')
       dialog.show()
+      console.log($state.snapshot(current_selection.media_response))
     }
   })
 

@@ -25,7 +25,6 @@ export type ThumbnailSelections =
 
 export interface CurrentSelection {
   show: boolean
-  media_reference_id: number | null
   media_response: MediaResponse | null
 }
 
@@ -33,7 +32,6 @@ export function create_selector() {
   let selected_thumbnails = $state<ThumbnailSelections>({type: 'none'})
   let current_selection = $state<CurrentSelection>({
     show: false,
-    media_reference_id: null,
     media_response: null,
   })
   return {

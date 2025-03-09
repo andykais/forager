@@ -5,7 +5,7 @@
   import { create_selector } from '../runes/media_selections.svelte.ts'
   import MediaView from './MediaView.svelte'
   import Icon from '$lib/components/Icon.svelte'
-  import { PlayCircle, Photo } from '$lib/icons/mod.ts'
+  import { PlayCircle, Photo, Gif } from '$lib/icons/mod.ts'
 
   interface Props {
     controller: BrowseController
@@ -14,6 +14,8 @@
   let {controller }: Props = $props()
 
   let tile_size = 100
+  const icon_size = 14
+  const icon_color = theme.colors.green[200]
   const media_selections = controller.runes.media_selections
   let dialog: HTMLDialogElement
 
@@ -55,9 +57,9 @@
         shadow shadow-slate-700 bg-slate-500
         border-2
         rounded-md"
-        class:hover:hover:border-slate-200={result.media_reference.id !== media_selections.current_selection.media_response?.media_reference_id}
-        class:border-slate-500={result.media_reference.id !== media_selections.current_selection.media_response?.media_reference_id}
-        class:border-green-300={result.media_reference.id === media_selections.current_selection.media_response?.media_reference_id}
+        class:hover:hover:border-slate-200={result.media_reference.id !== media_selections.current_selection.media_response?.media_reference.id}
+        class:border-slate-500={result.media_reference.id !== media_selections.current_selection.media_response?.media_reference.id}
+        class:border-green-300={result.media_reference.id === media_selections.current_selection.media_response?.media_reference.id}
         onclick={e => media_selections.set_current_selection(e, result)}
       >
         <div class="container-media-tile" style="width:{tile_size}px">
@@ -71,11 +73,13 @@
           </div>
 
           <!-- info chips -->
-          <div>
+          <div class="flex justify-end">
             {#if result.media_file.media_type === 'VIDEO'}
-              <Icon data={PlayCircle} fill={theme.colors.green[200]} stroke="none" />
+              <Icon data={PlayCircle} fill={icon_color} stroke="none" size={icon_size} />
+            {:else if result.media_file.media_type === 'IMAGE' && result.media_file.content_type === 'image/gif'}
+              <Icon data={Gif} fill={icon_color} stroke="none" size={icon_size} />
             {:else if result.media_file.media_type === 'IMAGE'}
-              <Icon data={Photo} fill={theme.colors.green[200]} stroke="none" />
+              <Icon data={Photo} fill={icon_color} stroke="none" size={icon_size} />
             {:else}
               unknown
             {/if}
