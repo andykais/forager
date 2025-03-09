@@ -48,6 +48,9 @@ interface Thumbnails {
 }
 
 
+const FFProbeOutputSubtitleStream = z.object({
+    codec_type: z.literal('subtitle'),
+})
 const FFProbeOutputVideoStream = z.object({
     codec_type: z.literal('video'),
     codec_name: z.string(),
@@ -72,7 +75,12 @@ const FFProbeOutputBinDataStream = z.object({
 
 
 const FFProbeOutput = z.object({
-  streams: z.union([FFProbeOutputVideoStream, FFProbeOutputAudioStream, FFProbeOutputBinDataStream ]).array().min(1)
+  streams: z.union([
+    FFProbeOutputVideoStream,
+    FFProbeOutputAudioStream,
+    FFProbeOutputBinDataStream,
+    FFProbeOutputSubtitleStream,
+  ]).array().min(1)
 }).passthrough()
 
 
@@ -102,7 +110,7 @@ class FileProcessor {
     const output = await cmd.output()
     const ffprobe_data = FFProbeOutput.parse(JSON.parse(this.#decoder.decode(output.stdout)))
     // these are typically subtitle metadata streams. For now, we ignore these
-    const ffprobe_streams = ffprobe_data.streams.filter(stream => stream.codec_type !== 'data')
+    const ffprobe_streams = ffprobe_data.streams.filter(stream => ['video', 'audio'].includes(stream.codec_type))
     const stream_codec_info = ffprobe_streams
       .map((s: any) => CODECS.get_codec(s.codec_name))
     const codec_info = stream_codec_info.length === 1 ? stream_codec_info[0] : stream_codec_info.find(s => s.media_type === 'VIDEO')
