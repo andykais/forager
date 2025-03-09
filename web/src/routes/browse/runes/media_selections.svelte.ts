@@ -1,4 +1,4 @@
-import type { Forager } from '@forager/core'
+import type { Forager, MediaResponse } from '@forager/core'
 
 type MediaResponse = Awaited<ReturnType<Forager['media']['search']>>['results'][0]
 
@@ -26,6 +26,7 @@ export type ThumbnailSelections =
 export interface CurrentSelection {
   show: boolean
   media_response: MediaResponse | null
+  result_index: number
 }
 
 export function create_selector() {
@@ -33,23 +34,34 @@ export function create_selector() {
   let current_selection = $state<CurrentSelection>({
     show: false,
     media_response: null,
+    result_index: 0,
   })
   return {
     get thumbnail_selections() {
       return selected_thumbnails
     },
+
     get current_selection() {
       return current_selection
     },
 
-    set_current_selection(e: MouseEvent, media_response: MediaResponse) {
-      console.log('set current selection...')
-      current_selection.media_response = media_response
+    is_currently_selected(media_reference_id: number) {
+      if (current_selection.media_response?.media_reference.id === media_reference_id) {
+        return true
+      }
+      return false
     },
 
-    open_media(e: SubmitEvent) {
-      console.log('open media...')
-      e.preventDefault()
+    set_current_selection(media_response: MediaResponse, result_index: number) {
+      if (this.is_currently_selected(media_response.media_reference.id)) {
+        this.open_media()
+      } else {
+        current_selection.media_response = media_response
+        current_selection.result_index = result_index
+      }
+    },
+
+    open_media() {
       if (current_selection.media_response) {
         current_selection.show = true
       }
@@ -57,6 +69,38 @@ export function create_selector() {
 
     close_media() {
       current_selection.show = false
+    },
+
+    next_media(results: MediaResponse[]) {
+      let next_index = 0
+      if (
+        selected_thumbnails.type === 'ids' && selected_thumbnails.media_reference_ids.length <= 1
+        || selected_thumbnails.type === 'none'
+      ) {
+        next_index = (current_selection.result_index + 1) % results.length
+      } else {
+        throw new Error('unimplemented')
+      }
+
+      current_selection.media_response = results[next_index]
+      current_selection.result_index = next_index
+    },
+
+    prev_media(results: MediaResponse[]) {
+      let prev_index = 0
+      if (
+        selected_thumbnails.type === 'ids' && selected_thumbnails.media_reference_ids.length <= 1
+        || selected_thumbnails.type === 'none'
+      ) {
+        prev_index = current_selection.result_index - 1
+        if (prev_index < 0) {
+          prev_index = results.length - 1
+        }
+      } else {
+        throw new Error('unimplemented')
+      }
+      current_selection.media_response = results[prev_index]
+      current_selection.result_index = prev_index
     }
   }
 }

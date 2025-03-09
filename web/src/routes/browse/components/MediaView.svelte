@@ -8,6 +8,7 @@
   controller.keybinds.component_listen({
     Escape: e => {
       dialog.close()
+      controller.runes.media_selections.close_media()
     }
   })
 
@@ -17,7 +18,6 @@
   $effect(() => {
     if (!dialog.open && current_selection.show) {
       dialog.show()
-      console.log($state.snapshot(current_selection.media_response))
     }
   })
 

@@ -2,8 +2,8 @@
   import type { BrowseController } from '../controller.ts'
   import type { Forager } from '@forager/core'
   import * as theme from '$lib/theme.ts'
+  import { focusable } from '$lib/actions/mod.ts'
   import { create_selector } from '../runes/media_selections.svelte.ts'
-  import MediaView from './MediaView.svelte'
   import Icon from '$lib/components/Icon.svelte'
   import { PlayCircle, Photo, Gif } from '$lib/icons/mod.ts'
 
@@ -43,25 +43,22 @@
 
 
 
-<MediaView {controller} />
-<form
-  class="container-masonry p-4"
-  onsubmit={media_selections.open_media}
->
-  {#each controller.runes.search.results as result}
+<div class="container-masonry p-4">
+  {#each controller.runes.search.results as result, result_index}
     {#if result.media_type === 'media_file'}
       <div>
       <button class="
         p-1
         inline-flex items-center justify-center
         shadow shadow-slate-700 bg-slate-500
-        border-2
-        rounded-md"
+        outline-none
+        border-2 rounded-md"
+        type="button"
         class:hover:hover:border-slate-200={result.media_reference.id !== media_selections.current_selection.media_response?.media_reference.id}
         class:border-slate-500={result.media_reference.id !== media_selections.current_selection.media_response?.media_reference.id}
         class:border-green-300={result.media_reference.id === media_selections.current_selection.media_response?.media_reference.id}
-        onclick={e => media_selections.set_current_selection(e, result)}
-      >
+        use:focusable={!media_selections.current_selection.show && media_selections.current_selection.result_index === result_index}
+        onclick={e => media_selections.set_current_selection(result, result_index)}>
         <div class="container-media-tile" style="width:{tile_size}px">
           <div
             class="grid justify-items-center items-center"
@@ -91,7 +88,7 @@
       <div>unimplemented</div>
     {/if}
   {/each}
-</form>
+</div>
 {#if controller.runes.search.loading}
   Loading...
 {/if}
