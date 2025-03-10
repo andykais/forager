@@ -4,6 +4,7 @@
   import { ChevronLeft, ChevronRight, Pause } from '$lib/icons/mod.ts'
 
   const icon_color = theme.colors.green[500]
+  let props = $props()
 
   type SidebarState = 'hidden' | 'shown' | 'dragging'
   let sidebar_state = $state<SidebarState>('hidden')
@@ -27,7 +28,7 @@
     <div
       class="overflow-x-hidden"
       style="width: {widths.sidebar}px">
-      I show details.
+      {@render props.children?.()}
     </div>
   {/if}
 

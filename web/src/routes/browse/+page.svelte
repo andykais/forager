@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Sidebar from './components/Sidebar.svelte'
+  import MediaDetails from './components/MediaDetails.svelte'
   import SearchParams from './components/SearchParams.svelte'
   import MediaList from './components/MediaList.svelte'
   import Footer from './components/Footer.svelte'
@@ -16,7 +16,7 @@
     <SearchParams {controller} />
   </header>
   <div class="grid grid-cols-[auto_1fr]">
-    <Sidebar {controller} />
+    <MediaDetails {controller} />
     <MediaList {controller} />
   </div>
   <Footer bind:height={dimensions.heights.footer} {controller} />
