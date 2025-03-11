@@ -37,5 +37,6 @@ CODECS.add_codec('IMAGE', 'png', 'image/png')
 CODECS.add_codec('IMAGE', 'apng', 'image/apng')
 CODECS.add_codec('IMAGE', 'mjpeg', 'image/jpeg')
 CODECS.add_codec('AUDIO', 'aac', 'audio/x-aac')
+CODECS.add_codec('AUDIO', 'mp3', 'audio/mpeg')
 
 export { CODECS }

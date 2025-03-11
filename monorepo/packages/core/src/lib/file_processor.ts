@@ -247,7 +247,7 @@ class FileProcessor {
       // const ffmpeg_cmd = `ffmpeg -v error -i '${filepath}' -an -s ${max_width_or_height} -vf fps=${thumbnail_fps} -frames:v ${num_captured_frames} -f image2 '${thumbnail_filepath}'`
 
       // const frames_analysis_batch_size = 2
-      const thumbnail_fps = 1 / (file_info.duration / this.#THUMBNAILS_NUM_CAPTURED_FRAMES)
+      const thumbnail_fps = Math.ceil(1 / (file_info.duration / this.#THUMBNAILS_NUM_CAPTURED_FRAMES))
       const cmd = new Deno.Command('ffmpeg', {
         args: [
           '-v', 'info',
@@ -290,11 +290,12 @@ class FileProcessor {
         throw new errors.SubprocessError({} as any, 'generating thumbnails failed')
       }
       expected_thumbnail_count = this.#THUMBNAILS_NUM_CAPTURED_FRAMES
+
+      if (thumbnail_timestamps.length !== expected_thumbnail_count) {
+        throw new errors.UnExpectedError(`thumbnail generation error. Expected ${expected_thumbnail_count} thumbnail timestamps from ${file_info.duration}s long media (fps: ${thumbnail_fps}), but ${thumbnail_timestamps.length} thumbnail timestamps were found [\n  ${thumbnail_timestamps.join('\n  ')}\n]`)
+      }
     }
 
-    if (thumbnail_timestamps.length !== expected_thumbnail_count) {
-      throw new errors.UnExpectedError(`thumbnail generation error. Expected ${expected_thumbnail_count} thumbnail timestamps, but ${thumbnail_timestamps.length} thumbnail timestamps were found [\n  ${thumbnail_timestamps.join('\n  ')}\n]`)
-    }
     if (thumbnail_timestamps.at(0) !== 0) {
       throw new errors.UnExpectedError(`first thumbnail timestamps should always be 0. Actual thumbnail timestamps: [\n  ${thumbnail_timestamps.join('\n  ')}\n]`)
     }
