@@ -255,8 +255,8 @@ class FileProcessor {
           '-i', this.#filepath,
           '-vf', [
             // `thumbnail=n=${frames_analysis_batch_size}`,
-            `scale=${max_width_or_height}`,
-            `fps=${thumbnail_fps}:flags=${algorithm}`,
+            `scale=${max_width_or_height}:flags=${algorithm}`,
+            `fps=${thumbnail_fps}`,
             'showinfo',
           ].join(','),
           // NOTE this grabs the first N frames. I added this because occasionally we would see more frames than we expected with just the fps filter
