@@ -683,6 +683,34 @@ test('video media', async ctx => {
 })
 
 
+test.only('audio media', async ctx => {
+  const database_path = ctx.create_fixture_path('forager.db')
+  const thumbnail_folder = ctx.create_fixture_path('thumbnails')
+  using forager = new Forager({ database_path, thumbnail_folder })
+  forager.init()
+
+  await forager.media.create(ctx.resources.media_files["music_snippet.mp3"])
+
+  const results = forager.media.search()
+  ctx.assert.search_result(results, {
+    results: [
+      {
+        media_type: 'media_file',
+        media_file: {
+          filepath: ctx.resources.media_files['music_snippet.mp3'],
+          audio: true,
+          animated: false,
+          duration: 6.96,
+          framerate: 0,
+          checksum: '1735a26d0182589686bfe0dd9ec4d1e73d82ef7ee95edec3ad6edc9aad48e8d5',
+          media_type: 'AUDIO',
+        }
+      }
+    ]
+  })
+  ctx.assert.equals(results.results[0].thumbnails.results.length, 1)
+})
+
 test('gif', async ctx => {
   const database_path = ctx.create_fixture_path('forager.db')
   const thumbnail_folder = ctx.create_fixture_path('thumbnails')

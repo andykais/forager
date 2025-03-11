@@ -195,32 +195,19 @@ class FileProcessor {
   }
 
   public async create_thumbnails(file_info: FileInfo, checksum: string): Promise<Thumbnails> {
-    if (file_info.media_type === 'AUDIO') {
-      throw new Error('audio thumbnail unimplemented')
-    }
-    const { width, height } = file_info
-    const max_width_or_height = width > height
-      ? `${this.#THUMBNAILS_MAX_WIDTH}x${Math.floor((height*this.#THUMBNAILS_MAX_HEIGHT)/width)}`
-      : `${Math.floor((width*this.#THUMBNAILS_MAX_WIDTH)/height)}x${this.#THUMBNAILS_MAX_WIDTH}`
-
-    const algorithm = file_info.width > this.#THUMBNAILS_MAX_WIDTH || file_info.height < this.#THUMBNAILS_MAX_HEIGHT
-      ? 'neighbor' // linear looks nicer for upscaling tiny images
-      : 'bicubic'
-
-    // // TODO make previews a supported field
-    // // assuming that 1/4 of the way into a video is a good preview position
-    // const preview_position = file_info.duration > 1 ? file_info.duration * 0.25 : 0
+    // TODO make previews a supported field
+    // assuming that 1/4 of the way into a video is a good preview position
 
     const tmp_folder = await Deno.makeTempDir({prefix: 'forager-thumbnails-'})
+    const thumbnail_timestamps: number[] = []
     const tmp_thumbnail_filepath = path.join(tmp_folder, `%0${this.#THUMBNAILS_FILENAME_ZERO_PAD_SIZE}d.jpg`)
 
-    const thumbnail_timestamps: number[] = []
-    let expected_thumbnail_count = 0
-    if (file_info.duration === 0) {
-      thumbnail_timestamps.push(0)
 
+    if (file_info.media_type === 'AUDIO') {
+      thumbnail_timestamps.push(0)
+      const max_width_or_height = `${this.#THUMBNAILS_MAX_WIDTH}x${this.#THUMBNAILS_MAX_HEIGHT}`
       const cmd = new Deno.Command('ffmpeg', {
-        args: ['-v', 'error', '-i', this.#filepath, '-an', '-vf', `scale=${max_width_or_height}:flags=${algorithm}`, '-frames:v', '1', '-ss', `${thumbnail_timestamps[0]}`, tmp_thumbnail_filepath],
+        args: ['-v', 'error', '-i', this.#filepath, '-filter_complex', `showwavespic=s=${max_width_or_height}`, '-frames:v', '1', tmp_thumbnail_filepath],
         stdout: 'piped',
         stderr: 'piped',
       })
@@ -228,71 +215,93 @@ class FileProcessor {
       if (!output.success) {
         throw new errors.SubprocessError(output, 'generating thumbnails failed')
       }
-      expected_thumbnail_count = 1
     } else {
-      /*
-       * some interesting ideas about generating video thumbnails:
-       *
-       * we could make the number of frames configurable in ForagerConfig
-       *
-       * we could use a different heuristic to decide how many frames to output.
-       * For instance: output a frame for every 10 seconds in the video
-       *
-       * an offical guide http://trac.ffmpeg.org/wiki/Create%20a%20thumbnail%20image%20every%20X%20seconds%20of%20the%20video shows there is an ffmpeg native decision on which frames are most significant:
-       * ffmpeg -i input.flv -vf thumbnail=n=100 thumb%04d.png
-        */
+      const { width, height } = file_info
+      const max_width_or_height = width > height
+        ? `${this.#THUMBNAILS_MAX_WIDTH}x${Math.floor((height*this.#THUMBNAILS_MAX_HEIGHT)/width)}`
+        : `${Math.floor((width*this.#THUMBNAILS_MAX_WIDTH)/height)}x${this.#THUMBNAILS_MAX_WIDTH}`
 
-      // TODO currently we dont output enough information from ffmpeg when generating thumbnails to know what timestamp they are for
-      // general thought is make ffprobe output the timestamps we care about, then use ffmpeg -vf select=(...) to capture the specific frames
-      // const ffmpeg_cmd = `ffmpeg -v error -i '${filepath}' -an -s ${max_width_or_height} -vf fps=${thumbnail_fps} -frames:v ${num_captured_frames} -f image2 '${thumbnail_filepath}'`
+      const algorithm = file_info.width > this.#THUMBNAILS_MAX_WIDTH || file_info.height < this.#THUMBNAILS_MAX_HEIGHT
+        ? 'neighbor' // linear looks nicer for upscaling tiny images
+        : 'bicubic'
 
-      // const frames_analysis_batch_size = 2
-      const thumbnail_fps = Math.ceil(1 / (file_info.duration / this.#THUMBNAILS_NUM_CAPTURED_FRAMES))
-      const cmd = new Deno.Command('ffmpeg', {
-        args: [
-          '-v', 'info',
-          // '-an', // As an input option, blocks all audio streams of a file from being filtered or being  automatically  selected or mapped for any output.
-          '-i', this.#filepath,
-          '-vf', [
-            // `thumbnail=n=${frames_analysis_batch_size}`,
-            `scale=${max_width_or_height}:flags=${algorithm}`,
-            `fps=${thumbnail_fps}`,
-            'showinfo',
-          ].join(','),
-          // NOTE this grabs the first N frames. I added this because occasionally we would see more frames than we expected with just the fps filter
-          // we should better understand what that happens so we dont need this flag
-          '-frames:v', `${this.#THUMBNAILS_NUM_CAPTURED_FRAMES}`,
-          '-f', 'image2',
-          // NOTE another option for reading the output timestamps is writing one of these files
-          // the upside of not doing this is less file management. The downside is brittle regex parsing
-          // '-stats_enc_post:v', './stream-data.txt',
-          tmp_thumbnail_filepath
-        ],
-        stdout: 'null',
-        stderr: 'piped',
-      })
-      const proc = cmd.spawn()
+      if (file_info.duration === 0) {
+        thumbnail_timestamps.push(0)
 
-      // TODO use the input timestamp in a progress meter
-      for await (const line of this.#readlines(proc.stderr)) {
-        if (line.includes('Parsed_showinfo_2') && line.includes(' n: ')) {
-          const pts_time_str = line.match(/pts_time:(?<pts_time>\d+([.]\d*)?)/)?.groups?.pts_time
-          if (pts_time_str === undefined) {
-            throw new errors.UnExpectedError(`Could not parse pts_time out of line:\n${line}`)
-          }
-          // this is the input timestamp of the frame we have selected to output
-          const pts_time = parseFloat(pts_time_str)
-          thumbnail_timestamps.push(pts_time)
+        const cmd = new Deno.Command('ffmpeg', {
+          args: ['-v', 'error', '-i', this.#filepath, '-an', '-vf', `scale=${max_width_or_height}:flags=${algorithm}`, '-frames:v', '1', '-ss', `${thumbnail_timestamps[0]}`, tmp_thumbnail_filepath],
+          stdout: 'piped',
+          stderr: 'piped',
+        })
+        const output = await cmd.output()
+        if (!output.success) {
+          throw new errors.SubprocessError(output, 'generating thumbnails failed')
         }
-      }
-      const status = await proc.status
-      if (!status.success) {
-        throw new errors.SubprocessError({} as any, 'generating thumbnails failed')
-      }
-      expected_thumbnail_count = this.#THUMBNAILS_NUM_CAPTURED_FRAMES
+      } else {
+        /*
+         * some interesting ideas about generating video thumbnails:
+         *
+         * we could make the number of frames configurable in ForagerConfig
+         *
+         * we could use a different heuristic to decide how many frames to output.
+         * For instance: output a frame for every 10 seconds in the video
+         *
+         * an offical guide http://trac.ffmpeg.org/wiki/Create%20a%20thumbnail%20image%20every%20X%20seconds%20of%20the%20video shows there is an ffmpeg native decision on which frames are most significant:
+         * ffmpeg -i input.flv -vf thumbnail=n=100 thumb%04d.png
+          */
 
-      if (thumbnail_timestamps.length !== expected_thumbnail_count) {
-        throw new errors.UnExpectedError(`thumbnail generation error. Expected ${expected_thumbnail_count} thumbnail timestamps from ${file_info.duration}s long media (fps: ${thumbnail_fps}), but ${thumbnail_timestamps.length} thumbnail timestamps were found [\n  ${thumbnail_timestamps.join('\n  ')}\n]`)
+        // TODO currently we dont output enough information from ffmpeg when generating thumbnails to know what timestamp they are for
+        // general thought is make ffprobe output the timestamps we care about, then use ffmpeg -vf select=(...) to capture the specific frames
+        // const ffmpeg_cmd = `ffmpeg -v error -i '${filepath}' -an -s ${max_width_or_height} -vf fps=${thumbnail_fps} -frames:v ${num_captured_frames} -f image2 '${thumbnail_filepath}'`
+
+        // const frames_analysis_batch_size = 2
+        const thumbnail_fps = Math.ceil(1 / (file_info.duration / this.#THUMBNAILS_NUM_CAPTURED_FRAMES))
+        const cmd = new Deno.Command('ffmpeg', {
+          args: [
+            '-v', 'info',
+            // '-an', // As an input option, blocks all audio streams of a file from being filtered or being  automatically  selected or mapped for any output.
+            '-i', this.#filepath,
+            '-vf', [
+              // `thumbnail=n=${frames_analysis_batch_size}`,
+              `scale=${max_width_or_height}:flags=${algorithm}`,
+              `fps=${thumbnail_fps}`,
+              'showinfo',
+            ].join(','),
+            // NOTE this grabs the first N frames. I added this because occasionally we would see more frames than we expected with just the fps filter
+            // we should better understand what that happens so we dont need this flag
+            '-frames:v', `${this.#THUMBNAILS_NUM_CAPTURED_FRAMES}`,
+            '-f', 'image2',
+            // NOTE another option for reading the output timestamps is writing one of these files
+            // the upside of not doing this is less file management. The downside is brittle regex parsing
+            // '-stats_enc_post:v', './stream-data.txt',
+            tmp_thumbnail_filepath
+          ],
+          stdout: 'null',
+          stderr: 'piped',
+        })
+        const proc = cmd.spawn()
+
+        // TODO use the input timestamp in a progress meter
+        for await (const line of this.#readlines(proc.stderr)) {
+          if (line.includes('Parsed_showinfo_2') && line.includes(' n: ')) {
+            const pts_time_str = line.match(/pts_time:(?<pts_time>\d+([.]\d*)?)/)?.groups?.pts_time
+            if (pts_time_str === undefined) {
+              throw new errors.UnExpectedError(`Could not parse pts_time out of line:\n${line}`)
+            }
+            // this is the input timestamp of the frame we have selected to output
+            const pts_time = parseFloat(pts_time_str)
+            thumbnail_timestamps.push(pts_time)
+          }
+        }
+        const status = await proc.status
+        if (!status.success) {
+          throw new errors.SubprocessError({} as any, 'generating thumbnails failed')
+        }
+        const expected_thumbnail_count = this.#THUMBNAILS_NUM_CAPTURED_FRAMES
+
+        if (thumbnail_timestamps.length !== expected_thumbnail_count) {
+          throw new errors.UnExpectedError(`thumbnail generation error. Expected ${expected_thumbnail_count} thumbnail timestamps from ${file_info.duration}s long media (fps: ${thumbnail_fps}), but ${thumbnail_timestamps.length} thumbnail timestamps were found [\n  ${thumbnail_timestamps.join('\n  ')}\n]`)
+        }
       }
     }
 
@@ -305,7 +314,7 @@ class FileProcessor {
       }
     }
     const thumbnail_destination_folder = path.join(this.#ctx.config.thumbnail_folder, this.get_storage_folder(checksum))
-    return this.#assert_thumbnail_generation(tmp_folder, thumbnail_destination_folder, thumbnail_timestamps)
+    return await this.#assert_thumbnail_generation(tmp_folder, thumbnail_destination_folder, thumbnail_timestamps)
   }
 
   public async create_thumbnails_at_timestamp(file_info: FileInfo, checksum: string, timestamp: number): Promise<Thumbnails> {

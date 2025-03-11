@@ -29,13 +29,13 @@ export class Migration extends torm.SeedMigration {
       codec TEXT NOT NULL,
       content_type TEXT NOT NULL,
       -- image/video
-      width  INTEGER CHECK (media_type IN ('IMAGE', 'VIDEO') AND width  IS NOT NULL),
-      height INTEGER CHECK (media_type IN ('IMAGE', 'VIDEO') AND height IS NOT NULL),
+      width  INTEGER CHECK (media_type IN ('IMAGE', 'VIDEO') AND width  IS NOT NULL OR media_type = 'AUDIO'),
+      height INTEGER CHECK (media_type IN ('IMAGE', 'VIDEO') AND height IS NOT NULL OR media_type = 'AUDIO'),
       -- audio/video/gif specific
       animated BOOLEAN NOT NULL,
       audio BOOLEAN NOT NULL,
-      framerate INTEGER NOT NULL CHECK (IIF(animated == 0, framerate == 0, 1)),
-      duration INTEGER NOT NULL CHECK (IIF(animated == 0, duration == 0, 1)),
+      framerate INTEGER NOT NULL CHECK (IIF(animated == 0, framerate == 0, 1) OR media_type = 'AUDIO'),
+      duration INTEGER NOT NULL CHECK (IIF(animated == 0, duration == 0, 1) OR media_type = 'AUDIO'),
 
       updated_at ${TIMESTAMP_COLUMN},
       created_at ${TIMESTAMP_COLUMN},
