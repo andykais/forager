@@ -1,13 +1,14 @@
 <script lang="ts">
   import * as theme from '$lib/theme.ts'
   import Icon from '$lib/components/Icon.svelte'
+	import type { SvelteHTMLElements } from 'svelte/elements';
   import { ChevronLeft, ChevronRight, Pause } from '$lib/icons/mod.ts'
 
   const icon_color = theme.colors.green[500]
-  let props = $props()
+  let props: {height: number; children: SvelteHTMLElements['div']['children']} = $props()
 
   type SidebarState = 'hidden' | 'shown' | 'dragging'
-  let sidebar_state = $state<SidebarState>('hidden')
+  let sidebar_state = $state<SidebarState>('shown')
   let widths = $state({
     screen: 0,
     button: 0,
@@ -17,13 +18,13 @@
     mouse_button_offset: 0,
     mousedown: false,
   })
-  $effect(() => {
-    widths.sidebar_max = widths.screen - widths.button
-  })
+  let sidebar_max = $derived(widths.screen - widths.button)
 
 </script>
 
-<div class="grid grid-cols-[1fr_auto] bg-slate-600">
+<div
+  class="grid grid-cols-[1fr_auto] bg-slate-600 overflow-y-scroll drop-shadow-md"
+  style="height: {props.height}px">
   {#if sidebar_state !== 'hidden'}
     <div
       class="overflow-x-hidden"
@@ -33,7 +34,10 @@
   {/if}
 
   <button
-    class="bg-slate-600 hover:bg-slate-500 border-r-2 border-x-slate-800"
+    class="bg-slate-600 hover:bg-slate-500
+    border-l-1 border-l-gray-700
+    border-r-2 border-x-slate-700
+    "
     title="click to {sidebar_state === 'hidden' ? 'open' : 'close'}, drag to resize"
     onmouseup={e => {
       widths.mousedown = false
@@ -62,7 +66,7 @@
   on:mousemove={e => {
     if (widths.mousedown) {
       sidebar_state = 'dragging'
-      widths.sidebar = Math.min(e.clientX - widths.mouse_button_offset, widths.sidebar_max)
+      widths.sidebar = Math.min(e.clientX - widths.mouse_button_offset, sidebar_max)
     }
   }}
   on:mouseup={e => {

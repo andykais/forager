@@ -12,7 +12,7 @@
 </script>
 
 <div class="h-dvh">
-  <header bind:clientHeight={dimensions.heights.header}>
+  <header class="drop-shadow-md" bind:clientHeight={dimensions.heights.header}>
     <SearchParams {controller} />
   </header>
   <div class="grid grid-cols-[auto_1fr]">
