@@ -37,18 +37,25 @@
     e.preventDefault()
     await onSubmit()
   }}>
-  <div class="p-4">
-    <div class="grid grid-cols-[1fr_auto] gap-2 pb-2">
+  <div class="p-3 justify-center items-center">
+    <div class="w-full grid grid-cols-[1fr_auto] gap-2 pb-2">
       <TagAutoCompleteInput {controller} bind:search_string={params.search_string} focus_on_search_keybind={true} />
       <button
         class="hover:cursor-pointer"
-        title="click to {advanced_filters_state === 'hidden' ? 'open' : 'close'}"
-        type="button">
+        title="click to {advanced_filters_state === 'hidden' ? 'show' : 'hide'} advanced filters"
+        type="button"
+        onclick={e => {
+          if (advanced_filters_state === 'hidden') {
+            advanced_filters_state = 'shown'
+          } else {
+            advanced_filters_state = 'hidden'
+          }
+        }}>
         <Icon class="fill-gray-800 hover:fill-gray-600" data={Filter} size={icon_size} fill={icon_color} stroke={"none"} />
       </button>
     </div>
 
-    <div class="flex justify-center items-center gap-8">
+    <div class="flex justify-center items-center gap-8" style="display: {advanced_filters_state === 'hidden' ? 'none' : 'flex'}">
       <div class="flex gap-2">
         <label class="text-slate-300" for="filepath">Filepath:</label>
         <input

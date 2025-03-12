@@ -9,7 +9,7 @@
   class="bg-gray-700 flex justify-end px-2 py-1"
   bind:clientHeight={height}
 >
-  <span class="text-green-100">
-    Found {controller.runes.search.results.length} search results
+  <span class="text-slate-100">
+    Total results {controller.runes.search.results.length}
   </span>
 </footer>

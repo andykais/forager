@@ -129,7 +129,7 @@
 
 <div class="grid grid-rows-1 p-0 bg-gray-700" bind:this={root_element}>
   <input
-    class="basis-full rounded-lg py-1 px-3 text-slate-100 bg-gray-800 text-sm"
+    class="basis-full rounded-lg py-0.5 px-3 text-slate-100 bg-gray-800"
     type="text"
     name="search_bar"
     placeholder="genre:adventure..."
@@ -162,9 +162,9 @@
     value={search_string}
   >
   <div class="relative w-full">
-    <div class="absolute w-full z-10">
+    <div class="absolute w-full z-10 text-slate-300">
       {#if input_state.show_suggestions}
-      <ul class="bg-slate-700 floating-suggestions" bind:this={suggestions_element}>
+      <ul class="bg-slate-700 floating-suggestions border-r-1 border-l-1 border-b-1 border-slate-500" bind:this={suggestions_element}>
         {#each tag_suggestions.state as tag (tag.id)}
           <li
             class="hover:bg-slate-500 floating-suggestion-item">
