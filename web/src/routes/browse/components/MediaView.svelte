@@ -60,6 +60,16 @@
             <source src="/files/media_file{current_selection.media_response.media_file.filepath}">
             <track kind="captions"/> <!-- this exists purely to quiet down an A11y rule -->
           </video>
+        {:else if current_selection.media_response.media_file.media_type === 'AUDIO'}
+          <img
+            class="object-contain max-h-full"
+            src="/files/thumbnail{current_selection.media_response.thumbnails.results[0].filepath}" alt="">
+          <audio
+            autoplay
+            loop
+          >
+            <source src="/files/media_file{current_selection.media_response.media_file.filepath}">
+          </audio>
         {/if}
       {:else}
         unhandled media type {current_selection.media_response.media_type}

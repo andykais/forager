@@ -5,7 +5,7 @@
   import { focusable } from '$lib/actions/mod.ts'
   import { create_selector } from '../runes/media_selections.svelte.ts'
   import Icon from '$lib/components/Icon.svelte'
-  import { PlayCircle, Photo, Gif } from '$lib/icons/mod.ts'
+  import { PlayCircle, Photo, Gif, Music } from '$lib/icons/mod.ts'
 
   interface Props {
     controller: BrowseController
@@ -77,8 +77,10 @@
               <Icon data={Gif} fill={icon_color} stroke="none" size={icon_size} />
             {:else if result.media_file.media_type === 'IMAGE'}
               <Icon data={Photo} fill={icon_color} stroke="none" size={icon_size} />
+            {:else if result.media_file.media_type === 'AUDIO'}
+              <Icon data={Music} fill={icon_color} stroke="none" size={icon_size} />
             {:else}
-              unknown
+              unknown media type {result.media_file.media_type}
             {/if}
           </div>
         </div>
