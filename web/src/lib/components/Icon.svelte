@@ -3,7 +3,7 @@
   let {
   data = "",
   viewBox = extractViewBox(data),
-  size = "12px",
+  size = "12px" as string | number,
   width = size,
   height = size,
   color = "currentColor",

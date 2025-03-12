@@ -3,6 +3,7 @@
   import SearchParams from './components/SearchParams.svelte'
   import MediaList from './components/MediaList.svelte'
   import Footer from './components/Footer.svelte'
+  import Header from './components/Header.svelte'
 
   import { BrowseController } from './controller.ts'
 
@@ -12,14 +13,12 @@
 </script>
 
 <div class="h-dvh">
-  <header class="drop-shadow-md" bind:clientHeight={dimensions.heights.header}>
-    <SearchParams {controller} />
-  </header>
+  <Header {controller} bind:height={dimensions.heights.header} />
   <div class="grid grid-cols-[auto_1fr]">
     <MediaDetails {controller} />
     <MediaList {controller} />
   </div>
-  <Footer bind:height={dimensions.heights.footer} {controller} />
+  <Footer {controller} bind:height={dimensions.heights.footer} />
 </div>
 
 <svelte:window
