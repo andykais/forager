@@ -335,6 +335,32 @@ test('media actions', async (ctx) => {
       ]
     })
 
+    // test exact file queries
+    ctx.assert.search_result(forager.media.search({query: {filepath: media_cartoon.media_file.filepath}}), {
+      total: 1,
+      results: [
+        {media_reference: {id: media_cartoon.media_reference.id}}
+      ]
+    })
+
+    // test directory glob queries
+    ctx.assert.search_result(forager.media.search({query: {filepath: `${root_dir}*`}}), {
+      total: 3,
+      results: [
+        {media_reference: {id: media_doodle.media_reference.id}},
+        {media_reference: {id: media_cartoon.media_reference.id}},
+        {media_reference: {id: media_generated_art.media_reference.id}},
+      ]
+    })
+
+    // test file glob queries
+    ctx.assert.search_result(forager.media.search({query: {filepath: `*${media_generated_art.media_file.filename}`}}), {
+      total: 1,
+      results: [
+        {media_reference: {id: media_generated_art.media_reference.id}}
+      ]
+    })
+
     // TODO support a decent "cd .." workflow. Currently its only easy to go "down" directories
   })
 
@@ -378,7 +404,6 @@ test('media actions', async (ctx) => {
       ]
     })
   })
-
   forager.close()
 })
 
@@ -562,6 +587,7 @@ test('video media', async ctx => {
     ctx.assert.equals(4.7 + 0.39999999999999947, 5.1)
     ctx.assert.equals(bite_keypoint.media_timestamp, 4.7)
 
+    ctx.assert.equals(media_cronch.media_file.duration, 6.763)
     ctx.assert.list_partial(forager.media.get({media_reference_id: media_cronch.media_reference.id}).thumbnails.results, [
       {kind: 'standard', media_timestamp: 0},
       {kind: 'standard', media_timestamp: 0.375722},
@@ -683,7 +709,7 @@ test('video media', async ctx => {
 })
 
 
-test.only('audio media', async ctx => {
+test('audio media', async ctx => {
   const database_path = ctx.create_fixture_path('forager.db')
   const thumbnail_folder = ctx.create_fixture_path('thumbnails')
   using forager = new Forager({ database_path, thumbnail_folder })

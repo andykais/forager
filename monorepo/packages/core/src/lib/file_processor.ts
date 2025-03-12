@@ -255,7 +255,7 @@ class FileProcessor {
         // const ffmpeg_cmd = `ffmpeg -v error -i '${filepath}' -an -s ${max_width_or_height} -vf fps=${thumbnail_fps} -frames:v ${num_captured_frames} -f image2 '${thumbnail_filepath}'`
 
         // const frames_analysis_batch_size = 2
-        const thumbnail_fps = Math.ceil(1 / (file_info.duration / this.#THUMBNAILS_NUM_CAPTURED_FRAMES))
+        const thumbnail_fps = 1 / (file_info.duration / this.#THUMBNAILS_NUM_CAPTURED_FRAMES)
         const cmd = new Deno.Command('ffmpeg', {
           args: [
             '-v', 'info',

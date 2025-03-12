@@ -16,6 +16,7 @@ interface SelectManyFilters {
   stars_equality: 'gte' | 'eq' | undefined
   unread: boolean
   filesystem: boolean | undefined
+  filepath: string | undefined
   // directory_path: string | undefined
 }
 
@@ -266,6 +267,11 @@ ${group_builder.generate_sql()}
       }
     } else {
       builder.add_where_clause('directory_reference = 0')
+    }
+
+    if (params.filepath) {
+      builder.add_join_clause('INNER JOIN', 'media_file', 'media_file.media_reference_id = media_reference.id')
+      builder.add_where_clause(`media_file.filepath GLOB '${params.filepath}'`)
     }
 
     if (params.series_id !== undefined) {

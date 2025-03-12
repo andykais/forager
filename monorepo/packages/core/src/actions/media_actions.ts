@@ -92,6 +92,7 @@ class MediaActions extends Actions {
       stars_equality: query.stars_equality,
       unread: query.unread,
       filesystem: query.filesystem,
+      filepath: query.filepath,
     })
 
     const results: (MediaFileResponse | MediaSeriesResponse)[] =  records.results.map(row => {
@@ -172,6 +173,7 @@ class MediaActions extends Actions {
       stars_equality: query.stars_equality,
       unread: query.unread,
       filesystem: query.filesystem,
+      filepath: query.filepath,
     })
 
     const results = records.results.map(record => {

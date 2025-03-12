@@ -30,6 +30,8 @@ export const PaginatedSearch = PaginatedQuery.extend({
   query: z.object({
     series_id: z.number().optional(),
     filesystem: z.boolean().optional(),
+    /** filepath can be an exact path or a glob */
+    filepath: z.string().optional(),
     directory: z.string().optional(),
     media_reference_id: z.number().optional(),
     tags: z.array(Tag).optional(),
