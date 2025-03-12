@@ -54,6 +54,10 @@ jobs:
       # - name: Typecheck
       # run: deno task check
 
+      # package.json based projects need to run deno install step
+      - name: Install Dependencies
+        run: deno install
+
       - name: Build
         run: deno task build
 
