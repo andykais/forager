@@ -5,7 +5,10 @@ import {MediaReferenceTag} from './media_reference_tag.ts'
 
 export type TagJoin =
   & torm.InferSchemaTypes<typeof Tag.result>
-  & {group: torm.InferSchemaTypes<typeof TagGroup.result>['name']}
+  & {
+    group: torm.InferSchemaTypes<typeof TagGroup.result>['name']
+    color: torm.InferSchemaTypes<typeof TagGroup.result>['color']
+  }
 
 class Tag extends Model {
   static schema = torm.schema('tag', {
@@ -44,33 +47,33 @@ class Tag extends Model {
     SELECT COUNT(1) AS ${PaginationVars.result.total} FROM tag`
 
   #select = this.query`
-    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')} FROM tag
+    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')}, ${TagGroup.result.color} FROM tag
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id`
 
   #select_by_id = this.query`
-    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')} FROM tag
+    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')}, ${TagGroup.result.color} FROM tag
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
     WHERE tag.id = ${Tag.params.id}`
 
   #select_by_tag_group_and_name = this.query`
-    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')} FROM tag
+    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')}, ${TagGroup.result.color} FROM tag
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
     WHERE tag.name = ${Tag.params.name} AND tag_group.name = ${TagGroup.params.name.as('group')}`
 
   #select_by_tag_group_id_and_name = this.query`
-    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')} FROM tag
+    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')}, ${TagGroup.result.color} FROM tag
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
     WHERE tag_group_id = ${Tag.params.tag_group_id} AND tag.name = ${Tag.params.name}`
 
   #select_by_media_reference_id = this.query`
-    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')} FROM tag
+    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')}, ${TagGroup.result.color} FROM tag
     INNER JOIN media_reference_tag ON media_reference_tag.tag_id = tag.id
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
     WHERE media_reference_tag.media_reference_id = ${MediaReferenceTag.params.media_reference_id}
     ORDER BY tag.media_reference_count DESC, tag.updated_at DESC, tag.id DESC`
 
   #select_by_match_group_and_name = this.query`
-    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')} FROM tag
+    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')}, ${TagGroup.result.color} FROM tag
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
     WHERE tag.name GLOB ${Tag.params.name} AND tag_group.name GLOB ${TagGroup.params.name.as('group')}
     ORDER BY tag.media_reference_count DESC, tag.updated_at DESC, tag.id DESC
@@ -83,7 +86,7 @@ class Tag extends Model {
     LIMIT ${PaginationVars.params.limit}`
 
   #select_by_match_name = this.query`
-    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')} FROM tag
+    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')}, ${TagGroup.result.color} FROM tag
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
     WHERE tag.name GLOB ${Tag.params.name}
     ORDER BY tag.media_reference_count DESC, tag.updated_at DESC, tag.id DESC
@@ -100,7 +103,7 @@ class Tag extends Model {
     name?: string
     tag_group_id?: number
     group?: string
-  }): (torm.InferSchemaTypes<typeof Tag.result> & {group: string}) | undefined {
+  }): (torm.InferSchemaTypes<typeof Tag.result> & {group: string; color: string}) | undefined {
     if (
       params.id !== undefined &&
       Object.keys(params).length === 1
@@ -162,6 +165,7 @@ class Tag extends Model {
       cursor: undefined,
     }
   }
+
   public select_all(params: {
     media_reference_id: number,
   }): TagJoin[] {

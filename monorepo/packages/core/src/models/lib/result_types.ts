@@ -7,7 +7,7 @@ export type MediaSeriesItem = InferSchemaTypes<typeof models.MediaSeriesItem.res
 export type MediaFile = InferSchemaTypes<typeof models.MediaFile.result>
 export type MediaThumbnail = InferSchemaTypes<typeof models.MediaThumbnail.result>
 export type TagGroup = InferSchemaTypes<typeof models.TagGroup.result>
-export type Tag = InferSchemaTypes<typeof models.Tag.result> & {group: TagGroup['name']}
+export type Tag = InferSchemaTypes<typeof models.Tag.result> & {group: TagGroup['name']; color: TagGroup['color']}
 export type MediaKeypoint = InferSchemaTypes<typeof models.MediaKeypoint.result>
 export type View = InferSchemaTypes<typeof models.View.result>
 

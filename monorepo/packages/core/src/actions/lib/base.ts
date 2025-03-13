@@ -8,6 +8,7 @@ import { type inputs, parsers } from '~/inputs/mod.ts'
 import type * as result_types from '~/models/lib/result_types.ts'
 import { FileProcessor } from '~/lib/file_processor.ts'
 import * as errors from '~/lib/errors.ts'
+import { get_hash_color } from "~/lib/text_processor.ts";
 
 /**
  * A common return type from {@link Forager#media} and {@link Forager#series} actions. Contains a media reference for a series of media and its associated metadata.
@@ -200,8 +201,7 @@ class Actions {
 
   protected tag_create(tag: z.output<typeof parsers.Tag>) {
     const group = tag.group ?? ''
-    // const color = get_hash_color(group, 'hsl')
-    const color = ''
+    const color = get_hash_color(group, 'hsl')
     const tag_group = this.models.TagGroup.get_or_create({ name: group, color })!
     const tag_record = this.models.Tag.get_or_create({ alias_tag_id: null, name: tag.name, tag_group_id: tag_group.id, description: tag.description, metadata: tag.metadata })
     return tag_record

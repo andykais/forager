@@ -29,10 +29,10 @@ test('tag actions', async (ctx) => {
 
   await ctx.subtest('validate tag parsing', () => {
     ctx.assert.list_partial(art.tags, [
-      {group: '', name: 'wallpaper', media_reference_count: 1},
-      {group: 'colors', name: 'black', media_reference_count: 1},
-      {group: '', name: 'generated', media_reference_count: 1},
-      {group: 'genre', name: 'procedural_generation', media_reference_count: 1},
+      {group: '', name: 'wallpaper', media_reference_count: 1, color: 'hsl(0, 70%, 55%)'},
+      {group: 'colors', name: 'black', media_reference_count: 1, color: 'hsl(299, 70%, 55%)'},
+      {group: '', name: 'generated', media_reference_count: 1, color: 'hsl(0, 70%, 55%)'},
+      {group: 'genre', name: 'procedural_generation', media_reference_count: 1, color: 'hsl(15, 70%, 55%)'},
     ])
     ctx.assert.list_partial(screenshot.tags, [
       // tags with more media references are ordered first
