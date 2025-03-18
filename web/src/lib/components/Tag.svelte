@@ -1,5 +1,7 @@
 <script lang="ts">
   import type { Forager } from '@forager/core'
+  import Icon from '$lib/components/Icon.svelte'
+  import * as theme from '$lib/theme.ts'
 
   type Tag = ReturnType<Forager['tag']['search']>['results'][0]
   let props: {tag: Tag} = $props()
@@ -10,7 +12,7 @@
 </script>
 
 
-<span class="flex">
+<span class="w-full flex rounded-sm px-1" style="background-color: {props.tag.color}">
   <span class="flex-grow">{tag_identifier}</span>
   <span>{props.tag.media_reference_count}</span>
 </span>

@@ -1,6 +1,9 @@
 <script lang="ts">
   import Sidebar from '$lib/components/Sidebar.svelte'
   import MediaDetailEntry from './MediaDetailEntry.svelte'
+  import Tag from '$lib/components/Tag.svelte'
+  import Icon from '$lib/components/Icon.svelte'
+  import {XCircle} from '$lib/icons/mod.ts'
 
   import { BrowseController } from '../controller.ts'
   let {controller}: {controller: BrowseController} = $props()
@@ -11,6 +14,16 @@
 <Sidebar height={dimensions.heights.media_list}>
   <div class="pl-1 pr-3">
     {#if current_selection.media_response}
+      <label class="text-green-50" for="tags"><span>Tags</span></label>
+      {#each current_selection.media_response.tags as tag, tag_index}
+        <div class="grid grid-cols-[1fr_auto] items-center gap-1">
+          <Tag {tag} />
+          <button class="hover:cursor-pointer" title="Remove">
+            <Icon class="fill-green-50 hover:fill-green-300" data={XCircle} size="18px" color="none" />
+          </button>
+        </div>
+      {/each}
+
       <MediaDetailEntry
         {controller}
         editable
@@ -37,11 +50,6 @@
         {controller}
         label="Views"
         content={current_selection.media_response.media_reference.view_count}/>
-
-      <label class="text-green-50" for="tags"><span>Tags</span></label>
-      {#each current_selection.media_response.tags as tag, tag_index}
-        <div>{tag.group}:{tag.name}</div>
-      {/each}
 
       {#if current_selection.media_response.media_type === 'media_file'}
         <MediaDetailEntry
