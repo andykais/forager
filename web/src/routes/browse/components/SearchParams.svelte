@@ -68,7 +68,6 @@
           name="filepath"
           type="text"
           placeholder="*.jpg..."
-          onchange={submit}
           bind:value={params.filepath}>
       </div>
 
@@ -112,4 +111,5 @@
       </div>
     </div>
   </div>
+  <input type="submit" hidden />
 </form>

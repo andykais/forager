@@ -1,5 +1,4 @@
 <script lang="ts">
-  import {onMount} from 'svelte'
   import * as parsers from '$lib/parsers.ts'
   import type { Forager } from '@forager/core'
   import type { BaseController } from "$lib/base_controller.ts";

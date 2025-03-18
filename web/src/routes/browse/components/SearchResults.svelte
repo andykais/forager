@@ -27,8 +27,6 @@
     grid-gap: 10px;
     grid-column-gap: 15px;
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-
-    position: relative;
   }
 
   .container-media-tile {

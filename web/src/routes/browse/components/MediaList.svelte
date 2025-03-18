@@ -19,7 +19,7 @@
 <Scroller
   more={() => controller.handlers.paginate_media()}
   class={[
-    "w-full focus:outline-none relative",
+    "w-full focus:outline-none",
      controller.runes.media_selections.current_selection.show ? "overflow-hidden" : "overflow-y-scroll",
   ]}
   style="height: {controller.runes.dimensions.heights.media_list}px"
