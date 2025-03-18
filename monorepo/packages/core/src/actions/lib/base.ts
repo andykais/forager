@@ -143,11 +143,7 @@ class Actions {
         ...parsed.media_info,
       })
       for (const tag of parsed.tags) {
-        const group = tag.group ?? ''
-        // const color = get_hash_color(group, 'hsl')
-        const color = ''
-        const tag_group = this.models.TagGroup.get_or_create({ name: group, color })!
-        const tag_record = this.models.Tag.get_or_create({ alias_tag_id: null, name: tag.name, tag_group_id: tag_group.id, description: tag.description, metadata: tag.metadata })
+        const tag_record = this.tag_create(tag)
         this.models.MediaReferenceTag.get_or_create({ media_reference_id: parsed.media_reference_id, tag_id: tag_record.id, tag_group_id: tag_record.tag_group_id })
       }
     })

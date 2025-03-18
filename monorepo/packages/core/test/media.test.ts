@@ -367,20 +367,30 @@ test('media actions', async (ctx) => {
   await ctx.subtest('media update', async () => {
     media_doodle = await forager.media.update(media_doodle.media_reference.id, {}, ['cat'])
     ctx.assert.object_match(media_doodle, {
-      tags: [{name: 'cat'}]
+      tags: [{name: 'cat', color: 'hsl(0, 70%, 55%)'}]
     })
 
     // ensure we can add the same tag twice in an update without duplicating the tag
-    media_doodle = await forager.media.update(media_doodle.media_reference.id, {}, ['cat', 'doodle'])
+    media_doodle = await forager.media.update(media_doodle.media_reference.id, {}, ['cat', 'doodle', 'medium:digital'])
 
     ctx.assert.object_match(media_doodle, {
-      tags: [{name: 'doodle'}, {name: 'cat'}]
+      tags: [
+        {name: 'digital', group: 'medium', color: 'hsl(131, 70%, 55%)' },
+        {name: 'doodle', group: '', color: 'hsl(0, 70%, 55%)'},
+        {name: 'cat', group: '', color: 'hsl(0, 70%, 55%)'},
+      ]
     })
   })
 
   await ctx.subtest('media upsert', async () => {
     // test creating new media with upsert
-    await forager.media.upsert(ctx.resources.media_files['cat_cronch.mp4'], {}, ['cat'])
+    const cronch = await forager.media.upsert(ctx.resources.media_files['cat_cronch.mp4'], {}, ['cat', 'animal:cat'])
+    ctx.assert.object_match(cronch, {
+      tags: [
+        {name: 'cat', group: '', color: 'hsl(0, 70%, 55%)'},
+        {name: 'cat', group: 'animal', color: 'hsl(36, 70%, 55%)' },
+      ]
+    })
 
     // test updating existing media with upsert
     ctx.assert.equals(media_cartoon.media_reference.title, 'Ed Edd Eddy Screengrab')
