@@ -39,6 +39,7 @@
         tag_match = tag_match.substring(text_snippet_position.start + 1)
       }
 
+      // TODO only do this when the query has changed. Currently any time we focus in/out of the browser tab, it will re-search
       const tags = await controller.client.forager.tag.search({query:{tag_match}})
       this.state = tags.results
     }
@@ -98,6 +99,7 @@
     // used when we want to grab the focus on the input element and _dont_ want to immediately show suggestions again
     just_populated_suggestions: false,
     text_position: 0,
+    current_hover_selection_index: -1,
   })
 
   const tag_suggestions = new TagSuggestions()
@@ -110,9 +112,18 @@
       }
     },
     NextTagSuggestion: e => {
+      if (controller.runes.focus.focused({component: 'TagAutoCompleteInput', focus: kind})) {
+        const length = tag_suggestions.state.length
+        const index = input_state.current_hover_selection_index
+        input_state.current_hover_selection_index = (index + 1) % length
+      }
     },
     PrevTagSuggestion: e => {
-
+      if (controller.runes.focus.focused({component: 'TagAutoCompleteInput', focus: kind})) {
+        const length = tag_suggestions.state.length
+        const index = input_state.current_hover_selection_index
+        input_state.current_hover_selection_index = (index - 1 + length) % length
+      }
     },
     Escape: e => {
       if (input_state.show_suggestions || document.activeElement === input_element) {
@@ -147,6 +158,7 @@
     placeholder={placeholder}
     autocomplete="off"
     bind:this={input_element}
+    list="taglist"
     onselectionchange={async e => {
       input_state.text_position = e.target.selectionStart
       tag_suggestions.refresh()
@@ -158,7 +170,7 @@
       tag_suggestions.refresh()
     }}
     onfocusin={async e => {
-      controller.runes.focus.stack('TagAutoCompleteInput', kind)
+      controller.runes.focus.stack({component: 'TagAutoCompleteInput', focus: kind})
 
       // we got here from a manual input_element.focus() call, so we should ignore setting suggestions this time
       if (input_state.just_populated_suggestions) {
@@ -181,18 +193,21 @@
     <div class="absolute w-full z-10 text-slate-300">
       {#if input_state.show_suggestions}
       <ul class="bg-slate-700 floating-suggestions border-r-1 border-l-1 border-b-1 border-slate-500" bind:this={suggestions_element}>
-        {#each tag_suggestions.state as tag (tag.id)}
+        {#each tag_suggestions.state as tag, tag_index (tag.id)}
           <li
             class="hover:bg-slate-500 floating-suggestion-item">
             <button
               type="button"
-              class="px-1 w-full text-left focus:bg-gray-400 outline-none"
+              class={[
+                "px-1 w-full text-left focus:bg-gray-400 outline-none",
+                input_state.current_hover_selection_index === tag_index && "bg-slate-500"
+              ]}
               tabindex={0}
               onfocusout={e => {
-                controller.runes.focus.pop({component: 'TagAutoCompleteInput', focus: 'tag:suggestion:${tag.id}'})
+                //controller.runes.focus.pop({component: 'TagAutoCompleteInput', focus: 'tag:suggestion:${tag.id}'})
               }}
               onfocusin={e => {
-                controller.runes.focus.stack({component: 'TagAutoCompleteInput', focus: 'tag:suggestion:${tag.id}'})
+                //controller.runes.focus.stack({component: 'TagAutoCompleteInput', focus: 'tag:suggestion:${tag.id}'})
               }}
               onclick={e => {
                 tag_suggestions.apply_suggestion(tag)
@@ -204,7 +219,5 @@
       </ul>
       {/if}
     </div>
-    <!--
-    -->
   </div>
 </div>

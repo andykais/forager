@@ -40,6 +40,10 @@ export const create_focuser = () => {
 
     get focus() {
       return state.focus_stack.at(-1)
+    },
+
+    focused(focus: Focus) {
+      return state.focus_stack.some(f => f.component === focus.component && f.focus === focus.focus)
     }
   }
 }
