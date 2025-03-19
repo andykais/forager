@@ -73,12 +73,20 @@
 
   let {
     controller,
+    kind,
     search_string = $bindable(),
     focus_on_search_keybind,
+    placeholder = 'genre:adventure...',
+    input_classes = 'w-full rounded-lg py-0.5 px-3 text-slate-100 bg-gray-800',
+    allow_multiple_tags = false,
   }: {
     controller: BaseController
     search_string: string
+    kind: 'search' | 'details'
     focus_on_search_keybind: boolean
+    placeholder: string
+    input_classes: string
+    allow_multiple_tags: boolean
   } = $props()
 
   let root_element: HTMLDivElement
@@ -100,6 +108,11 @@
         e.detail.data.keyboard_event.preventDefault()
         input_element.focus()
       }
+    },
+    NextTagSuggestion: e => {
+    },
+    PrevTagSuggestion: e => {
+
     },
     Escape: e => {
       if (input_state.show_suggestions || document.activeElement === input_element) {
@@ -126,12 +139,13 @@
   }
 </style>
 
-<div class="grid grid-rows-1 p-0 bg-gray-700" bind:this={root_element}>
+<div class="grid grid-rows-1 p-0" bind:this={root_element}>
   <input
-    class="basis-full rounded-lg py-0.5 px-3 text-slate-100 bg-gray-800"
+    class={input_classes}
     type="text"
     name="search_bar"
-    placeholder="genre:adventure..."
+    placeholder={placeholder}
+    autocomplete="off"
     bind:this={input_element}
     onselectionchange={async e => {
       input_state.text_position = e.target.selectionStart
@@ -144,6 +158,8 @@
       tag_suggestions.refresh()
     }}
     onfocusin={async e => {
+      controller.runes.focus.stack('TagAutoCompleteInput', kind)
+
       // we got here from a manual input_element.focus() call, so we should ignore setting suggestions this time
       if (input_state.just_populated_suggestions) {
         input_state.just_populated_suggestions = false
@@ -157,6 +173,7 @@
       } else {
         input_state.show_suggestions = false
       }
+      controller.runes.focus.pop('TagAutoCompleteInput', kind)
     }}
     value={search_string}
   >
@@ -180,7 +197,7 @@
               onclick={e => {
                 tag_suggestions.apply_suggestion(tag)
               }}>
-              <Tag {tag} />
+              <Tag {tag} transparent />
             </button>
           </li>
         {/each}

@@ -44,7 +44,7 @@
   }}>
   <div class="p-3 justify-center items-center">
     <div class="w-full grid grid-cols-[1fr_auto] gap-2 pb-2">
-      <TagAutoCompleteInput {controller} bind:search_string={params.search_string} focus_on_search_keybind={true} />
+      <TagAutoCompleteInput {controller} bind:search_string={params.search_string} kind="search" focus_on_search_keybind allow_multiple_tags />
       <button
         class="hover:cursor-pointer"
         title="click to {advanced_filters_state === 'hidden' ? 'show' : 'hide'} advanced filters"

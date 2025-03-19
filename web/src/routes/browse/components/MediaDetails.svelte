@@ -1,6 +1,7 @@
 <script lang="ts">
   import Sidebar from '$lib/components/Sidebar.svelte'
   import MediaDetailEntry from './MediaDetailEntry.svelte'
+  import TagAutoCompleteInput from '$lib/components/TagAutoCompleteInput.svelte'
   import Tag from '$lib/components/Tag.svelte'
   import Icon from '$lib/components/Icon.svelte'
   import {XCircle} from '$lib/icons/mod.ts'
@@ -9,13 +10,34 @@
   let {controller}: {controller: BrowseController} = $props()
   let {dimensions, media_selections} = controller.runes
   let current_selection = media_selections.current_selection
+
+  let new_tag_str = $state<string>('')
 </script>
 
 <Sidebar height={dimensions.heights.media_list}>
-  <div class="pl-1 pr-3">
+  <form
+    class="pl-1 pr-3"
+    onsubmit={async e => {
+      e.preventDefault()
+      if (current_selection.media_response.media_type === 'media_file') {
+        const media_info = undefined
+        const tags: string[] = []
+        if (new_tag_str) {
+          tags.push(new_tag_str)
+        }
+        const result = await controller.client.forager.media.update(current_selection.media_response?.media_reference.id, media_info, tags)
+        if (new_tag_str) {
+          new_tag_str = ''
+        }
+        console.log({result})
+      } else {
+        throw new Error('unimplemented')
+      }
+    }}
+    >
     {#if current_selection.media_response}
       <label class="text-green-50" for="tags"><span>Tags</span></label>
-      {#each current_selection.media_response.tags as tag, tag_index}
+      {#each current_selection.media_response.tags as tag, tag_index (tag.id)}
         <div class="grid grid-cols-[1fr_auto] items-center gap-1">
           <Tag {tag} />
           <button class="hover:cursor-pointer" title="Remove">
@@ -23,6 +45,13 @@
           </button>
         </div>
       {/each}
+      <TagAutoCompleteInput
+        {controller}
+        bind:search_string={new_tag_str}
+        placeholder=""
+        kind="details"
+        input_classes="mt-2 bg-slate-400 w-full rounded-sm px-1 text-sm"
+      />
 
       <MediaDetailEntry
         {controller}
@@ -76,5 +105,5 @@
     {:else}
       TODO: show tag summary
     {/if}
-  </div>
+  </form>
 </Sidebar>

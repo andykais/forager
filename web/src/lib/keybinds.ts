@@ -7,6 +7,8 @@ type KeybindAction =
   | 'Search'
   | 'PrevMedia'
   | 'NextMedia'
+  | 'PrevTagSuggestion'
+  | 'NextTagSuggestion'
   | 'PlayPauseMedia'
 
 type KeybindActionListener = (e: KeyboardEvent) => void

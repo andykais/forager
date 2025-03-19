@@ -26,7 +26,7 @@
 	},
 	"dependencies": {
 		"@andykais/ts-rpc": "npm:@jsr/andykais__ts-rpc@^0.2.2",
-		"@forager/core": "npm:@jsr/forager__core@^0.7.1",
+		"@forager/core": "npm:@jsr/forager__core@^0.7.2",
 		"@std/datetime": "npm:@jsr/std__datetime@^0.225.3",
 		"@std/yaml": "npm:@jsr/std__yaml@^1.0.5",
 		"zod": "^3.24.2"
