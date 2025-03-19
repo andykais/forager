@@ -383,7 +383,7 @@ test('media actions', async (ctx) => {
   })
 
   await ctx.subtest('media upsert', async () => {
-    // test creating new media with upsert
+    // test creating new media with upsert, creating new tag "animal:cat"
     const cronch = await forager.media.upsert(ctx.resources.media_files['cat_cronch.mp4'], {}, ['cat', 'animal:cat'])
     ctx.assert.object_match(cronch, {
       tags: [
@@ -396,6 +396,22 @@ test('media actions', async (ctx) => {
     ctx.assert.equals(media_cartoon.media_reference.title, 'Ed Edd Eddy Screengrab')
     media_cartoon = await forager.media.upsert(ctx.resources.media_files["ed-edd-eddy.png"], {title: 'Ed Sparrow'}, ['cartoon', 'wallpaper'])
     ctx.assert.equals(media_cartoon.media_reference.title, 'Ed Sparrow')
+  })
+
+  await ctx.subtest('media update remove tag', async () => {
+    let cronch = forager.media.get({filepath: ctx.resources.media_files['cat_cronch.mp4'] })
+    ctx.assert.object_match(cronch, {
+      tags: [
+        {name: 'cat', group: '', color: 'hsl(0, 70%, 55%)'},
+        {name: 'cat', group: 'animal', color: 'hsl(36, 70%, 55%)' },
+      ]
+    })
+    cronch = forager.media.update(cronch.media_reference.id, undefined, {remove: ['cat']})
+    ctx.assert.object_match(cronch, {
+      tags: [
+        {name: 'cat', group: 'animal', color: 'hsl(36, 70%, 55%)' },
+      ]
+    })
   })
 
   await ctx.subtest('media delete', async () => {

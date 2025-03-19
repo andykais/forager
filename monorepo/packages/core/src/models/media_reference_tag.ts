@@ -29,13 +29,30 @@ class MediaReferenceTag extends Model {
     SELECT ${MediaReferenceTag.result['*']} FROM media_reference_tag
     WHERE media_reference_id = ${MediaReferenceTag.params.media_reference_id} AND tag_id = ${MediaReferenceTag.params.tag_id}`
 
-  #delete_by_media_reference_id = this.query.exec`
+  #delete_by_media_reference = this.query.exec`
     DELETE FROM media_reference_tag
     WHERE media_reference_id = ${MediaReferenceTag.params.media_reference_id}`
 
+  // NOTE SQLite doesnt support LIMIT on DELETE commands, we could make this query fancier to support that, but since we have media_reference_id and tag_id filters, and there is a unique constraint on those two, we should be fine here
+  #delete_by_media_reference_and_tag = this.query.exec`
+    DELETE FROM media_reference_tag
+    WHERE media_reference_id = ${MediaReferenceTag.params.media_reference_id} AND tag_id = ${MediaReferenceTag.params.tag_id}`
+
+  #delete_impl(params: {
+    media_reference_id: number
+    tag_id?: number
+  }) {
+    const { tag_id, media_reference_id } = params
+    if (tag_id !== undefined) {
+      return this.#delete_by_media_reference_and_tag({tag_id, media_reference_id})
+    } else {
+      return this.#delete_by_media_reference({media_reference_id: media_reference_id})
+    }
+  }
+
   public create = this.create_fn(this.#create.one)
 
-  public delete = this.delete_fn(this.#delete_by_media_reference_id)
+  public delete = this.delete_fn(this.#delete_impl.bind(this))
 
   public select_one = this.select_one_fn(this.#select_one_by_media_reference_and_tag)
 

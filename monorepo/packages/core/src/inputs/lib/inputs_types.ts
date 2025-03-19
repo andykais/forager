@@ -8,6 +8,7 @@ export type MediaInfo = z.infer<typeof parsers.MediaInfo>
 export type PaginatedSearch = z.input<typeof parsers.PaginatedSearch>
 export type PaginatedSearchGroupBy = z.input<typeof parsers.PaginatedSearchGroupBy>
 export type MediaReferenceUpdate = z.input<typeof parsers.MediaReferenceUpdate>
+export type MediaReferenceUpdateTags = z.input<typeof parsers.MediaReferenceUpdateTags>
 export type MediaReferenceGet = z.input<typeof parsers.MediaReferenceGet>
 
 export type Tag = z.input<typeof parsers.Tag>

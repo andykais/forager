@@ -46,12 +46,12 @@ class Actions {
     return this.ctx.db.models
   }
 
-  protected async media_create(filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.Tag[]): Promise<MediaFileResponse> {
+  protected async media_create(filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.MediaReferenceUpdateTags): Promise<MediaFileResponse> {
     const start_time = performance.now()
     const parsed = {
       filepath: parsers.Filepath.parse(filepath),
       media_info: parsers.MediaReferenceUpdate.parse(media_info ?? {}),
-      tags: tags?.map(t => parsers.Tag.parse(t)) ?? [],
+      tags: parsers.MediaReferenceUpdateTags.parse(tags ?? []),
     }
 
     const file_processor = new FileProcessor(this.ctx, filepath)
@@ -89,7 +89,8 @@ class Actions {
         media_reference_id: media_reference.id,
       })!
 
-      for (const tag of parsed.tags) {
+      // NOTE that on create calls, we ignore tags.remove. This is mostly an implementation detail, since tags.remove is not exposed to the forager.media.create action
+      for (const tag of parsed.tags.add) {
         const tag_record = this.tag_create(tag)
         this.models.MediaReferenceTag.create({
           media_reference_id: media_reference.id,
@@ -130,11 +131,11 @@ class Actions {
     return output_result
   }
 
-  protected media_update(media_reference_id: number, media_info?: inputs.MediaInfo, tags?: inputs.Tag[]) {
+  protected media_update(media_reference_id: number, media_info?: inputs.MediaInfo, tags?: inputs.MediaReferenceUpdateTags) {
     const parsed = {
       media_reference_id: parsers.MediaReferenceId.parse(media_reference_id),
       media_info: parsers.MediaInfo.parse(media_info ?? {}),
-      tags: parsers.TagList.parse(tags ?? []),
+      tags: parsers.MediaReferenceUpdateTags.parse(tags ?? []),
     }
 
     const transaction = this.ctx.db.transaction_sync(() => {
@@ -142,9 +143,14 @@ class Actions {
         id: media_reference_id,
         ...parsed.media_info,
       })
-      for (const tag of parsed.tags) {
+      for (const tag of parsed.tags.add) {
         const tag_record = this.tag_create(tag)
         this.models.MediaReferenceTag.get_or_create({ media_reference_id: parsed.media_reference_id, tag_id: tag_record.id, tag_group_id: tag_record.tag_group_id })
+      }
+
+      for (const tag of parsed.tags.remove) {
+        const tag_record = this.models.Tag.select_one({name: tag.name, group: tag.group }, {or_raise: true})
+        this.models.MediaReferenceTag.delete({ media_reference_id: parsed.media_reference_id, tag_id: tag_record.id })
       }
     })
 

@@ -10,11 +10,11 @@ class MediaActions extends Actions {
     return await this.media_create(filepath, media_info, tags)
   }
 
-  update = (media_reference_id: number, media_info?: inputs.MediaInfo, tags?: inputs.Tag[]) => {
+  update = (media_reference_id: number, media_info?: inputs.MediaInfo, tags?: inputs.MediaReferenceUpdateTags) => {
     return this.media_update(media_reference_id, media_info, tags)
   }
 
-  upsert = async (filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.Tag[]): Promise<MediaFileResponse> => {
+  upsert = async (filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.MediaReferenceUpdateTags): Promise<MediaFileResponse> => {
     try {
       return await this.media_create(filepath, media_info, tags)
     } catch (e) {
