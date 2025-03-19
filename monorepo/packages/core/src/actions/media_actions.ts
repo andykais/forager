@@ -135,7 +135,7 @@ class MediaActions extends Actions {
   }
 
   // TODO different params for group by ({group_by: {tag_group: string}, sort_by: 'count'})
-  group = (params: inputs.PaginatedSearchGroupBy): MediaGroupResponse => {
+  group = (params: inputs.PaginatedSearchGroupBy): result_types.PaginatedResult<MediaGroupResponse> => {
     const parsed = parsers.PaginatedSearchGroupBy.parse(params ?? {})
     const { query } = parsed
 
@@ -182,7 +182,7 @@ class MediaActions extends Actions {
     const results = records.results.map(record => {
 
       return {
-        media_type: 'grouped',
+        media_type: 'grouped' as const,
         group: {
           value: record.group_value,
           count: record.count_value,

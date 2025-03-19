@@ -40,7 +40,7 @@ export type MediaResponse = MediaFileResponse | MediaSeriesResponse
   * Return structure from {@linkcode MediaActions.prototype.group}. This contains a count of objects returned based on the grouping mechanic called (e.g. grouping by tag_group "animal" will show a value of "animal:cat", and a count of the number of media references that have the tag "media:cat")
   */
 export interface MediaGroupResponse {
-  media_type: 'group'
+  media_type: 'grouped'
   group: {
     /** The values under the grouping (e.g. grouping by tag_group "animal" might have a values like "animal:cat" and "animal:dog") */
     value: string
