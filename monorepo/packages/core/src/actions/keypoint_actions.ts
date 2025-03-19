@@ -4,6 +4,9 @@ import { type inputs, parsers } from '~/inputs/mod.ts'
 import { FileProcessor } from '~/lib/file_processor.ts'
 
 
+/**
+  * Actions associated with keypoints.
+  */
 class KeypointActions extends Actions {
   create = async (params: inputs.KeypointCreate) => {
     const parsed = parsers.KeypointCreate.parse(params)

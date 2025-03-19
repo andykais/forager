@@ -1,9 +1,12 @@
-import { Actions, type MediaFileResponse, type MediaSeriesResponse, type MediaResponse } from '~/actions/lib/base.ts'
+import { Actions, type MediaFileResponse, type MediaSeriesResponse, type MediaResponse, type MediaGroupResponse } from '~/actions/lib/base.ts'
 import { type inputs, parsers } from '~/inputs/mod.ts'
 import type * as result_types from '~/models/lib/result_types.ts'
 import { errors } from "~/mod.ts";
 
 
+/**
+  * Actions associated with media references.
+  */
 class MediaActions extends Actions {
 
   create = async (filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.Tag[]): Promise<MediaFileResponse> => {
@@ -132,7 +135,7 @@ class MediaActions extends Actions {
   }
 
   // TODO different params for group by ({group_by: {tag_group: string}, sort_by: 'count'})
-  group = (params: inputs.PaginatedSearchGroupBy) => {
+  group = (params: inputs.PaginatedSearchGroupBy): MediaGroupResponse => {
     const parsed = parsers.PaginatedSearchGroupBy.parse(params ?? {})
     const { query } = parsed
 
@@ -194,7 +197,10 @@ class MediaActions extends Actions {
     }
   }
 
-  get = (params: inputs.MediaReferenceGet) => {
+  /**
+    * Get a single media reference by id or filepath
+    */
+  get = (params: inputs.MediaReferenceGet): MediaResponse => {
     const parsed = parsers.MediaReferenceGet.parse(params)
     return this.media_get({
       media_reference_id: parsed.media_reference_id,

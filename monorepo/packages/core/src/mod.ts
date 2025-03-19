@@ -66,6 +66,8 @@ class Forager {
 export { Forager }
 export * as errors from './lib/errors.ts'
 export type ForagerConfig = inputs.ForagerConfig
-export type {MediaResponse, MediaFileResponse, MediaSeriesResponse} from './actions/lib/base.ts'
+export type {MediaResponse, MediaFileResponse, MediaSeriesResponse, MediaGroupResponse} from './actions/lib/base.ts'
+export type * from './actions/mod.ts'
 export { type inputs }
+export type * from '~/inputs/mod.ts'
 export { parsers }

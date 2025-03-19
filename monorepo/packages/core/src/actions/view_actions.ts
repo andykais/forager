@@ -4,6 +4,9 @@ import type * as result_types from '~/models/lib/result_types.ts'
 import * as errors from '~/lib/errors.ts'
 
 
+/**
+  * Actions associated with media views. Record when a media reference is viewed, and for animated media, record how much of it has been viewed..
+  */
 class ViewActions extends Actions {
   start = (params: inputs.ViewCreate): result_types.View => {
     const parsed = parsers.ViewCreate.parse(params)

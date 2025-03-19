@@ -6,6 +6,7 @@
     "lint": "deno lint",
     "test":       "deno test --allow-run=ffprobe,ffmpeg --check --allow-read --allow-write --trace-leaks test",
     "test:watch": "deno test --allow-run=ffprobe,ffmpeg --check --allow-read --allow-write --trace-leaks --watch",
+    "docs:preview": "deno doc --html ./src/mod.ts && deno run --allow-read=. --allow-net=0.0.0.0:8000 jsr:@std/http/file-server docs",
   },
 
   "imports": {

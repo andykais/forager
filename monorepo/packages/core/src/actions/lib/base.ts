@@ -11,7 +11,7 @@ import * as errors from '~/lib/errors.ts'
 import { get_hash_color } from "~/lib/text_processor.ts";
 
 /**
- * A common return type from {@link Forager#media} and {@link Forager#series} actions. Contains a media reference for a series of media and its associated metadata.
+ * A common return type from {@linkcode Forager.prototype.media} and {@linkcode Forager.prototype.series} actions. Contains a media reference for a series of media and its associated metadata.
  */
 export interface MediaSeriesResponse {
   media_type: 'media_series'
@@ -20,8 +20,8 @@ export interface MediaSeriesResponse {
   thumbnails: result_types.PaginatedResult<result_types.MediaThumbnail>
 }
 
-/*
- * A common return type from the {@link Forager#media} actions. Contains a media file and its associated metadata.
+/**
+ * A common return type from the {@linkcode Forager.prototype.media} actions. Contains a media file and its associated metadata.
  */
 export interface MediaFileResponse {
   media_type: 'media_file'
@@ -32,9 +32,22 @@ export interface MediaFileResponse {
 }
 
 /**
- * Structure returned from {@link forager.media.search}. Can be either a media series or an individual media file.
+ * Structure returned from {@linkcode MediaActions.prototype.search}. Can be either a media series or an individual media file.
   */
 export type MediaResponse = MediaFileResponse | MediaSeriesResponse
+
+/**
+  * Return structure from {@linkcode MediaActions.prototype.group}. This contains a count of objects returned based on the grouping mechanic called (e.g. grouping by tag_group "animal" will show a value of "animal:cat", and a count of the number of media references that have the tag "media:cat")
+  */
+export interface MediaGroupResponse {
+  media_type: 'group'
+  group: {
+    /** The values under the grouping (e.g. grouping by tag_group "animal" might have a values like "animal:cat" and "animal:dog") */
+    value: string
+    /** The number of media references associated with the grouped value */
+    count: number
+  }
+}
 
 class Actions {
   protected ctx: Context

@@ -7,7 +7,14 @@ import * as errors from '~/lib/errors.ts'
 import * as fmt_duration from '@std/fmt/duration'
 
 
+/**
+  * Actions associated with interacting with the file system
+  */
 class FileSystemActions extends Actions {
+
+  /**
+    * Used to walk files within a directory that will populate themselves into forager.
+    */
   discover = async (params: inputs.FileSystemDiscover) => {
     const start_time = performance.now()
     const parsed = {

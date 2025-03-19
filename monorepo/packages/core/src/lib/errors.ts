@@ -1,10 +1,16 @@
 export class ForagerError extends Error {}
 
 
+/**
+  * Raised when an action recevies invalid data, similar to a "400" api status code.
+  */
 export class BadInputError extends ForagerError {
   override name = 'BadInputError'
 }
 
+/**
+  * Raised when a resource (media reference, tag, series) is not found, similar to a "404" api status code.
+  */
 export class NotFoundError extends ForagerError {
   override name = 'NotFoundError'
 

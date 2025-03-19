@@ -2,6 +2,9 @@ import { Actions, type MediaSeriesResponse } from '~/actions/lib/base.ts'
 import { inputs, parsers } from '~/inputs/mod.ts'
 
 
+/**
+  * Actions associated with media series.
+  */
 class SeriesActions extends Actions {
   public create = (media_info?: inputs.MediaInfo, tags?: inputs.Tag[]): MediaSeriesResponse => {
     const parsed = {
