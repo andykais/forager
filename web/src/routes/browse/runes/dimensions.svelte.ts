@@ -7,7 +7,8 @@ export function create_dimensional_rune() {
   })
 
   $effect(() => {
-    heights.media_list = heights.screen - heights.header - heights.footer
+    // 2 in here is just to fix an issue with heights being tool long causing a scrollbar to appear. It may have to do with borders or shadows
+    heights.media_list = heights.screen - heights.header - heights.footer - 2
   })
 
   return {
