@@ -25,11 +25,15 @@
         if (new_tag_str) {
           tags.push(new_tag_str)
         }
-        const result = await controller.client.forager.media.update(current_selection.media_response?.media_reference.id, media_info, tags)
+        const result = await controller.client.forager.media.update(
+          current_selection.media_response?.media_reference.id,
+          media_info,
+          tags
+        )
         if (new_tag_str) {
           new_tag_str = ''
         }
-        console.log({result})
+        controller.runes.media_selections.update(controller.runes.search.results, result)
       } else {
         throw new Error('unimplemented')
       }
@@ -40,7 +44,17 @@
       {#each current_selection.media_response.tags as tag, tag_index (tag.id)}
         <div class="grid grid-cols-[1fr_auto] items-center gap-1">
           <Tag {tag} />
-          <button class="hover:cursor-pointer" title="Remove">
+          <button
+            class="hover:cursor-pointer"
+            title="Remove"
+            onclick={async e => {
+              const result = await controller.client.forager.media.update(
+                current_selection.media_response?.media_reference.id,
+                undefined,
+                {remove: [`${tag.group}:${tag.name}`]}
+              )
+              controller.runes.media_selections.update(controller.runes.search.results, result)
+            }}>
             <Icon class="fill-green-50 hover:fill-green-300" data={XCircle} size="18px" color="none" />
           </button>
         </div>

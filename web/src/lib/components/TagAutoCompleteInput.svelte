@@ -76,7 +76,6 @@
     controller,
     kind,
     search_string = $bindable(),
-    focus_on_search_keybind,
     placeholder = 'genre:adventure...',
     input_classes = 'w-full rounded-lg py-0.5 px-3 text-slate-100 bg-gray-800',
     allow_multiple_tags = false,
@@ -84,7 +83,6 @@
     controller: BaseController
     search_string: string
     kind: 'search' | 'details'
-    focus_on_search_keybind: boolean
     placeholder: string
     input_classes: string
     allow_multiple_tags: boolean
@@ -106,7 +104,7 @@
 
   controller.keybinds.component_listen({
     Search: e => {
-      if (focus_on_search_keybind) {
+      if (kind === 'search') {
         e.detail.data.keyboard_event.preventDefault()
         input_element.focus()
       }

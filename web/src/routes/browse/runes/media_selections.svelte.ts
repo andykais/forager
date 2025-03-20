@@ -45,6 +45,12 @@ export function create_selector() {
       return current_selection
     },
 
+    update(results: MediaResponse[], updated_media_response: MediaResponse) {
+      const result_index = current_selection.result_index
+      results[result_index] = updated_media_response
+      current_selection.media_response = updated_media_response
+    },
+
     is_currently_selected(media_reference_id: number) {
       if (current_selection.media_response?.media_reference.id === media_reference_id) {
         return true
