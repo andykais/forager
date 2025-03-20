@@ -47,6 +47,7 @@
           <button
             class="hover:cursor-pointer"
             title="Remove"
+            type="button"
             onclick={async e => {
               const result = await controller.client.forager.media.update(
                 current_selection.media_response?.media_reference.id,

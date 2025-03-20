@@ -67,7 +67,7 @@ export const PackagesConfig = z.object({
       ToggleVideoMute: Keybind('KeyM'),
 
       Search: Keybind('Slash'),
-      AddTag: Keybind('Ctrl-KeyM'),
+      AddTag: Keybind('Ctrl-M'),
 
       // ToggleVideoPreviewVsThumbails: Keybind('KeyT'),
 

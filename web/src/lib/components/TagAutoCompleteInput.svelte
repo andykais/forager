@@ -112,6 +112,12 @@
         input_element.focus()
       }
     },
+    AddTag: e => {
+      if (kind === 'details') {
+        e.detail.data.keyboard_event.preventDefault()
+        input_element.focus()
+      }
+    },
     NextTagSuggestion: e => {
       if (controller.runes.focus.focused({component: 'TagAutoCompleteInput', focus: kind})) {
         const length = tag_suggestions.state.length
