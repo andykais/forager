@@ -11,6 +11,6 @@
 
 </script>
 
-<header class="drop-shadow-md bg-gray-700 flex justify-center border-b-slate-800 border-b-2" bind:clientHeight={height}>
+<header class="drop-shadow-md bg-gray-700 flex justify-center border-b-slate-800 border-b-2 relative z-10" bind:clientHeight={height}>
   <SearchParams {controller} />
 </header>

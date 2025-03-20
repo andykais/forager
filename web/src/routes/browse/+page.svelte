@@ -14,7 +14,7 @@
 
 <div class="h-dvh">
   <Header {controller} bind:height={dimensions.heights.header} />
-  <div class="grid grid-cols-[auto_1fr]">
+  <div class="grid grid-cols-[auto_1fr] relative z-0">
     <MediaDetails {controller} />
     <MediaList {controller} />
   </div>

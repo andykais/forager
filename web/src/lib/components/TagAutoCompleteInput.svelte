@@ -41,6 +41,7 @@
 
       // TODO only do this when the query has changed. Currently any time we focus in/out of the browser tab, it will re-search
       const tags = await controller.client.forager.tag.search({query:{tag_match}})
+      input_state.suggestion_buttons = Array(tags.results.length).fill(null)
       this.state = tags.results
     }
 
@@ -83,8 +84,8 @@
     controller: BaseController
     search_string: string
     kind: 'search' | 'details'
-    placeholder: string
-    input_classes: string
+    placeholder?: string
+    input_classes?: string
     allow_multiple_tags: boolean
   } = $props()
 
@@ -98,6 +99,8 @@
     just_populated_suggestions: false,
     text_position: 0,
     current_hover_selection_index: -1,
+
+    suggestion_buttons: [],
   })
 
   const tag_suggestions = new TagSuggestions()
@@ -114,6 +117,7 @@
         const length = tag_suggestions.state.length
         const index = input_state.current_hover_selection_index
         input_state.current_hover_selection_index = (index + 1) % length
+        input_state.suggestion_buttons[input_state.current_hover_selection_index].focus()
       }
     },
     PrevTagSuggestion: e => {
@@ -121,6 +125,7 @@
         const length = tag_suggestions.state.length
         const index = input_state.current_hover_selection_index
         input_state.current_hover_selection_index = (index - 1 + length) % length
+        input_state.suggestion_buttons[input_state.current_hover_selection_index].focus()
       }
     },
     Escape: e => {
@@ -196,9 +201,10 @@
             class="hover:bg-slate-500 floating-suggestion-item">
             <button
               type="button"
+              bind:this={input_state.suggestion_buttons[tag_index]}
               class={[
                 "px-1 w-full text-left focus:bg-gray-400 outline-none",
-                input_state.current_hover_selection_index === tag_index && "bg-slate-500"
+                // input_state.current_hover_selection_index === tag_index && "bg-slate-500"
               ]}
               tabindex={0}
               onfocusout={e => {
