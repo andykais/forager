@@ -4,6 +4,9 @@
 Application interface to the forager media manager database
 
 
+## Requirements
+- deno v2.2 (native node:sqlite)
+
 ## Usage
 ```ts
 import { Forager } from '@forager/core'

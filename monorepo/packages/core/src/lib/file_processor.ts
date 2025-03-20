@@ -59,6 +59,12 @@ const FFProbeOutputVideoStream = z.object({
     duration: z.coerce.number().optional(),
     r_frame_rate: z.string(),
     avg_frame_rate: z.string(),
+    tags: z.object({
+      rotate: z.coerce.number().optional(),
+    }).passthrough().optional(),
+    side_data_list: z.object({
+      rotation: z.number().optional(),
+    }).passthrough().array().optional(),
 }).passthrough()
 
 
@@ -101,9 +107,26 @@ class FileProcessor {
     this.#filepath = path.resolve(filepath)
   }
 
+  #compute_rotated_size(size: { width: number; height: number }, rotation?: number) {
+    if (!rotation) return { width: size.width, height: size.height }
+    const radians = (rotation * Math.PI) / 180.0
+    const [height, width] = [
+      Math.abs(size.width * Math.sin(radians)) + Math.abs(size.height * Math.cos(radians)),
+      Math.abs(size.width * Math.cos(radians)) + Math.abs(size.height * Math.sin(radians)),
+    ].map(Math.floor)
+
+    return { width, height }
+  }
+
+
   public async get_info(): Promise<FileInfo> {
     const cmd = new Deno.Command('ffprobe', {
-      args: ['-v', 'error', '-print_format', 'json', '-show_streams', '-i', this.#filepath],
+      args: [
+        '-v', 'error',
+        '-print_format', 'json',
+        '-show_streams',
+        // '-show_entries', 'stream=width,height,display_aspect_ratio,codec_type,codec_name,avg_frame_rate:stream_tags=rotate',
+        '-i', this.#filepath],
       stdout: 'piped',
       stderr: 'piped',
     })
@@ -129,6 +152,12 @@ class FileProcessor {
         case 'video': {
           width = stream.width
           height = stream.height
+
+          const rotation = stream.tags?.rotate ?? stream.side_data_list?.find((c:any) => c.rotation)?.rotation ?? 0
+          const rotated_size = this.#compute_rotated_size({width, height}, rotation)
+          width = rotated_size.width
+          height = rotated_size.height
+
           if (media_type === 'VIDEO' || stream.codec_name === 'gif') {
             duration = Math.max(duration, z.number().parse(stream.duration))
             animated = true
@@ -256,26 +285,29 @@ class FileProcessor {
 
         // const frames_analysis_batch_size = 2
         const thumbnail_fps = 1 / (file_info.duration / this.#THUMBNAILS_NUM_CAPTURED_FRAMES)
+        const command = [
+          'ffmpeg',
+          '-v', 'info',
+          // '-an', // As an input option, blocks all audio streams of a file from being filtered or being  automatically  selected or mapped for any output.
+          '-i', this.#filepath,
+          '-vf', [
+            // `thumbnail=n=${frames_analysis_batch_size}`,
+            `scale=${max_width_or_height}:flags=${algorithm}`,
+            `fps=${thumbnail_fps}`,
+            'showinfo',
+          ].join(','),
+          // NOTE this grabs the first N frames. I added this because occasionally we would see more frames than we expected with just the fps filter
+          // we should better understand what that happens so we dont need this flag
+          '-frames:v', `${this.#THUMBNAILS_NUM_CAPTURED_FRAMES}`,
+          '-f', 'image2',
+          // NOTE another option for reading the output timestamps is writing one of these files
+          // the upside of not doing this is less file management. The downside is brittle regex parsing
+          // '-stats_enc_post:v', './stream-data.txt',
+          tmp_thumbnail_filepath
+        ]
+        console.log(command.join(' '))
         const cmd = new Deno.Command('ffmpeg', {
-          args: [
-            '-v', 'info',
-            // '-an', // As an input option, blocks all audio streams of a file from being filtered or being  automatically  selected or mapped for any output.
-            '-i', this.#filepath,
-            '-vf', [
-              // `thumbnail=n=${frames_analysis_batch_size}`,
-              `scale=${max_width_or_height}:flags=${algorithm}`,
-              `fps=${thumbnail_fps}`,
-              'showinfo',
-            ].join(','),
-            // NOTE this grabs the first N frames. I added this because occasionally we would see more frames than we expected with just the fps filter
-            // we should better understand what that happens so we dont need this flag
-            '-frames:v', `${this.#THUMBNAILS_NUM_CAPTURED_FRAMES}`,
-            '-f', 'image2',
-            // NOTE another option for reading the output timestamps is writing one of these files
-            // the upside of not doing this is less file management. The downside is brittle regex parsing
-            // '-stats_enc_post:v', './stream-data.txt',
-            tmp_thumbnail_filepath
-          ],
+          args: command.slice(1),
           stdout: 'null',
           stderr: 'piped',
         })
