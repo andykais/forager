@@ -20,10 +20,11 @@ export const PackagesConfig = z.object({
         thumbnail_size: z.number().default(100),
       }).default({}),
       sidebar: z.object({
+        hide: z.boolean().default(true),
         size: z.number().default(200),
       }).default({}),
       media_view: z.object({
-        view: z.enum(['simple', 'filmstrip']).default('simple'),
+        display: z.enum(['simple', 'filmstrip']).default('simple'),
       }).default({}),
     }).default({}),
 

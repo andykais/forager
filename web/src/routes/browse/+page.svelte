@@ -2,6 +2,7 @@
   import MediaDetails from './components/MediaDetails.svelte'
   import SearchParams from './components/SearchParams.svelte'
   import MediaList from './components/MediaList.svelte'
+  import MediaView from './components/MediaView.svelte'
   import Footer from './components/Footer.svelte'
   import Header from './components/Header.svelte'
 
@@ -17,9 +18,12 @@
 
 <div class="h-dvh">
   <Header {controller} bind:height={dimensions.heights.header} />
-  <div class="grid grid-cols-[auto_1fr] relative z-0">
+  <div class="grid grid-cols-[auto_1fr]">
     <MediaDetails {controller} />
-    <MediaList {controller} />
+    <div class="relative">
+      <MediaView {controller} />
+      <MediaList {controller} />
+    </div>
   </div>
   <Footer {controller} bind:height={dimensions.heights.footer} />
 </div>
