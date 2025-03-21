@@ -13,7 +13,7 @@
 
   let {controller }: Props = $props()
 
-  let tile_size = 100
+  let tile_size = controller.runes.settings.ui.media_list.thumbnail_size
   const icon_size = 14
   const icon_color = theme.colors.green[200]
   const media_selections = controller.runes.media_selections
@@ -26,7 +26,7 @@
     display: grid;
     grid-gap: 10px;
     grid-column-gap: 15px;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(var(--thumbnail-size), 1fr));
   }
 
   .container-media-tile {
@@ -41,7 +41,7 @@
 
 
 
-<div class="container-masonry p-4">
+<div class="container-masonry p-4" style="--thumbnail-size: {tile_size}px">
   {#each controller.runes.search.results as result, result_index}
     {#if result.media_type === 'media_file'}
       <div>

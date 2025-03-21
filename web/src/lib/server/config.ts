@@ -5,40 +5,6 @@ import * as forager from '@forager/core'
 
 const LogLevel: z.ZodEnum<["SILENT", "ERROR", "WARN", "INFO", "DEBUG"]>  = z.enum(['SILENT', 'ERROR', 'WARN', 'INFO', 'DEBUG'])
 
-const Key = z.enum([
-  'Enter',
-  'Escape',
-  'ArrowRight',
-  'ArrowLeft',
-  'Ctrl',
-  'Space',
-  'KeyA',
-  'KeyB',
-  'KeyC',
-  'KeyD',
-  'KeyE',
-  'KeyF',
-  'KeyG',
-  'KeyH',
-  'KeyI',
-  'KeyJ',
-  'KeyK',
-  'KeyL',
-  'KeyM',
-  'KeyN',
-  'KeyO',
-  'KeyP',
-  'KeyQ',
-  'KeyR',
-  'KeyS',
-  'KeyT',
-  'KeyU',
-  'KeyV',
-  'KeyW',
-  'KeyX',
-  'KeyY',
-  'KeyZ',
-])
 const Keybind = (default_keybind: string): z.ZodDefault<z.ZodString> => z.string().default(default_keybind)
 
 export const PackagesConfig = z.object({
@@ -48,6 +14,18 @@ export const PackagesConfig = z.object({
     port: z.number().default(8000),
     asset_folder: z.string(),
     log_level: LogLevel.default('INFO'),
+
+    ui_defaults: z.object({
+      media_list: z.object({
+        thumbnail_size: z.number().default(100),
+      }).default({}),
+      sidebar: z.object({
+        size: z.number().default(200),
+      }).default({}),
+      media_view: z.object({
+        view: z.enum(['simple', 'filmstrip']).default('simple'),
+      }).default({}),
+    }).default({}),
 
     shortcuts: z.object({
       OpenMedia: Keybind('Enter'),

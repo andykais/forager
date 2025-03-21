@@ -7,7 +7,10 @@
 
   import { BrowseController } from './controller.ts'
 
-  const controller = new BrowseController()
+	/** @type {import('./$types').PageProps} */
+  let props  = $props()
+
+  const controller = new BrowseController(props.data.config)
   let { dimensions, focus } = controller.runes
   focus.stack({component: 'BrowsePage', focus: 'page'})
 </script>

@@ -5,7 +5,7 @@
   import { ChevronLeft, ChevronRight, Pause } from '$lib/icons/mod.ts'
 
   const icon_color = theme.colors.lime[700]
-  let props: {height: number; children: SvelteHTMLElements['div']['children']} = $props()
+  let props: {height: number; width: number; children: SvelteHTMLElements['div']['children']} = $props()
 
   type SidebarState = 'hidden' | 'shown' | 'dragging'
   let sidebar_state = $state<SidebarState>('hidden')
@@ -13,7 +13,7 @@
     screen: 0,
     button: 0,
     sidebar_max: 0,
-    sidebar: 100,
+    sidebar: props.width,
 
     mouse_button_offset: 0,
     mousedown: false,

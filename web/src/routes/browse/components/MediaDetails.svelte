@@ -14,7 +14,7 @@
   let new_tag_str = $state<string>('')
 </script>
 
-<Sidebar height={dimensions.heights.media_list}>
+<Sidebar height={dimensions.heights.media_list} bind:width={controller.runes.settings.ui.sidebar.size}>
   <form
     class="pl-1 pr-3"
     onsubmit={async e => {

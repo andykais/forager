@@ -22,8 +22,16 @@ export class Keybinds {
   public constructor(config: Config) {
     this.emitter = new EventTarget()
     this.disabled = false
-    this.#config = undefined
+    this.#config = config
 
+    const keyboard_actions_entries = Object.entries(this.#config.web.shortcuts).map(entry => {
+      const keyboard_action: KeybindAction = entry[0] as KeybindAction
+      const keyboard_shortcut = entry[1]
+
+      return [keyboard_shortcut, keyboard_action] as [string, KeybindAction]
+    })
+
+    this.#keybind_mapper = new Map<string, KeybindAction>(keyboard_actions_entries)
   }
 
   public component_listen(handlers: Partial<Record<KeybindAction, KeybindActionListener>>) {
@@ -47,19 +55,6 @@ export class Keybinds {
 
   public remove_listener(event: KeybindAction, handler: KeybindActionListener) {
     this.emitter.removeEventListener(event, handler)
-  }
-
-  public onMount = async (config: Config) => {
-    this.#config = config
-
-    const keyboard_actions_entries = Object.entries(this.#config.web.shortcuts).map(entry => {
-      const keyboard_action: KeybindAction = entry[0] as KeybindAction
-      const keyboard_shortcut = entry[1]
-
-      return [keyboard_shortcut, keyboard_action] as [string, KeybindAction]
-    })
-
-    this.#keybind_mapper = new Map<string, KeybindAction>(keyboard_actions_entries)
   }
 
   public handler = (e: KeyboardEvent) => {
