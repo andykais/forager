@@ -26,7 +26,7 @@ export class Keybinds {
 
   }
 
-  public component_listen(handlers: Record<KeybindAction, KeybindActionListener>) {
+  public component_listen(handlers: Partial<Record<KeybindAction, KeybindActionListener>>) {
     onMount(() => {
       for (const [keybind_event, handler] of Object.entries(handlers)) {
         this.listen(keybind_event, handler)
