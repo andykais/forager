@@ -305,7 +305,6 @@ class FileProcessor {
           // '-stats_enc_post:v', './stream-data.txt',
           tmp_thumbnail_filepath
         ]
-        console.log(command.join(' '))
         const cmd = new Deno.Command('ffmpeg', {
           args: command.slice(1),
           stdout: 'null',
@@ -407,6 +406,8 @@ class FileProcessor {
     // assert that ffmpeg did what we expect
     const read_thumbnails = await Array.fromAsync(Deno.readDir(tmp_folder))
     const tmp_thumbnail_filepaths = read_thumbnails.map(entry => path.join(tmp_folder, entry.name))
+    // ffmpeg should create file names that are numerically ordered. Unless we exceeed 9999 thumbnails during generation, these will be properly ordered
+    tmp_thumbnail_filepaths.sort((a, b) => a.localeCompare(b))
 
     const expected_thumbnail_count = thumbnail_timestamps.length
 

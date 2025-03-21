@@ -560,6 +560,7 @@ test('video media', async ctx => {
   ctx.assert.equals(media_cronch.media_file.content_type, 'video/mp4')
   ctx.assert.equals(media_cronch.media_file.audio, true)
   ctx.assert.equals(media_cronch.thumbnails.results[0].media_timestamp, 0)
+  ctx.assert.equals(path.basename(media_cronch.thumbnails.results[0].filepath), '0001.jpg')
 
   const media_art_timelapse = await forager.media.create(ctx.resources.media_files['Succulentsaur.mp4'], {}, ['art', 'timelapse'])
   ctx.assert.equals(media_art_timelapse.thumbnails.total, 18)
