@@ -33,6 +33,7 @@ interface GraphicalFileInfo extends FileInfoBase {
   audio: boolean
   duration: number
   framerate: number
+  framecount: number
 }
 type FileInfo = GraphicalFileInfo | AudioFileInfo
 
@@ -58,7 +59,13 @@ const FFProbeOutputVideoStream = z.object({
     height: z.number(),
     duration: z.coerce.number().optional(),
     r_frame_rate: z.string(),
-    avg_frame_rate: z.string(),
+    avg_frame_rate: z.string().transform(rate => {
+      const split = rate.split('/')
+      const numerator = parseFloat(split[0])
+      const denominator = parseFloat(split[1] ?? '1')
+      return numerator / denominator
+    }),
+    nb_read_packets: z.coerce.number(),
     tags: z.object({
       rotate: z.coerce.number().optional(),
     }).passthrough().optional(),
@@ -90,6 +97,7 @@ const FFProbeOutput = z.object({
 }).passthrough()
 
 
+
 class FileProcessor {
   #THUMBNAILS_NUM_CAPTURED_FRAMES = 18
   #THUMBNAILS_MAX_WIDTH = 500
@@ -118,6 +126,25 @@ class FileProcessor {
     return { width, height }
   }
 
+  #compute_thumbnail_positions(file_info: GraphicalFileInfo) {
+    const endpoint = true
+    const R = this.#THUMBNAILS_NUM_CAPTURED_FRAMES
+    const total_frames = file_info.framecount
+    const start = 0
+    const stop = total_frames
+    const div = endpoint ? (R - 1) : R;
+    const step = (stop - start) / div;
+    const frames = Array.from({length: R}, (_, i) => Math.floor(start + step * i));
+
+    if (frames.length !== this.#THUMBNAILS_NUM_CAPTURED_FRAMES) {
+      throw new errors.UnExpectedError(`Expected ${this.#THUMBNAILS_NUM_CAPTURED_FRAMES} frames to be generated, but created ${frames.length} frames instead. Exact frames:\n  ${frames.join('\n  ')}`)
+    }
+
+    if (frames.at(-1)! >= total_frames) {
+      frames[frames.length - 1] = total_frames - 1
+    }
+    return frames
+  }
 
   public async get_info(): Promise<FileInfo> {
     const cmd = new Deno.Command('ffprobe', {
@@ -125,13 +152,17 @@ class FileProcessor {
         '-v', 'error',
         '-print_format', 'json',
         '-show_streams',
-        // '-show_entries', 'stream=width,height,display_aspect_ratio,codec_type,codec_name,avg_frame_rate:stream_tags=rotate',
+        '-count_packets',
+        '-show_entries', 'stream=duration,width,height,display_aspect_ratio,codec_type,codec_name,nb_read_packets,r_frame_rate,avg_frame_rate:stream_tags=rotate',
         '-i', this.#filepath],
       stdout: 'piped',
       stderr: 'piped',
     })
+
     const output = await cmd.output()
-    const ffprobe_data = FFProbeOutput.parse(JSON.parse(this.#decoder.decode(output.stdout)))
+
+    const ffprobe_raw = JSON.parse(this.#decoder.decode(output.stdout))
+    const ffprobe_data = FFProbeOutput.parse(ffprobe_raw)
     // these are typically subtitle metadata streams. For now, we ignore these
     const ffprobe_streams = ffprobe_data.streams.filter(stream => ['video', 'audio'].includes(stream.codec_type))
     const stream_codec_info = ffprobe_streams
@@ -145,6 +176,7 @@ class FileProcessor {
     let animated = false
     let duration = 0
     let framerate = 0
+    let framecount = 0
     let audio = false
 
     for (const stream of ffprobe_streams) {
@@ -161,7 +193,9 @@ class FileProcessor {
           if (media_type === 'VIDEO' || stream.codec_name === 'gif') {
             duration = Math.max(duration, z.number().parse(stream.duration))
             animated = true
-            framerate = eval(stream.avg_frame_rate)
+            framerate = stream.avg_frame_rate
+            const framecount_guess = Math.floor(framerate * duration)
+            framecount = Math.min(stream.nb_read_packets, framecount_guess)
           }
           break
         }
@@ -188,6 +222,7 @@ class FileProcessor {
     const file_info = {
       filepath: this.#filepath,
       filename,
+      framecount,
       ...codec_info,
       width,
       height,
@@ -284,27 +319,32 @@ class FileProcessor {
         // const ffmpeg_cmd = `ffmpeg -v error -i '${filepath}' -an -s ${max_width_or_height} -vf fps=${thumbnail_fps} -frames:v ${num_captured_frames} -f image2 '${thumbnail_filepath}'`
 
         // const frames_analysis_batch_size = 2
-        const thumbnail_fps = 1 / (file_info.duration / this.#THUMBNAILS_NUM_CAPTURED_FRAMES)
+
+        const frames = this.#compute_thumbnail_positions(file_info)
+        const select_frames = frames.map(f => `eq(n\\, ${f})`).join('+')
         const command = [
           'ffmpeg',
           '-v', 'info',
           // '-an', // As an input option, blocks all audio streams of a file from being filtered or being  automatically  selected or mapped for any output.
           '-i', this.#filepath,
+          '-vsync', 'passthrough',
           '-vf', [
             // `thumbnail=n=${frames_analysis_batch_size}`,
             `scale=${max_width_or_height}:flags=${algorithm}`,
-            `fps=${thumbnail_fps}`,
+            // `select=eq(n\\, n\\)`, // debugging filter, print all frames that ffmpeg finds for the input
+            `select=${select_frames}`,
             'showinfo',
           ].join(','),
           // NOTE this grabs the first N frames. I added this because occasionally we would see more frames than we expected with just the fps filter
           // we should better understand what that happens so we dont need this flag
-          '-frames:v', `${this.#THUMBNAILS_NUM_CAPTURED_FRAMES}`,
+          // '-frames:v', `${this.#THUMBNAILS_NUM_CAPTURED_FRAMES}`,
           '-f', 'image2',
           // NOTE another option for reading the output timestamps is writing one of these files
           // the upside of not doing this is less file management. The downside is brittle regex parsing
           // '-stats_enc_post:v', './stream-data.txt',
           tmp_thumbnail_filepath
         ]
+
         const cmd = new Deno.Command('ffmpeg', {
           args: command.slice(1),
           stdout: 'null',
@@ -331,10 +371,11 @@ class FileProcessor {
         const expected_thumbnail_count = this.#THUMBNAILS_NUM_CAPTURED_FRAMES
 
         if (thumbnail_timestamps.length !== expected_thumbnail_count) {
-          throw new errors.UnExpectedError(`thumbnail generation error. Expected ${expected_thumbnail_count} thumbnail timestamps from ${file_info.duration}s long media (fps: ${thumbnail_fps}), but ${thumbnail_timestamps.length} thumbnail timestamps were found [\n  ${thumbnail_timestamps.join('\n  ')}\n]`)
+          throw new errors.UnExpectedError(`thumbnail generation error. Expected ${expected_thumbnail_count} thumbnail timestamps from ${file_info.duration}s long media (fps: ${file_info.framerate}, framecount: ${file_info.framecount}), but ${thumbnail_timestamps.length} thumbnail timestamps were found [\n  ${thumbnail_timestamps.join('\n  ')}\n]`)
         }
       }
     }
+
 
     if (thumbnail_timestamps.at(0) !== 0) {
       throw new errors.UnExpectedError(`first thumbnail timestamps should always be 0. Actual thumbnail timestamps: [\n  ${thumbnail_timestamps.join('\n  ')}\n]`)

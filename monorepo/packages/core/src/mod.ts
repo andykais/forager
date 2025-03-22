@@ -54,7 +54,6 @@ class Forager {
   }
 
   public close() {
-    console.log('closing database', this.#ctx.config.database_path)
     this.#ctx.db.close()
   }
 
