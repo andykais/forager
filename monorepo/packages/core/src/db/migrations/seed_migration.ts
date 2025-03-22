@@ -35,6 +35,7 @@ export class Migration extends torm.SeedMigration {
       animated BOOLEAN NOT NULL,
       audio BOOLEAN NOT NULL,
       framerate INTEGER NOT NULL CHECK (IIF(animated == 0, framerate == 0, 1) OR media_type = 'AUDIO'),
+      framecount INTEGER NOT NULL CHECK (IIF(animated == 0, framerate == 0, 1) OR media_type = 'AUDIO'),
       duration INTEGER NOT NULL CHECK (IIF(animated == 0, duration == 0, 1) OR media_type = 'AUDIO'),
 
       updated_at ${TIMESTAMP_COLUMN},

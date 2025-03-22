@@ -19,6 +19,7 @@ class MediaFile extends Model {
     audio:                    field.boolean(),
     duration:                 field.number(),
     framerate:                field.number(),
+    framecount:               field.number(),
     updated_at:               field.datetime(),
     created_at:               field.datetime(),
   })
@@ -52,6 +53,7 @@ class MediaFile extends Model {
     audio,
     duration,
     framerate,
+    framecount,
     media_reference_id
   ) VALUES (${[
     MediaFile.params.filepath,
@@ -68,6 +70,7 @@ class MediaFile extends Model {
     MediaFile.params.audio,
     MediaFile.params.duration,
     MediaFile.params.framerate,
+    MediaFile.params.framecount,
     MediaFile.params.media_reference_id,
   ]}) RETURNING ${MediaFile.result.id}`
 

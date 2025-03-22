@@ -23,6 +23,7 @@ interface AudioFileInfo extends FileInfoBase {
   animated: false
   duration: number
   framerate: 0
+  framecount: 0
 }
 interface GraphicalFileInfo extends FileInfoBase {
   media_type: 'VIDEO' | 'IMAGE'
