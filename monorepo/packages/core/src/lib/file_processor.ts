@@ -79,7 +79,7 @@ const FFProbeOutputVideoStream = z.object({
 const FFProbeOutputAudioStream = z.object({
     codec_type: z.literal('audio'),
     codec_name: z.string(),
-    duration: z.coerce.number(),
+    duration: z.coerce.number().optional(),
 }).passthrough()
 
 
@@ -89,6 +89,9 @@ const FFProbeOutputBinDataStream = z.object({
 
 
 const FFProbeOutput = z.object({
+  format: z.object({
+    duration: z.coerce.number().optional(),
+  }),
   streams: z.union([
     FFProbeOutputVideoStream,
     FFProbeOutputAudioStream,
@@ -148,22 +151,39 @@ class FileProcessor {
   }
 
   public async get_info(): Promise<FileInfo> {
+    const ffprobe_args = [
+      '-v', 'error',
+      '-print_format', 'json',
+      '-show_streams',
+      '-count_packets',
+      '-show_entries', 'format=duration,stream=duration,width,height,display_aspect_ratio,codec_type,codec_name,nb_read_packets,r_frame_rate,avg_frame_rate:stream_tags=rotate',
+      '-i', this.#filepath
+    ]
     const cmd = new Deno.Command('ffprobe', {
-      args: [
-        '-v', 'error',
-        '-print_format', 'json',
-        '-show_streams',
-        '-count_packets',
-        '-show_entries', 'stream=duration,width,height,display_aspect_ratio,codec_type,codec_name,nb_read_packets,r_frame_rate,avg_frame_rate:stream_tags=rotate',
-        '-i', this.#filepath],
+      args: ffprobe_args,
       stdout: 'piped',
       stderr: 'piped',
     })
 
     const output = await cmd.output()
 
+    if (!output.success) {
+      const command = ['ffprobe', ...ffprobe_args].join(' ')
+      const stdout = this.#decoder.decode(output.stdout)
+      const stderr = this.#decoder.decode(output.stderr)
+      throw new Error(`ffprobe command failed\n${command}\nSTDOUT:\n${stdout}\nSTDERR:\n${stderr}`)
+    }
+
     const ffprobe_raw = JSON.parse(this.#decoder.decode(output.stdout))
-    const ffprobe_data = FFProbeOutput.parse(ffprobe_raw)
+    let ffprobe_data: z.infer<typeof FFProbeOutput>
+    try {
+      ffprobe_data = FFProbeOutput.parse(ffprobe_raw)
+    } catch (e) {
+      const command = ['ffprobe', ...ffprobe_args].join(' ')
+      console.error(command)
+      console.error(ffprobe_raw)
+      throw e
+    }
     // these are typically subtitle metadata streams. For now, we ignore these
     const ffprobe_streams = ffprobe_data.streams.filter(stream => ['video', 'audio'].includes(stream.codec_type))
     const stream_codec_info = ffprobe_streams
@@ -192,7 +212,9 @@ class FileProcessor {
           height = rotated_size.height
 
           if (media_type === 'VIDEO' || stream.codec_name === 'gif') {
-            duration = Math.max(duration, z.number().parse(stream.duration))
+            if (stream.duration !== undefined) {
+              duration = Math.max(duration, stream.duration)
+            }
             animated = true
             framerate = stream.avg_frame_rate
             const framecount_guess = Math.floor(framerate * duration)
@@ -202,13 +224,23 @@ class FileProcessor {
         }
         case 'audio': {
           audio = true
-          duration = Math.max(duration, z.number().parse(stream.duration))
+          if (stream.duration !== undefined) {
+            duration = Math.max(duration, stream.duration)
+          }
           break
         }
         default: {
           throw new Error(`Unknown ffprobe codec_type in stream ${JSON.stringify(stream)}`)
         }
       }
+    }
+
+    if (animated && ffprobe_data.format.duration) {
+      duration = Math.max(duration, ffprobe_data.format.duration)
+    }
+
+    if (Number.isNaN(duration) || (animated && duration === 0)) {
+      throw new Error(`Invalid duration ${duration} found for animated file`)
     }
     if (Number.isNaN(framerate)) {
       if (duration === 0) {
