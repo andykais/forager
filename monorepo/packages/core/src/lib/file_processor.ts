@@ -217,8 +217,7 @@ class FileProcessor {
             }
             animated = true
             framerate = stream.avg_frame_rate
-            const framecount_guess = Math.floor(framerate * duration)
-            framecount = Math.min(stream.nb_read_packets, framecount_guess)
+            framecount = stream.nb_read_packets
           }
           break
         }
@@ -237,6 +236,10 @@ class FileProcessor {
 
     if (animated && ffprobe_data.format.duration) {
       duration = Math.max(duration, ffprobe_data.format.duration)
+    }
+    if (animated) {
+      const framecount_guess = Math.floor(framerate * duration)
+      framecount = Math.min(framecount, framecount_guess)
     }
 
     if (Number.isNaN(duration) || (animated && duration === 0)) {
