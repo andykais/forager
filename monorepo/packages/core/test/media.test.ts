@@ -161,7 +161,6 @@ test('media actions', async (ctx) => {
       results: []
     })
   })
-
   await ctx.subtest('search pagination', () => {
     const media_list_page_1 = forager.media.search({limit: 2})
     ctx.assert.search_result(media_list_page_1, {
@@ -329,9 +328,9 @@ test('media actions', async (ctx) => {
     ctx.assert.search_result(forager.media.search({query: {directory: ctx.resources.resources_directory}}), {
       total: 3,
       results: [
-        {media_reference: {id: media_generated_art.media_reference.id}},
-        {media_reference: {id: media_cartoon.media_reference.id}},
         {media_reference: {id: media_doodle.media_reference.id}},
+        {media_reference: {id: media_cartoon.media_reference.id}},
+        {media_reference: {id: media_generated_art.media_reference.id}},
       ]
     })
 
@@ -836,8 +835,8 @@ test('media series', async (ctx) => {
   ctx.assert.search_result(forager.media.search({query: {series_id: cool_art_series.media_reference.id}}), {
     total: 2,
     results: [
-      {media_reference: {title: 'Generated Art'}},
       {media_reference: {title: 'Ed Edd Eddy Screengrab'}},
+      {media_reference: {title: 'Generated Art'}},
     ]
   })
 
@@ -891,9 +890,9 @@ test('media series', async (ctx) => {
     ctx.assert.search_result(forager.media.search({ query: {series_id: cool_art_series.media_reference.id} }), {
       total: 3,
       results: [
-        {media_type: 'media_file', media_reference: {id: media_generated_art.media_reference.id}},
-        {media_type: 'media_file', media_reference: {id: media_cartoon.media_reference.id}},
         {media_type: 'media_series', media_reference: {id: doodle_series.media_reference.id}},
+        {media_type: 'media_file', media_reference: {id: media_cartoon.media_reference.id}},
+        {media_type: 'media_file', media_reference: {id: media_generated_art.media_reference.id}},
       ]
     })
   })
@@ -918,7 +917,7 @@ test('media series', async (ctx) => {
     ctx.assert.equals(doodle_series_search.results[0].media_reference.title, 'doodles')
     const doodle_series = doodle_series_search.results[0]
 
-    ctx.assert.search_result(forager.media.search({query: {series_id: cool_art_series.media_reference.id}, thumbnail_limit: -1}), {
+    ctx.assert.search_result(forager.media.search({sort_by: 'created_at', order: 'asc', query: {series_id: cool_art_series.media_reference.id}, thumbnail_limit: -1}), {
       total: 3,
       results: [
         {

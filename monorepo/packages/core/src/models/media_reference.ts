@@ -121,15 +121,9 @@ class MediaReference extends Model {
     // this nested select clause exists so that we can create a reliable cursor_id for pagination
     // it uses ROW_NUMBER with an explicit order clause to ensure that we can reliably paginate
     records_builder
-      .set_select_clause(`
-SELECT media_reference.*, cursor_id FROM (
-  SELECT
-    ROW_NUMBER() OVER (ORDER BY ${params.sort_by} ${params.order}, media_reference.id ${params.order}) cursor_id,
-    *
-  FROM media_reference
-) media_reference`)
+      .set_select_clause(`SELECT media_reference.* FROM media_reference`)
       .add_result_fields(MediaReference.result['*'] as any)
-      .add_result_fields({cursor_id: PaginationVars.result.cursor_id})
+      // .add_result_fields({cursor_id: PaginationVars.result.cursor_id})
     const count_builder = new SQLBuilder(this.driver)
     count_builder
       .add_select_wrapper(`SELECT COUNT(1) AS total FROM`)
@@ -138,9 +132,19 @@ SELECT media_reference.*, cursor_id FROM (
 
     this.#set_select_many_filters(records_builder, params)
     this.#set_select_many_filters(count_builder, params)
+    records_builder.set_order_by_clause(`ORDER BY ${params.sort_by} ${params.order} NULLS LAST, media_reference.id ${params.order}`)
 
     if (params.cursor !== undefined) {
-      records_builder.add_where_clause(`cursor_id > ${params.cursor.cursor_id}`)
+      const sort_by_cursor = params.cursor[params.sort_by]
+      if (sort_by_cursor === undefined) throw new errors.UnExpectedError(`A cursor was supplied (${JSON.stringify(params.cursor)} but did not have a corresponding key for ${params.sort_by}`)
+      const cursor_sort_direction = params.order === 'desc' ? '<' : '>'
+      if (sort_by_cursor === null) {
+        // TODO: "IS NULL" probably isnt right here. We need to handle sorting with null values better
+        // we added an assumption in here that NULL values are always going to be last (asc/desc real values get priority, so we can assume once we received a NULL value in a cursor, the rest are also NULL)
+        records_builder.add_where_clause(`${params.sort_by} IS NULL AND media_reference.id ${cursor_sort_direction} ${params.cursor.id}`)
+      } else {
+        records_builder.add_where_clause(`${params.sort_by} ${cursor_sort_direction} ${params.cursor[params.sort_by]} AND media_reference.id ${cursor_sort_direction} ${params.cursor.id}`)
+      }
     }
     if (params.limit !== undefined) {
       records_builder.set_limit_clause(`LIMIT ${params.limit}`)
@@ -161,12 +165,16 @@ COUNT SQL:
 ${count_query.stmt.sql}
 `)
     }
-    let next_cursor: {cursor_id: number} | undefined
+    let next_cursor: PaginatedResult<unknown>['cursor']
     // if we return less results than the limit, theres no next page
     if (params.limit && params.limit !== -1 && results.length === params.limit) {
-      const cursor_id = results.at(-1)?.cursor_id
-      if (cursor_id) {
-        next_cursor = {cursor_id: cursor_id}
+      const last_result = results.at(-1)
+      if (last_result) {
+        let sort_by_cursor_raw = last_result[params.sort_by]
+        let sort_by_cursor: string | number | null
+        if (sort_by_cursor_raw instanceof Date) sort_by_cursor = String(sort_by_cursor_raw)
+        else sort_by_cursor = sort_by_cursor_raw
+        next_cursor = {[params.sort_by]: sort_by_cursor, id: last_result.id}
       }
     }
     for (const row of results) {
@@ -296,7 +304,6 @@ ${group_builder.generate_sql()}
         .add_having_clause(`COUNT(tag.id) >= ${params.tag_ids.length}`)
         // NOTE it appears that when we add join clauses, ROW_NUMBER seems to start to ascend/descend according to the order by clause
         // I dont know if this means I am supposed to account for this or not
-        .set_order_by_clause(`ORDER BY ${params.sort_by} ${params.order}, media_reference.id ${params.order}`)
     }
 
     if (params.keypoint_tag_id !== undefined) {
@@ -315,7 +322,6 @@ ${group_builder.generate_sql()}
     if (params.unread !== false) {
       throw new Error('unimplemented')
     }
-
   }
 
   public select_one_media_series(series_id: number) {
