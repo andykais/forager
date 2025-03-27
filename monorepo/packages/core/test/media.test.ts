@@ -621,20 +621,20 @@ test('video media', async ctx => {
       { kind: "standard", media_timestamp: 1.166667 },
       { kind: "standard", media_timestamp: 1.566667 },
       { kind: "standard", media_timestamp: 1.966667 },
-      { kind: "standard", media_timestamp: 2.333333 },
-      { kind: "standard", media_timestamp: 2.733333 },
-      { kind: "standard", media_timestamp: 3.133333 },
+      { kind: "standard", media_timestamp: 2.366667 },
+      { kind: "standard", media_timestamp: 2.766667 },
+      { kind: "standard", media_timestamp: 3.166667 },
       { kind: "standard", media_timestamp: 3.533333 },
       { kind: "standard", media_timestamp: 3.933333 },
       { kind: "standard", media_timestamp: 4.333333 },
-      { kind: "standard", media_timestamp: 4.7 },
       { kind: "keypoint", media_timestamp: 4.7 },
-      { kind: "standard", media_timestamp: 5.1 },
+      { kind: "standard", media_timestamp: 4.733333 },
+      { kind: "standard", media_timestamp: 5.133333 },
       { kind: "keypoint", media_timestamp: 5.2 },
-      { kind: "standard", media_timestamp: 5.5 },
-      { kind: "standard", media_timestamp: 5.9 },
-      { kind: "standard", media_timestamp: 6.3 },
-      { kind: "standard", media_timestamp: 6.666667 }
+      { kind: "standard", media_timestamp: 5.533333 },
+      { kind: "standard", media_timestamp: 5.933333 },
+      { kind: "standard", media_timestamp: 6.333333 },
+      { kind: "standard", media_timestamp: 6.7 }
     ], (a, b) => a.media_timestamp - b.media_timestamp)
 
     // assert tags are created as well
