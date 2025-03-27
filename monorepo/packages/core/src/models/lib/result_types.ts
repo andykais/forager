@@ -12,7 +12,7 @@ export type MediaKeypoint = InferSchemaTypes<typeof models.MediaKeypoint.result>
 export type View = InferSchemaTypes<typeof models.View.result>
 
 export type PaginatedResult<T> = {
-  cursor: number | undefined
+  cursor: Record<string, string | number> | undefined
   total: number
   results: T[]
 }

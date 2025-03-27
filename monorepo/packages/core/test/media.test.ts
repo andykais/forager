@@ -144,7 +144,7 @@ test('media actions', async (ctx) => {
   })
 
   await ctx.subtest('default search arguments', () => {
-    ctx.assert.search_result(forager.media.search({cursor: 0, limit: -1}), {
+    ctx.assert.search_result(forager.media.search({cursor: undefined, limit: -1}), {
       total: 3,
       results: [
         {media_reference: {title: 'Cat Doodle'}},

@@ -9,7 +9,7 @@ interface SelectManyFilters {
   tag_ids: number[] | undefined
   keypoint_tag_id: number | undefined
   limit: number | undefined
-  cursor: number | undefined
+  cursor: PaginatedResult<unknown>['cursor']
   order: 'asc' | 'desc' | undefined
   stars: number | undefined
   sort_by: string
@@ -140,7 +140,7 @@ SELECT media_reference.*, cursor_id FROM (
     this.#set_select_many_filters(count_builder, params)
 
     if (params.cursor !== undefined) {
-      records_builder.add_where_clause(`cursor_id > ${params.cursor}`)
+      records_builder.add_where_clause(`cursor_id > ${params.cursor.cursor_id}`)
     }
     if (params.limit !== undefined) {
       records_builder.set_limit_clause(`LIMIT ${params.limit}`)
@@ -161,10 +161,13 @@ COUNT SQL:
 ${count_query.stmt.sql}
 `)
     }
-    let next_cursor: number | undefined
+    let next_cursor: {cursor_id: number} | undefined
     // if we return less results than the limit, theres no next page
     if (params.limit && params.limit !== -1 && results.length === params.limit) {
-      next_cursor = results.at(-1)?.cursor_id
+      const cursor_id = results.at(-1)?.cursor_id
+      if (cursor_id) {
+        next_cursor = {cursor_id: cursor_id}
+      }
     }
     for (const row of results) {
       // now that we grabbed the last cursor_id, we can pop these columns off (minor optimization, maybe we skip this step?)
@@ -220,7 +223,7 @@ SELECT * FROM (
     })
 
     if (params.cursor !== undefined) {
-      pagination_builder.add_where_clause(`cursor_id > ${params.cursor}`)
+      pagination_builder.add_where_clause(`cursor_id > ${params.cursor.cursor_id}`)
     }
     if (params.limit !== undefined) {
       pagination_builder.set_limit_clause(`LIMIT ${params.limit}`)
@@ -239,10 +242,13 @@ ${group_builder.generate_sql()}
     const count_query = count_builder.build()
     const { total } = count_query.stmt.one({})!
 
-    let next_cursor: number | undefined
+    let next_cursor: {cursor_id: number} | undefined
     // if we return less results than the limit, theres no next page
     if (params.limit && params.limit !== -1 && results.length === params.limit) {
-      next_cursor = results.at(-1)?.cursor_id
+      const cursor_id = results.at(-1)?.cursor_id
+      if (cursor_id) {
+        next_cursor = {cursor_id: cursor_id}
+      }
     }
     for (const row of results) {
       // now that we grabbed the last cursor_id, we can pop these columns off (minor optimization, maybe we skip this step?)

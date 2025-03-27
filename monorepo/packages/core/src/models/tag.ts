@@ -132,7 +132,7 @@ class Tag extends Model {
 
   public select_paginated(params: {
     limit: number
-    cursor: number | undefined
+    cursor: PaginatedResult<unknown>['cursor']
     tag_match?: {
       name: string
       group: string | undefined
