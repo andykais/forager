@@ -101,6 +101,23 @@ const FFProbeOutput = z.object({
 }).passthrough()
 
 
+function throw_contextually() {
+  return (method: Function, _context: ClassMemberDecoratorContext) => {
+    return function (this: FileProcessor, ...args: any[]) {
+      try {
+        const result = method.call(this, ...args);
+        if (typeof result?.then === 'function') {
+          return result.catch((e: Error) => {
+            throw new errors.FileProcessingError(this.error_context_message, e)
+          })
+        }
+        return result
+      } catch (e) {
+        throw new errors.FileProcessingError(this.error_context_message, e as Error)
+      }
+    }
+  }
+}
 
 class FileProcessor {
   #THUMBNAILS_NUM_CAPTURED_FRAMES = 18
@@ -111,12 +128,44 @@ class FileProcessor {
   #ctx: Context
   #decoder: TextDecoder
   #filepath: string
+  #error_context: {
+    file_info?: FileInfo
+    ffprobe_raw?: object
+    ffprobe_data?: z.infer<typeof FFProbeOutput>
+    commands_ran: string[][]
+  }
+
+  get error_context_message() {
+    const message_lines = [`Error processing file ${this.#filepath}`]
+    if (this.#error_context.ffprobe_data) {
+      message_lines.push('FFPROBE DATA:')
+      message_lines.push(Deno.inspect(this.#error_context.ffprobe_data, {colors: true, depth: Infinity}))
+
+    } else if (this.#error_context.ffprobe_raw) {
+      message_lines.push('FFPROBE DATA RAW:')
+      message_lines.push(Deno.inspect(this.#error_context.ffprobe_raw, {colors: true, depth: Infinity}))
+    }
+
+    if (this.#error_context.commands_ran.length) {
+      message_lines.push('SHELL COMMANDS:')
+      for (const command of this.#error_context.commands_ran) {
+        const command_bashified = command.map(arg => /\s/.test(arg) ? `'${arg}'` : arg).join(' ')
+        message_lines.push(command_bashified)
+      }
+      message_lines.push('')
+    }
+
+    return message_lines.join('\n')
+  }
 
   public constructor(ctx: Context, filepath: string) {
     this.#ctx = ctx
     this.#decoder = new TextDecoder()
     // we want to store files with absolute paths in forager. It just simplifies some of the server steps later
     this.#filepath = path.resolve(filepath)
+    this.#error_context = {
+      commands_ran: [],
+    }
   }
 
   #compute_rotated_size(size: { width: number; height: number }, rotation?: number) {
@@ -150,8 +199,10 @@ class FileProcessor {
     return frames
   }
 
+  @throw_contextually()
   public async get_info(): Promise<FileInfo> {
-    const ffprobe_args = [
+    const ffprobe_command = [
+      'ffprobe',
       '-v', 'error',
       '-print_format', 'json',
       '-show_streams',
@@ -159,8 +210,9 @@ class FileProcessor {
       '-show_entries', 'format=duration,stream=duration,width,height,display_aspect_ratio,codec_type,codec_name,nb_read_packets,r_frame_rate,avg_frame_rate:stream_tags=rotate',
       '-i', this.#filepath
     ]
+    this.#error_context.commands_ran.push(ffprobe_command)
     const cmd = new Deno.Command('ffprobe', {
-      args: ffprobe_args,
+      args: ffprobe_command.slice(1),
       stdout: 'piped',
       stderr: 'piped',
     })
@@ -168,22 +220,17 @@ class FileProcessor {
     const output = await cmd.output()
 
     if (!output.success) {
-      const command = ['ffprobe', ...ffprobe_args].join(' ')
+      const command = ffprobe_command.join(' ')
       const stdout = this.#decoder.decode(output.stdout)
       const stderr = this.#decoder.decode(output.stderr)
       throw new Error(`ffprobe command failed\n${command}\nSTDOUT:\n${stdout}\nSTDERR:\n${stderr}`)
     }
 
     const ffprobe_raw = JSON.parse(this.#decoder.decode(output.stdout))
-    let ffprobe_data: z.infer<typeof FFProbeOutput>
-    try {
-      ffprobe_data = FFProbeOutput.parse(ffprobe_raw)
-    } catch (e) {
-      const command = ['ffprobe', ...ffprobe_args].join(' ')
-      console.error(command)
-      console.error(ffprobe_raw)
-      throw e
-    }
+    this.#error_context.ffprobe_raw = ffprobe_raw
+    const ffprobe_data = FFProbeOutput.parse(ffprobe_raw)
+    this.#error_context.ffprobe_data = ffprobe_data
+
     // these are typically subtitle metadata streams. For now, we ignore these
     const ffprobe_streams = ffprobe_data.streams.filter(stream => ['video', 'audio'].includes(stream.codec_type))
     const stream_codec_info = ffprobe_streams
@@ -267,6 +314,7 @@ class FileProcessor {
       framerate,
       audio,
     } as FileInfo // we use "as" here because typescript gets confused about unions
+    this.#error_context.file_info = file_info
     return file_info
   }
 
@@ -294,6 +342,7 @@ class FileProcessor {
     return stats.size
   }
 
+  @throw_contextually()
   public async create_thumbnails(file_info: FileInfo, checksum: string): Promise<Thumbnails> {
     // TODO make previews a supported field
     // assuming that 1/4 of the way into a video is a good preview position
@@ -306,8 +355,10 @@ class FileProcessor {
     if (file_info.media_type === 'AUDIO') {
       thumbnail_timestamps.push(0)
       const max_width_or_height = `${this.#THUMBNAILS_MAX_WIDTH}x${this.#THUMBNAILS_MAX_HEIGHT}`
+      const command = ['ffmpeg','-v', 'error', '-i', this.#filepath, '-filter_complex', `showwavespic=s=${max_width_or_height}`, '-frames:v', '1', tmp_thumbnail_filepath]
+      this.#error_context.commands_ran.push(command)
       const cmd = new Deno.Command('ffmpeg', {
-        args: ['-v', 'error', '-i', this.#filepath, '-filter_complex', `showwavespic=s=${max_width_or_height}`, '-frames:v', '1', tmp_thumbnail_filepath],
+        args: command.slice(1),
         stdout: 'piped',
         stderr: 'piped',
       })
@@ -328,8 +379,9 @@ class FileProcessor {
       if (file_info.duration === 0) {
         thumbnail_timestamps.push(0)
 
+        const command = ['ffmpeg', '-v', 'error', '-i', this.#filepath, '-an', '-vf', `scale=${max_width_or_height}:flags=${algorithm}`, '-frames:v', '1', '-ss', `${thumbnail_timestamps[0]}`, tmp_thumbnail_filepath]
         const cmd = new Deno.Command('ffmpeg', {
-          args: ['-v', 'error', '-i', this.#filepath, '-an', '-vf', `scale=${max_width_or_height}:flags=${algorithm}`, '-frames:v', '1', '-ss', `${thumbnail_timestamps[0]}`, tmp_thumbnail_filepath],
+          args: command.slice(1),
           stdout: 'piped',
           stderr: 'piped',
         })
@@ -380,6 +432,7 @@ class FileProcessor {
           // '-stats_enc_post:v', './stream-data.txt',
           tmp_thumbnail_filepath
         ]
+        this.#error_context.commands_ran.push(command)
 
         const cmd = new Deno.Command('ffmpeg', {
           args: command.slice(1),
@@ -413,8 +466,8 @@ class FileProcessor {
     }
 
 
-    if (thumbnail_timestamps.at(0) !== 0) {
-      throw new errors.UnExpectedError(`first thumbnail timestamps should always be 0. Actual thumbnail timestamps: [\n  ${thumbnail_timestamps.join('\n  ')}\n]`)
+    if (thumbnail_timestamps.at(0)! > 1) {
+      throw new errors.UnExpectedError(`first thumbnail timestamps should always be close to 0. Actual thumbnail timestamps: [\n  ${thumbnail_timestamps.join('\n  ')}\n]`)
     }
     for (let i = 0; i < thumbnail_timestamps.length - 1; i++) {
       if (thumbnail_timestamps[i] >= thumbnail_timestamps[i+1]) {
@@ -425,7 +478,10 @@ class FileProcessor {
     return await this.#assert_thumbnail_generation(tmp_folder, thumbnail_destination_folder, thumbnail_timestamps)
   }
 
+  @throw_contextually()
   public async create_thumbnails_at_timestamp(file_info: FileInfo, checksum: string, timestamp: number): Promise<Thumbnails> {
+    this.#error_context.file_info = file_info
+
     if (file_info.media_type !== 'VIDEO') {
       throw new errors.UnExpectedError(`Can only generate thumbnail at timestamp for 'VIDEO' media. Received ${file_info.media_type} media`)
     }
@@ -436,21 +492,24 @@ class FileProcessor {
     const tmp_folder = await Deno.makeTempDir({prefix: 'forager-thumbnails-'})
     const tmp_thumbnail_filepath = path.join(tmp_folder, thumbnail_filename)
     const max_width_or_height = this.#calculate_max_thumbnail_size(file_info)
+    const command = [
+      'ffmpeg',
+      '-v', 'info',
+      '-ss', timestamp.toString(),
+      // '-an', // As an input option, blocks all audio streams of a file from being filtered or being  automatically  selected or mapped for any output.
+      '-i', this.#filepath,
+      '-vf', [
+        `scale=${max_width_or_height}`,
+        'showinfo',
+      ].join(','),
+      '-update', '1',
+      '-frames:v', '1',
+      '-f', 'image2',
+      tmp_thumbnail_filepath
+    ]
+    this.#error_context.commands_ran.push(command)
     const cmd = new Deno.Command('ffmpeg', {
-      args: [
-        '-v', 'info',
-        '-ss', timestamp.toString(),
-        // '-an', // As an input option, blocks all audio streams of a file from being filtered or being  automatically  selected or mapped for any output.
-        '-i', this.#filepath,
-        '-vf', [
-          `scale=${max_width_or_height}`,
-          'showinfo',
-        ].join(','),
-        '-update', '1',
-        '-frames:v', '1',
-        '-f', 'image2',
-        tmp_thumbnail_filepath
-      ],
+      args: command.slice(1),
       stdout: 'null',
       stderr: 'null',
     })

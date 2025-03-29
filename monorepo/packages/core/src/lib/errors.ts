@@ -50,3 +50,11 @@ export class SubprocessError extends ForagerError {
 export class UnExpectedError extends ForagerError {
   override name = 'UnExpectedError'
 }
+
+export class FileProcessingError extends ForagerError {
+  override name = 'FileProcessingError'
+
+  constructor(message: string, cause: Error) {
+    super(message, {cause})
+  }
+}

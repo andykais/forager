@@ -30,6 +30,7 @@ class Codecs extends Map<Codec, CodecInfo> {
 }
 
 const CODECS = new Codecs()
+CODECS.add_codec('VIDEO', 'vp8', 'video/webm')
 CODECS.add_codec('VIDEO', 'vp9', 'video/webm')
 CODECS.add_codec('VIDEO', 'h264', 'video/mp4')
 CODECS.add_codec('VIDEO', 'hevc', 'video/mp4')
@@ -41,5 +42,6 @@ CODECS.add_codec('IMAGE', 'mjpeg', 'image/jpeg')
 CODECS.add_codec('AUDIO', 'aac', 'audio/x-aac')
 CODECS.add_codec('AUDIO', 'mp3', 'audio/mpeg')
 CODECS.add_codec('AUDIO', 'opus', 'audio/ogg')
+CODECS.add_codec('AUDIO', 'vorbis', 'audio/ogg')
 
 export { CODECS }
