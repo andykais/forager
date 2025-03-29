@@ -17,14 +17,17 @@ export const PackagesConfig = z.object({
 
     ui_defaults: z.object({
       media_list: z.object({
-        thumbnail_size: z.number().default(100),
+        thumbnail_size: z.number().default(110),
       }).default({}),
       sidebar: z.object({
         hide: z.boolean().default(true),
         size: z.number().default(200),
       }).default({}),
       media_view: z.object({
-        display: z.enum(['simple', 'filmstrip']).default('simple'),
+        filmstrip: z.object({
+          enabled: z.boolean().default(false),
+            thumbnail_size: z.number().default(100),
+        }).optional().transform(f => f ?? {enabled: false})
       }).default({}),
     }).default({}),
 

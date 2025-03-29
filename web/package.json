@@ -6,7 +6,7 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
-		"preview": "vite preview",
+		"preview": "cd build && deno run --allow-env=FORAGER_CONFIG --allow-read --allow-write --allow-net=0.0.0.0:8000 mod.ts",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
@@ -25,8 +25,9 @@
 	},
 	"dependencies": {
 		"@andykais/ts-rpc": "npm:@jsr/andykais__ts-rpc@^0.2.2",
-		"@forager/core": "npm:@jsr/forager__core@^0.7.4",
+		"@forager/core": "npm:@jsr/forager__core@^0.7.9",
 		"@std/datetime": "npm:@jsr/std__datetime@^0.225.3",
+		"@std/path": "npm:@jsr/std__path@^1.0.8",
 		"@std/yaml": "npm:@jsr/std__yaml@^1.0.5",
 		"zod": "^3.24.2"
 	}

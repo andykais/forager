@@ -3,7 +3,6 @@
   import type { Forager } from '@forager/core'
   import * as theme from '$lib/theme.ts'
   import { focusable } from '$lib/actions/mod.ts'
-  import { create_selector } from '../runes/media_selections.svelte.ts'
   import Icon from '$lib/components/Icon.svelte'
   import { PlayCircle, Photo, Gif, Music } from '$lib/icons/mod.ts'
 
@@ -31,7 +30,7 @@
 
   .container-media-tile {
     display: grid;
-    gap: 2px;
+    gap: 5px;
     grid-template-rows: 1fr max-content;
     height: 100%;
     width: 100%;
@@ -45,30 +44,28 @@
   {#each controller.runes.search.results as result, result_index}
     {#if result.media_type === 'media_file'}
       <div>
-      <button class="
-        p-1
-        inline-flex items-center justify-center
-        shadow shadow-slate-700 bg-slate-500
-        outline-none
-        border-2 rounded-md"
+      <button 
         type="button"
-        class:hover:hover:border-slate-200={result.media_reference.id !== media_selections.current_selection.media_response?.media_reference.id}
-        class:border-slate-500={result.media_reference.id !== media_selections.current_selection.media_response?.media_reference.id}
-        class:border-green-300={result.media_reference.id === media_selections.current_selection.media_response?.media_reference.id}
+        class="inline-flex items-center justify-center p-1
+               outline-none"
         use:focusable={!media_selections.current_selection.show && media_selections.current_selection.result_index === result_index}
         onclick={e => media_selections.set_current_selection(result, result_index)}>
         <div class="container-media-tile" style="width:{tile_size}px">
           <div
-            class="grid justify-items-center items-center"
+            class="grid justify-items-center items-center overflow-hidden
+                   border-2 shadow shadow-gray-700 rounded-md"
+            class:hover:border-slate-400={result.media_reference.id !== media_selections.current_selection.media_response?.media_reference.id}
+            class:border-slate-900={result.media_reference.id !== media_selections.current_selection.media_response?.media_reference.id}
+            class:border-green-300={result.media_reference.id === media_selections.current_selection.media_response?.media_reference.id}
             style="width:{tile_size}px; height: {tile_size}px">
             <img
-              class="max-w-full max-h-full"
+              class="w-full h-full object-cover"
               src="/files/thumbnail{result.thumbnails.results[0].filepath}"
               alt="Failed to load /files/thumbnail{result.thumbnails.results[0].filepath}"/>
           </div>
 
           <!-- info chips -->
-          <div class="flex justify-end">
+          <div class="flex justify-end bg-gray-700 border-1 border-slate-800 shadow shadow-gray-700 rounded-md p-0.5">
             {#if result.media_file.media_type === 'VIDEO'}
               <Icon data={PlayCircle} fill={icon_color} stroke="none" size={icon_size} />
             {:else if result.media_file.media_type === 'IMAGE' && result.media_file.content_type === 'image/gif'}

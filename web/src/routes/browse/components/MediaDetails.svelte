@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as path from '@std/path'
   import Sidebar from '$lib/components/Sidebar.svelte'
   import MediaDetailEntry from './MediaDetailEntry.svelte'
   import TagAutoCompleteInput from '$lib/components/TagAutoCompleteInput.svelte'
@@ -86,6 +87,12 @@
 
       <MediaDetailEntry
         {controller}
+        editable
+        label="Source URL"
+        content={current_selection.media_response.media_reference.source_url}/>
+
+      <MediaDetailEntry
+        {controller}
         label="Metadata"
         content={current_selection.media_response.media_reference.metadata}/>
 
@@ -100,6 +107,11 @@
         content={current_selection.media_response.media_reference.view_count}/>
 
       {#if current_selection.media_response.media_type === 'media_file'}
+        <MediaDetailEntry
+          {controller}
+          label="Filename"
+          content={path.basename(current_selection.media_response.media_file.filepath)}/>
+
         <MediaDetailEntry
           {controller}
           label="File"

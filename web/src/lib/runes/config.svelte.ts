@@ -13,3 +13,6 @@ export function create_settings(config: Config) {
     }
   }
 }
+
+
+export type Rune = ReturnType<typeof create_settings>

@@ -10,6 +10,6 @@
   bind:clientHeight={height}
 >
   <span class="text-slate-100">
-    Total results {controller.runes.search.results.length}
+    Total results {controller.runes.search.total}
   </span>
 </footer>

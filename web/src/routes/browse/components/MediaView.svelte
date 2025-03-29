@@ -15,9 +15,12 @@
     }
   })
 
-  let {controller, media_list_position}: Props = $props()
+  let {controller}: Props = $props()
   let current_selection = controller.runes.media_selections.current_selection
   let paused = $state(false)
+
+  let filmstrip_thumbnails
+  let filmstrip_height = 50
 
   $effect(() => {
     if (!dialog.open && current_selection.show) {
@@ -38,7 +41,7 @@
 
 
 <dialog
-  class="absolute w-full z-10"
+  class="absolute w-full z-10 outline-none"
   style="height: {controller.runes.dimensions.heights.media_list}px;"
   bind:this={dialog}
   onclose={controller.runes.media_selections.close_media}>
@@ -51,7 +54,7 @@
             src="/files/media_file{current_selection.media_response.media_file.filepath}" alt="">
         {:else if current_selection.media_response.media_file.media_type === 'VIDEO'}
           <video
-            class="object-contain max-h-full"
+            class="object-contain max-h-full outline-none"
             autoplay
             loop
             bind:paused
@@ -60,6 +63,14 @@
             <source src="/files/media_file{current_selection.media_response.media_file.filepath}">
             <track kind="captions"/> <!-- this exists purely to quiet down an A11y rule -->
           </video>
+          {#if controller.runes.settings.ui.media_view.filmstrip.enabled}
+            <div class="w-full flex flex-row justify-center gap-1 overflow-x-scroll" style="height: {controller.runes.settings.ui.media_view.filmstrip.thumbnail_size}px;">
+              {#each current_selection.media_response.thumbnails.results as thumbnail}
+                <div class="h-full">
+                  <img class="h-full" src="/files/thumbnail{thumbnail.filepath}" alt=""></div>
+              {/each}
+            </div>
+          {/if}
         {:else if current_selection.media_response.media_file.media_type === 'AUDIO'}
           <img
             class="object-contain max-h-full"
