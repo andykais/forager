@@ -143,7 +143,11 @@ class MediaReference extends Model {
         // we added an assumption in here that NULL values are always going to be last (asc/desc real values get priority, so we can assume once we received a NULL value in a cursor, the rest are also NULL)
         records_builder.add_where_clause(`${params.sort_by} IS NULL AND media_reference.id ${cursor_sort_direction} ${params.cursor.id}`)
       } else {
-        records_builder.add_where_clause(`${params.sort_by} ${cursor_sort_direction} ${params.cursor[params.sort_by]} AND media_reference.id ${cursor_sort_direction} ${params.cursor.id}`)
+        const sort_by_cursor = params.sort_by === 'view_count'
+          ? params.cursor[params.sort_by]
+          : `'${params.cursor[params.sort_by]}'`
+        // TODO use proper param escaping
+        records_builder.add_where_clause(`${params.sort_by} ${cursor_sort_direction} ${sort_by_cursor} AND media_reference.id ${cursor_sort_direction} ${params.cursor.id}`)
       }
     }
     if (params.limit !== undefined) {
@@ -172,7 +176,10 @@ ${count_query.stmt.sql}
       if (last_result) {
         let sort_by_cursor_raw = last_result[params.sort_by]
         let sort_by_cursor: string | number | null
-        if (sort_by_cursor_raw instanceof Date) sort_by_cursor = String(sort_by_cursor_raw)
+        // NOTE that if we properly serialized datetimes all throughout the system, we wouldnt need special casing here.
+        // The actual bottleneck is that ts-rpc cannot properly serialize dateimes,
+        // so by the time we got a string back from the api, weouldnt know it was meant to be a datetime
+        if (sort_by_cursor_raw instanceof Date) sort_by_cursor = sort_by_cursor_raw.toISOString()
         else sort_by_cursor = sort_by_cursor_raw
         next_cursor = {[params.sort_by]: sort_by_cursor, id: last_result.id}
       }

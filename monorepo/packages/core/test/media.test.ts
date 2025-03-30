@@ -259,33 +259,6 @@ test('media actions', async (ctx) => {
     )
   })
 
-  await ctx.subtest('search sort order', () => {
-    // descending is the default sort order
-    ctx.assert.search_result(forager.media.search({sort_by: 'created_at'}), {
-      results: [
-        {media_reference: {id: media_doodle.media_reference.id}},
-        {media_reference: {id: media_cartoon.media_reference.id}},
-        {media_reference: {id: media_generated_art.media_reference.id}},
-      ]
-    })
-    ctx.assert.search_result(forager.media.search({sort_by: 'created_at', order: 'asc'}), {
-      results: [
-        {media_reference: {id: media_generated_art.media_reference.id}},
-        {media_reference: {id: media_cartoon.media_reference.id}},
-        {media_reference: {id: media_doodle.media_reference.id}},
-      ]
-    })
-    ctx.assert.search_result(forager.media.search({sort_by: 'created_at', order: 'desc'}), {
-      results: [
-        {media_reference: {id: media_doodle.media_reference.id}},
-        {media_reference: {id: media_cartoon.media_reference.id}},
-        {media_reference: {id: media_generated_art.media_reference.id}},
-      ]
-    })
-
-    // TODO add more variable sorting tests with view_count once we can update media references
-  })
-
   await ctx.subtest('search media grouping', async () => {
     /* two design proposals here. Just comment them out to get rid of compiler errors.
      * Ideally we should commit to one before building our UI
@@ -430,6 +403,63 @@ test('media actions', async (ctx) => {
     })
   })
   forager.close()
+})
+
+
+test('search sort', async ctx => {
+  const database_path = ctx.create_fixture_path('forager.db')
+  const thumbnail_folder = ctx.create_fixture_path('thumbnails')
+  using forager = new Forager({ database_path, thumbnail_folder })
+  forager.init()
+
+  const media_generated_art = await forager.media.create(ctx.resources.media_files['koch.tif'], {source_created_at: new Date('1/1/2023') })
+  const media_cartoon = await forager.media.create(ctx.resources.media_files["ed-edd-eddy.png"], {source_created_at: new Date('1/1/2024')})
+  const media_doodle = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {source_created_at: new Date('1/1/2025')})
+
+  await ctx.subtest('source_created_at sort order', () => {
+    const page_1 = forager.media.search({sort_by: 'source_created_at', order: 'desc', limit: 2})
+    ctx.assert.search_result(page_1, {
+      results: [
+        {media_reference: {id: media_doodle.media_reference.id}},
+        {media_reference: {id: media_cartoon.media_reference.id}},
+      ],
+      total: 3
+    })
+    const page_2 = forager.media.search({sort_by: 'source_created_at', order: 'desc', limit: 2, cursor: page_1.cursor})
+    ctx.assert.search_result(page_2, {
+      results: [
+        {media_reference: {id: media_generated_art.media_reference.id}},
+      ],
+      total: 3
+    })
+  })
+
+  await ctx.subtest('created_at sort order', () => {
+    // descending is the default sort order
+    ctx.assert.search_result(forager.media.search({sort_by: 'created_at'}), {
+      results: [
+        {media_reference: {id: media_doodle.media_reference.id}},
+        {media_reference: {id: media_cartoon.media_reference.id}},
+        {media_reference: {id: media_generated_art.media_reference.id}},
+      ]
+    })
+    ctx.assert.search_result(forager.media.search({sort_by: 'created_at', order: 'asc'}), {
+      results: [
+        {media_reference: {id: media_generated_art.media_reference.id}},
+        {media_reference: {id: media_cartoon.media_reference.id}},
+        {media_reference: {id: media_doodle.media_reference.id}},
+      ]
+    })
+    ctx.assert.search_result(forager.media.search({sort_by: 'created_at', order: 'desc'}), {
+      results: [
+        {media_reference: {id: media_doodle.media_reference.id}},
+        {media_reference: {id: media_cartoon.media_reference.id}},
+        {media_reference: {id: media_generated_art.media_reference.id}},
+      ]
+    })
+
+    // TODO add more variable sorting tests with view_count once we can update media references
+  })
 })
 
 
@@ -762,6 +792,7 @@ test('audio media', async ctx => {
   })
   ctx.assert.equals(results.results[0].thumbnails.results.length, 1)
 })
+
 
 test('gif', async ctx => {
   const database_path = ctx.create_fixture_path('forager.db')
