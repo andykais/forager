@@ -18,6 +18,7 @@ export const create_pagination_fetcher = <Params extends PaginationParams, Resul
   content_fetcher: (params?: Params) => Promise<PaginatedResult<Result>>,
   default_state?: {loading: boolean}
 ) => {
+  let saved_params: Params | undefined
   let fetch_count = 0
   let has_more = true
   let cursor: number | undefined | null = null
@@ -37,6 +38,7 @@ export const create_pagination_fetcher = <Params extends PaginationParams, Resul
       has_more = true
       cursor = null
       fetch_count = 0
+      saved_params = undefined
       state = {
         loading: false,
         results: [],
@@ -44,6 +46,7 @@ export const create_pagination_fetcher = <Params extends PaginationParams, Resul
       }
     },
     async paginate(params?: Params) {
+      saved_params = {...saved_params, ...params}
       if (fetch_count > 0 && state.loading) return
 
       if (!has_more) return
@@ -51,7 +54,7 @@ export const create_pagination_fetcher = <Params extends PaginationParams, Resul
       fetch_count ++
       state.loading = true
 
-      let fetch_params: Params | undefined
+      let fetch_params: Params | undefined = saved_params
       if (cursor !== null && cursor !== undefined) {
         // technically not typesafe but something we need to support (e.g. a no args search that needs to paginate)
         fetch_params = {...fetch_params, cursor: cursor} as any
@@ -61,9 +64,7 @@ export const create_pagination_fetcher = <Params extends PaginationParams, Resul
       // const fetch_params = cursor === null
       //   ? params
       //   : {...params, cursor: cursor }
-      console.log('params:', fetch_params)
       const content = await content_fetcher(fetch_params)
-      console.log('content:', content)
 
       cursor = content.cursor
       if (!cursor) {
