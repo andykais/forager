@@ -135,19 +135,26 @@ class MediaReference extends Model {
     records_builder.set_order_by_clause(`ORDER BY media_reference.${params.sort_by} ${params.order} NULLS LAST, media_reference.id ${params.order}`)
 
     if (params.cursor !== undefined) {
-      const sort_by_cursor = params.cursor[params.sort_by]
-      if (sort_by_cursor === undefined) throw new errors.UnExpectedError(`A cursor was supplied (${JSON.stringify(params.cursor)} but did not have a corresponding key for ${params.sort_by}`)
+      const sort_by_field = `media_reference.${params.sort_by}`
+      const sort_by_cursor_value_raw = params.cursor[params.sort_by]
       const cursor_sort_direction = params.order === 'desc' ? '<' : '>'
-      if (sort_by_cursor === null) {
-        // TODO: "IS NULL" probably isnt right here. We need to handle sorting with null values better
-        // we added an assumption in here that NULL values are always going to be last (asc/desc real values get priority, so we can assume once we received a NULL value in a cursor, the rest are also NULL)
+      // TODO use better string escaping code
+      const sort_by_cursor_value = sort_by_cursor_value_raw === null
+        ? null
+        : typeof sort_by_cursor_value_raw !== 'number'
+          ? `'${sort_by_cursor_value_raw}'`
+          : sort_by_cursor_value_raw
+
+
+      if (sort_by_cursor_value === undefined) throw new errors.UnExpectedError(`A cursor was supplied (${JSON.stringify(params.cursor)} but did not have a corresponding key for ${params.sort_by}`)
+
+      if (sort_by_cursor_value === null) {
         records_builder.add_where_clause(`${params.sort_by} IS NULL AND media_reference.id ${cursor_sort_direction} ${params.cursor.id}`)
       } else {
-        const sort_by_cursor = params.sort_by === 'view_count'
-          ? params.cursor[params.sort_by]
-          : `'${params.cursor[params.sort_by]}'`
-        // TODO use proper param escaping
-        records_builder.add_where_clause(`${params.sort_by} ${cursor_sort_direction} ${sort_by_cursor} AND media_reference.id ${cursor_sort_direction} ${params.cursor.id}`)
+        const null_case = params.sort_by === 'source_created_at'
+          ? `OR ${sort_by_field} IS NULL`
+          : ''
+        records_builder.add_where_clause(`(${sort_by_field} ${cursor_sort_direction} ${sort_by_cursor_value} ${null_case}) OR (${sort_by_field} = ${sort_by_cursor_value} AND media_reference.id ${cursor_sort_direction} ${params.cursor.id})`)
       }
     }
     if (params.limit !== undefined) {
