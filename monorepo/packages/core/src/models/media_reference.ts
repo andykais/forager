@@ -132,7 +132,7 @@ class MediaReference extends Model {
 
     this.#set_select_many_filters(records_builder, params)
     this.#set_select_many_filters(count_builder, params)
-    records_builder.set_order_by_clause(`ORDER BY ${params.sort_by} ${params.order} NULLS LAST, media_reference.id ${params.order}`)
+    records_builder.set_order_by_clause(`ORDER BY media_reference.${params.sort_by} ${params.order} NULLS LAST, media_reference.id ${params.order}`)
 
     if (params.cursor !== undefined) {
       const sort_by_cursor = params.cursor[params.sort_by]
