@@ -80,9 +80,7 @@ export class MediaSelectionsRune extends Rune {
 
     // note that this is currently susceptible to race conditions loading more than once (e.g. flipping back and forth quickly)
     const result = await this.client.forager.media.get({media_reference_id: this.#current_selection.media_response.media_reference.id })
-    console.log('updating thumbnails...')
     this.#current_selection.media_response.thumbnails = result.thumbnails
-    console.log('updating thumbnails done.')
   }
 
   private is_currently_selected(media_reference_id: number) {

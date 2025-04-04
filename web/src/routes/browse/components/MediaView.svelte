@@ -36,6 +36,17 @@
     }
   }
 
+  let media_url = $derived.by(() => {
+    if (current_selection.media_response?.media_type !== 'media_file') {
+      return
+    }
+    const escaped_path = current_selection.media_response.media_file.filepath
+      // .replace(/$\//, '')
+      //.replaceAll('?', '%3F')
+    const escaped_url = `/files/media_file/${encodeURIComponent(escaped_path)}`
+    return escaped_url
+  })
+
   let dialog: HTMLDialogElement
 </script>
 
@@ -51,16 +62,16 @@
         {#if current_selection.media_response.media_file.media_type === 'IMAGE'}
           <img
             class="object-contain max-h-full"
-            src="/files/media_file{current_selection.media_response.media_file.filepath}" alt="">
+            src={media_url} alt="">
         {:else if current_selection.media_response.media_file.media_type === 'VIDEO'}
           <video
             class="object-contain max-h-full outline-none"
             autoplay
             loop
             bind:paused
-            use:video_loader={`/files/media_file${current_selection.media_response.media_file.filepath}`}
+            use:video_loader={media_url}
             >
-            <source src="/files/media_file{current_selection.media_response.media_file.filepath}">
+            <source src={media_url}>
             <track kind="captions"/> <!-- this exists purely to quiet down an A11y rule -->
           </video>
           {#if controller.runes.settings.ui.media_view.filmstrip.enabled}
@@ -79,7 +90,7 @@
             autoplay
             loop
           >
-            <source src="/files/media_file{current_selection.media_response.media_file.filepath}">
+            <source src={media_url}>
           </audio>
         {/if}
       {:else}

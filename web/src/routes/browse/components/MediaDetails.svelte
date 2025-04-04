@@ -1,5 +1,6 @@
 <script lang="ts">
   import * as path from '@std/path'
+  import type { Forager } from '@forager/core'
   import Sidebar from '$lib/components/Sidebar.svelte'
   import MediaDetailEntry from './MediaDetailEntry.svelte'
   import TagAutoCompleteInput from '$lib/components/TagAutoCompleteInput.svelte'
@@ -13,6 +14,20 @@
   let current_selection = media_selections.current_selection
 
   let new_tag_str = $state<string>('')
+
+  type TagRecord = ReturnType<Forager['tag']['search']>['results'][0]
+  let sorted_tags: [string, TagRecord[]][] = $derived.by(() => {
+    const grouped_tags: Record<string, TagRecord[]> = {}
+    current_selection.media_response?.tags.map(t => {
+      if (grouped_tags[t.group] === undefined) {
+        grouped_tags[t.group] = []
+      }
+
+      grouped_tags[t.group].push(t)
+    })
+
+    return Object.entries(grouped_tags).sort((a, b) => a[0].localeCompare(b[0]))
+  })
 </script>
 
 <Sidebar
@@ -46,9 +61,31 @@
     >
     {#if current_selection.media_response}
       <label class="text-green-50" for="tags"><span>Tags</span></label>
+      {#each sorted_tags as tag_group_entry, tag_entry_index (tag_group_entry[0])}
+        {#each tag_group_entry[1] as tag, tag_index (tag.id)}
+          <div class="grid grid-cols-[1fr_auto] items-center gap-1 pb-1">
+            <Tag show_group={false} {tag} />
+            <button
+              class="hover:cursor-pointer"
+              title="Remove"
+              type="button"
+              onclick={async e => {
+                const result = await controller.client.forager.media.update(
+                  current_selection.media_response?.media_reference.id,
+                  undefined,
+                  {remove: [`${tag.group}:${tag.name}`]}
+                )
+                controller.runes.media_selections.update(controller.runes.search.results, result)
+              }}>
+              <Icon class="fill-green-50 hover:fill-green-300" data={XCircle} size="18px" color="none" />
+            </button>
+          </div>
+        {/each}
+      {/each}
+      <!--
       {#each current_selection.media_response.tags as tag, tag_index (tag.id)}
         <div class="grid grid-cols-[1fr_auto] items-center gap-1">
-          <Tag {tag} />
+          <Tag show_group={false} {tag} />
           <button
             class="hover:cursor-pointer"
             title="Remove"
@@ -65,6 +102,7 @@
           </button>
         </div>
       {/each}
+-->
       <TagAutoCompleteInput
         {controller}
         bind:search_string={new_tag_str}
