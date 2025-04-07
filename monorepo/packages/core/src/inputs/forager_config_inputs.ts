@@ -10,7 +10,7 @@ export const ForagerConfig = z.object({
   thumbnails: z.object({
     /** Storage location of thumbnails */
     folder: z.string(),
-    size: z.number().default(512),
+    size: z.number().default(500),
   }),
 
   tags: z.object({

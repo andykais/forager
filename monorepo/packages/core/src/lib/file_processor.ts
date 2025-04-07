@@ -121,9 +121,9 @@ function throw_contextually() {
 
 class FileProcessor {
   #THUMBNAILS_NUM_CAPTURED_FRAMES = 18
-  #THUMBNAILS_MAX_WIDTH = 500
-  #THUMBNAILS_MAX_HEIGHT = 500
   #THUMBNAILS_FILENAME_ZERO_PAD_SIZE = 4
+  #thumbnails_max_width: number
+  #thumbnails_max_height: number
 
   #ctx: Context
   #decoder: TextDecoder
@@ -166,6 +166,8 @@ class FileProcessor {
     this.#error_context = {
       commands_ran: [],
     }
+    this.#thumbnails_max_width = ctx.config.thumbnails.size
+    this.#thumbnails_max_height = ctx.config.thumbnails.size
   }
 
   #compute_rotated_size(size: { width: number; height: number }, rotation?: number) {
@@ -354,7 +356,7 @@ class FileProcessor {
 
     if (file_info.media_type === 'AUDIO') {
       thumbnail_timestamps.push(0)
-      const max_width_or_height = `${this.#THUMBNAILS_MAX_WIDTH}x${this.#THUMBNAILS_MAX_HEIGHT}`
+      const max_width_or_height = `${this.#thumbnails_max_width}x${this.#thumbnails_max_height}`
       const command = ['ffmpeg','-v', 'error', '-i', this.#filepath, '-filter_complex', `showwavespic=s=${max_width_or_height}`, '-frames:v', '1', tmp_thumbnail_filepath]
       this.#error_context.commands_ran.push(command)
       const cmd = new Deno.Command('ffmpeg', {
@@ -369,10 +371,10 @@ class FileProcessor {
     } else {
       const { width, height } = file_info
       const max_width_or_height = width > height
-        ? `${this.#THUMBNAILS_MAX_WIDTH}x${Math.floor((height*this.#THUMBNAILS_MAX_HEIGHT)/width)}`
-        : `${Math.floor((width*this.#THUMBNAILS_MAX_WIDTH)/height)}x${this.#THUMBNAILS_MAX_WIDTH}`
+        ? `${this.#thumbnails_max_width}x${Math.floor((height*this.#thumbnails_max_height)/width)}`
+        : `${Math.floor((width*this.#thumbnails_max_width)/height)}x${this.#thumbnails_max_width}`
 
-      const algorithm = file_info.width > this.#THUMBNAILS_MAX_WIDTH || file_info.height < this.#THUMBNAILS_MAX_HEIGHT
+      const algorithm = file_info.width > this.#thumbnails_max_width || file_info.height < this.#thumbnails_max_height
         ? 'neighbor' // linear looks nicer for upscaling tiny images
         : 'bicubic'
 
@@ -532,8 +534,8 @@ class FileProcessor {
 
     const { width, height } = file_info
     const max_width_or_height = width > height
-      ? `${this.#THUMBNAILS_MAX_WIDTH}x${Math.floor((height*this.#THUMBNAILS_MAX_HEIGHT)/width)}`
-      : `${Math.floor((width*this.#THUMBNAILS_MAX_WIDTH)/height)}x${this.#THUMBNAILS_MAX_WIDTH}`
+      ? `${this.#thumbnails_max_width}x${Math.floor((height*this.#thumbnails_max_height)/width)}`
+      : `${Math.floor((width*this.#thumbnails_max_width)/height)}x${this.#thumbnails_max_width}`
 
     return max_width_or_height
   }

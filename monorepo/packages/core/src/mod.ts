@@ -26,10 +26,10 @@
 
 import { Context } from './context.ts'
 import * as actions from './actions/mod.ts'
-import { type inputs, parsers } from '~/inputs/mod.ts'
+import { type inputs, outputs, parsers } from '~/inputs/mod.ts'
 
 class Forager {
-  public config: inputs.ForagerConfig
+  public config: outputs.ForagerConfig
   public media: actions.MediaActions
   public series: actions.SeriesActions
   public filesystem: actions.FileSystemActions
@@ -40,7 +40,7 @@ class Forager {
 
   public constructor(config: inputs.ForagerConfig) {
     this.config = parsers.ForagerConfig.parse(config)
-    this.#ctx = new Context(config)
+    this.#ctx = new Context(this.config)
     this.media = new actions.MediaActions(this.#ctx)
     this.series = new actions.SeriesActions(this.#ctx)
     this.filesystem = new actions.FileSystemActions(this.#ctx)
