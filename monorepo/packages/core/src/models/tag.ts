@@ -98,6 +98,10 @@ class Tag extends Model {
     WHERE tag.name GLOB ${Tag.params.name}
     LIMIT ${PaginationVars.params.limit}`
 
+  #delete_by_count = this.query`
+    DELETE FROM tag
+    WHERE tag.media_reference_count = 0`
+
   #select_one_impl(params: {
     id?: number
     name?: string
@@ -184,6 +188,9 @@ class Tag extends Model {
     }
   }
 
+  public delete_unreferenced() {
+    this.#delete_by_count.exec()
+  }
 }
 
 export { Tag }

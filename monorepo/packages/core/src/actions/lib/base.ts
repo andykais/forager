@@ -4,7 +4,7 @@ import * as fs from '@std/fs'
 import * as path from '@std/path'
 import * as fmt_bytes from '@std/fmt/bytes'
 import * as fmt_duration from '@std/fmt/duration'
-import { type inputs, parsers } from '~/inputs/mod.ts'
+import { type inputs, type outputs, parsers } from '~/inputs/mod.ts'
 import type * as result_types from '~/models/lib/result_types.ts'
 import { FileProcessor } from '~/lib/file_processor.ts'
 import * as errors from '~/lib/errors.ts'
@@ -103,14 +103,7 @@ class Actions {
       })!
 
       // NOTE that on create calls, we ignore tags.remove. This is mostly an implementation detail, since tags.remove is not exposed to the forager.media.create action
-      for (const tag of parsed.tags.add) {
-        const tag_record = this.tag_create(tag)
-        this.models.MediaReferenceTag.create({
-          media_reference_id: media_reference.id,
-          tag_id: tag_record.id,
-          tag_group_id: tag_record.tag_group_id,
-        })
-      }
+      this.#manage_media_tags(media_reference.id, {...parsed.tags, remove: []})
 
       this.#create_series_for_media_directories({
         media_reference_id: media_reference.id,
@@ -156,15 +149,8 @@ class Actions {
         id: media_reference_id,
         ...parsed.media_info,
       })
-      for (const tag of parsed.tags.add) {
-        const tag_record = this.tag_create(tag)
-        this.models.MediaReferenceTag.get_or_create({ media_reference_id: parsed.media_reference_id, tag_id: tag_record.id, tag_group_id: tag_record.tag_group_id })
-      }
 
-      for (const tag of parsed.tags.remove) {
-        const tag_record = this.models.Tag.select_one({name: tag.name, group: tag.group }, {or_raise: true})
-        this.models.MediaReferenceTag.delete({ media_reference_id: parsed.media_reference_id, tag_id: tag_record.id })
-      }
+      this.#manage_media_tags(media_reference_id, parsed.tags)
     })
 
     transaction()
@@ -177,6 +163,7 @@ class Actions {
       thumbnail_limit: 1,
     })
   }
+
   protected media_get(params: {
     media_reference_id?: number,
     filepath?: string
@@ -281,6 +268,32 @@ class Actions {
       series_id: parent_series_id,
       media_reference_id: params.media_reference_id,
     })
+  }
+
+  #manage_media_tags(media_reference_id: number, tags: outputs.MediaReferenceUpdateTags) {
+    if (tags.replace) {
+      // remove all existing tags first
+      this.models.MediaReferenceTag.delete({media_reference_id: media_reference_id})
+
+      for (const tag of tags.replace) {
+        const tag_record = this.tag_create(tag)
+        this.models.MediaReferenceTag.get_or_create({ media_reference_id: media_reference_id, tag_id: tag_record.id, tag_group_id: tag_record.tag_group_id })
+      }
+    }
+
+    for (const tag of tags.add) {
+      const tag_record = this.tag_create(tag)
+      this.models.MediaReferenceTag.get_or_create({ media_reference_id: media_reference_id, tag_id: tag_record.id, tag_group_id: tag_record.tag_group_id })
+    }
+
+    for (const tag of tags.remove) {
+      const tag_record = this.models.Tag.select_one({name: tag.name, group: tag.group }, {or_raise: true})
+      this.models.MediaReferenceTag.delete({ media_reference_id: media_reference_id, tag_id: tag_record.id })
+    }
+
+    if (this.ctx.config.tags.auto_cleanup) {
+      this.models.Tag.delete_unreferenced()
+    }
   }
 }
 

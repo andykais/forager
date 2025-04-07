@@ -23,7 +23,7 @@ test('tag actions', async (ctx) => {
     // share a tag between two files
     'wallpaper'
   ])
-  const doodle = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {}, [])
+  let doodle = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {}, [])
 
   await ctx.subtest('validate tag parsing', () => {
     ctx.assert.list_partial(art.tags, [
@@ -101,5 +101,58 @@ test('tag actions', async (ctx) => {
         {group: 'genre', name: 'procedural_generation'},
       ]
     })
+  })
+
+  await ctx.subtest(`tag auto cleanup`, async () => {
+    const assert_tags_before = {
+      total: 5,
+      results: [
+        {group: 'genre', name: 'procedural_generation'},
+        {group: '', name: 'generated'},
+        {group: 'colors', name: 'black'},
+        {group: '', name: 'wallpaper', media_reference_count: 2},
+        {group: 'genre', name: 'cartoon'},
+      ]
+    }
+    ctx.assert.tag_search_result(forager.tag.search(), assert_tags_before)
+
+    // lets add a new tag
+    doodle = forager.media.update(doodle.media_reference.id, {}, {add: ['foobar']})
+    ctx.assert.list_partial(doodle.tags, [
+      {name: 'foobar'}
+    ])
+
+    // observe the new tag
+    const assert_tags_after = {
+      total: 6,
+      results: [
+        {group: 'genre', name: 'procedural_generation'},
+        {group: '', name: 'generated'},
+        {group: 'colors', name: 'black'},
+        {group: '', name: 'wallpaper', media_reference_count: 2},
+        {group: 'genre', name: 'cartoon'},
+        {group: '', name: 'foobar'},
+      ]
+    }
+    ctx.assert.tag_search_result(forager.tag.search(), assert_tags_after)
+
+    // remove the tag
+    doodle = forager.media.update(doodle.media_reference.id, {}, {replace: []})
+    ctx.assert.list_partial(doodle.tags, [])
+    // now observe that the tag doesnt exist in forager
+    ctx.assert.tag_search_result(forager.tag.search(), assert_tags_before)
+
+
+    // now (jankily) update the config to not auto clean up the tag
+    forager.config.tags.auto_cleanup = false
+    doodle = forager.media.update(doodle.media_reference.id, {}, {add: ['foobar']})
+    ctx.assert.list_partial(doodle.tags, [
+      {name: 'foobar'}
+    ])
+    ctx.assert.tag_search_result(forager.tag.search(), assert_tags_after)
+    doodle = forager.media.update(doodle.media_reference.id, {}, {replace: []})
+    ctx.assert.list_partial(doodle.tags, [])
+    // now observe that the tag _does_ exist
+    ctx.assert.tag_search_result(forager.tag.search(), assert_tags_after)
   })
 })

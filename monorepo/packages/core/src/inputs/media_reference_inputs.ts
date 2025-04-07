@@ -66,10 +66,11 @@ export const MediaReferenceUpdate = MediaInfo
 export const MediaReferenceUpdateTagsAddAndRemove = z.object({
   add: Tag.array().optional().transform(taglist => taglist ?? []),
   remove: Tag.array().optional().transform(taglist => taglist ?? []),
+  replace: Tag.array().optional(),
 })
 
 export const MediaReferenceUpdateTags = z.union([Tag.array(), MediaReferenceUpdateTagsAddAndRemove])
   .transform(instructions => {
-    if (Array.isArray(instructions)) return {add: instructions, remove: []} as z.infer<typeof MediaReferenceUpdateTagsAddAndRemove>
+    if (Array.isArray(instructions)) return {replace: instructions, add: [], remove: []} as z.infer<typeof MediaReferenceUpdateTagsAddAndRemove>
     else return instructions as z.infer<typeof MediaReferenceUpdateTagsAddAndRemove>
   })
