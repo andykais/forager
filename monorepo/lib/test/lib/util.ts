@@ -3,7 +3,7 @@ export { expectType as expect_type } from "npm:ts-expect"
 import * as colors from 'jsr:@std/fmt@0.225.4/colors'
 import * as path from '@std/path'
 import { Debugger } from './debugger.ts'
-import { Forager } from '../../../packages/core/src/mod.ts'
+import { Forager, ForagerConfig } from '../../../packages/core/src/mod.ts'
 
 type ValueOf<T> = T extends Array<infer V>
   ? V
@@ -140,6 +140,15 @@ class TestContext {
   }
   create_fixture_path(filepath: string) {
     return path.join(this.fixture_folder, filepath)
+  }
+
+  get_test_config(): ForagerConfig {
+    return {
+      database_path: this.create_fixture_path('forager.db'),
+      thumbnails: {
+        folder: this.create_fixture_path('thumbnails')
+      }
+    }
   }
 
   async remove(path: string) {

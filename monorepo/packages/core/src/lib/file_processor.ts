@@ -474,7 +474,7 @@ class FileProcessor {
         throw new errors.UnExpectedError(`thumbnail at index ${i} > thumbnail at index ${i+1}. Thumbnails: [\n  ${thumbnail_timestamps.join('\n  ')}\n]`)
       }
     }
-    const thumbnail_destination_folder = path.join(this.#ctx.config.thumbnail_folder, this.get_storage_folder(checksum))
+    const thumbnail_destination_folder = path.join(this.#ctx.config.thumbnails.folder, this.get_storage_folder(checksum))
     return await this.#assert_thumbnail_generation(tmp_folder, thumbnail_destination_folder, thumbnail_timestamps)
   }
 
@@ -520,7 +520,7 @@ class FileProcessor {
 
     // we cannot parse output timestamps from ffmpeg when using `-ss`
     const thumbnail_timestamps = [timestamp]
-    const thumbnail_destination_folder = path.join(this.#ctx.config.thumbnail_folder, this.get_storage_folder(checksum), 'keypoints')
+    const thumbnail_destination_folder = path.join(this.#ctx.config.thumbnails.folder, this.get_storage_folder(checksum), 'keypoints')
 
     return this.#assert_thumbnail_generation(tmp_folder, thumbnail_destination_folder, thumbnail_timestamps)
   }

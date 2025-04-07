@@ -1,11 +1,9 @@
-import { test } from '../../../lib/test/lib/util.ts'
+import { test } from 'forager-test'
 import { Forager } from '~/mod.ts'
 
 
 test('tag actions', async (ctx) => {
-  const database_path = ctx.create_fixture_path('forager.db')
-  const thumbnail_folder = ctx.create_fixture_path('thumbnails')
-  using forager = new Forager({ database_path, thumbnail_folder })
+  using forager = new Forager(ctx.get_test_config())
   forager.init()
 
   const art = await forager.media.create(ctx.resources.media_files['koch.tif'], {}, [

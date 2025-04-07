@@ -1,4 +1,4 @@
-import { test } from '../../../lib/test/lib/util.ts'
+import { test } from 'forager-test'
 import * as fs from '@std/fs'
 import * as path from '@std/path'
 import { Forager, errors } from '~/mod.ts'
@@ -62,9 +62,7 @@ import { Forager, errors } from '~/mod.ts'
  */
 
 test('media actions', async (ctx) => {
-  const database_path = ctx.create_fixture_path('forager.db')
-  const thumbnail_folder = ctx.create_fixture_path('thumbnails')
-  const forager = new Forager({ database_path, thumbnail_folder })
+  const forager = new Forager(ctx.get_test_config())
   forager.init()
 
   const media_info = { title: 'Generated Art', stars: 2 }
@@ -110,18 +108,18 @@ test('media actions', async (ctx) => {
       cartoon: '13df03de07b03af9d01667c8a32ef3779a1f3724817b35ffa34909a5d45dc2c6',
       doodle: 'ee704bb3e4a8ef14bf2825480b4d5e4057be76d4c22386295b7eeaa7278175b2',
     }
-    const thumbnails = await Array.fromAsync(fs.walk(thumbnail_folder))
+    const thumbnails = await Array.fromAsync(fs.walk(forager.config.thumbnails.folder))
     ctx.assert.list_includes([
-      thumbnail_folder,
-      path.join(thumbnail_folder, 'e0'),
-      path.join(thumbnail_folder, 'e0', checksums.generated_art),
-      path.join(thumbnail_folder, 'e0', checksums.generated_art, '0001.jpg'),
-      path.join(thumbnail_folder, '13'),
-      path.join(thumbnail_folder, '13', checksums.cartoon),
-      path.join(thumbnail_folder, '13', checksums.cartoon, '0001.jpg'),
-      path.join(thumbnail_folder, 'ee'),
-      path.join(thumbnail_folder, 'ee', checksums.doodle),
-      path.join(thumbnail_folder, 'ee', checksums.doodle, '0001.jpg'),
+      forager.config.thumbnails.folder,
+      path.join(forager.config.thumbnails.folder, 'e0'),
+      path.join(forager.config.thumbnails.folder, 'e0', checksums.generated_art),
+      path.join(forager.config.thumbnails.folder, 'e0', checksums.generated_art, '0001.jpg'),
+      path.join(forager.config.thumbnails.folder, '13'),
+      path.join(forager.config.thumbnails.folder, '13', checksums.cartoon),
+      path.join(forager.config.thumbnails.folder, '13', checksums.cartoon, '0001.jpg'),
+      path.join(forager.config.thumbnails.folder, 'ee'),
+      path.join(forager.config.thumbnails.folder, 'ee', checksums.doodle),
+      path.join(forager.config.thumbnails.folder, 'ee', checksums.doodle, '0001.jpg'),
     ], thumbnails.map(entry => entry.path))
   })
 
@@ -337,13 +335,13 @@ test('media actions', async (ctx) => {
   })
 
   await ctx.subtest('media update', async () => {
-    media_doodle = await forager.media.update(media_doodle.media_reference.id, {}, ['cat'])
+    media_doodle = forager.media.update(media_doodle.media_reference.id, {}, ['cat'])
     ctx.assert.object_match(media_doodle, {
       tags: [{name: 'cat', color: 'hsl(0, 70%, 55%)'}]
     })
 
     // ensure we can add the same tag twice in an update without duplicating the tag
-    media_doodle = await forager.media.update(media_doodle.media_reference.id, {}, ['cat', 'doodle', 'medium:digital'])
+    media_doodle = forager.media.update(media_doodle.media_reference.id, {}, ['cat', 'doodle', 'medium:digital'])
 
     ctx.assert.object_match(media_doodle, {
       tags: [
@@ -407,9 +405,7 @@ test('media actions', async (ctx) => {
 
 
 test('search sort', async ctx => {
-  const database_path = ctx.create_fixture_path('forager.db')
-  const thumbnail_folder = ctx.create_fixture_path('thumbnails')
-  using forager = new Forager({ database_path, thumbnail_folder })
+  using forager = new Forager(ctx.get_test_config())
   forager.init()
 
   const media_generated_art = await forager.media.create(ctx.resources.media_files['koch.tif'], {source_created_at: new Date('1/1/2023') })
@@ -464,9 +460,7 @@ test('search sort', async ctx => {
 
 
 test('search group by', async ctx => {
-  const database_path = ctx.create_fixture_path('forager.db')
-  const thumbnail_folder = ctx.create_fixture_path('thumbnails')
-  using forager = new Forager({ database_path, thumbnail_folder })
+  using forager = new Forager(ctx.get_test_config())
   forager.init()
 
   await forager.media.create(
@@ -576,9 +570,7 @@ test('search group by', async ctx => {
 
 
 test('video media', async ctx => {
-  const database_path = ctx.create_fixture_path('forager.db')
-  const thumbnail_folder = ctx.create_fixture_path('thumbnails')
-  using forager = new Forager({ database_path, thumbnail_folder })
+  using forager = new Forager(ctx.get_test_config())
   forager.init()
 
   let media_cronch = await forager.media.create(ctx.resources.media_files['cat_cronch.mp4'], {}, ['cat'])
@@ -679,7 +671,7 @@ test('video media', async ctx => {
     const checksums = {
       cronch: '92a575edcc4c5b5b4dd2b3b0908aded951b8c022e0c85ecd6a5a78a4f30fefce',
     }
-    const cronch_thumbnails_folder = path.join(thumbnail_folder, '92', checksums.cronch)
+    const cronch_thumbnails_folder = path.join(forager.config.thumbnails.folder, '92', checksums.cronch)
     const read_thumbnails = await Array.fromAsync(fs.walk(cronch_thumbnails_folder))
     const read_thumbnails_sorted = read_thumbnails.map(entry => entry.path).sort((a,b) => a.localeCompare(b))
     ctx.assert.equals(read_thumbnails_sorted, [
@@ -766,9 +758,7 @@ test('video media', async ctx => {
 
 
 test('audio media', async ctx => {
-  const database_path = ctx.create_fixture_path('forager.db')
-  const thumbnail_folder = ctx.create_fixture_path('thumbnails')
-  using forager = new Forager({ database_path, thumbnail_folder })
+  using forager = new Forager(ctx.get_test_config())
   forager.init()
 
   await forager.media.create(ctx.resources.media_files["music_snippet.mp3"])
@@ -795,9 +785,7 @@ test('audio media', async ctx => {
 
 
 test('gif', async ctx => {
-  const database_path = ctx.create_fixture_path('forager.db')
-  const thumbnail_folder = ctx.create_fixture_path('thumbnails')
-  using forager = new Forager({ database_path, thumbnail_folder })
+  using forager = new Forager(ctx.get_test_config())
   forager.init()
 
   const media_gif = await forager.media.create(ctx.resources.media_files['blink.gif'])
@@ -831,9 +819,7 @@ test('gif', async ctx => {
 
 
 test('media series', async (ctx) => {
-  const database_path = ctx.create_fixture_path('forager.db')
-  const thumbnail_folder = ctx.create_fixture_path('thumbnails')
-  using forager = new Forager({ database_path, thumbnail_folder })
+  using forager = new Forager(ctx.get_test_config())
   forager.init()
 
   const media_generated_art = await forager.media.create(ctx.resources.media_files['koch.tif'], {title: 'Generated Art'}, [])
@@ -991,9 +977,7 @@ test('media series', async (ctx) => {
 
 
 test('filesystem discovery', async (ctx) => {
-  const database_path = ctx.create_fixture_path('forager.db')
-  const thumbnail_folder = ctx.create_fixture_path('thumbnails')
-  using forager = new Forager({ database_path, thumbnail_folder })
+  using forager = new Forager(ctx.get_test_config())
   forager.init()
 
   await ctx.subtest('filepath globbing', async () => {
@@ -1053,9 +1037,7 @@ test('filesystem discovery', async (ctx) => {
 
 
 test('views', async (ctx) => {
-  const database_path = ctx.create_fixture_path('forager.db')
-  const thumbnail_folder = ctx.create_fixture_path('thumbnails')
-  using forager = new Forager({ database_path, thumbnail_folder })
+  using forager = new Forager(ctx.get_test_config())
   forager.init()
 
   await forager.media.create(ctx.resources.media_files['koch.tif'], {title: 'Generated Art'}, [])
