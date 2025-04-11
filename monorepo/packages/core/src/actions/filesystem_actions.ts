@@ -52,8 +52,8 @@ class FileSystemActions extends Actions {
         } else if (e instanceof errors.MediaAlreadyExistsError) {
           if (params.set?.media_info || params.set?.tags) {
             this.ctx.logger.info(`${e.filepath} already exists in database, updating`)
-            const media_reference = this.models.MediaFile.select_one({filepath: e.filepath}, {or_raise: true})
-            this.media_update(media_reference.id, params.set?.media_info, params.set?.tags)
+            const media_file = this.models.MediaFile.select_one({filepath: e.filepath}, {or_raise: true})
+            this.media_update(media_file.media_reference_id, params.set?.media_info, params.set?.tags)
             stats.updated += 1
           } else {
             this.ctx.logger.info(`${e.filepath} already exists in database, skipping`)

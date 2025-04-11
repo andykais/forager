@@ -151,10 +151,19 @@ class MediaReference extends Model {
       if (sort_by_cursor_value === null) {
         records_builder.add_where_clause(`${params.sort_by} IS NULL AND media_reference.id ${cursor_sort_direction} ${params.cursor.id}`)
       } else {
-        const null_case = params.sort_by === 'source_created_at'
-          ? `OR ${sort_by_field} IS NULL`
-          : ''
-        records_builder.add_where_clause(`(${sort_by_field} ${cursor_sort_direction} ${sort_by_cursor_value} ${null_case}) OR (${sort_by_field} = ${sort_by_cursor_value} AND media_reference.id ${cursor_sort_direction} ${params.cursor.id})`)
+        const column_can_be_null = params.sort_by === 'source_created_at'
+        const where_clauses = column_can_be_null
+          ? [
+            `${sort_by_field} ${cursor_sort_direction} ${sort_by_cursor_value}`,
+            `${sort_by_field} IS NULL`,
+            `${sort_by_field} = ${sort_by_cursor_value} AND media_reference.id ${cursor_sort_direction} ${params.cursor.id}`,
+            ]
+          : [
+            `${sort_by_field} ${cursor_sort_direction} ${sort_by_cursor_value}`,
+            `${sort_by_field} = ${sort_by_cursor_value} AND media_reference.id ${cursor_sort_direction} ${params.cursor.id}`,
+            ]
+
+        records_builder.add_where_clause(`(${where_clauses.join(' OR ')})`)
       }
     }
     if (params.limit !== undefined) {
@@ -312,10 +321,9 @@ ${group_builder.generate_sql()}
       const tag_ids_str = params.tag_ids.join(',')
       builder
         .add_join_clause(`INNER JOIN`, `media_reference_tag`, `media_reference_tag.media_reference_id = media_reference.id`)
-        .add_join_clause(`INNER JOIN`, `tag`, `media_reference_tag.tag_id = tag.id`)
-        .add_where_clause(`tag.id IN (${tag_ids_str})`)
+        .add_where_clause(`media_reference_tag.tag_id IN (${tag_ids_str})`)
         .add_group_clause('GROUP BY media_reference.id')
-        .add_having_clause(`COUNT(tag.id) >= ${params.tag_ids.length}`)
+        .add_having_clause(`COUNT(media_reference_tag.tag_id) >= ${params.tag_ids.length}`)
         // NOTE it appears that when we add join clauses, ROW_NUMBER seems to start to ascend/descend according to the order by clause
         // I dont know if this means I am supposed to account for this or not
     }
