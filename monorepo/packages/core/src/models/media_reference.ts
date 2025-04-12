@@ -11,6 +11,7 @@ interface SelectManyFilters {
   limit: number | undefined
   cursor: PaginatedResult<unknown>['cursor']
   order: 'asc' | 'desc' | undefined
+  animated: boolean | undefined
   stars: number | undefined
   sort_by: string
   stars_equality: 'gte' | 'eq' | undefined
@@ -306,9 +307,16 @@ ${group_builder.generate_sql()}
       builder.add_where_clause('directory_reference = 0')
     }
 
-    if (params.filepath) {
+    if (params.animated || params.filepath) {
       builder.add_join_clause('INNER JOIN', 'media_file', 'media_file.media_reference_id = media_reference.id')
-      builder.add_where_clause(`media_file.filepath GLOB '${params.filepath}'`)
+
+      if (params.animated) {
+        builder.add_where_clause(`media_file.animated = true`)
+      }
+
+      if (params.filepath) {
+        builder.add_where_clause(`media_file.filepath GLOB '${params.filepath}'`)
+      }
     }
 
     if (params.series_id !== undefined) {

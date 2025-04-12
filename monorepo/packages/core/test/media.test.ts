@@ -761,6 +761,35 @@ test('video media', async ctx => {
 })
 
 
+test('search query.animated', async ctx => {
+  using forager = new Forager(ctx.get_test_config())
+  forager.init()
+
+  const media_generated_art = await forager.media.create(ctx.resources.media_files['koch.tif'])
+  const media_cartoon = await forager.media.create(ctx.resources.media_files["ed-edd-eddy.png"])
+  const media_gif = await forager.media.create(ctx.resources.media_files['blink.gif'])
+  const media_doodle = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'])
+  const media_video = await forager.media.create(ctx.resources.media_files['cat_cronch.mp4'])
+
+  ctx.assert.search_result(forager.media.search(), {
+    results: [
+      {media_reference: {id: media_video.media_reference.id}, media_file: {animated: true}},
+      {media_reference: {id: media_doodle.media_reference.id}, media_file: {animated: false}},
+      {media_reference: {id: media_gif.media_reference.id}, media_file: {animated: true}},
+      {media_reference: {id: media_cartoon.media_reference.id}, media_file: {animated: false}},
+      {media_reference: {id: media_generated_art.media_reference.id}, media_file: {animated: false}},
+    ]
+  })
+
+  // now lets prove that we only retrieve animated media with the query.animated filter
+  ctx.assert.search_result(forager.media.search({query: {animated: true}}), {
+    results: [
+      {media_reference: {id: media_video.media_reference.id}, media_file: {animated: true}},
+      {media_reference: {id: media_gif.media_reference.id}, media_file: {animated: true}},
+    ]
+  })
+})
+
 test('audio media', async ctx => {
   using forager = new Forager(ctx.get_test_config())
   forager.init()
