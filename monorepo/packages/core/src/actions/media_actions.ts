@@ -110,13 +110,16 @@ class MediaActions extends Actions {
           thumbnails,
         }
       } else {
-        let media_keypoint: result_types.MediaKeypoint | undefined
+        const media_file = this.models.MediaFile.select_one({media_reference_id: row.id}, {or_raise: true})
+
+        let thumbnail_timestamp_threshold: number | undefined
         if (keypoint_tag_id) {
-          media_keypoint = this.models.MediaKeypoint.select_one({tag_id: keypoint_tag_id, media_reference_id: row.id}, {or_raise: true})
+          thumbnail_timestamp_threshold = this.models.MediaKeypoint.select_one({tag_id: keypoint_tag_id, media_reference_id: row.id}, {or_raise: true}).media_timestamp
+        } else if (media_file.animated && parsed.thumbnail_limit === 1) {
+          thumbnail_timestamp_threshold = media_file.duration * 0.1 // default to 10% in a piece of animated media
         }
-        const media_file = this.models.MediaFile.select_one({media_reference_id: row.id})
-        if (media_file === undefined) throw new Error(`reference error: MediaReference id ${row.id} has no media_file`)
-        const thumbnails = this.models.MediaThumbnail.select_many({media_file_id: media_file.id, limit: parsed.thumbnail_limit, keypoint_timestamp: media_keypoint?.media_timestamp})
+
+        const thumbnails = this.models.MediaThumbnail.select_many({media_file_id: media_file.id, limit: parsed.thumbnail_limit, timestamp_threshold: thumbnail_timestamp_threshold})
         return {
           media_type: 'media_file',
           media_reference: row,

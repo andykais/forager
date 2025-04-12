@@ -598,7 +598,9 @@ test('video media', async ctx => {
         thumbnails: {
           results: [
             {
-              media_timestamp: 0,
+              // we have special logic where asking for a singular timestamp will retrieve the most ideal preview of the media
+              // in the future, we should make this a more holistic pattern
+              media_timestamp: 0.766667,
             }
           ]
       }}
@@ -734,7 +736,9 @@ test('video media', async ctx => {
           total: 20,
           results: [
             {
-              media_timestamp: 0,
+              // we have special logic where asking for a singular timestamp will retrieve the most ideal preview of the media
+              // in the future, we should make this a more holistic pattern
+              media_timestamp: 0.766667,
             }
           ]
         }
