@@ -16,6 +16,14 @@ type LogLevel =
   | 'INFO'
   | 'DEBUG'
 
+const LOG_LEVELS = [
+  'SILENT',
+  'ERROR',
+  'WARN',
+  'INFO',
+  'DEBUG'
+] as const satisfies LogLevel[]
+
 
 class Logger extends log.Logger {
   public constructor(name: string, log_level: LogLevel = 'ERROR') {
@@ -27,5 +35,5 @@ class Logger extends log.Logger {
   }
 }
 
-export { Logger }
+export { Logger, LOG_LEVELS }
 export type { LogLevel }
