@@ -117,7 +117,7 @@ class MediaActions extends Actions {
         if (keypoint_tag_id) {
           thumbnail_timestamp_threshold = this.models.MediaKeypoint.select_one({tag_id: keypoint_tag_id, media_reference_id: row.id}, {or_raise: true}).media_timestamp
         } else if (media_file.animated && parsed.thumbnail_limit === 1) {
-          thumbnail_timestamp_threshold = media_file.duration * 0.1 // default to 10% in a piece of animated media
+          thumbnail_timestamp_threshold = media_file.duration * (this.ctx.config.thumbnails.preview_duration_animated / 100)
         }
 
         const thumbnails = this.models.MediaThumbnail.select_many({media_file_id: media_file.id, limit: parsed.thumbnail_limit, timestamp_threshold: thumbnail_timestamp_threshold})
