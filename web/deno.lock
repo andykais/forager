@@ -1200,7 +1200,7 @@
       "dependencies": [
         "npm:@deno/vite-plugin@~1.0.4",
         "npm:@jsr/andykais__ts-rpc@~0.2.2",
-        "npm:@jsr/forager__core@~0.7.12",
+        "npm:@jsr/forager__core@~0.7.14",
         "npm:@jsr/std__datetime@~0.225.3",
         "npm:@jsr/std__path@^1.0.8",
         "npm:@jsr/std__yaml@^1.0.5",
