@@ -34,6 +34,7 @@ export class MediaSelectionsRune extends Rune {
   #selected_thumbnails = $state<ThumbnailSelections>({type: 'none'})
   #current_selection = $state<CurrentSelection>({
     show: false,
+    thumbnails: null,
     media_response: null,
     result_index: 0,
   })

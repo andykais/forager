@@ -48,6 +48,8 @@
   })
 
   let dialog: HTMLDialogElement
+  let animation_width = $state(0)
+  let animation_progress = $state(0)
 </script>
 
 
@@ -56,7 +58,9 @@
   style="height: {controller.runes.dimensions.heights.media_list}px;"
   bind:this={dialog}
   onclose={controller.runes.media_selections.close_media}>
-  <div class="grid justify-items-center items-center h-full">
+  <div class="grid justify-items-center items-center h-full"
+  style="height: {controller.runes.dimensions.heights.media_list}px;"
+  >
     {#if current_selection.show && current_selection.media_response}
       {#if current_selection.media_response.media_type === 'media_file'}
         {#if current_selection.media_response.media_file.media_type === 'IMAGE'}
@@ -65,18 +69,24 @@
             src={media_url} alt="">
         {:else if current_selection.media_response.media_file.media_type === 'VIDEO'}
           <video
+            bind:clientWidth={animation_width}
             class="object-contain max-h-full outline-none"
             autoplay
             loop
             bind:paused
+            bind:currentTime={animation_progress}
             use:video_loader={media_url}
             >
             <source src={media_url}>
             <track kind="captions"/> <!-- this exists purely to quiet down an A11y rule -->
           </video>
+          <progress
+            class="w-full h-1 absolute bottom-0"
+            style="width: {animation_width}px"
+            max={current_selection.media_response.media_file.duration} value={animation_progress}></progress>
           {#if controller.runes.settings.ui.media_view.filmstrip.enabled}
             <div class="w-full flex flex-row justify-center gap-1 overflow-x-scroll" style="height: {controller.runes.settings.ui.media_view.filmstrip.thumbnail_size}px;">
-              {#each current_selection.media_response.thumbnails.results as thumbnail}
+              {#each current_selection.thumbnails.results as thumbnail}
                 <div class="h-full">
                   <img class="h-full" src="/files/thumbnail{thumbnail.filepath}" alt=""></div>
               {/each}
@@ -103,5 +113,19 @@
 <style>
   dialog {
     background-color: hsl(100 0% 0% / 45%);
+  }
+
+  progress {
+    background-color: initial;
+    -webkit-appearence:none;
+  }
+  progress::-webkit-progress-bar {
+    background-color: initial;
+  }
+  progress::-webkit-progress-value {
+    background-color: white;
+  }
+  progress::-moz-progress-bar {
+    background-color: white;
   }
 </style>
