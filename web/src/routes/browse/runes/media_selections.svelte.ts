@@ -26,7 +26,7 @@ export type ThumbnailSelections =
 
 export interface CurrentSelection {
   show: boolean
-  media_response: runes.MediaViewRune | null
+  media_response: runes.MediaViewRunes | null
   result_index: number
 }
 

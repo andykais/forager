@@ -7,6 +7,7 @@ interface State {
   full_thumbnails: MediaResponse['thumbnails'] | undefined
 }
 export class MediaViewRune extends Rune {
+  media_type!: MediaResponse['media_type']
   state = $state<State>()
 
   protected constructor(client: BaseController['client'], media_response: MediaResponse) {
@@ -24,9 +25,6 @@ export class MediaViewRune extends Rune {
     return this.state!.media = media
   }
 
-  get media_type() {
-    return this.media.media_type
-  }
 
   get tags() {
     return this.media.tags
@@ -69,6 +67,8 @@ export class MediaViewRune extends Rune {
 
 
 export class MediaFileRune extends MediaViewRune {
+  media_type  = 'media_file' as const satisfies MediaResponse['media_type']
+
   public override async update(media_info: inputs.MediaInfo, tags: inputs.MediaReferenceUpdateTags) {
     const updated = await this.client.forager.media.update(
       this.media_reference.id,
@@ -87,6 +87,8 @@ export class MediaFileRune extends MediaViewRune {
 
 
 export class MediaSeriesRune extends MediaViewRune {
+  media_type  = 'media_series' as const satisfies MediaResponse['media_type']
+
   public override async load_detailed_view() {
     if (this.state!.full_thumbnails) return
     const series = await forager.series.get({series_id: media_response.media_reference.id })
@@ -95,3 +97,5 @@ export class MediaSeriesRune extends MediaViewRune {
     // TODO attach series items
   }
 }
+
+export type MediaViewRunes = MediaSeriesRune | MediaFileRune
