@@ -61,8 +61,8 @@
             style="width:{runes.settings.ui.media_list.thumbnail_size}px; height: {runes.settings.ui.media_list.thumbnail_size}px">
             <img
               class="w-full h-full object-cover"
-              src="/files/thumbnail{result.thumbnails.results[0].filepath}"
-              alt="Failed to load /files/thumbnail{result.thumbnails.results[0].filepath}"/>
+              src="/files/thumbnail{result.preview_thumbnail.filepath}"
+              alt="Failed to load /files/thumbnail{result.preview_thumbnail.filepath}"/>
           </div>
 
           <!-- info chips -->

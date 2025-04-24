@@ -2,17 +2,32 @@ import {Rune} from '$lib/runes/rune.ts'
 import type { BaseController } from '$lib/base_controller.ts'
 import type { MediaResponse, inputs } from '@forager/core'
 
+interface State {
+  media: MediaResponse
+  full_thumbnails: MediaResponse['thumbnails'] | undefined
+}
 export class MediaViewRune extends Rune {
-  media = $state<MediaResponse>()
+  state = $state<State>()
 
-  constructor(client: BaseController['client'], media_response: MediaResponse) {
+  protected constructor(client: BaseController['client'], media_response: MediaResponse) {
     super(client)
-    this.media = media_response
+    this.state = {
+      media: media_response,
+      full_thumbnails: undefined
+    }
+  }
+
+  get media() {
+    return this.state!.media
+  }
+  set media(media: MediaResponse) {
+    return this.state!.media = media
   }
 
   get media_type() {
     return this.media.media_type
   }
+
   get tags() {
     return this.media.tags
   }
@@ -25,11 +40,19 @@ export class MediaViewRune extends Rune {
     return this.media.media_file
   }
 
+  get preview_thumbnail() {
+    return this.media.thumbnails.results[0]
+  }
+
   get thumbnails() {
     return this.media.thumbnails
   }
 
   public update(media_info: inputs.MediaInfo, tags: inputs.MediaReferenceUpdateTags) {
+    throw new Error('requires override')
+  }
+
+  public async load_detailed_view() {
     throw new Error('requires override')
   }
 
@@ -44,8 +67,8 @@ export class MediaViewRune extends Rune {
   }
 }
 
-export class MediaFileRune extends MediaViewRune {
 
+export class MediaFileRune extends MediaViewRune {
   public override async update(media_info: inputs.MediaInfo, tags: inputs.MediaReferenceUpdateTags) {
     const updated = await this.client.forager.media.update(
       this.media_reference.id,
@@ -54,7 +77,21 @@ export class MediaFileRune extends MediaViewRune {
     )
     this.media = updated
   }
+
+  public override async load_detailed_view() {
+    if (this.state!.full_thumbnails) return
+    const result = await this.client.forager.media.get({media_reference_id: this.media_reference.id })
+    this.state!.full_thumbnails = result.thumbnails
+  }
 }
 
+
 export class MediaSeriesRune extends MediaViewRune {
+  public override async load_detailed_view() {
+    if (this.state!.full_thumbnails) return
+    const series = await forager.series.get({series_id: media_response.media_reference.id })
+    this.state!.full_thumbnails = series.thumbnails
+    const series_items = await forager.media.search({query: {series_id: media_response.media_reference.id }})
+    // TODO attach series items
+  }
 }

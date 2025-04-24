@@ -50,38 +50,6 @@ export class MediaSelectionsRune extends Rune {
     return this.#current_selection
   }
 
-  private async load_thumbnails() {
-    if (!this.#current_selection.media_response) {
-      throw new Error(`Cannot load thumbnails when no media response is selected`)
-    }
-
-    const media_response = this.#current_selection.media_response
-
-    if (media_response.media_type === 'media_file' && media_response.media_file.animated === false) {
-      // we do not have multiple thumbnails for images
-      console.log('not animated')
-      return
-    }
-
-    if (media_response.thumbnails.results.length > 1) {
-      // lets just assume that these have been loaded
-      console.log('already loaded')
-      return
-    }
-
-    // note that this is currently susceptible to race conditions loading more than once (e.g. flipping back and forth quickly)
-    if (media_response.media_type === 'media_file') {
-      const result = await this.client.forager.media.get({media_reference_id: this.#current_selection.media_response.media_reference.id })
-      this.#current_selection.media_response.thumbnails = result.thumbnails
-    } else if (media_response.media_type === 'media_series') {
-      const series = await forager.series.get({series_id: media_response.media_reference.id })
-      const series_items = await forager.media.search({query: {series_id: media_response.media_reference.id }})
-      throw new Error(`Unimplemented media series fetching`)
-    } else {
-      throw new Error(`Unexpected media type ${media_response.media_type}`)
-    }
-  }
-
   private is_currently_selected(media_reference_id: number) {
     if (this.#current_selection.media_response?.media_reference.id === media_reference_id) {
       return true
@@ -102,7 +70,7 @@ export class MediaSelectionsRune extends Rune {
     if (this.#current_selection.media_response) {
       this.#current_selection.show = true
     }
-    await this.load_thumbnails()
+    await this.#current_selection.media_response?.load_detailed_view()
   }
 
   public close_media = () => {
@@ -123,7 +91,7 @@ export class MediaSelectionsRune extends Rune {
     this.#current_selection.media_response = results[next_index]
     this.#current_selection.result_index = next_index
 
-    await this.load_thumbnails()
+    await this.#current_selection.media_response?.load_detailed_view()
   }
 
   async prev_media(results: MediaResponse[]) {
@@ -142,6 +110,6 @@ export class MediaSelectionsRune extends Rune {
     this.#current_selection.media_response = results[prev_index]
     this.#current_selection.result_index = prev_index
 
-    await this.load_thumbnails()
+    await this.#current_selection.media_response?.load_detailed_view()
   }
 }
