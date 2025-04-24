@@ -1,8 +1,7 @@
+import {Rune} from '$lib/runes/rune.ts'
 import type { Forager, MediaResponse } from '@forager/core'
-import type * as settings from '$lib/runes/index.ts'
+import type * as runes from '$lib/runes/index.ts'
 import type { BaseController } from '$lib/base_controller.ts'
-
-type MediaResponse = Awaited<ReturnType<Forager['media']['search']>>['results'][0]
 
 interface SelectIndividual {
   type: 'ids'
@@ -27,12 +26,8 @@ export type ThumbnailSelections =
 
 export interface CurrentSelection {
   show: boolean
-  media_response: MediaResponse | null
+  media_response: runes.MediaViewRune | null
   result_index: number
-}
-
-class Rune {
-  public constructor(protected client: BaseController['client']) {}
 }
 
 export class MediaSelectionsRune extends Rune {
@@ -43,7 +38,7 @@ export class MediaSelectionsRune extends Rune {
     result_index: 0,
   })
 
-  public constructor(client: BaseController['client'], protected settings: settings.Rune) {
+  public constructor(client: BaseController['client']) {
     super(client)
   }
 
@@ -55,32 +50,36 @@ export class MediaSelectionsRune extends Rune {
     return this.#current_selection
   }
 
-  public update(results: MediaResponse[], updated_media_response: MediaResponse) {
-    const result_index = this.#current_selection.result_index
-    results[result_index] = updated_media_response
-    this.#current_selection.media_response = updated_media_response
-  }
-
   private async load_thumbnails() {
     if (!this.#current_selection.media_response) {
       throw new Error(`Cannot load thumbnails when no media response is selected`)
     }
 
-    if (this.#current_selection.media_response.media_type === 'media_file' && this.#current_selection.media_response.media_file.animated === false) {
+    const media_response = this.#current_selection.media_response
+
+    if (media_response.media_type === 'media_file' && media_response.media_file.animated === false) {
       // we do not have multiple thumbnails for images
       console.log('not animated')
       return
     }
 
-    if (this.#current_selection.media_response.thumbnails.results.length > 1) {
+    if (media_response.thumbnails.results.length > 1) {
       // lets just assume that these have been loaded
       console.log('already loaded')
       return
     }
 
     // note that this is currently susceptible to race conditions loading more than once (e.g. flipping back and forth quickly)
-    const result = await this.client.forager.media.get({media_reference_id: this.#current_selection.media_response.media_reference.id })
-    this.#current_selection.media_response.thumbnails = result.thumbnails
+    if (media_response.media_type === 'media_file') {
+      const result = await this.client.forager.media.get({media_reference_id: this.#current_selection.media_response.media_reference.id })
+      this.#current_selection.media_response.thumbnails = result.thumbnails
+    } else if (media_response.media_type === 'media_series') {
+      const series = await forager.series.get({series_id: media_response.media_reference.id })
+      const series_items = await forager.media.search({query: {series_id: media_response.media_reference.id }})
+      throw new Error(`Unimplemented media series fetching`)
+    } else {
+      throw new Error(`Unexpected media type ${media_response.media_type}`)
+    }
   }
 
   private is_currently_selected(media_reference_id: number) {
@@ -90,7 +89,7 @@ export class MediaSelectionsRune extends Rune {
     return false
   }
 
-  public set_current_selection(media_response: MediaResponse, result_index: number) {
+  public set_current_selection(media_response: runes.MediaViewRune, result_index: number) {
     if (this.is_currently_selected(media_response.media_reference.id)) {
       this.open_media()
     } else {

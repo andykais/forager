@@ -39,24 +39,13 @@
     class="pl-1 pr-3"
     onsubmit={async e => {
       e.preventDefault()
-      if (current_selection.media_response.media_type === 'media_file') {
-        const media_info = undefined
-        const tags: string[] = []
-        if (new_tag_str) {
-          tags.push(new_tag_str)
-        }
-        const result = await controller.client.forager.media.update(
-          current_selection.media_response?.media_reference.id,
-          media_info,
-          tags
-        )
-        if (new_tag_str) {
-          new_tag_str = ''
-        }
-        controller.runes.media_selections.update(controller.runes.search.results, result)
-      } else {
-        throw new Error('unimplemented')
+      let media_info = undefined
+      let tags: {add: string[]} | undefined
+      if (new_tag_str) {
+        tags = {add: [new_tag_str]}
       }
+      current_selection.media_response!.update(media_info, tags)
+      new_tag_str = ''
     }}
     >
     {#if current_selection.media_response}
@@ -70,12 +59,7 @@
               title="Remove"
               type="button"
               onclick={async e => {
-                const result = await controller.client.forager.media.update(
-                  current_selection.media_response?.media_reference.id,
-                  undefined,
-                  {remove: [`${tag.group}:${tag.name}`]}
-                )
-                controller.runes.media_selections.update(controller.runes.search.results, result)
+                await current_selection.media_response.update(undefined, {remove: [`${tag.group}:${tag.name}`]})
               }}>
               <Icon class="fill-green-50 hover:fill-green-300" data={XCircle} size="18px" color="none" />
             </button>

@@ -16,7 +16,7 @@
 </script>
 
 <Scroller
-  more={() => controller.handlers.paginate_media()}
+  more={() => controller.runes.search.paginate()}
   class={[
     "w-full focus:outline-none",
      controller.runes.media_selections.current_selection.show ? "overflow-hidden" : "overflow-y-scroll",

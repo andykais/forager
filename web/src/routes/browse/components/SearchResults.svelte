@@ -4,7 +4,7 @@
   import * as theme from '$lib/theme.ts'
   import { focusable } from '$lib/actions/mod.ts'
   import Icon from '$lib/components/Icon.svelte'
-  import { PlayCircle, Photo, Gif, Music } from '$lib/icons/mod.ts'
+  import * as icons from '$lib/icons/mod.ts'
 
   interface Props {
     controller: BrowseController
@@ -44,8 +44,7 @@
 
 <div class="container-masonry p-4" style="--thumbnail-size: {runes.settings.ui.media_list.thumbnail_size}px">
   {#each runes.search.results as result, result_index}
-    {#if result.media_type === 'media_file'}
-      <div>
+    <div>
       <button 
         type="button"
         class="inline-flex items-center justify-center p-1
@@ -67,25 +66,28 @@
           </div>
 
           <!-- info chips -->
-          <div class="flex justify-end bg-gray-700 border-1 border-slate-800 shadow shadow-gray-700 rounded-md p-0.5">
-            {#if result.media_file.media_type === 'VIDEO'}
-              <Icon data={PlayCircle} fill={icon_color} stroke="none" size={icon_size} />
-            {:else if result.media_file.media_type === 'IMAGE' && result.media_file.content_type === 'image/gif'}
-              <Icon data={Gif} fill={icon_color} stroke="none" size={icon_size} />
-            {:else if result.media_file.media_type === 'IMAGE'}
-              <Icon data={Photo} fill={icon_color} stroke="none" size={icon_size} />
-            {:else if result.media_file.media_type === 'AUDIO'}
-              <Icon data={Music} fill={icon_color} stroke="none" size={icon_size} />
-            {:else}
-              unknown media type {result.media_file.media_type}
-            {/if}
-          </div>
+          <div class="flex text-xs text-gray-400 justify-between  p-0.5">
+            {#if result.media_type === 'media_file'}
+              {#if result.media_file.media_type === 'VIDEO'}
+                <Icon data={icons.PlayCircle} fill={icon_color} stroke="none" size={icon_size} />
+              {:else if result.media_file.media_type === 'IMAGE' && result.media_file.content_type === 'image/gif'}
+                <Icon data={icons.Gif} fill={icon_color} stroke="none" size={icon_size} />
+              {:else if result.media_file.media_type === 'IMAGE'}
+                <Icon data={icons.Photo} fill={icon_color} stroke="none" size={icon_size} />
+              {:else if result.media_file.media_type === 'AUDIO'}
+                <Icon data={icons.Music} fill={icon_color} stroke="none" size={icon_size} />
+              {:else}
+                unknown media type {result.media_file.media_type}
+              {/if}
+          {:else if result.media_type === 'media_series'}
+              <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
+              {result.media_reference.media_series_length} items
+          {:else}
+            UNEXPECTED MEDIA TYPE {result.media_type}
+          {/if}
         </div>
       </button>
-      </div>
-    {:else}
-      <div>unimplemented</div>
-    {/if}
+    </div>
   {/each}
 </div>
 {#if runes.search.loading}

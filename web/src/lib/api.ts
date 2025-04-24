@@ -14,11 +14,7 @@ class ForagerTagApi extends rpc.ApiController<Context> {
 
 class ForagerApi extends rpc.ApiController<Context> {
   media = this.context.forager.media
-
-  search: Forager['media']['search'] = (params) => {
-    return this.context.forager.media.search(params)
-  }
-
+  series = this.context.forager.series
   tag = this.module(ForagerTagApi)
 }
 
