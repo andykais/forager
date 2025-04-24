@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { inputs } from '@forager/core'
   import type { BrowseController } from "../controller.ts";
   import * as theme from '$lib/theme.ts'
   import Icon from '$lib/components/Icon.svelte'
@@ -9,17 +10,21 @@
 
   interface State {
     search_string: string
-    sort: string
+    filepath: string | undefined
+    sort: inputs.PaginatedSearch['sort_by']
     unread_only: boolean
     stars: number | undefined
+    order: 'desc' | 'asc'
+    media_type: string
   }
   let params = $state<State>({
     search_string: '',
     filepath: undefined as string | undefined,
-    sort: 'source_created_at',
-    order: 'desc' as 'asc' | 'desc',
+    sort: 'source_created_at' as const,
+    order: 'desc' as const,
     unread_only: false,
     stars: undefined,
+    media_type: 'all',
   })
 
   async function submit() {
@@ -28,7 +33,24 @@
     const order = params.order
     const filepath = params.filepath
     controller.runes.search.clear()
-    await controller.runes.search.paginate({query: {tags, filepath}, sort_by, order})
+    const query: inputs.PaginatedSearch['query'] = {
+      tags,
+      filepath
+    }
+    switch(params.media_type) {
+      case 'all': {
+        // do nothing
+        break
+      }
+      case 'animated': {
+        query.animated = true
+        break
+      }
+      default: {
+        throw new Error(`Unimplemented media type ${params.media_type}`)
+      }
+    }
+    await controller.runes.search.paginate({query: query, sort_by, order})
   }
 
   type AdvancedFiltersState = 'hidden' | 'shown'
@@ -60,9 +82,10 @@
       </button>
     </div>
 
-    <div class="flex justify-center items-center gap-8" style="display: {advanced_filters_state === 'hidden' ? 'none' : 'flex'}">
+    <div class="flex justify-center items-center gap-8 text-slate-950 "
+      style="display: {advanced_filters_state === 'hidden' ? 'none' : 'flex'}">
       <div class="flex gap-2">
-        <label class="text-slate-300" for="filepath">Filepath:</label>
+        <label class="" for="filepath">Filepath:</label>
         <input
           class="rounded-lg py-1 px-3 text-slate-100 bg-gray-800 text-sm"
           name="filepath"
@@ -100,7 +123,29 @@
       </div>
 
       <div class="flex gap-2">
-        <label class="text-slate-300" for="unread">Unread:</label>
+        <label class="text-nowrap" for="unread">Media Type:</label>
+        <select
+          bind:value={params.media_type}
+          onchange={e => {
+            submit()
+          }}
+        >
+          <option value="animated">Animated</option>
+          <option value="image">Image</option>
+          <option value="video">Video</option>
+          <option value="audio">Audio</option>
+        </select>
+        <input
+          class="rounded-lg"
+          name="unread"
+          type="checkbox"
+          placeholder="dir/*.jpg"
+          bind:checked={params.unread_only}
+          onchange={submit}>
+      </div>
+
+      <div class="flex gap-2">
+        <label class="" for="unread">Unread:</label>
         <input
           class="rounded-lg"
           name="unread"
