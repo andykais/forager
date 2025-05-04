@@ -5,7 +5,8 @@ import { SQLBuilder } from '~/models/lib/sql_builder.ts'
 
 interface SelectManyFilters {
   id: number | undefined
-  series_id: number| undefined
+  series_id: number | undefined
+  series: boolean | undefined
   tag_ids: number[] | undefined
   keypoint_tag_id: number | undefined
   limit: number | undefined
@@ -305,6 +306,10 @@ ${group_builder.generate_sql()}
       }
     } else {
       builder.add_where_clause('directory_reference = 0')
+    }
+
+    if (params.series) {
+      builder.add_where_clause('media_series_reference = true')
     }
 
     if (params.animated || params.filepath) {

@@ -851,7 +851,7 @@ test('gif', async ctx => {
 })
 
 
-test('media series', async (ctx) => {
+test.only('media series', async (ctx) => {
   using forager = new Forager(ctx.get_test_config())
   forager.init()
 
@@ -908,8 +908,8 @@ test('media series', async (ctx) => {
     })
   })
 
+  let doodle_series = forager.series.create({title: 'doodles'}, ['doodle_list'])
   await ctx.subtest('nested series', () => {
-    let doodle_series = forager.series.create({title: 'doodles'}, ['doodle_list'])
     forager.series.add({
       series_id: doodle_series.media_reference.id,
       media_reference_id: media_doodle.media_reference.id,
@@ -1004,6 +1004,25 @@ test('media series', async (ctx) => {
       media_type: 'media_series',
       tags: [],
       thumbnails: { total: 2, results: [] },
+    })
+  })
+
+  await ctx.subtest('search only series', () => {
+    // try listing all the series
+    ctx.assert.search_result(forager.media.search({query: {series: true}}), {
+      total: 2,
+      results: [
+        {media_reference: {id: doodle_series.media_reference.id}},
+        {media_reference: {id: cool_art_series.media_reference.id}},
+      ]
+    })
+
+    // we can also add series_id here to look for series inside another series
+    ctx.assert.search_result(forager.media.search({query: {series: true, series_id: cool_art_series.media_reference.id}}), {
+      total: 1,
+      results: [
+        {media_reference: {id: doodle_series.media_reference.id}},
+      ]
     })
   })
 })

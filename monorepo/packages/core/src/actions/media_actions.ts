@@ -84,6 +84,7 @@ class MediaActions extends Actions {
 
     const records = this.models.MediaReference.select_many({
       id: query.media_reference_id,
+      series: query.series,
       series_id,
       tag_ids,
       keypoint_tag_id,
@@ -169,6 +170,7 @@ class MediaActions extends Actions {
     const records = this.models.MediaReference.select_many_group_by_tags({
       id: query.media_reference_id,
       series_id,
+      series: query.series,
       tag_ids,
       keypoint_tag_id,
       cursor: parsed.cursor,
