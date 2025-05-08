@@ -25,6 +25,7 @@
   */
 
 import { Context } from './context.ts'
+import { PluginScript } from '~/lib/plugin_script.ts'
 import * as actions from './actions/mod.ts'
 import { type inputs, outputs, parsers } from '~/inputs/mod.ts'
 
@@ -38,9 +39,9 @@ class Forager {
   public tag: actions.TagActions
   #ctx: Context
 
-  public constructor(config: inputs.ForagerConfig) {
+  public constructor(config: inputs.ForagerConfig, plugin_script?: PluginScript) {
     this.config = parsers.ForagerConfig.parse(config)
-    this.#ctx = new Context(this.config)
+    this.#ctx = new Context(this.config, plugin_script ?? new PluginScript(), this)
     this.media = new actions.MediaActions(this.#ctx)
     this.series = new actions.SeriesActions(this.#ctx)
     this.filesystem = new actions.FileSystemActions(this.#ctx)
@@ -50,7 +51,7 @@ class Forager {
   }
 
   public init() {
-    this.#ctx.db.init()
+    this.#ctx.init()
   }
 
   public close() {
@@ -70,3 +71,4 @@ export type * from './actions/mod.ts'
 export { type inputs }
 export type * from '~/inputs/mod.ts'
 export { parsers }
+export * from '~/lib/plugin_script.ts'

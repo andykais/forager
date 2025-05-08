@@ -185,6 +185,16 @@ class FileProcessor {
     const endpoint = true
     const R = this.#THUMBNAILS_NUM_CAPTURED_FRAMES
     const total_frames = file_info.framecount
+
+    // NOTE this may be a simpler implementation
+    // const num_captured_frames = this.#THUMBNAILS_NUM_CAPTURED_FRAMES
+    // const step = (total_frames - 1) / (num_captured_frames - 1)
+    // const frames = Array.from({length: num_captured_frames}, (_, i) => Math.round(i * step))
+    if (total_frames < this.#THUMBNAILS_NUM_CAPTURED_FRAMES) {
+      return Array.from({length: total_frames}, (_, i) => i)
+    }
+
+
     const start = 0
     const stop = total_frames
     const div = endpoint ? (R - 1) : R;
@@ -459,10 +469,11 @@ class FileProcessor {
         if (!status.success) {
           throw new errors.SubprocessError({} as any, 'generating thumbnails failed')
         }
-        const expected_thumbnail_count = this.#THUMBNAILS_NUM_CAPTURED_FRAMES
+        const expected_thumbnail_count = frames.length
 
+        // NOTE this check has given us much grief, so we're cheating a bit and just allowing less thumbnails sometimes
         if (thumbnail_timestamps.length !== expected_thumbnail_count) {
-          throw new errors.UnExpectedError(`thumbnail generation error. Expected ${expected_thumbnail_count} thumbnail timestamps from ${file_info.duration}s long media (fps: ${file_info.framerate}, framecount: ${file_info.framecount}), but ${thumbnail_timestamps.length} thumbnail timestamps were found [\n  ${thumbnail_timestamps.join('\n  ')}\n]`)
+          throw new errors.UnExpectedError(`thumbnail generation error. Expected ${expected_thumbnail_count} thumbnail timestamps from ${file_info.duration}s long media (fps: ${file_info.framerate}, framecount: ${file_info.framecount}, frames: [\n  ${frames.join('\n  ')}]), but ${thumbnail_timestamps.length} thumbnail timestamps were found [\n  ${thumbnail_timestamps.join('\n  ')}\n]`)
         }
       }
     }

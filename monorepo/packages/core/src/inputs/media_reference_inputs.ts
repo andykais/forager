@@ -1,5 +1,5 @@
 import z from 'zod'
-import { JsonInput, StringDateTime, PaginatedQuery } from '~/lib/inputs_base.ts'
+import { JsonInput, PaginatedQuery } from '~/lib/inputs_base.ts'
 import { Tag } from './tag_inputs.ts'
 
 
@@ -20,7 +20,7 @@ export const MediaInfo = z.object({
   description: z.string().optional(),
   metadata: JsonInput.optional(),
   source_url: z.string().optional(),
-  source_created_at: z.union([z.date(), StringDateTime]).optional() as any, // I dont know how to fix this currently. Zod is making the output type the same as the input, though thats not what we get
+  source_created_at: z.coerce.date().optional(),
   stars: z.number().optional(),
   view_count: z.number().optional(),
 })

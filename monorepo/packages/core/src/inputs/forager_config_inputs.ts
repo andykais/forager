@@ -23,5 +23,8 @@ export const ForagerConfig = z.object({
   tags: z.object({
     /** delete tags whenver they no longer reference any media */
     auto_cleanup: z.boolean().default(true),
-  }).default({ auto_cleanup: true })
+  }).default({ auto_cleanup: true }),
+
+  /** Path to a js file to extend forager functionality. Namely file system discovery actions */
+  script: z.string().optional(),
 })

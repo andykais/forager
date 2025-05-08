@@ -2,6 +2,7 @@ import { test } from 'forager-test'
 import * as fs from '@std/fs'
 import * as path from '@std/path'
 import { Forager, errors } from '~/mod.ts'
+import { PluginScript } from "~/lib/plugin_script.ts";
 
 
 /* A note about future test suite improvements:
@@ -60,7 +61,6 @@ import { Forager, errors } from '~/mod.ts'
  `
  ` ````````````````````````````````````````````````````````````````````````````````````````````````````````````````
  */
-
 test('media actions', async (ctx) => {
   const forager = new Forager(ctx.get_test_config())
   forager.init()
@@ -851,7 +851,7 @@ test('gif', async ctx => {
 })
 
 
-test.only('media series', async (ctx) => {
+test('media series', async (ctx) => {
   using forager = new Forager(ctx.get_test_config())
   forager.init()
 
