@@ -58,3 +58,7 @@ export class FileProcessingError extends ForagerError {
     super(message, {cause})
   }
 }
+
+export class InvalidFileError extends FileProcessingError {
+  override name = 'InvalidFileError'
+}

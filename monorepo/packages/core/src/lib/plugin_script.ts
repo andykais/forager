@@ -63,6 +63,9 @@ export abstract class FileSystemReceiver {
           ctx.logger.info(`${e.filepath} already exists in database, skipping`)
         }
         ctx.stats.existing += 1
+      } else if (e instanceof errors.InvalidFileError) {
+        ctx.logger.warn(`${filepath} was an invalid file, skipping`)
+        ctx.stats.errored ++
       } else {
         ctx.logger.error(`${file_identifier} import failed.`)
         throw e
@@ -75,6 +78,11 @@ export abstract class FileSystemReceiver {
     if (this.root) {
       const relative_path = path.relative(this.root, entry.path)
       if (relative_path === "" || relative_path.startsWith("..") || relative_path.startsWith(path.SEPARATOR)) {
+        return false
+      }
+    }
+    if (this.extensions) {
+      if ((!this.extensions.includes(path.extname(entry.path).substr(1)))) {
         return false
       }
     }

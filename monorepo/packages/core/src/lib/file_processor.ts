@@ -108,7 +108,11 @@ function throw_contextually() {
         const result = method.call(this, ...args);
         if (typeof result?.then === 'function') {
           return result.catch((e: Error) => {
-            throw new errors.FileProcessingError(this.error_context_message, e)
+            if (e instanceof errors.FileProcessingError) {
+              throw e
+            } else {
+              throw new errors.FileProcessingError(this.error_context_message, e)
+            }
           })
         }
         return result
@@ -216,6 +220,7 @@ class FileProcessor {
     const ffprobe_command = [
       'ffprobe',
       '-v', 'error',
+      '-pattern_type', 'none', // necessary for files that contain "%" in the name
       '-print_format', 'json',
       '-show_streams',
       '-count_packets',
@@ -235,7 +240,12 @@ class FileProcessor {
       const command = ffprobe_command.join(' ')
       const stdout = this.#decoder.decode(output.stdout)
       const stderr = this.#decoder.decode(output.stderr)
-      throw new Error(`ffprobe command failed\n${command}\nSTDOUT:\n${stdout}\nSTDERR:\n${stderr}`)
+      const error = new Error(`ffprobe command failed\n${command}\nSTDOUT:\n${stdout}\nSTDERR:\n${stderr}`)
+      if (stderr.includes('moov atom not found')) {
+        throw new errors.InvalidFileError(`ffprobe cannot read media file`, error)
+      } else {
+        throw error
+      }
     }
 
     const ffprobe_raw = JSON.parse(this.#decoder.decode(output.stdout))
@@ -311,6 +321,10 @@ class FileProcessor {
       } else {
         throw new Error(`Unable to parse framerate for ${this.#filepath} from ${JSON.stringify(ffprobe_streams)}`)
       }
+    }
+
+    if (media_type !== 'AUDIO' && width === 0 || height === 0) {
+      throw new errors.InvalidFileError(`Invalid file`, new Error(`width: ${width} and height: ${height} values cannot be zero`))
     }
 
     const filename = path.basename(this.#filepath)
@@ -391,7 +405,7 @@ class FileProcessor {
       if (file_info.duration === 0) {
         thumbnail_timestamps.push(0)
 
-        const command = ['ffmpeg', '-v', 'error', '-i', this.#filepath, '-an', '-vf', `scale=${max_width_or_height}:flags=${algorithm}`, '-frames:v', '1', '-ss', `${thumbnail_timestamps[0]}`, tmp_thumbnail_filepath]
+        const command = ['ffmpeg', '-v', 'error', '-pattern_type', 'none', '-i', this.#filepath, '-an', '-vf', `scale=${max_width_or_height}:flags=${algorithm}`, '-frames:v', '1', '-ss', `${thumbnail_timestamps[0]}`, tmp_thumbnail_filepath]
         const cmd = new Deno.Command('ffmpeg', {
           args: command.slice(1),
           stdout: 'piped',
@@ -453,6 +467,7 @@ class FileProcessor {
         })
         const proc = cmd.spawn()
 
+        let error_string = ''
         // TODO use the input timestamp in a progress meter
         for await (const line of this.#readlines(proc.stderr)) {
           if (line.includes('Parsed_showinfo_2') && line.includes(' n: ')) {
@@ -464,15 +479,26 @@ class FileProcessor {
             const pts_time = parseFloat(pts_time_str)
             thumbnail_timestamps.push(pts_time)
           }
+
+          if (line.includes('Nothing was written into output file')) {
+            error_string = line
+          }
         }
         const status = await proc.status
         if (!status.success) {
-          throw new errors.SubprocessError({} as any, 'generating thumbnails failed')
+
+          if (error_string) {
+            const error = new errors.SubprocessError({} as any, `Ffmpeg error: ${error_string}`)
+            throw new errors.InvalidFileError(`Failed to generate thumbnails`, error)
+          } else {
+            throw new errors.SubprocessError({} as any, 'generating thumbnails failed')
+          }
         }
         const expected_thumbnail_count = frames.length
 
         // NOTE this check has given us much grief, so we're cheating a bit and just allowing less thumbnails sometimes
-        if (thumbnail_timestamps.length !== expected_thumbnail_count) {
+        const acceptable_wiggle = 1
+        if (thumbnail_timestamps.length < expected_thumbnail_count - acceptable_wiggle) {
           throw new errors.UnExpectedError(`thumbnail generation error. Expected ${expected_thumbnail_count} thumbnail timestamps from ${file_info.duration}s long media (fps: ${file_info.framerate}, framecount: ${file_info.framecount}, frames: [\n  ${frames.join('\n  ')}]), but ${thumbnail_timestamps.length} thumbnail timestamps were found [\n  ${thumbnail_timestamps.join('\n  ')}\n]`)
         }
       }
