@@ -243,6 +243,9 @@ class FileProcessor {
       const error = new Error(`ffprobe command failed\n${command}\nSTDOUT:\n${stdout}\nSTDERR:\n${stderr}`)
       if (stderr.includes('moov atom not found')) {
         throw new errors.InvalidFileError(`ffprobe cannot read media file`, error)
+      } else if (stderr.includes('EBML header parsing failed')) {
+        // we found this once when a webm file was actually a default 404 html file
+        throw new errors.InvalidFileError(`ffprobe cannot read media file`, error)
       } else {
         throw error
       }
@@ -308,16 +311,23 @@ class FileProcessor {
     }
     if (animated) {
       const framecount_guess = Math.floor(framerate * duration)
-      framecount = Math.min(framecount, framecount_guess)
+      framecount = Math.min(...[framecount, framecount_guess].filter(n => !Number.isNaN(n)))
+
+      if (Number.isNaN(framecount) || !Number.isFinite(framecount)) {
+        throw new Error(`Unable to parse framecount for ${this.#filepath}`)
+      }
     }
 
     if (Number.isNaN(duration) || (animated && duration === 0)) {
       throw new Error(`Invalid duration ${duration} found for animated file`)
     }
-    if (Number.isNaN(framerate)) {
+
+    if (Number.isNaN(framerate) || !Number.isFinite(framerate)) {
       if (duration === 0) {
         // if duration is zero, we dont actually care what the framerate is
         framerate = 0
+      } else if (!Number.isNaN(framecount / duration)) {
+        framerate = framecount / duration
       } else {
         throw new Error(`Unable to parse framerate for ${this.#filepath} from ${JSON.stringify(ffprobe_streams)}`)
       }
@@ -390,7 +400,7 @@ class FileProcessor {
       })
       const output = await cmd.output()
       if (!output.success) {
-        throw new errors.SubprocessError(output, 'generating thumbnails failed')
+        throw new errors.SubprocessError(output, 'generating audio thumbnails failed')
       }
     } else {
       const { width, height } = file_info
@@ -413,7 +423,7 @@ class FileProcessor {
         })
         const output = await cmd.output()
         if (!output.success) {
-          throw new errors.SubprocessError(output, 'generating thumbnails failed')
+          throw new errors.SubprocessError(output, 'generating image thumbnails failed')
         }
       } else {
         /*
@@ -442,7 +452,15 @@ class FileProcessor {
           // '-an', // As an input option, blocks all audio streams of a file from being filtered or being  automatically  selected or mapped for any output.
           '-i', this.#filepath,
           '-vsync', 'passthrough',
+          // '-ignore_loop', '0',
           '-vf', [
+            ...(
+              file_info.codec === 'gif'
+                // gifs can get weird, and we can see errors like "Invalid pts (29) <= last (29)" where the frames are not advancing. We can enforce monotonically increasing timestamps with setpts. We _could_ apply this across the board, but for now, we're going to use it for gifs specifically
+                ? [`setpts=N/${file_info.framerate}/TB`]
+                : []
+            ),
+
             // `thumbnail=n=${frames_analysis_batch_size}`,
             `scale=${max_width_or_height}:flags=${algorithm}`,
             // `select=eq(n\\, n\\)`, // debugging filter, print all frames that ffmpeg finds for the input
@@ -470,7 +488,7 @@ class FileProcessor {
         let error_string = ''
         // TODO use the input timestamp in a progress meter
         for await (const line of this.#readlines(proc.stderr)) {
-          if (line.includes('Parsed_showinfo_2') && line.includes(' n: ')) {
+          if (line.includes('Parsed_showinfo') && line.includes(' n: ')) {
             const pts_time_str = line.match(/pts_time:(?<pts_time>\d+([.]\d*)?)/)?.groups?.pts_time
             if (pts_time_str === undefined) {
               throw new errors.UnExpectedError(`Could not parse pts_time out of line:\n${line}`)
@@ -491,7 +509,7 @@ class FileProcessor {
             const error = new errors.SubprocessError({} as any, `Ffmpeg error: ${error_string}`)
             throw new errors.InvalidFileError(`Failed to generate thumbnails`, error)
           } else {
-            throw new errors.SubprocessError({} as any, 'generating thumbnails failed')
+            throw new errors.SubprocessError({} as any, 'generating video thumbnails failed')
           }
         }
         const expected_thumbnail_count = frames.length
