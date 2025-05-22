@@ -13,6 +13,8 @@
     filepath: string | undefined
     sort: inputs.PaginatedSearch['sort_by']
     unread_only: boolean
+    search_mode: 'media' | 'group_by' | 'filesystem'
+    group_by: string | undefined
     stars: number | undefined
     order: 'desc' | 'asc'
     media_type: string
@@ -23,11 +25,14 @@
     sort: 'source_created_at' as const,
     order: 'desc' as const,
     unread_only: false,
+    search_mode: 'media',
+    group_by: undefined,
     stars: undefined,
     media_type: 'all',
   })
 
   async function submit() {
+    console.log('submit...')
     const tags = params.search_string.split(' ').filter(t => t.length > 0)
     const sort_by = params.sort
     const order = params.order
@@ -50,17 +55,42 @@
         throw new Error(`Unimplemented media type ${params.media_type}`)
       }
     }
-    await controller.runes.search.paginate({query: query, sort_by, order})
+
+    if (params.search_mode === 'media') {
+      await controller.runes.search.paginate({
+        type: params.search_mode,
+        params: {
+          query: query,
+          sort_by,
+          order
+        }
+      })
+    } else if (params.search_mode === 'group_by') {
+      await controller.runes.search.paginate({
+        type: params.search_mode,
+        params: {
+          group_by: {
+            tag_group: params.group_by,
+          },
+          query: query,
+          sort_by: 'count', // TODO we want to support created_at as well. Sorting is a bit janky with group by for now
+          order
+        }
+      })
+    } else {
+      throw new Error('unimplemented')
+    }
   }
 
   type AdvancedFiltersState = 'hidden' | 'shown'
-  let advanced_filters_state = $state<AdvancedFiltersState>('hidden')
+  let advanced_filters_state = $state<AdvancedFiltersState>('shown') // TODO this is normally "hidden". "shown" now for debug reasons
   const icon_color = theme.colors.gray[800]
   const icon_size = "22px"
 </script>
 
 <form class="grid grid-rows-1 w-[80%]"
   onsubmit={async e => {
+    console.log('form onsubmit...')
     e.preventDefault()
     await submit()
   }}>
@@ -82,77 +112,113 @@
       </button>
     </div>
 
-    <div class="flex justify-center items-center gap-8 text-slate-950 "
-      style="display: {advanced_filters_state === 'hidden' ? 'none' : 'flex'}">
-      <div class="flex gap-2">
-        <label class="" for="filepath">Filepath:</label>
-        <input
-          class="rounded-lg py-1 px-3 text-slate-100 bg-gray-800 text-sm"
-          name="filepath"
-          type="text"
-          placeholder="*.jpg..."
-          bind:value={params.filepath}>
+    <div class="grid grid-rows-2 justify-center items-center text-slate-950 "
+      style="display: {advanced_filters_state === 'hidden' ? 'none' : 'initial'}">
+      <div class="grid grid-cols-4 gap-8">
+        <div class="flex gap-1">
+          <select
+            id="sort_by"
+            name="sort_by"
+            bind:value={params.sort}
+            onchange={submit}>
+            <option value="source_created_at">Created At</option>
+            <option value="created_at">Added On</option>
+            <option value="updated_at">Updated At</option>
+            <option value="view_count">View Count</option>
+          </select>
+          <button
+            class="hover:cursor-pointer"
+            title="order by ascending"
+            type="button"
+            onclick={e => {
+              if (params.order === 'asc') params.order = 'desc'
+              else params.order = 'asc'
+              submit()
+            }}>
+            {#if params.order === 'asc'}
+              <Icon class="fill-gray-800 hover:fill-gray-600" data={ArrowUp} size={icon_size} fill={icon_color} stroke={"none"} />
+            {:else}
+              <Icon class="fill-gray-800 hover:fill-gray-600" data={ArrowDown} size={icon_size} fill={icon_color} stroke={"none"} />
+            {/if}
+          </button>
+        </div>
+
+        <div class="flex gap-2">
+          <label class="text-nowrap" for="unread">Type:</label>
+          <select
+            bind:value={params.media_type}
+            onchange={e => {
+              submit()
+            }}
+          >
+            <option value="animated">Animated</option>
+            <option value="image">Image</option>
+            <option value="video">Video</option>
+            <option value="audio">Audio</option>
+          </select>
+        </div>
+
+        <div class="flex gap-2">
+          <label class="" for="unread">Unread:</label>
+          <input
+            class="rounded-lg"
+            name="unread"
+            type="checkbox"
+            bind:checked={params.unread_only}
+            onchange={submit}>
+        </div>
+
+        <div class="flex gap-2">
+          <label class="" for="filepath">Filepath:</label>
+          <input
+            class="rounded-lg py-1 px-3 text-slate-100 bg-gray-800 text-sm"
+            name="filepath"
+            type="text"
+            placeholder="*.jpg..."
+            bind:value={params.filepath}>
+        </div>
+
       </div>
 
-      <div class="flex gap-1">
-        <select
-          id="sort_by"
-          name="sort_by"
-          bind:value={params.sort}
-          onchange={submit}>
-          <option value="source_created_at">Created At</option>
-          <option value="created_at">Added On</option>
-          <option value="updated_at">Updated At</option>
-          <option value="view_count">View Count</option>
-        </select>
-        <button
-          class="hover:cursor-pointer"
-          title="order by ascending"
-          type="button"
-          onclick={e => {
-            if (params.order === 'asc') params.order = 'desc'
-            else params.order = 'asc'
-            submit()
-          }}>
-          {#if params.order === 'asc'}
-            <Icon class="fill-gray-800 hover:fill-gray-600" data={ArrowUp} size={icon_size} fill={icon_color} stroke={"none"} />
-          {:else}
-            <Icon class="fill-gray-800 hover:fill-gray-600" data={ArrowDown} size={icon_size} fill={icon_color} stroke={"none"} />
-          {/if}
-        </button>
-      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label for="search_mode">Search Mode:</label>
+          <label for="search_mode_media">Media</label>
+          <input
+            class="rounded-lg"
+            name="search_mode_media"
+            type="radio"
+            value="media"
+            bind:group={params.search_mode}
+          >
+          <label for="search_mode_group_by">Grouped</label>
+          <input
+            class="rounded-lg"
+            name="search_mode_group_by"
+            type="radio"
+            value="group_by"
+            bind:group={params.search_mode}
+          >
+          <label for="search_mode_filesystem">Filesystem</label>
+          <input
+            class="rounded-lg"
+            name="search_mode_media"
+            type="radio"
+            value="filesystem"
+            bind:group={params.search_mode}
+          >
+        </div>
 
-      <div class="flex gap-2">
-        <label class="text-nowrap" for="unread">Media Type:</label>
-        <select
-          bind:value={params.media_type}
-          onchange={e => {
-            submit()
-          }}
-        >
-          <option value="animated">Animated</option>
-          <option value="image">Image</option>
-          <option value="video">Video</option>
-          <option value="audio">Audio</option>
-        </select>
-        <input
-          class="rounded-lg"
-          name="unread"
-          type="checkbox"
-          placeholder="dir/*.jpg"
-          bind:checked={params.unread_only}
-          onchange={submit}>
-      </div>
-
-      <div class="flex gap-2">
-        <label class="" for="unread">Unread:</label>
-        <input
-          class="rounded-lg"
-          name="unread"
-          type="checkbox"
-          placeholder="dir/*.jpg"
-          bind:checked={params.unread_only}
-          onchange={submit}>
+        {#if params.search_mode == "group_by"}
+          <div class="flex gap-2">
+            <label class="" for="group_by">Group By:</label>
+            <input
+              class="rounded-lg py-1 px-3 text-slate-100 bg-gray-800 text-sm"
+              name="group_by"
+              type="text"
+              bind:value={params.group_by}>
+          </div>
+        {/if}
       </div>
     </div>
   </div>

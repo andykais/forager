@@ -22,5 +22,5 @@
 
 <span class="w-full flex rounded-sm px-1" style={color_style} title="{props.tag.group}:{props.tag.name}">
   <span class="flex-grow">{tag_identifier}</span>
-  <span>{props.tag.media_reference_count}</span>
+  <span class="text-gray-600">{props.tag.media_reference_count}</span>
 </span>

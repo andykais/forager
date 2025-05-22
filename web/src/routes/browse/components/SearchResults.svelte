@@ -4,6 +4,7 @@
   import * as theme from '$lib/theme.ts'
   import { focusable } from '$lib/actions/mod.ts'
   import Icon from '$lib/components/Icon.svelte'
+  import Tag from '$lib/components/Tag.svelte'
   import * as icons from '$lib/icons/mod.ts'
 
   interface Props {
@@ -55,9 +56,9 @@
           <div
             class="grid justify-items-center items-center overflow-hidden
                    border-2 shadow shadow-gray-700 rounded-md"
-            class:hover:border-slate-400={result.media_reference.id !== media_selections.current_selection.media_response?.media_reference.id}
-            class:border-slate-900={result.media_reference.id !== media_selections.current_selection.media_response?.media_reference.id}
-            class:border-green-300={result.media_reference.id === media_selections.current_selection.media_response?.media_reference.id}
+            class:hover:border-slate-400={result_index !== media_selections.current_selection.result_index}
+            class:border-slate-900={      result_index !== media_selections.current_selection.result_index}
+            class:border-green-300={      result_index === media_selections.current_selection.result_index}
             style="width:{runes.settings.ui.media_list.thumbnail_size}px; height: {runes.settings.ui.media_list.thumbnail_size}px">
             <img
               class="w-full h-full object-cover"
@@ -69,7 +70,12 @@
           <div class="flex text-xs text-gray-400 justify-between  p-0.5">
             {#if result.media_type === 'media_file'}
               {#if result.media_file.media_type === 'VIDEO'}
-                <Icon data={icons.PlayCircle} fill={icon_color} stroke="none" size={icon_size} />
+                <span class="flex">
+                  <Icon data={icons.PlayCircle} fill={icon_color} stroke="none" size={icon_size} />
+                  {#if result.media_file.audio}
+                    <Icon data={icons.Music} fill={icon_color} stroke="none" size={icon_size} />
+                  {/if}
+                </span>
               {:else if result.media_file.media_type === 'IMAGE' && result.media_file.content_type === 'image/gif'}
                 <Icon data={icons.Gif} fill={icon_color} stroke="none" size={icon_size} />
               {:else if result.media_file.media_type === 'IMAGE'}
@@ -82,6 +88,9 @@
           {:else if result.media_type === 'media_series'}
               <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
               {result.media_reference.media_series_length} items
+          {:else if result.media_type === 'grouped'}
+              <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
+              {result.group_metadata.value} {result.group_metadata.count} items
           {:else}
             UNEXPECTED MEDIA TYPE {result.media_type}
           {/if}

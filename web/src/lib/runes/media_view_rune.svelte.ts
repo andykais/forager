@@ -2,12 +2,17 @@ import {Rune} from '$lib/runes/rune.ts'
 import type { BaseController } from '$lib/base_controller.ts'
 import type { MediaResponse, inputs } from '@forager/core'
 
+
 interface State {
   media: MediaResponse
   full_thumbnails: MediaResponse['thumbnails'] | undefined
 }
+
+
+interface SearchParams {}
+
 export class MediaViewRune extends Rune {
-  media_type!: MediaResponse['media_type']
+  media_type!: MediaResponse['media_type'] | 'grouped'
   state = $state<State>()
 
   protected constructor(client: BaseController['client'], media_response: MediaResponse) {
@@ -21,10 +26,10 @@ export class MediaViewRune extends Rune {
   get media() {
     return this.state!.media
   }
+
   set media(media: MediaResponse) {
     return this.state!.media = media
   }
-
 
   get tags() {
     return this.media.tags
@@ -54,11 +59,13 @@ export class MediaViewRune extends Rune {
     throw new Error('requires override')
   }
 
-  static create(client: BaseController['client'], media_response: MediaResponse) {
+  static create(client: BaseController['client'], media_response: MediaResponse, search_params: SearchParams) {
     if (media_response.media_type === 'media_file') {
       return new MediaFileRune(client, media_response)
     } else if (media_response.media_type === 'media_series') {
       return new MediaSeriesRune(client, media_response)
+    } else if (media_response.media_type === 'grouped') {
+      return new MediaGroupRune(client, media_response, search_params)
     } else {
       throw new Error(`Unexpected media_response ${JSON.stringify(media_response)}`)
     }
@@ -95,6 +102,51 @@ export class MediaSeriesRune extends MediaViewRune {
     this.state!.full_thumbnails = series.thumbnails
     const series_items = await forager.media.search({query: {series_id: media_response.media_reference.id }})
     // TODO attach series items
+  }
+}
+
+
+interface GroupState {
+  media_list: MediaResponse[]
+}
+export class MediaGroupRune extends MediaViewRune {
+  media_type  = 'grouped' as const
+  grouped_state = $state<GroupState>({
+    media_list: []
+  })
+
+  protected constructor(client: BaseController['client'], media_response: MediaResponse, search_params: SearchParams) {
+    // debugger
+    super(client, media_response)
+
+    const {group_by, cursor, ...merged_search_params} = search_params
+
+    if (group_by['tag_group']) {
+      merged_search_params.query = {...merged_search_params.query}
+      merged_search_params.query.tags = merged_search_params.query.tags
+          ? [...merged_search_params.query.tags]
+          : []
+      const tag = `${group_by.tag_group}:${media_response.group.value}`
+      merged_search_params.query.tags.push(tag)
+      if (merged_search_params.sort_by === 'count') {
+        merged_search_params.sort_by = 'created_at'
+      }
+    } else {
+      throw new Error(`unexpected search group`)
+    }
+
+    this.client.forager.media.search(merged_search_params)
+      .then((result: {}) => {
+        this.grouped_state.media_list = result.results
+      })
+  }
+
+  get group_metadata() {
+    return this.media.group
+  }
+
+  get preview_thumbnail() {
+    return this.grouped_state.media_list.at(0)?.thumbnails.results[0] ?? {filepath: null}
   }
 }
 

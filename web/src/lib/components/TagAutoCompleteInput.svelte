@@ -16,6 +16,7 @@
 
   class TagSuggestions {
     state = $state<TagModel[]>([])
+    #last_query_hash: string | undefined
 
     protected text_snippet_under_cursor() {
       const space_after_cursor_index = search_string.indexOf(' ', input_state.text_position)
@@ -38,6 +39,11 @@
       if (text_snippet_position.start !== -1) {
         tag_match = tag_match.substring(text_snippet_position.start + 1)
       }
+      const current_query_hash = JSON.stringify(tag_match)
+      if (this.#last_query_hash === current_query_hash) {
+        return
+      }
+      this.#last_query_hash = current_query_hash
 
       // TODO only do this when the query has changed. Currently any time we focus in/out of the browser tab, it will re-search
       const tags = await controller.client.forager.tag.search({query:{tag_match}})
@@ -94,6 +100,7 @@
   let suggestions_element: HTMLUListElement | null = $state(null)
 
   let input_state = $state({
+    lost_focus: false,
     show_suggestions: false,
     // used when we want to grab the focus on the input element and _dont_ want to immediately show suggestions again
     just_populated_suggestions: false,
@@ -170,11 +177,13 @@
     list="taglist"
     onselectionchange={async e => {
       input_state.text_position = e.target.selectionStart
+      input_state.lost_focus = false
       tag_suggestions.refresh()
       // await get_tag_suggestions_debounced(e.target.value, e.target.selectionStart)
     }}
     oninput={async e => {
       input_state.show_suggestions = true
+      input_state.lost_focus = false
       search_string = e.target.value
       tag_suggestions.refresh()
     }}
@@ -186,6 +195,9 @@
         input_state.just_populated_suggestions = false
         return
       }
+      if (input_state.lost_focus) {
+        return
+      }
       input_state.show_suggestions = true
       tag_suggestions.refresh()
     }}
@@ -195,6 +207,7 @@
         input_state.show_suggestions = false
       }
       controller.runes.focus.pop('TagAutoCompleteInput', kind)
+      input_state.lost_focus = true
     }}
     value={search_string}
   >

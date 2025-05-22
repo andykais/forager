@@ -3,8 +3,26 @@ import type { Forager, MediaResponse, outputs } from '@forager/core'
 import { MediaViewRune } from '.'
 
 
-type Params = Parameters<Forager['media']['search']>[0]
-type Result = ReturnType<Forager['media']['search']>
+type Result =
+  | ReturnType<Forager['media']['search']>
+  | ReturnType<Forager['media']['group']>
+
+interface SearchInput {
+  type: 'media'
+  params: Parameters<Forager['media']['search']>[0]
+}
+interface GroupByInput {
+  type: 'group_by'
+  params: Parameters<Forager['media']['group']>[0]
+}
+interface FilesystemInput {
+  type: 'filesystem'
+  params: {}
+}
+type Input =
+  | SearchInput
+  | GroupByInput
+  | FilesystemInput
 
 interface MediaListState {
   loading: boolean
@@ -13,10 +31,12 @@ interface MediaListState {
 }
 
 export class MediaListRune extends Rune {
-  #saved_params: Params | undefined
+  #saved_params_type: 'media' | 'group_by' = 'media'
+  #saved_params: {} | undefined
   #fetch_count = 0
   #has_more = true
   #cursor: Result['cursor'] = undefined
+  #loading = true
   #state = $state<MediaListState>({
     loading: true, // empty state acts like it is loading by default
     content: null,
@@ -43,23 +63,40 @@ export class MediaListRune extends Rune {
     }
   }
 
-  async paginate(params?: Params) {
-    this.#saved_params = {...this.#saved_params, ...params}
-    if (this.#fetch_count > 0 && this.#state.loading) return
+  async paginate(params?: Input) {
+    console.log('paginate:', {params}, 'loading', $state.snapshot(this.#state.loading), 'fetch_count', this.#fetch_count)
+    // params = {type: 'group_by', params: {group_by: {tag_group: 'artist'}, limit: 10}}
+    this.#saved_params = {...this.#saved_params, ...params?.params}
+    if (this.#fetch_count > 0 && this.#loading) return
 
     if (!this.#has_more) return
+    console.log('paginate actually fetches')
 
     this.#fetch_count ++
     this.#state.loading = true
+    this.#loading = true
 
-    let fetch_params: Params | undefined = this.#saved_params
+    let fetch_params: Input['params'] | undefined = this.#saved_params
     if (this.#cursor !== undefined) {
       fetch_params = {...fetch_params, cursor: this.#cursor} as any
     }
 
-    const content: Result = await this.client.forager.media.search(fetch_params)
+    const params_type = params?.type ?? this.#saved_params_type
+    this.#saved_params_type = params_type
+    let content: Result
+    if (params_type === 'media') {
+      content = await this.client.forager.media.search(fetch_params)
+    }
+    else if (params_type === 'group_by') {
+      fetch_params.limit = fetch_params.limit ?? 10
+      content = await this.client.forager.media.group(fetch_params)
+    } else {
+      throw new Error('unimplemented')
+    }
+
+    console.log('result count:', content.results.length)
     const results = content.results.map(result => {
-      return MediaViewRune.create(this.client, result)
+      return MediaViewRune.create(this.client, result, fetch_params)
     })
 
     this.#cursor = content.cursor
@@ -71,5 +108,6 @@ export class MediaListRune extends Rune {
       results: this.#state.results.concat(results),
       loading: false,
     }
+    this.#loading = false
   }
 }

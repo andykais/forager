@@ -28,12 +28,13 @@
   })
 
   onMount(() => {
-      more()
+    /* not necessary since our observer calls this right away too
     if (first_mount) {
       // always trigger one when the element is mounted (an empty page isnt reliable for the intersection observer)
       more()
     }
     first_mount = false
+    */
   })
 </script>
 
