@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { inputs } from '@forager/core'
   import type { BrowseController } from "../controller.ts";
+  import SelectInput from '$lib/components/SelectInput.svelte'
   import * as theme from '$lib/theme.ts'
   import Icon from '$lib/components/Icon.svelte'
   import { Filter, ChevronUp, ChevronDown, ArrowDown, ArrowUp } from '$lib/icons/mod.ts'
@@ -32,7 +33,6 @@
   })
 
   async function submit() {
-    console.log('submit...')
     const tags = params.search_string.split(' ').filter(t => t.length > 0)
     const sort_by = params.sort
     const order = params.order
@@ -90,7 +90,6 @@
 
 <form class="grid grid-rows-1 w-[80%]"
   onsubmit={async e => {
-    console.log('form onsubmit...')
     e.preventDefault()
     await submit()
   }}>
@@ -143,20 +142,17 @@
           </button>
         </div>
 
-        <div class="flex gap-2">
-          <label class="text-nowrap" for="unread">Type:</label>
-          <select
-            bind:value={params.media_type}
-            onchange={e => {
-              submit()
-            }}
-          >
-            <option value="animated">Animated</option>
-            <option value="image">Image</option>
-            <option value="video">Video</option>
-            <option value="audio">Audio</option>
-          </select>
-        </div>
+        <SelectInput
+          options={[
+            {label: 'All', value: 'all'},
+            {label: 'Animated', value: 'animated'},
+            {label: 'Image',    value: 'image'},
+            {label: 'Video',    value: 'video'},
+            {label: 'Audio',    value: 'audio'},
+          ]}
+          bind:value={params.media_type}
+          onchange={submit}
+        />
 
         <div class="flex gap-2">
           <label class="" for="unread">Unread:</label>
@@ -181,33 +177,15 @@
       </div>
 
       <div class="grid grid-cols-2 gap-2">
-        <div>
-          <label for="search_mode">Search Mode:</label>
-          <label for="search_mode_media">Media</label>
-          <input
-            class="rounded-lg"
-            name="search_mode_media"
-            type="radio"
-            value="media"
-            bind:group={params.search_mode}
-          >
-          <label for="search_mode_group_by">Grouped</label>
-          <input
-            class="rounded-lg"
-            name="search_mode_group_by"
-            type="radio"
-            value="group_by"
-            bind:group={params.search_mode}
-          >
-          <label for="search_mode_filesystem">Filesystem</label>
-          <input
-            class="rounded-lg"
-            name="search_mode_media"
-            type="radio"
-            value="filesystem"
-            bind:group={params.search_mode}
-          >
-        </div>
+        <SelectInput
+          label="Search Mode"
+          options={[
+            {label: 'Media', value: 'media'},
+            {label: 'Grouped', value: 'group_by'},
+            {label: 'Filesystem', value: 'filesystem'},
+          ]}
+          bind:value={params.search_mode}
+        />
 
         {#if params.search_mode == "group_by"}
           <div class="flex gap-2">

@@ -36,7 +36,6 @@ export class MediaListRune extends Rune {
   #fetch_count = 0
   #has_more = true
   #cursor: Result['cursor'] = undefined
-  #loading = true
   #state = $state<MediaListState>({
     loading: true, // empty state acts like it is loading by default
     content: null,
@@ -64,17 +63,14 @@ export class MediaListRune extends Rune {
   }
 
   async paginate(params?: Input) {
-    console.log('paginate:', {params}, 'loading', $state.snapshot(this.#state.loading), 'fetch_count', this.#fetch_count)
     // params = {type: 'group_by', params: {group_by: {tag_group: 'artist'}, limit: 10}}
     this.#saved_params = {...this.#saved_params, ...params?.params}
-    if (this.#fetch_count > 0 && this.#loading) return
+    if (this.#fetch_count > 0 && this.#state.loading) return
 
     if (!this.#has_more) return
-    console.log('paginate actually fetches')
 
     this.#fetch_count ++
     this.#state.loading = true
-    this.#loading = true
 
     let fetch_params: Input['params'] | undefined = this.#saved_params
     if (this.#cursor !== undefined) {
@@ -94,7 +90,6 @@ export class MediaListRune extends Rune {
       throw new Error('unimplemented')
     }
 
-    console.log('result count:', content.results.length)
     const results = content.results.map(result => {
       return MediaViewRune.create(this.client, result, fetch_params)
     })
@@ -108,6 +103,5 @@ export class MediaListRune extends Rune {
       results: this.#state.results.concat(results),
       loading: false,
     }
-    this.#loading = false
   }
 }

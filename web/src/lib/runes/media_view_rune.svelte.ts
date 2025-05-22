@@ -131,6 +131,7 @@ export class MediaGroupRune extends MediaViewRune {
       if (merged_search_params.sort_by === 'count') {
         merged_search_params.sort_by = 'created_at'
       }
+      merged_search_params.limit = 1 // TODO until we implement a filmstrip render, we only need one image
     } else {
       throw new Error(`unexpected search group`)
     }
