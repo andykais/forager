@@ -2,7 +2,7 @@ import * as path from '@std/path'
 import * as fs from '@std/fs'
 import { Forager } from '~/mod.ts'
 import * as errors from '~/lib/errors.ts'
-import { inputs, outputs } from '~/inputs/mod.ts'
+import { inputs } from '~/inputs/mod.ts'
 import { Logger } from "~/lib/logger.ts";
 import { CODECS } from '~/lib/codecs.ts'
 

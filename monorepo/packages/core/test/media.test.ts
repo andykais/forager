@@ -2,7 +2,6 @@ import { test } from 'forager-test'
 import * as fs from '@std/fs'
 import * as path from '@std/path'
 import { Forager, errors } from '~/mod.ts'
-import { PluginScript } from "~/lib/plugin_script.ts";
 
 
 /* A note about future test suite improvements:
@@ -463,7 +462,7 @@ test('search group by', async ctx => {
   using forager = new Forager(ctx.get_test_config())
   forager.init()
 
-  const koch_tif = await forager.media.create(
+  await forager.media.create(
     ctx.resources.media_files['koch.tif'],
     { title: 'Generated Art', stars: 2 },
     ['artist:andrew', 'generated', 'colors:black', 'wallpaper']
@@ -491,7 +490,7 @@ test('search group by', async ctx => {
   )
 
   // also add media without any tags that shouldnt show up in the group calls
-  const blink_gif = await forager.media.create(
+  await forager.media.create(
     ctx.resources.media_files['blink.gif'],
     {},
     ['meme']
