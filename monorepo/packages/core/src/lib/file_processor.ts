@@ -155,6 +155,7 @@ class FileProcessor {
       for (const command of this.#error_context.commands_ran) {
         const command_bashified = command.map(arg => /\s/.test(arg) ? `'${arg}'` : arg).join(' ')
         message_lines.push(command_bashified)
+        message_lines.push('')
       }
       message_lines.push('')
     }
@@ -415,7 +416,8 @@ class FileProcessor {
       if (file_info.duration === 0) {
         thumbnail_timestamps.push(0)
 
-        const command = ['ffmpeg', '-v', 'error', '-pattern_type', 'none', '-i', this.#filepath, '-an', '-vf', `scale=${max_width_or_height}:flags=${algorithm}`, '-frames:v', '1', '-ss', `${thumbnail_timestamps[0]}`, tmp_thumbnail_filepath]
+        const command = ['ffmpeg', '-v', 'error', '-f', 'image2', '-pattern_type', 'none', '-i', this.#filepath, '-an', '-vf', `scale=${max_width_or_height}:flags=${algorithm}`, '-frames:v', '1', '-ss', `${thumbnail_timestamps[0]}`, tmp_thumbnail_filepath]
+        this.#error_context.commands_ran.push(command)
         const cmd = new Deno.Command('ffmpeg', {
           args: command.slice(1),
           stdout: 'piped',

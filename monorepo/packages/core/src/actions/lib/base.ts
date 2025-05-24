@@ -3,7 +3,6 @@ import type { Context } from '~/context.ts'
 import * as fs from '@std/fs'
 import * as path from '@std/path'
 import * as fmt_bytes from '@std/fmt/bytes'
-import * as fmt_duration from '@std/fmt/duration'
 import { type inputs, type outputs, parsers } from '~/inputs/mod.ts'
 import type * as result_types from '~/models/lib/result_types.ts'
 import { FileProcessor } from '~/lib/file_processor.ts'
@@ -46,6 +45,8 @@ export interface MediaGroupResponse {
     value: string
     /** The number of media references associated with the grouped value */
     count: number
+    /** a list of media optionally retrieved with grouped_media_limit under this group */
+    media?: MediaResponse[]
   }
 }
 
@@ -133,7 +134,7 @@ class Actions {
       thumbnail_limit: 1,
     })
     const creation_duration = performance.now() - start_time
-    this.ctx.logger.info(`Created ${parsed.filepath} (type: ${output_result.media_file.media_type} size: ${fmt_bytes.format(output_result.media_file.file_size_bytes)}) in ${fmt_duration.format(creation_duration, {ignoreZero: true})}`)
+    this.ctx.logger.info(`Created ${parsed.filepath} (type: ${output_result.media_file.media_type} size: ${fmt_bytes.format(output_result.media_file.file_size_bytes)}) in ${this.format_duration(creation_duration)}`)
     return output_result
   }
 
@@ -293,6 +294,34 @@ class Actions {
 
     if (this.ctx.config.tags.auto_cleanup) {
       this.models.Tag.delete_unreferenced()
+    }
+  }
+
+  protected format_duration(milliseconds: number) {
+    if (milliseconds < 1000) {
+      return `${this.format_decimals(milliseconds)}ms`
+    }
+    const seconds = milliseconds / 1000
+    if (seconds < 60) {
+      return `${this.format_decimals(seconds)}s`
+    }
+    const minutes = seconds / 60
+    if (minutes < 60) {
+      return `${this.format_decimals(minutes)}s`
+    }
+    const hours = minutes / 60
+    if (hours < 24) {
+      return `${this.format_decimals(hours)}s`
+    }
+    const days = hours / 60
+    return `${this.format_decimals(days)}s`
+  }
+
+  protected format_decimals(n: number) {
+    if (n % 1 === 0) {
+      return n.toString()
+    } else {
+      return n.toFixed(2)
     }
   }
 }

@@ -100,11 +100,21 @@ class MediaActions extends Actions {
       filepath: query.filepath,
     })
 
+    const results = this.#map_media_records_to_media_responses(records, parsed.thumbnail_limit, keypoint_tag_id)
+
+    return {
+      total: records.total,
+      cursor: records.cursor,
+      results: results,
+    }
+  }
+
+  #map_media_records_to_media_responses(records: ReturnType<Actions['models']['MediaReference']['select_many']>, thumbnail_limit: number, keypoint_tag_id: number | undefined): MediaResponse[] {
     const results: (MediaFileResponse | MediaSeriesResponse)[] =  records.results.map(row => {
       const tags = this.models.Tag.select_all({media_reference_id: row.id})
 
       if (row.media_series_reference) {
-        const thumbnails = this.models.MediaThumbnail.select_many({series_id: row.id, limit: parsed.thumbnail_limit})
+        const thumbnails = this.models.MediaThumbnail.select_many({series_id: row.id, limit: thumbnail_limit})
         return {
           media_type: 'media_series',
           media_reference: row,
@@ -117,11 +127,11 @@ class MediaActions extends Actions {
         let thumbnail_timestamp_threshold: number | undefined
         if (keypoint_tag_id) {
           thumbnail_timestamp_threshold = this.models.MediaKeypoint.select_one({tag_id: keypoint_tag_id, media_reference_id: row.id}, {or_raise: true}).media_timestamp
-        } else if (media_file.animated && parsed.thumbnail_limit === 1) {
+        } else if (media_file.animated && thumbnail_limit === 1) {
           thumbnail_timestamp_threshold = media_file.duration * (this.ctx.config.thumbnails.preview_duration_threshold / 100)
         }
 
-        const thumbnails = this.models.MediaThumbnail.select_many({media_file_id: media_file.id, limit: parsed.thumbnail_limit, timestamp_threshold: thumbnail_timestamp_threshold})
+        const thumbnails = this.models.MediaThumbnail.select_many({media_file_id: media_file.id, limit: thumbnail_limit, timestamp_threshold: thumbnail_timestamp_threshold})
         return {
           media_type: 'media_file',
           media_reference: row,
@@ -131,15 +141,9 @@ class MediaActions extends Actions {
         }
       }
     })
-
-    return {
-      total: records.total,
-      cursor: records.cursor,
-      results: results,
-    }
+    return results
   }
 
-  // TODO different params for group by ({group_by: {tag_group: string}, sort_by: 'count'})
   group = (params: inputs.PaginatedSearchGroupBy): result_types.PaginatedResult<MediaGroupResponse> => {
     const parsed = parsers.PaginatedSearchGroupBy.parse(params ?? {})
     const { query } = parsed
@@ -187,12 +191,41 @@ class MediaActions extends Actions {
     })
 
     const results = records.results.map(record => {
+      const merged_tag_ids: number[] = []
+      const grouped_tag_id = this.models.Tag.select_one({name: record.group_value, group: parsed.group_by.tag_group}, {or_raise: true}).id
+      if (tag_ids) {
+        merged_tag_ids.push(...tag_ids)
+      }
+      merged_tag_ids.push(grouped_tag_id)
+
+      let media: MediaResponse[] | undefined
+      if (parsed.grouped_media.limit) {
+        const records = this.models.MediaReference.select_many({
+          id: query.media_reference_id,
+          series: query.series,
+          series_id,
+          tag_ids: merged_tag_ids,
+          keypoint_tag_id,
+          cursor: undefined,
+          limit: parsed.grouped_media.limit,
+          sort_by: parsed.grouped_media.sort_by,
+          animated: parsed.query.animated,
+          order: parsed.order,
+          stars: query.stars,
+          stars_equality: query.stars_equality,
+          unread: query.unread,
+          filesystem: query.filesystem,
+          filepath: query.filepath,
+        })
+        media = this.#map_media_records_to_media_responses(records, parsed.thumbnail_limit, keypoint_tag_id)
+      }
 
       return {
         media_type: 'grouped' as const,
         group: {
           value: record.group_value,
           count: record.count_value,
+          media,
         },
       }
     })

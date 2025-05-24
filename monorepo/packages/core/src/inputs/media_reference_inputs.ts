@@ -59,7 +59,11 @@ export const PaginatedSearchGroupBy = PaginatedSearch.extend({
   group_by: z.object({
     tag_group: z.string(),
   }),
-  sort_by: z.enum(['count']).default('count'),
+  grouped_media: z.object({
+    limit: z.number().optional(),
+    sort_by: z.enum(['created_at', 'updated_at', 'source_created_at', 'view_count']).default('source_created_at'),
+  }).default({}),
+  sort_by: z.enum(['count']).default('count'), // TODO support created_at (count is going to be unreliable for pagination)
 })
 
 

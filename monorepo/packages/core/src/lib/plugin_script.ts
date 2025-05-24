@@ -7,6 +7,7 @@ import { Logger } from "~/lib/logger.ts";
 import { CODECS } from '~/lib/codecs.ts'
 
 export interface FileSystemReceiverContext {
+  default_metadata: inputs.FileSystemDiscover['set']
   stats: {
     created: number
     updated: number
@@ -27,13 +28,21 @@ export abstract class FileSystemReceiver {
   public abstract foreach(ctx: FileSystemReceiverContext): Promise<void>
 
   protected async add(ctx: FileSystemReceiverContext, filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.TagList) {
+    if (ctx.default_metadata?.media_info) {
+      media_info = {...ctx.default_metadata.media_info, ...media_info}
+    }
+    if (ctx.default_metadata?.tags) {
+      tags = ctx.default_metadata.tags.concat(tags ?? [] as inputs.TagList)
+    }
     try {
       const existing_media = ctx.forager.media.get({filepath})
       if (media_info || tags) {
-        // this.ctx.logger.info(`${e.filepath} already exists in database, updating`)
         // const media_file = this.models.MediaFile.select_one({filepath: e.filepath}, {or_raise: true})
         ctx.forager.media.update(existing_media.media_reference.id, media_info, tags)
+        ctx.logger.info(`Updated existing file ${ctx.entry.path}`)
         ctx.stats.updated += 1
+      } else {
+        ctx.stats.existing ++
       }
       return
     } catch(e) {
@@ -68,6 +77,7 @@ export abstract class FileSystemReceiver {
         ctx.stats.errored ++
       } else {
         ctx.logger.error(`${file_identifier} import failed.`)
+        // ctx.stats.errored ++
         throw e
       }
     }

@@ -16,9 +16,16 @@ interface CodecInfo {
 }
 
 class Codecs extends Map<Codec, CodecInfo> {
-  add_codec(media_type: 'AUDIO' | 'VIDEO' | 'IMAGE', codec: string, content_type: string) {
-    const extensions = media_types.extensionsByType(content_type)
-    if (extensions === undefined) throw new errors.UnExpectedError(`content_type ${content_type} has no extensions`)
+  add_codec(media_type: 'AUDIO' | 'VIDEO' | 'IMAGE', codec: string, content_type: string, include_extensions?: string[]) {
+    let extensions: string[] = []
+    const extensions_by_type = media_types.extensionsByType(content_type)
+    if (extensions_by_type) {
+      extensions.push(...extensions_by_type)
+    }
+    if (include_extensions) {
+      extensions.push(...include_extensions)
+    }
+    if (extensions.length === 0) throw new errors.UnExpectedError(`content_type ${content_type} has no extensions`)
     this.set(codec, {media_type, content_type, codec, extensions})
   }
 
@@ -37,7 +44,7 @@ CODECS.add_codec('VIDEO', 'h264', 'video/mp4')
 CODECS.add_codec('VIDEO', 'hevc', 'video/mp4')
 CODECS.add_codec('IMAGE', 'gif', 'image/gif')
 CODECS.add_codec('IMAGE', 'webp', 'image/webp')
-CODECS.add_codec('IMAGE', 'tiff', 'image/png')
+CODECS.add_codec('IMAGE', 'tiff', 'image/png', ['tif', 'tiff'])
 CODECS.add_codec('IMAGE', 'png', 'image/png')
 CODECS.add_codec('IMAGE', 'apng', 'image/apng')
 CODECS.add_codec('IMAGE', 'mjpeg', 'image/jpeg')

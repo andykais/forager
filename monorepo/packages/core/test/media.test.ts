@@ -463,30 +463,35 @@ test('search group by', async ctx => {
   using forager = new Forager(ctx.get_test_config())
   forager.init()
 
-  await forager.media.create(
+  const koch_tif = await forager.media.create(
     ctx.resources.media_files['koch.tif'],
     { title: 'Generated Art', stars: 2 },
     ['artist:andrew', 'generated', 'colors:black', 'wallpaper']
   )
-  await forager.media.create(
+  const ed_edd_eddy = await forager.media.create(
     ctx.resources.media_files["ed-edd-eddy.png"],
     {title: 'Ed Edd Eddy Screengrab'},
     ['artist:bob']
   )
-  await forager.media.create(
+  const cat_doodle = await forager.media.create(
     ctx.resources.media_files['cat_doodle.jpg'],
     {title: 'Cat Doodle'},
     ['artist:andrew']
   )
+  const succulentsaur = await forager.media.create(
+    ctx.resources.media_files['Succulentsaur.mp4'],
+    {title: 'Succulentsaur'},
+    ['artist:andrew']
+  )
 
-  await forager.media.create(
+  const cat_cronch = await forager.media.create(
     ctx.resources.media_files['cat_cronch.mp4'],
     {title: 'Cat Video'},
     ['artist:alice']
   )
 
   // also add media without any tags that shouldnt show up in the group calls
-  await forager.media.create(
+  const blink_gif = await forager.media.create(
     ctx.resources.media_files['blink.gif'],
     {},
     ['meme']
@@ -500,7 +505,7 @@ test('search group by', async ctx => {
     {
       total: 3,
       results: [
-        { media_type: 'grouped', group: {value: 'andrew', count: 2} },
+        { media_type: 'grouped', group: {value: 'andrew', count: 3} },
         { media_type: 'grouped', group: {value: 'bob', count: 1} },
         { media_type: 'grouped', group: {value: 'alice', count: 1} },
       ]
@@ -513,7 +518,7 @@ test('search group by', async ctx => {
     ctx.assert.group_result(results_1_2, {
       total: 3,
       results: [
-        { media_type: 'grouped', group: {value: 'andrew', count: 2} },
+        { media_type: 'grouped', group: {value: 'andrew', count: 3} },
         { media_type: 'grouped', group: {value: 'bob', count: 1} },
       ]
     })
@@ -565,6 +570,50 @@ test('search group by', async ctx => {
         results: []
       }
     )
+  })
+
+  await ctx.subtest('with grouped_media_limit', () => {
+    const group_results = forager.media.group({
+      group_by: {tag_group: 'artist'},
+      grouped_media: {limit: 2},
+    })
+    ctx.assert.group_result(group_results, {
+      total: 3,
+      results: [
+        {
+          media_type: 'grouped',
+          group: {
+            value: 'andrew',
+            count: 3,
+            media: [
+              {media_reference: {id: succulentsaur.media_reference.id}} as any,
+              {media_reference: {id: cat_doodle.media_reference.id}} as any,
+              // koch.tif is not present because we only asked for 2 media
+            ]
+          }
+        },
+        {
+          media_type: 'grouped',
+          group: {
+            value: 'bob',
+            count: 1,
+            media: [
+              {media_reference: {id: ed_edd_eddy.media_reference.id}} as any,
+            ]
+          }
+        },
+        {
+          media_type: 'grouped',
+          group: {
+            value: 'alice',
+            count: 1,
+            media: [
+              {media_reference: {id: cat_cronch.media_reference.id}} as any,
+            ]
+          }
+        },
+      ]
+    })
   })
 })
 
@@ -832,21 +881,21 @@ test('gif', async ctx => {
     { kind: "standard", media_timestamp: 0 },
     { kind: "standard", media_timestamp: 0.16 },
     { kind: "standard", media_timestamp: 0.32 },
-    { kind: "standard", media_timestamp: 0.55 },
-    { kind: "standard", media_timestamp: 0.72 },
-    { kind: "standard", media_timestamp: 0.9 },
-    { kind: "standard", media_timestamp: 1.1 },
-    { kind: "standard", media_timestamp: 1.3 },
-    { kind: "standard", media_timestamp: 1.49 },
-    { kind: "standard", media_timestamp: 1.7 },
-    { kind: "standard", media_timestamp: 1.88 },
+    { kind: "standard", media_timestamp: 0.52 },
+    { kind: "standard", media_timestamp: 0.68 },
+    { kind: "standard", media_timestamp: 0.84 },
+    { kind: "standard", media_timestamp: 1.04 },
+    { kind: "standard", media_timestamp: 1.2 },
+    { kind: "standard", media_timestamp: 1.36 },
+    { kind: "standard", media_timestamp: 1.56 },
+    { kind: "standard", media_timestamp: 1.72 },
+    { kind: "standard", media_timestamp: 1.87 },
     { kind: "standard", media_timestamp: 2.08 },
-    { kind: "standard", media_timestamp: 2.29 },
-    { kind: "standard", media_timestamp: 2.48 },
-    { kind: "standard", media_timestamp: 2.62 },
-    { kind: "standard", media_timestamp: 2.79 },
-    { kind: "standard", media_timestamp: 2.99 },
-    { kind: "standard", media_timestamp: 3.15 }
+    { kind: "standard", media_timestamp: 2.24 },
+    { kind: "standard", media_timestamp: 2.4 },
+    { kind: "standard", media_timestamp: 2.6 },
+    { kind: "standard", media_timestamp: 2.76 },
+    { kind: "standard", media_timestamp: 2.92 }
   ], (a, b) => a.media_timestamp - b.media_timestamp)
 })
 
@@ -1033,7 +1082,8 @@ test('filesystem discovery', async (ctx) => {
   forager.init()
 
   await ctx.subtest('filepath globbing', async () => {
-    await forager.filesystem.discover({path: ctx.resources.resources_directory + path.SEPARATOR + '*.jpg' })
+    const discover_result = await forager.filesystem.discover({path: ctx.resources.resources_directory + path.SEPARATOR + '*.jpg' })
+    ctx.assert.equals(discover_result.stats, {created: 1, updated: 0, existing: 0, duplicate: 0, errored: 0})
     ctx.assert.search_result(forager.media.search(), {
       total: 1,
       results: [
@@ -1044,7 +1094,8 @@ test('filesystem discovery', async (ctx) => {
 
   await ctx.subtest('file extension filtering', async () => {
     // note that we circumvent the issue of out-of-order assertion results by making each file get added one at a time
-    await forager.filesystem.discover({path: ctx.resources.resources_directory, extensions: ['jpg', 'tif']})
+    const discover_result = await forager.filesystem.discover({path: ctx.resources.resources_directory, extensions: ['jpg', 'tif']})
+    ctx.assert.equals(discover_result.stats, {created: 1, updated: 0, existing: 1, duplicate: 0, errored: 0})
     ctx.assert.search_result(forager.media.search(), {
       total: 2,
       results: [
@@ -1065,13 +1116,14 @@ test('filesystem discovery', async (ctx) => {
   })
 
   await ctx.subtest('set metadata during file system discovery', async () => {
-    await forager.filesystem.discover({
+    const discover_result = await forager.filesystem.discover({
       path: ctx.resources.resources_directory + path.SEPARATOR + '*cat*',
       set: {
         media_info: {title: 'sample title'},
         tags: ['cat']
       }
     })
+    ctx.assert.equals(discover_result.stats, {created: 1, updated: 1, existing: 0, duplicate: 0, errored: 0})
 
     const cat_doodle_media = forager.media.get({filepath: ctx.resources.media_files['cat_doodle.jpg']})
     ctx.assert.list_partial(cat_doodle_media.tags, [{
