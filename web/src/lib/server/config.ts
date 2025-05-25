@@ -16,12 +16,22 @@ export const PackagesConfig = z.object({
     log_level: LogLevel.default('INFO'),
 
     ui_defaults: z.object({
+      search: z.object({
+        advanced_filters: z.object({
+          hide: z.boolean().default(true)
+        }).default({})
+      }).default({}),
       media_list: z.object({
         thumbnail_size: z.number().default(110),
       }).default({}),
       sidebar: z.object({
         hide: z.boolean().default(true),
         size: z.number().default(200),
+        tags: z.object({
+          order: z.object({
+            group: z.string(),
+          }).array().default([])
+        }),
       }).default({}),
       media_view: z.object({
         filmstrip: z.object({

@@ -83,7 +83,8 @@
   }
 
   type AdvancedFiltersState = 'hidden' | 'shown'
-  let advanced_filters_state = $state<AdvancedFiltersState>('shown') // TODO this is normally "hidden". "shown" now for debug reasons
+  const advanced_filters_default_state = controller.runes.settings.ui.search.advanced_filters.hide ? 'hidden' : 'shown'
+  let advanced_filters_state = $state<AdvancedFiltersState>(advanced_filters_default_state)
   const icon_color = theme.colors.gray[800]
   const icon_size = "22px"
 </script>

@@ -20,6 +20,18 @@
   const media_selections = runes.media_selections
   let dialog: HTMLDialogElement
 
+  function human_readable_duration(seconds: number) {
+    if (seconds < 100) {
+      return `${seconds}s`
+    }
+    const minutes = seconds / 60
+    if (minutes > 60) {
+      return `${minutes.toFixed(2)}m`
+    }
+    const hours = minutes / 60
+    return `${hours.toFixed(2)}h`
+  }
+
 </script>
 
 <style>
@@ -76,6 +88,7 @@
                     <Icon data={icons.Music} fill={icon_color} stroke="none" size={icon_size} />
                   {/if}
                 </span>
+                <span>{human_readable_duration(result.media_file.duration)}</span>
               {:else if result.media_file.media_type === 'IMAGE' && result.media_file.content_type === 'image/gif'}
                 <Icon data={icons.Gif} fill={icon_color} stroke="none" size={icon_size} />
               {:else if result.media_file.media_type === 'IMAGE'}

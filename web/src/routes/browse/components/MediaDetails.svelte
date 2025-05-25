@@ -10,7 +10,7 @@
 
   import { BrowseController } from '../controller.ts'
   let {controller}: {controller: BrowseController} = $props()
-  let {dimensions, media_selections} = controller.runes
+  let {dimensions, media_selections, settings} = controller.runes
   let current_selection = media_selections.current_selection
 
   let new_tag_str = $state<string>('')
@@ -26,7 +26,25 @@
       grouped_tags[t.group].push(t)
     })
 
-    return Object.entries(grouped_tags).sort((a, b) => a[0].localeCompare(b[0]))
+    const entries =  Object.entries(grouped_tags).sort((a, b) => a[0].localeCompare(b[0]))
+
+    entries.sort((a, b) => {
+      const a_index = settings.ui.sidebar.tags.order.findIndex(match => {
+        return match.group === a[0]
+      })
+      const b_index = settings.ui.sidebar.tags.order.findIndex(match => {
+        return match.group === b[0]
+      })
+      if (a_index !== -1 && b_index !== -1) {
+        return a_index - b_index
+      } else if (a_index !== -1) {
+        return -1
+      } else if (b_index !== -1) {
+        return 1
+      }
+      return a[0].localeCompare(b[0])
+    })
+    return entries
   })
 </script>
 
