@@ -6,6 +6,8 @@
   import Icon from '$lib/components/Icon.svelte'
   import { Filter, ChevronUp, ChevronDown, ArrowDown, ArrowUp } from '$lib/icons/mod.ts'
   import TagAutoCompleteInput from "$lib/components/TagAutoCompleteInput.svelte";
+  import {QueryParams} from '../queryparams.ts'
+  import { onMount } from 'svelte'
 
   let {controller}: {controller: BrowseController} = $props()
 
@@ -32,11 +34,26 @@
     media_type: 'all',
   })
 
-  async function submit() {
+  let history: QueryParams
+
+  onMount(async () => {
+    history = new QueryParams()
+    params = history.read()
+    await submit(true)
+  })
+
+  async function submit(first_submit = false) {
     const tags = params.search_string.split(' ').filter(t => t.length > 0)
     const sort_by = params.sort
     const order = params.order
     const filepath = params.filepath
+
+    if (first_submit) {
+      first_submit = false
+    } else {
+      history.write(params)
+    }
+
     controller.runes.search.clear()
     const query: inputs.PaginatedSearch['query'] = {
       tags,
@@ -66,6 +83,9 @@
         }
       })
     } else if (params.search_mode === 'group_by') {
+      if (params.group_by === undefined) {
+        throw new Error(`params must be defined!`)
+      }
       await controller.runes.search.paginate({
         type: params.search_mode,
         params: {
@@ -94,8 +114,8 @@
     e.preventDefault()
     await submit()
   }}>
-  <div class="p-3 justify-center items-center">
-    <div class="w-full grid grid-cols-[1fr_auto] gap-2 pb-2">
+  <div class="flex flex-col gap-y-2 p-3 justify-center items-center">
+    <div class="w-full grid grid-cols-[1fr_auto] gap-2">
       <TagAutoCompleteInput {controller} bind:search_string={params.search_string} kind="search" allow_multiple_tags />
       <button
         class="hover:cursor-pointer"
@@ -112,9 +132,9 @@
       </button>
     </div>
 
-    <div class="grid grid-rows-2 justify-center items-center text-slate-950 "
-      style="display: {advanced_filters_state === 'hidden' ? 'none' : 'initial'}">
-      <div class="grid grid-cols-4 gap-8">
+    <div class="grid grid-rows-2 justify-center items-center text-slate-950 w-full gap-y-2"
+      style="display: {advanced_filters_state === 'hidden' ? 'none' : 'grid'}">
+      <div class="flex flex-row justify-between gap-8">
         <div class="flex gap-1">
           <select
             id="sort_by"
@@ -177,7 +197,7 @@
 
       </div>
 
-      <div class="grid grid-cols-2 gap-2">
+      <div class="flex flex-row gap-8 justify-between">
         <SelectInput
           label="Search Mode"
           options={[
@@ -185,6 +205,11 @@
             {label: 'Grouped', value: 'group_by'},
             {label: 'Filesystem', value: 'filesystem'},
           ]}
+          onchange={() => {
+            if (params.search_mode !== 'group_by') {
+              params.group_by = undefined
+            }
+          }}
           bind:value={params.search_mode}
         />
 

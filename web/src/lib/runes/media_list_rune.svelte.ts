@@ -19,7 +19,7 @@ interface FilesystemInput {
   type: 'filesystem'
   params: {}
 }
-type Input =
+export type Input =
   | SearchInput
   | GroupByInput
   | FilesystemInput

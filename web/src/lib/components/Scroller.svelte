@@ -1,6 +1,4 @@
 <script lang="ts">
-  import {onMount} from 'svelte'
-
   let { more, children, ...props } = $props()
   let first_mount = true
   let observer: IntersectionObserver | undefined = $state()
@@ -12,7 +10,12 @@
       observer = new IntersectionObserver((entries, _observer) => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
-            more()
+            if (first_mount) {
+              // NOTE this is a tad messy, but we trust whoever is in charge of pagination to call this the first time (in this case our consumer the SearchParams needs to read the queryparams before making the first search call)
+              first_mount = false
+            } else {
+              more()
+            }
           }
         }
       }, {
@@ -25,16 +28,6 @@
 
       observer.observe(end_of_page_element)
     }
-  })
-
-  onMount(() => {
-    /* not necessary since our observer calls this right away too
-    if (first_mount) {
-      // always trigger one when the element is mounted (an empty page isnt reliable for the intersection observer)
-      more()
-    }
-    first_mount = false
-    */
   })
 </script>
 
