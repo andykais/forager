@@ -1,23 +1,21 @@
 <script lang="ts">
   import type { BrowseController } from '../controller.ts'
-  import type { Forager } from '@forager/core'
   import * as theme from '$lib/theme.ts'
   import { focusable } from '$lib/actions/mod.ts'
   import Icon from '$lib/components/Icon.svelte'
-  import Tag from '$lib/components/Tag.svelte'
+  import SearchLink from './SearchLink.svelte'
   import * as icons from '$lib/icons/mod.ts'
 
   interface Props {
     controller: BrowseController
   }
 
-  let props: Props = $props()
-  const {runes} = props.controller
+  let {controller}: Props = $props()
+  const {queryparams, settings, media_selections, search} = controller.runes
 
-  let tile_size = runes.settings.ui.media_list.thumbnail_size
+  let tile_size = settings.ui.media_list.thumbnail_size
   const icon_size = 14
   const icon_color = theme.colors.green[200]
-  const media_selections = runes.media_selections
   let dialog: HTMLDialogElement
 
   function human_readable_duration(seconds: number) {
@@ -55,23 +53,28 @@
 
 
 
-<div class="container-masonry p-4" style="--thumbnail-size: {runes.settings.ui.media_list.thumbnail_size}px">
-  {#each runes.search.results as result, result_index}
+<div class="container-masonry p-4" style="--thumbnail-size: {settings.ui.media_list.thumbnail_size}px">
+  {#each search.results as result, result_index}
     <div>
       <button 
         type="button"
         class="inline-flex items-center justify-center p-1
                outline-none"
         use:focusable={!media_selections.current_selection.show && media_selections.current_selection.result_index === result_index}
-        onclick={e => media_selections.set_current_selection(result, result_index)}>
-        <div class="container-media-tile" style="width:{runes.settings.ui.media_list.thumbnail_size}px">
+      >
+        <div
+          class="container-media-tile"
+          style="width:{settings.ui.media_list.thumbnail_size}px"
+        >
           <div
             class="grid justify-items-center items-center overflow-hidden
                    border-2 shadow shadow-gray-700 rounded-md"
             class:hover:border-slate-400={result_index !== media_selections.current_selection.result_index}
             class:border-slate-900={      result_index !== media_selections.current_selection.result_index}
             class:border-green-300={      result_index === media_selections.current_selection.result_index}
-            style="width:{runes.settings.ui.media_list.thumbnail_size}px; height: {runes.settings.ui.media_list.thumbnail_size}px">
+            style="width:{settings.ui.media_list.thumbnail_size}px; height: {settings.ui.media_list.thumbnail_size}px"
+            onclick={e => media_selections.set_current_selection(result, result_index)}
+          >
             <img
               class="w-full h-full object-cover"
               src="/files/thumbnail{result.preview_thumbnail.filepath}"
@@ -103,7 +106,9 @@
               {result.media_reference.media_series_length} items
           {:else if result.media_type === 'grouped'}
               <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
-              {result.group_metadata.value} {result.group_metadata.count} items
+              <SearchLink {controller} params={queryparams.merge({mode: 'media', tags: `${queryparams.current_url.group_by}:${result.group_metadata.value}`})}> {result.group_metadata.value} 
+              </SearchLink>
+              {result.group_metadata.count} items
           {:else}
             UNEXPECTED MEDIA TYPE {result.media_type}
           {/if}
@@ -112,6 +117,6 @@
     </div>
   {/each}
 </div>
-{#if runes.search.loading}
+{#if search.loading}
   Loading...
 {/if}

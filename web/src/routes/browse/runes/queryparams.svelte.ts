@@ -1,6 +1,7 @@
 import type { inputs } from '@forager/core'
 import type { BrowseController } from '../controller.ts'
 import type { MediaListRune } from '$lib/runes/index.ts'
+import * as parsers from '$lib/parsers.ts'
 import {onMount} from 'svelte'
 import { pushState } from '$app/navigation';
 import { page } from '$app/state';
@@ -36,6 +37,7 @@ const NAME_MAP: Partial<Record<keyof State, string>> = {
   search_mode: 'mode',
   media_type: 'type',
 }
+const NAME_MAP_REVERSED = Object.fromEntries(Object.entries(NAME_MAP).map(([key, val]) => [val, key]))
 export class QueryParamsRune extends Rune {
   public DEFAULTS = DEFAULTS
   public state: State = $state<State>({...DEFAULTS})
@@ -67,9 +69,8 @@ export class QueryParamsRune extends Rune {
 
     this.current_serialized = url.search
     const queryparams = new URLSearchParams(url.search)
-    const reverse_mapper = Object.fromEntries(Object.entries(NAME_MAP).map(([key, val]) => [val, key]))
     for (const [key, val] of queryparams.entries()) {
-      const params_key = reverse_mapper[key] ?? key
+      const params_key = NAME_MAP_REVERSED[key] ?? key
       let deserialized_value = val
       if (params_key === 'search_string') {
         deserialized_value = val.replaceAll(',', ' ')
@@ -130,9 +131,40 @@ export class QueryParamsRune extends Rune {
     await this.submit(params)
   }
 
-  public extend(key: 'tag', value: string): State {
+  public merge(partial_params: Partial<typeof NAME_MAP_REVERSED>) {
+    const params = {...this.current_url}
+    for (const [key, val] of Object.entries(partial_params)) {
+      const params_key = NAME_MAP_REVERSED[key] ?? key
+
+      if (key === 'tag') {
+        const search_strings = new Set(params['search_string'].split(/\s+/))
+        search_strings.add(val)
+        params.search_string = [...search_strings].join(' ').trim()
+      } else if (key === 'mode') {
+        params[params_key] = val
+        if (val !== 'group_by') {
+          params.group_by = undefined
+        }
+      }else {
+        params[params_key] = val
+      }
+    }
+    return params
+  }
+
+  public extend(key: 'tag' | 'group_by_tag', value: string): State {
+    const params = {...this.current_url}
+
+    // group_by_tag means we want to do a normal search including the group by tag
+    if (key === 'group_by_tag') {
+      if (params.search_mode !== 'group_by') {
+        throw new Error('unexpected code path. "group_by_tag" should only be used with search_mode "group_by"')
+      }
+      value = parsers.Tag.encode({group: params.group_by, name: value})
+      key = 'tag'
+    }
+
     if (key === 'tag') {
-      const params = {...this.current_url}
       const search_strings = new Set(params['search_string'].split(/\s+/))
       search_strings.add(value)
       params.search_string = [...search_strings].join(' ').trim()

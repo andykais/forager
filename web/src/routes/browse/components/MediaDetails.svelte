@@ -4,6 +4,7 @@
   import Sidebar from '$lib/components/Sidebar.svelte'
   import MediaDetailEntry from './MediaDetailEntry.svelte'
   import TagAutoCompleteInput from '$lib/components/TagAutoCompleteInput.svelte'
+  import SearchLink from './SearchLink.svelte'
   import Tag from '$lib/components/Tag.svelte'
   import Icon from '$lib/components/Icon.svelte'
   import {XCircle} from '$lib/icons/mod.ts'
@@ -72,16 +73,9 @@
       {#each sorted_tags as tag_group_entry, tag_entry_index (tag_group_entry[0])}
         {#each tag_group_entry[1] as tag, tag_index (tag.id)}
           <div class="grid grid-cols-[1fr_auto] items-center gap-1 pb-1">
-            <a
-              href={queryparams.serialize(queryparams.extend('tag', parsers.Tag.encode(tag)))}
-              onclick={async e => {
-                if (e.ctrlKey || e.shiftKey) return
-                e.preventDefault()
-                await queryparams.goto(queryparams.extend('tag', parsers.Tag.encode(tag)))
-              }}
-            >
+            <SearchLink {controller} params={queryparams.extend('tag', parsers.Tag.encode(tag))}>
               <Tag show_group={false} {tag} />
-            </a>
+            </SearchLink>
             <button
               class="hover:cursor-pointer"
               title="Remove"
