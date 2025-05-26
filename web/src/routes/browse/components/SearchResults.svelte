@@ -25,7 +25,7 @@
       return `${seconds}s`
     }
     const minutes = seconds / 60
-    if (minutes > 60) {
+    if (minutes < 60) {
       return `${minutes.toFixed(2)}m`
     }
     const hours = minutes / 60

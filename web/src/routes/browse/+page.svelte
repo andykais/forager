@@ -12,7 +12,7 @@
   let props  = $props()
 
   const controller = new BrowseController(props.data.config)
-  let { dimensions, focus } = controller.runes
+  let { dimensions, focus, queryparams } = controller.runes
   focus.stack({component: 'BrowsePage', focus: 'page'})
 </script>
 

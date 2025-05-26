@@ -7,10 +7,11 @@
   import Tag from '$lib/components/Tag.svelte'
   import Icon from '$lib/components/Icon.svelte'
   import {XCircle} from '$lib/icons/mod.ts'
+  import * as parsers from '$lib/parsers.ts'
 
   import { BrowseController } from '../controller.ts'
   let {controller}: {controller: BrowseController} = $props()
-  let {dimensions, media_selections, settings} = controller.runes
+  let {dimensions, media_selections, settings, queryparams} = controller.runes
   let current_selection = media_selections.current_selection
 
   let new_tag_str = $state<string>('')
@@ -50,8 +51,8 @@
 
 <Sidebar
   height={dimensions.heights.media_list}
-  bind:width={controller.runes.settings.ui.sidebar.size}
-  hide={controller.runes.settings.ui.sidebar.hide}
+  bind:width={settings.ui.sidebar.size}
+  hide={settings.ui.sidebar.hide}
 >
   <form
     class="pl-1 pr-3"
@@ -71,7 +72,16 @@
       {#each sorted_tags as tag_group_entry, tag_entry_index (tag_group_entry[0])}
         {#each tag_group_entry[1] as tag, tag_index (tag.id)}
           <div class="grid grid-cols-[1fr_auto] items-center gap-1 pb-1">
-            <Tag show_group={false} {tag} />
+            <a
+              href={queryparams.serialize(queryparams.extend('tag', parsers.Tag.encode(tag)))}
+              onclick={async e => {
+                if (e.ctrlKey || e.shiftKey) return
+                e.preventDefault()
+                await queryparams.goto(queryparams.extend('tag', parsers.Tag.encode(tag)))
+              }}
+            >
+              <Tag show_group={false} {tag} />
+            </a>
             <button
               class="hover:cursor-pointer"
               title="Remove"
@@ -84,27 +94,6 @@
           </div>
         {/each}
       {/each}
-      <!--
-      {#each current_selection.media_response.tags as tag, tag_index (tag.id)}
-        <div class="grid grid-cols-[1fr_auto] items-center gap-1">
-          <Tag show_group={false} {tag} />
-          <button
-            class="hover:cursor-pointer"
-            title="Remove"
-            type="button"
-            onclick={async e => {
-              const result = await controller.client.forager.media.update(
-                current_selection.media_response?.media_reference.id,
-                undefined,
-                {remove: [`${tag.group}:${tag.name}`]}
-              )
-              controller.runes.media_selections.update(controller.runes.search.results, result)
-            }}>
-            <Icon class="fill-green-50 hover:fill-green-300" data={XCircle} size="18px" color="none" />
-          </button>
-        </div>
-      {/each}
--->
       <TagAutoCompleteInput
         {controller}
         bind:search_string={new_tag_str}

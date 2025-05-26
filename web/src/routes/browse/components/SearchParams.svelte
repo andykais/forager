@@ -1,111 +1,26 @@
 <script lang="ts">
   import type { inputs } from '@forager/core'
-  import type { BrowseController } from "../controller.ts";
   import SelectInput from '$lib/components/SelectInput.svelte'
   import * as theme from '$lib/theme.ts'
   import Icon from '$lib/components/Icon.svelte'
   import { Filter, ChevronUp, ChevronDown, ArrowDown, ArrowUp } from '$lib/icons/mod.ts'
   import TagAutoCompleteInput from "$lib/components/TagAutoCompleteInput.svelte";
-  import {QueryParams} from '../queryparams.ts'
+  import type { BrowseController } from "../controller.ts";
   import { onMount } from 'svelte'
 
   let {controller}: {controller: BrowseController} = $props()
 
-  interface State {
-    search_string: string
-    filepath: string | undefined
-    sort: inputs.PaginatedSearch['sort_by']
-    unread_only: boolean
-    search_mode: 'media' | 'group_by' | 'filesystem'
-    group_by: string | undefined
-    stars: number | undefined
-    order: 'desc' | 'asc'
-    media_type: string
-  }
-  let params = $state<State>({
-    search_string: '',
-    filepath: undefined as string | undefined,
-    sort: 'source_created_at' as const,
-    order: 'desc' as const,
-    unread_only: false,
-    search_mode: 'media',
-    group_by: undefined,
-    stars: undefined,
-    media_type: 'all',
-  })
+  const {queryparams} = controller.runes
 
-  let queryparams: QueryParams
-
-  onMount(async () => {
-    queryparams = new QueryParams()
-    params = queryparams.read(window.location)
-    await submit()
-    window.addEventListener('popstate', async e => {
-      // NOTE $app/state page.url does not seem to respect popstate, so we're just going to use the browsers url...
-      params = queryparams.read(window.location)
-      await submit()
-    })
+  let params = $state<typeof queryparams.DEFAULTS>({...queryparams.DEFAULTS})
+  queryparams.popstate_listener(url_params => {
+    params = {...url_params}
   })
 
   async function update_search() {
-    queryparams.write(params)
-    await submit()
+    await queryparams.submit(params)
 
   }
-  async function submit() {
-    const tags = params.search_string.split(' ').filter(t => t.length > 0)
-    const sort_by = params.sort
-    const order = params.order
-    const filepath = params.filepath
-
-    controller.runes.search.clear()
-    const query: inputs.PaginatedSearch['query'] = {
-      tags,
-      filepath
-    }
-    switch(params.media_type) {
-      case 'all': {
-        // do nothing
-        break
-      }
-      case 'animated': {
-        query.animated = true
-        break
-      }
-      default: {
-        throw new Error(`Unimplemented media type ${params.media_type}`)
-      }
-    }
-
-    if (params.search_mode === 'media') {
-      await controller.runes.search.paginate({
-        type: params.search_mode,
-        params: {
-          query: query,
-          sort_by,
-          order
-        }
-      })
-    } else if (params.search_mode === 'group_by') {
-      if (params.group_by === undefined) {
-        throw new Error(`params must be defined!`)
-      }
-      await controller.runes.search.paginate({
-        type: params.search_mode,
-        params: {
-          group_by: {
-            tag_group: params.group_by,
-          },
-          query: query,
-          sort_by: 'count', // TODO we want to support created_at as well. Sorting is a bit janky with group by for now
-          order
-        }
-      })
-    } else {
-      throw new Error('unimplemented')
-    }
-  }
-
   type AdvancedFiltersState = 'hidden' | 'shown'
   const advanced_filters_default_state = controller.runes.settings.ui.search.advanced_filters.hide ? 'hidden' : 'shown'
   let advanced_filters_state = $state<AdvancedFiltersState>(advanced_filters_default_state)

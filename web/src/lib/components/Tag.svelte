@@ -1,14 +1,13 @@
 <script lang="ts">
   import type { Forager } from '@forager/core'
-  import Icon from '$lib/components/Icon.svelte'
-  import * as theme from '$lib/theme.ts'
+  import * as parsers from '$lib/parsers.ts'
 
   type Tag = ReturnType<Forager['tag']['search']>['results'][0]
   let props: {tag: Tag, transparent?: boolean; show_group?: boolean} = $props()
 
   const tag_identifier = props.tag.group === '' || props.show_group === false
     ? `${props.tag.name}`
-    : `${props.tag.group}:${props.tag.name}`
+    : parsers.Tag.encode(props.tag)
 
   let color_style = $derived.by(() => {
     if (props.transparent) {
