@@ -34,25 +34,29 @@
     media_type: 'all',
   })
 
-  let history: QueryParams
+  let queryparams: QueryParams
 
   onMount(async () => {
-    history = new QueryParams()
-    params = history.read()
-    await submit(true)
+    queryparams = new QueryParams()
+    params = queryparams.read(window.location)
+    await submit()
+    window.addEventListener('popstate', async e => {
+      // NOTE $app/state page.url does not seem to respect popstate, so we're just going to use the browsers url...
+      params = queryparams.read(window.location)
+      await submit()
+    })
   })
 
-  async function submit(first_submit = false) {
+  async function update_search() {
+    queryparams.write(params)
+    await submit()
+
+  }
+  async function submit() {
     const tags = params.search_string.split(' ').filter(t => t.length > 0)
     const sort_by = params.sort
     const order = params.order
     const filepath = params.filepath
-
-    if (first_submit) {
-      first_submit = false
-    } else {
-      history.write(params)
-    }
 
     controller.runes.search.clear()
     const query: inputs.PaginatedSearch['query'] = {
@@ -112,7 +116,7 @@
 <form class="grid grid-rows-1 w-[80%]"
   onsubmit={async e => {
     e.preventDefault()
-    await submit()
+    await update_search()
   }}>
   <div class="flex flex-col gap-y-2 p-3 justify-center items-center">
     <div class="w-full grid grid-cols-[1fr_auto] gap-2">
@@ -140,7 +144,7 @@
             id="sort_by"
             name="sort_by"
             bind:value={params.sort}
-            onchange={submit}>
+            onchange={update_search}>
             <option value="source_created_at">Created At</option>
             <option value="created_at">Added On</option>
             <option value="updated_at">Updated At</option>
@@ -153,7 +157,7 @@
             onclick={e => {
               if (params.order === 'asc') params.order = 'desc'
               else params.order = 'asc'
-              submit()
+              update_search()
             }}>
             {#if params.order === 'asc'}
               <Icon class="fill-gray-800 hover:fill-gray-600" data={ArrowUp} size={icon_size} fill={icon_color} stroke={"none"} />
@@ -172,7 +176,7 @@
             {label: 'Audio',    value: 'audio'},
           ]}
           bind:value={params.media_type}
-          onchange={submit}
+          onchange={update_search}
         />
 
         <div class="flex gap-2">
@@ -182,7 +186,7 @@
             name="unread"
             type="checkbox"
             bind:checked={params.unread_only}
-            onchange={submit}>
+            onchange={update_search}>
         </div>
 
         <div class="flex gap-2">

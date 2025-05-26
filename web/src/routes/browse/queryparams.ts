@@ -39,10 +39,13 @@ export class QueryParams implements QueryParamsI {
     media_type: 'type',
   }
 
-  public read() {
+  private previous_serialized_params: string = ''
+
+  public read(url: URL) {
     const params: State = {...this.DEFAULTS}
 
-    const queryparams = new URLSearchParams(page.url.search)
+    this.previous_serialized_params = url.search
+    const queryparams = new URLSearchParams(url.search)
     const reverse_mapper = Object.fromEntries(Object.entries(this.NAME_MAP).map(([key, val]) => [val, key]))
     for (const [key, val] of queryparams.entries()) {
       const params_key = reverse_mapper[key] ?? key
@@ -81,14 +84,13 @@ export class QueryParams implements QueryParamsI {
       queryparams.delete('mode')
     }
 
-    if (queryparams.size) {
-      const serialized = Array.from(queryparams.entries())
-        .map(([key, val]) => `${key}=${val}`)
-        .join('&')
+    const serialized_params = '?' + Array.from(queryparams.entries())
+      .map(([key, val]) => `${key}=${val}`)
+      .join('&')
 
-      pushState(`?${serialized}`, {})
-    } else {
-      pushState('?')
+    if (this.previous_serialized_params !== serialized_params) {
+      this.previous_serialized_params = serialized_params
+      pushState(serialized_params, {})
     }
   }
 }

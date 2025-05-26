@@ -15,7 +15,7 @@ export const create_focuser = () => {
   let state = $state<FocusState>({focus_stack: []})
   return {
     stack(focus: Focus) {
-      console.log('focus::stack', focus, Date.now())
+      // console.log('focus::stack', focus, Date.now())
       const focus_in_stack = state.focus_stack.findLastIndex(item => item.component == focus.component && item.focus === focus.focus)
       // ensure we dont double stack the same focus
       if(focus_in_stack !== -1) {
@@ -26,7 +26,7 @@ export const create_focuser = () => {
     },
 
     pop(focus: Focus) {
-      console.log('focus::pop', focus)
+      // console.log('focus::pop', focus)
       const new_focus_stack: Focus[] = []
       for (const item of state.focus_stack) {
         if (item.component == focus.component && item.focus === focus.focus) {
