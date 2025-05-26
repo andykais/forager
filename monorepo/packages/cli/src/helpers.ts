@@ -43,9 +43,19 @@ class ForagerHelpers {
       core: {
         database_path: path.join(config_dir, 'forager.db'),
         // TODO add prompt options for each of these
-        thumbnail_folder: path.join(config_dir, 'thumbnails'),
+        thumbnails: {
+          folder: path.join(config_dir, 'thumbnails'),
+          preview_duration_threshold: 0.2,
+          size: 512,
+        },
 
-        log_level: 'INFO',
+        tags: {
+          auto_cleanup: true,
+        },
+
+        logger: {
+          level: 'INFO',
+        }
       },
       web: {
         port: 8000,
@@ -80,7 +90,7 @@ class ForagerHelpers {
     const raw_config = yaml.parse(file_contents)
     const config = Config.parse(raw_config)
     if (this.#should_print_json()) {
-      config.core.log_level = 'SILENT'
+      config.core.logger.level = 'SILENT'
     }
     this.#config = config
   }
