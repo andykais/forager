@@ -68,17 +68,31 @@
         >
           <div
             class="grid justify-items-center items-center overflow-hidden
-                   border-2 shadow shadow-gray-700 rounded-md"
-            class:hover:border-slate-400={result_index !== media_selections.current_selection.result_index}
-            class:border-slate-900={      result_index !== media_selections.current_selection.result_index}
-            class:border-green-300={      result_index === media_selections.current_selection.result_index}
+                   "
             style="width:{settings.ui.media_list.thumbnail_size}px; height: {settings.ui.media_list.thumbnail_size}px"
             onclick={e => media_selections.set_current_selection(result, result_index)}
           >
-            <img
-              class="w-full h-full object-cover"
-              src="/files/thumbnail{result.preview_thumbnail.filepath}"
-              alt="Failed to load /files/thumbnail{result.preview_thumbnail.filepath}"/>
+            {#if settings.ui.media_list.thumbnail_shape === 'original'}
+              <img
+                class="
+                  w-fit h-fit
+                  border-2 shadow shadow-gray-700 rounded-md"
+                class:hover:border-slate-400={result_index !== media_selections.current_selection.result_index}
+                class:border-slate-900={      result_index !== media_selections.current_selection.result_index}
+                class:border-green-300={      result_index === media_selections.current_selection.result_index}
+                src="/files/thumbnail{result.preview_thumbnail.filepath}"
+                alt="Failed to load /files/thumbnail{result.preview_thumbnail.filepath}"/>
+            {:else}
+              <img
+                class="
+                  w-full h-full object-cover
+                  border-2 shadow shadow-gray-700 rounded-md"
+                class:hover:border-slate-400={result_index !== media_selections.current_selection.result_index}
+                class:border-slate-900={      result_index !== media_selections.current_selection.result_index}
+                class:border-green-300={      result_index === media_selections.current_selection.result_index}
+                src="/files/thumbnail{result.preview_thumbnail.filepath}"
+                alt="Failed to load /files/thumbnail{result.preview_thumbnail.filepath}"/>
+            {/if}
           </div>
 
           <!-- info chips -->
@@ -103,12 +117,14 @@
               {/if}
           {:else if result.media_type === 'media_series'}
               <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
-              {result.media_reference.media_series_length} items
+              <span>({result.media_reference.media_series_length})</span>
           {:else if result.media_type === 'grouped'}
               <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
-              <SearchLink {controller} params={queryparams.merge({mode: 'media', tags: `${queryparams.current_url.group_by}:${result.group_metadata.value}`})}> {result.group_metadata.value} 
+              <SearchLink
+                class="hover:text-green-500 hover:bg-gray-700 px-2 rounded-sm transition-colors"
+                {controller} params={queryparams.merge({mode: 'media', tags: `${queryparams.current_url.group_by}:${result.group_metadata.value}`})}> {result.group_metadata.value} 
               </SearchLink>
-              {result.group_metadata.count} items
+              <span>{result.group_metadata.count}</span>
           {:else}
             UNEXPECTED MEDIA TYPE {result.media_type}
           {/if}

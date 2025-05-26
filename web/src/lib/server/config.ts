@@ -16,14 +16,18 @@ export const PackagesConfig = z.object({
     log_level: LogLevel.default('INFO'),
 
     ui_defaults: z.object({
+
       search: z.object({
         advanced_filters: z.object({
           hide: z.boolean().default(true)
         }).default({})
       }).default({}),
+
       media_list: z.object({
         thumbnail_size: z.number().default(110),
+        thumbnail_shape: z.enum(['square', 'original']).default('original') as z.ZodEnum<['square', 'original']>
       }).default({}),
+
       sidebar: z.object({
         hide: z.boolean().default(true),
         size: z.number().default(200),
@@ -33,6 +37,7 @@ export const PackagesConfig = z.object({
           }).array().default([])
         }),
       }).default({}),
+
       media_view: z.object({
         filmstrip: z.object({
           enabled: z.boolean().default(false),
