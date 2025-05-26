@@ -30,14 +30,15 @@ export interface CurrentSelection {
   result_index: number
 }
 
+const CURRENT_SELECTION_DEFAULTS: CurrentSelection = {
+  show: false,
+  thumbnails: null,
+  media_response: null,
+  result_index: 0,
+}
 export class MediaSelectionsRune extends Rune {
   #selected_thumbnails = $state<ThumbnailSelections>({type: 'none'})
-  #current_selection = $state<CurrentSelection>({
-    show: false,
-    thumbnails: null,
-    media_response: null,
-    result_index: 0,
-  })
+  #current_selection = $state<CurrentSelection>({...CURRENT_SELECTION_DEFAULTS})
 
   public constructor(client: BaseController['client']) {
     super(client)
@@ -65,6 +66,11 @@ export class MediaSelectionsRune extends Rune {
       this.#current_selection.media_response = media_response
       this.#current_selection.result_index = result_index
     }
+  }
+
+  public clear_current_selection() {
+    console.log('clear current?')
+    this.#current_selection = {...CURRENT_SELECTION_DEFAULTS}
   }
 
   public async open_media() {

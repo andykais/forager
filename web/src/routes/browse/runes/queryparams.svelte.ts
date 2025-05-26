@@ -40,8 +40,7 @@ const NAME_MAP: Partial<Record<keyof State, string>> = {
 const NAME_MAP_REVERSED = Object.fromEntries(Object.entries(NAME_MAP).map(([key, val]) => [val, key]))
 export class QueryParamsRune extends Rune {
   public DEFAULTS = DEFAULTS
-  public state: State = $state<State>({...DEFAULTS})
-  public current_url: State = {...DEFAULTS}
+  public current_url: State = $state({...DEFAULTS})
   public current_serialized: string = '?'
 
   private search_rune: MediaListRune
@@ -134,13 +133,13 @@ export class QueryParamsRune extends Rune {
   public merge(partial_params: Partial<typeof NAME_MAP_REVERSED>) {
     const params = {...this.current_url}
     for (const [key, val] of Object.entries(partial_params)) {
-      const params_key = NAME_MAP_REVERSED[key] ?? key
+      const params_key: keyof State = NAME_MAP_REVERSED[key] ?? key
 
-      if (key === 'tag') {
+      if (params_key === 'search_string') {
         const search_strings = new Set(params['search_string'].split(/\s+/))
         search_strings.add(val)
         params.search_string = [...search_strings].join(' ').trim()
-      } else if (key === 'mode') {
+      } else if (params_key === 'search_mode') {
         params[params_key] = val
         if (val !== 'group_by') {
           params.group_by = undefined

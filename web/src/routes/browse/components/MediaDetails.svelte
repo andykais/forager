@@ -19,6 +19,7 @@
 
   type TagRecord = ReturnType<Forager['tag']['search']>['results'][0]
   let sorted_tags: [string, TagRecord[]][] = $derived.by(() => {
+    console.log('deriving sorted_tags...')
     const grouped_tags: Record<string, TagRecord[]> = {}
     current_selection.media_response?.tags.map(t => {
       if (grouped_tags[t.group] === undefined) {
@@ -73,7 +74,7 @@
       {#each sorted_tags as tag_group_entry, tag_entry_index (tag_group_entry[0])}
         {#each tag_group_entry[1] as tag, tag_index (tag.id)}
           <div class="grid grid-cols-[1fr_auto] items-center gap-1 pb-1">
-            <SearchLink {controller} params={queryparams.extend('tag', parsers.Tag.encode(tag))}>
+            <SearchLink {controller} params={queryparams.merge({tags: parsers.Tag.encode(tag)})}>
               <Tag show_group={false} {tag} />
             </SearchLink>
             <button

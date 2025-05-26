@@ -10,7 +10,7 @@
 
   let {controller}: {controller: BrowseController} = $props()
 
-  const {queryparams} = controller.runes
+  const {queryparams, media_selections} = controller.runes
 
   let params = $state<typeof queryparams.DEFAULTS>({...queryparams.DEFAULTS})
   queryparams.popstate_listener(url_params => {
@@ -19,6 +19,7 @@
 
   async function update_search() {
     await queryparams.submit(params)
+    media_selections.clear_current_selection()
 
   }
   type AdvancedFiltersState = 'hidden' | 'shown'

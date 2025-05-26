@@ -29,7 +29,6 @@
     const hours = minutes / 60
     return `${hours.toFixed(2)}h`
   }
-
 </script>
 
 <style>
@@ -74,14 +73,15 @@
           >
             {#if settings.ui.media_list.thumbnail_shape === 'original'}
               <img
-                class="
-                  w-fit h-fit
-                  border-2 shadow shadow-gray-700 rounded-md"
+                class={[
+                  "border-2 shadow shadow-gray-700 rounded-md",
+                  result.img_fit_classes()
+                ]}
                 class:hover:border-slate-400={result_index !== media_selections.current_selection.result_index}
                 class:border-slate-900={      result_index !== media_selections.current_selection.result_index}
                 class:border-green-300={      result_index === media_selections.current_selection.result_index}
                 src="/files/thumbnail{result.preview_thumbnail.filepath}"
-                alt="Failed to load /files/thumbnail{result.preview_thumbnail.filepath}"/>
+                alt="/files/thumbnail{result.preview_thumbnail.filepath}"/>
             {:else}
               <img
                 class="
@@ -91,7 +91,7 @@
                 class:border-slate-900={      result_index !== media_selections.current_selection.result_index}
                 class:border-green-300={      result_index === media_selections.current_selection.result_index}
                 src="/files/thumbnail{result.preview_thumbnail.filepath}"
-                alt="Failed to load /files/thumbnail{result.preview_thumbnail.filepath}"/>
+                alt="/files/thumbnail{result.preview_thumbnail.filepath}"/>
             {/if}
           </div>
 

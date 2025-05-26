@@ -90,6 +90,16 @@ export class MediaFileRune extends MediaViewRune {
     const result = await this.client.forager.media.get({media_reference_id: this.media_reference.id })
     this.state!.full_thumbnails = result.thumbnails
   }
+
+  public img_fit_classes() {
+    if (this.media.media_file.width > this.media.media_file.height) {
+      // its long edge is wide
+      return "w-full"
+    } else {
+      // its long edge is tall
+      return "h-full"
+    }
+  }
 }
 
 
@@ -148,6 +158,21 @@ export class MediaGroupRune extends MediaViewRune {
 
   get preview_thumbnail() {
     return this.grouped_state.media_list.at(0)?.thumbnails.results[0] ?? {filepath: null}
+  }
+
+  public img_fit_classes() {
+    if (this.grouped_state.media_list.length === 0) {
+      return "w-full h-full"
+    } else {
+      const media = this.grouped_state.media_list[0]
+      if (media.media_file.width > media.media_file.height) {
+        // its long edge is wide
+        return "w-full"
+      } else {
+        // its long edge is tall
+        return "h-full"
+      }
+    }
   }
 }
 
