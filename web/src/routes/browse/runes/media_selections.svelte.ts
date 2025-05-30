@@ -52,6 +52,7 @@ export class MediaSelectionsRune extends Rune {
     return this.#current_selection
   }
 
+
   private is_currently_selected(media_reference_id: number) {
     if (this.#current_selection.media_response?.media_reference.id === media_reference_id) {
       return true
@@ -69,7 +70,6 @@ export class MediaSelectionsRune extends Rune {
   }
 
   public clear_current_selection() {
-    console.log('clear current?')
     this.#current_selection = {...CURRENT_SELECTION_DEFAULTS}
   }
 

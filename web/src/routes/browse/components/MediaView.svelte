@@ -16,14 +16,14 @@
   })
 
   let {controller}: Props = $props()
-  let current_selection = controller.runes.media_selections.current_selection
+  const {media_selections} = controller.runes
   let paused = $state(false)
 
   let filmstrip_thumbnails
   let filmstrip_height = 50
 
   $effect(() => {
-    if (!dialog.open && current_selection.show) {
+    if (!dialog.open && media_selections.current_selection.show) {
       dialog.show()
     }
   })
@@ -37,10 +37,10 @@
   }
 
   let media_url = $derived.by(() => {
-    if (current_selection.media_response?.media_type !== 'media_file') {
+    if (media_selections.current_selection.media_response?.media_type !== 'media_file') {
       return
     }
-    const escaped_path = current_selection.media_response.media_file.filepath
+    const escaped_path = media_selections.current_selection.media_response.media_file.filepath
       // .replace(/$\//, '')
       //.replaceAll('?', '%3F')
     const escaped_url = `/files/media_file/${encodeURIComponent(escaped_path)}`
@@ -61,13 +61,13 @@
   <div class="grid justify-items-center items-center h-full"
   style="height: {controller.runes.dimensions.heights.media_list}px;"
   >
-    {#if current_selection.show && current_selection.media_response}
-      {#if current_selection.media_response.media_type === 'media_file'}
-        {#if current_selection.media_response.media_file.media_type === 'IMAGE'}
+    {#if media_selections.current_selection.show && media_selections.current_selection.media_response}
+      {#if media_selections.current_selection.media_response.media_type === 'media_file'}
+        {#if media_selections.current_selection.media_response.media_file.media_type === 'IMAGE'}
           <img
             class="object-contain max-h-full"
             src={media_url} alt="">
-        {:else if current_selection.media_response.media_file.media_type === 'VIDEO'}
+        {:else if media_selections.current_selection.media_response.media_file.media_type === 'VIDEO'}
           <video
             bind:clientWidth={animation_width}
             class="object-contain max-h-full outline-none"
@@ -83,19 +83,19 @@
           <progress
             class="w-full h-1 absolute bottom-0"
             style="width: {animation_width}px"
-            max={current_selection.media_response.media_file.duration} value={animation_progress}></progress>
+            max={media_selections.current_selection.media_response.media_file.duration} value={animation_progress}></progress>
           {#if controller.runes.settings.ui.media_view.filmstrip.enabled}
             <div class="w-full flex flex-row justify-center gap-1 overflow-x-scroll" style="height: {controller.runes.settings.ui.media_view.filmstrip.thumbnail_size}px;">
-              {#each current_selection.thumbnails.results as thumbnail}
+              {#each media_selections.current_selection.thumbnails.results as thumbnail}
                 <div class="h-full">
                   <img class="h-full" src="/files/thumbnail{thumbnail.filepath}" alt=""></div>
               {/each}
             </div>
           {/if}
-        {:else if current_selection.media_response.media_file.media_type === 'AUDIO'}
+        {:else if media_selections.current_selection.media_response.media_file.media_type === 'AUDIO'}
           <img
             class="object-contain max-h-full"
-            src="/files/thumbnail{current_selection.media_response.thumbnails.results[0].filepath}" alt="">
+            src="/files/thumbnail{media_selections.current_selection.media_response.thumbnails.results[0].filepath}" alt="">
           <audio
             autoplay
             loop
@@ -104,7 +104,7 @@
           </audio>
         {/if}
       {:else}
-        unhandled media type {current_selection.media_response.media_type}
+        unhandled media type {media_selections.current_selection.media_response.media_type}
       {/if}
     {/if}
   </div>
