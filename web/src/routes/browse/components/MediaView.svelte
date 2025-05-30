@@ -13,6 +13,9 @@
     PlayPauseMedia: e => {
       paused = !paused
     },
+    OpenMedia: e => {
+      media_selections.open_media()
+    },
     CopyMedia: async e => {
       if (media_selections.current_selection.media_response) {
         if (media_selections.current_selection.media_response.media_type === 'media_file') {
