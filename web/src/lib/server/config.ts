@@ -56,6 +56,8 @@ export const PackagesConfig = z.object({
       NextTagSuggestion: Keybind('ArrowDown'),
       PrevTagSuggestion: Keybind('ArrowUp'),
 
+      CopyMedia: Keybind('Ctrl-C'),
+
       // DownMedia: Keybind('ArrowDown'),
       // UpMedia: Keybind('ArrowUp'),
       ToggleFitMedia: Keybind('Ctrl-Space'),

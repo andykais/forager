@@ -12,7 +12,14 @@
     },
     PlayPauseMedia: e => {
       paused = !paused
-    }
+    },
+    CopyMedia: async e => {
+      if (media_selections.current_selection.media_response) {
+        if (media_selections.current_selection.media_response.media_type === 'media_file') {
+          await navigator.clipboard.writeText(media_selections.current_selection.media_response.media_file.filepath)
+        }
+      }
+    },
   })
 
   let {controller}: Props = $props()

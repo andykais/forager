@@ -19,7 +19,6 @@
 
   type TagRecord = ReturnType<Forager['tag']['search']>['results'][0]
   let sorted_tags: [string, TagRecord[]][] = $derived.by(() => {
-    console.log('deriving sorted_tags...')
     const grouped_tags: Record<string, TagRecord[]> = {}
     current_selection.media_response?.tags.map(t => {
       if (grouped_tags[t.group] === undefined) {

@@ -18,11 +18,6 @@
   const icon_color = theme.colors.green[200]
   let dialog: HTMLDialogElement
 
-  $effect(() => {
-    const ids = search.results.map(r => r.state.media.media_reference.id)
-    console.log('SearchResults', {search_result_ids: ids})
-  })
-
   function human_readable_duration(seconds: number) {
     if (seconds < 100) {
       return `${seconds}s`
