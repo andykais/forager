@@ -425,7 +425,14 @@ class FileProcessor {
         })
         const output = await cmd.output()
         if (!output.success) {
-          throw new errors.SubprocessError(output, 'generating image thumbnails failed')
+          const decoder = new TextDecoder()
+          const stderr = decoder.decode(output.stderr)
+          const error = new errors.SubprocessError(output, 'generating image thumbnails failed')
+          if (stderr.includes('missing RIFF tag')) {
+            throw new errors.InvalidFileError(`Invalid webp file`, error)
+          } else {
+            throw error
+          }
         }
       } else {
         /*
