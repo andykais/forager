@@ -14,7 +14,10 @@
       paused = !paused
     },
     OpenMedia: e => {
+      /*
+      // TODO we need to be aware of the focus when making this call. Currently this will take over hitting "Enter" on the search bar
       media_selections.open_media()
+      */
     },
     CopyMedia: async e => {
       if (media_selections.current_selection.media_response) {

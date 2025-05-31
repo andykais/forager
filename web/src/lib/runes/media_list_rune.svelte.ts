@@ -27,7 +27,7 @@ export type Input =
 interface MediaListState {
   loading: boolean
   content: Result | null
-  results: Result['results']
+  results: MediaViewRune[]
 }
 
 export class MediaListRune extends Rune {
@@ -84,7 +84,7 @@ export class MediaListRune extends Rune {
       content = await this.client.forager.media.search(fetch_params)
     }
     else if (params_type === 'group_by') {
-      fetch_params.limit = fetch_params.limit ?? 10
+      fetch_params.limit = fetch_params.limit ?? 30
       content = await this.client.forager.media.group(fetch_params)
     } else {
       throw new Error('unimplemented')

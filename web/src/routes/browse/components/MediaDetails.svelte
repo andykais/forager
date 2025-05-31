@@ -13,14 +13,13 @@
   import { BrowseController } from '../controller.ts'
   let {controller}: {controller: BrowseController} = $props()
   let {dimensions, media_selections, settings, queryparams} = controller.runes
-  let current_selection = media_selections.current_selection
 
   let new_tag_str = $state<string>('')
 
   type TagRecord = ReturnType<Forager['tag']['search']>['results'][0]
   let sorted_tags: [string, TagRecord[]][] = $derived.by(() => {
     const grouped_tags: Record<string, TagRecord[]> = {}
-    current_selection.media_response?.tags.map(t => {
+    media_selections.current_selection.media_response?.tags.map(t => {
       if (grouped_tags[t.group] === undefined) {
         grouped_tags[t.group] = []
       }
@@ -64,11 +63,11 @@
       if (new_tag_str) {
         tags = {add: [new_tag_str]}
       }
-      current_selection.media_response!.update(media_info, tags)
+      media_selections.current_selection.media_response!.update(media_info, tags)
       new_tag_str = ''
     }}
     >
-    {#if current_selection.media_response}
+    {#if media_selections.current_selection.media_response}
       <label class="text-green-50" for="tags"><span>Tags</span></label>
       {#each sorted_tags as tag_group_entry, tag_entry_index (tag_group_entry[0])}
         {#each tag_group_entry[1] as tag, tag_index (tag.id)}
@@ -81,7 +80,7 @@
               title="Remove"
               type="button"
               onclick={async e => {
-                await current_selection.media_response.update(undefined, {remove: [`${tag.group}:${tag.name}`]})
+                await media_selections.current_selection.media_response.update(undefined, {remove: [`${tag.group}:${tag.name}`]})
               }}>
               <Icon class="fill-green-50 hover:fill-green-300" data={XCircle} size="18px" color="none" />
             </button>
@@ -100,45 +99,45 @@
         {controller}
         editable
         label="Title"
-        content={current_selection.media_response.media_reference.title}/>
+        content={media_selections.current_selection.media_response.media_reference.title}/>
 
       <MediaDetailEntry
         {controller}
         editable
         label="Description"
-        content={current_selection.media_response.media_reference.description}/>
+        content={media_selections.current_selection.media_response.media_reference.description}/>
 
       <MediaDetailEntry
         {controller}
         editable
         label="Source URL"
-        content={current_selection.media_response.media_reference.source_url}/>
+        content={media_selections.current_selection.media_response.media_reference.source_url}/>
 
       <MediaDetailEntry
         {controller}
         label="Metadata"
-        content={current_selection.media_response.media_reference.metadata}/>
+        content={media_selections.current_selection.media_response.media_reference.metadata}/>
 
       <MediaDetailEntry
         {controller}
         label="Stars"
-        content={current_selection.media_response.media_reference.stars}/>
+        content={media_selections.current_selection.media_response.media_reference.stars}/>
 
       <MediaDetailEntry
         {controller}
         label="Views"
-        content={current_selection.media_response.media_reference.view_count}/>
+        content={media_selections.current_selection.media_response.media_reference.view_count}/>
 
-      {#if current_selection.media_response.media_type === 'media_file'}
+      {#if media_selections.current_selection.media_response.media_type === 'media_file'}
         <MediaDetailEntry
           {controller}
           label="Filename"
-          content={path.basename(current_selection.media_response.media_file.filepath)}/>
+          content={path.basename(media_selections.current_selection.media_response.media_file.filepath)}/>
 
         <MediaDetailEntry
           {controller}
           label="File"
-          content={current_selection.media_response.media_file.filepath}/>
+          content={media_selections.current_selection.media_response.media_file.filepath}/>
       {/if}
 
       <!-- TODO we should support datetimes in @andykais/ts-rpc -->
@@ -147,14 +146,14 @@
         editable
         label="Added"
         type="datetime-local"
-        content={current_selection.media_response.media_reference.created_at}/>
+        content={media_selections.current_selection.media_response.media_reference.created_at}/>
 
       <MediaDetailEntry
         {controller}
         editable
         label="Created"
         type="datetime-local"
-        content={current_selection.media_response.media_reference.source_created_at}/>
+        content={media_selections.current_selection.media_response.media_reference.source_created_at}/>
 
     {:else}
       TODO: show tag summary
