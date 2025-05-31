@@ -2,6 +2,9 @@ import * as torm from '@torm/sqlite'
 import { Model, field, PaginatedResult, PaginationVars } from '~/models/lib/base.ts'
 import {TagGroup} from './tag_group.ts'
 import {MediaReferenceTag} from './media_reference_tag.ts'
+import {MediaReference, SelectManyFilters} from './media_reference.ts'
+import { SQLBuilder } from "~/models/lib/sql_builder.ts";
+import { MediaReferenceQuery } from "~/inputs/media_reference_inputs.ts";
 
 export type TagJoin =
   & torm.InferSchemaTypes<typeof Tag.result>
@@ -141,6 +144,7 @@ class Tag extends Model {
       name: string
       group: string | undefined
     } | undefined
+    contextual_query: SelectManyFilters | undefined
   }): PaginatedResult<TagJoin> {
     if (params.cursor !== undefined) {
       throw new Error('unimplemented')
@@ -148,7 +152,37 @@ class Tag extends Model {
 
     let results: TagJoin[]
     let total = -1
-    if (params.tag_match !== undefined) {
+    if (params.contextual_query && Object.keys(params.contextual_query)) {
+
+      const media_reference_tag_builder = new SQLBuilder(this.driver)
+      media_reference_tag_builder.set_select_clause(`SELECT media_reference_tag.media_reference_id FROM media_reference`)
+      media_reference_tag_builder.add_join_clause(`INNER JOIN`, 'media_reference_tag', 'media_reference_tag.media_reference_id = media_reference.id')
+      MediaReference.set_select_many_filters(media_reference_tag_builder, params.contextual_query)
+
+      const tags_sql_builder = new SQLBuilder(this.driver)
+      tags_sql_builder
+        .set_select_clause(`SELECT tag.*, tag_group.name as 'group' FROM tag`)
+        .add_result_fields([...Tag.result['*'] as any, TagGroup.result.name.as('group')] as any)
+        .add_join_clause('INNER JOIN', 'tag_group', 'tag_group.id = tag.tag_group_id')
+        .add_join_clause('INNER JOIN', 'media_reference_tag', 'media_reference_tag.tag_id = tag.id')
+        .add_join_clause('INNER JOIN', `(
+          ${media_reference_tag_builder.generate_sql()}
+        ) M`, 'M.media_reference_id = media_reference_tag.media_reference_id')
+        .add_group_clause(`GROUP BY tag.id`)
+
+      const select_contextual_tags = tags_sql_builder.build()
+
+      tags_sql_builder
+        .set_select_clause(`SELECT COUNT(DISTINCT(tag.id)) as total FROM tag`)
+        .set_result_fields({total: PaginationVars.result.total})
+        .clear_group_clause()
+      const count_contextual_tags = tags_sql_builder.build()
+
+      results = select_contextual_tags.stmt.all({})
+      total = count_contextual_tags.stmt.one({})!.total
+      console.log({results, total})
+
+    } else if (params.tag_match !== undefined) {
       const {name, group} = params.tag_match
       if (group === undefined) {
         results = this.#select_by_match_name.all({name, limit: params.limit})

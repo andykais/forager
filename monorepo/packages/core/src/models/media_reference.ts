@@ -3,7 +3,7 @@ import * as errors from '~/lib/errors.ts'
 import { Model, field, PaginationVars, GroupByVars, type PaginatedResult } from '~/models/lib/base.ts'
 import { SQLBuilder } from '~/models/lib/sql_builder.ts'
 
-interface SelectManyFilters {
+export interface SelectManyFilters {
   id: number | undefined
   series_id: number | undefined
   series: boolean | undefined
@@ -16,7 +16,7 @@ interface SelectManyFilters {
   stars: number | undefined
   sort_by: string
   stars_equality: 'gte' | 'eq' | undefined
-  unread: boolean
+  unread: boolean | undefined
   filesystem: boolean | undefined
   filepath: string | undefined
   // directory_path: string | undefined
@@ -132,8 +132,8 @@ class MediaReference extends Model {
       .set_select_clause(`SELECT media_reference.id FROM media_reference`)
       .add_result_fields({total: PaginationVars.result.total})
 
-    this.#set_select_many_filters(records_builder, params)
-    this.#set_select_many_filters(count_builder, params)
+    MediaReference.set_select_many_filters(records_builder, params)
+    MediaReference.set_select_many_filters(count_builder, params)
     records_builder.set_order_by_clause(`ORDER BY media_reference.${params.sort_by} ${params.order} NULLS LAST, media_reference.id ${params.order}`)
 
     if (params.cursor !== undefined) {
@@ -216,7 +216,7 @@ ${count_query.stmt.sql}
   public select_many_group_by_tags(params: SelectManyGroupByParams): PaginatedResult<torm.InferSchemaTypes<typeof GroupByVars.result>>  {
     const records_builder = new SQLBuilder(this.driver)
 
-    this.#set_select_many_filters(records_builder, {...params, sort_by: 'media_reference.created_at'})
+    MediaReference.set_select_many_filters(records_builder, {...params, sort_by: 'media_reference.created_at'})
 
     records_builder.set_select_clause(`
       SELECT media_reference.id AS inner_media_reference_id FROM media_reference
@@ -294,7 +294,7 @@ ${group_builder.generate_sql()}
     }
   }
 
-  #set_select_many_filters(builder: SQLBuilder, params: SelectManyFilters) {
+  public static set_select_many_filters(builder: SQLBuilder, params: SelectManyFilters) {
     if (params.id !== undefined) {
       builder.add_where_clause(`id = ${params.id}`)
     }
@@ -354,7 +354,7 @@ ${group_builder.generate_sql()}
       }
     }
 
-    if (params.unread !== false) {
+    if (params.unread === true) {
       throw new Error('unimplemented')
     }
   }

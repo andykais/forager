@@ -156,3 +156,41 @@ test('tag actions', async (ctx) => {
     ctx.assert.tag_search_result(forager.tag.search(), assert_tags_after)
   })
 })
+
+
+test.only('tag contextual search', async ctx => {
+  using forager = new Forager(ctx.get_test_config())
+  forager.init()
+
+  const art = await forager.media.create(ctx.resources.media_files['koch.tif'], {}, ['procedural_generation', 'mathmatical', 'wallpaper'])
+  const screenshot = await forager.media.create(ctx.resources.media_files["ed-edd-eddy.png"], {}, ['genre:cartoon', 'wallpaper'])
+  const doodle = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {}, ['animal:cat'])
+
+  ctx.assert.tag_search_result(forager.tag.search(), {
+    total: 5,
+    results: [
+      {name: 'procedural_generation'},
+      {name: 'mathmatical'},
+      {name: 'wallpaper'},
+      {name: 'cartoon', group: 'genre'},
+      {name: 'cat', group: 'animal'},
+    ]
+  })
+
+
+  const all_tags_related_to_wallpaper = forager.tag.search({
+    contextual_query: {
+      tags: ['wallpaper']
+    }
+  })
+
+  // all our tags except animal:cat can be found under media with the tag "wallpaper"
+  ctx.assert.tag_search_result(all_tags_related_to_wallpaper, {
+    results: [
+      {name: 'procedural_generation'},
+      {name: 'mathmatical'},
+      {name: 'wallpaper'},
+      {name: 'cartoon', group: 'genre'},
+    ]
+  })
+})

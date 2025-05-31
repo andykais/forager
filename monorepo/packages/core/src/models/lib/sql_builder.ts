@@ -44,8 +44,17 @@ class SQLBuilder {
     return this
   }
 
+  remove_join_clause(table: string) {
+    delete this.fragments.join_clauses[table]
+  }
+
   add_where_clause(sql: string) {
     this.fragments.where_clauses.push(sql)
+    return this
+  }
+
+  clear_group_clause() {
+    this.fragments.group_clauses = []
     return this
   }
 
@@ -79,6 +88,19 @@ class SQLBuilder {
   }
 
   add_result_fields(result_fields: Fields) {
+    if (Array.isArray(result_fields)) {
+      Object.assign(
+        this.#result_fields,
+        Object.fromEntries(result_fields.map(field => [field.field_name, field]))
+      )
+    } else {
+      Object.assign(this.#result_fields, result_fields)
+    }
+    return this
+  }
+
+  set_result_fields(result_fields: Fields) {
+    this.#result_fields = {}
     if (Array.isArray(result_fields)) {
       Object.assign(
         this.#result_fields,

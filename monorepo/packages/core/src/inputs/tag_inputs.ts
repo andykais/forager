@@ -1,6 +1,5 @@
 import z from 'zod'
 import { errors } from "~/mod.ts";
-import { PaginatedQuery } from "~/lib/inputs_base.ts";
 
 
 const RESERVED = {
@@ -73,16 +72,3 @@ export const TagMatchObject = z.object({
 export const Tag = TagObject.or(TagShorthand.pipe(TagObject))
 
 export const TagList = z.array(Tag)
-
-export const TagSearch  = PaginatedQuery.extend({
-  query: z.object({
-    tag_match: TagShorthand.pipe(TagMatchObject),
-  }).strict()
-    .optional()
-    .transform(q => {
-      return {...q}
-    }),
-  limit: z.number().optional().default(10),
-  sort_by: z.enum(['created_at', 'updated_at', 'media_reference_count', 'unread_media_reference_count']).default('updated_at'),
-  order: z.enum(['desc', 'asc']).default('desc'),
-})
