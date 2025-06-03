@@ -158,13 +158,13 @@ test('tag actions', async (ctx) => {
 })
 
 
-test.only('tag contextual search', async ctx => {
+test('tag contextual search', async ctx => {
   using forager = new Forager(ctx.get_test_config())
   forager.init()
 
-  const art = await forager.media.create(ctx.resources.media_files['koch.tif'], {}, ['procedural_generation', 'mathmatical', 'wallpaper'])
-  const screenshot = await forager.media.create(ctx.resources.media_files["ed-edd-eddy.png"], {}, ['genre:cartoon', 'wallpaper'])
-  const doodle = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {}, ['animal:cat'])
+  await forager.media.create(ctx.resources.media_files['koch.tif'], {}, ['procedural_generation', 'mathmatical', 'wallpaper'])
+  await forager.media.create(ctx.resources.media_files["ed-edd-eddy.png"], {}, ['genre:cartoon', 'wallpaper'])
+  await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {}, ['animal:cat'])
 
   ctx.assert.tag_search_result(forager.tag.search(), {
     total: 5,

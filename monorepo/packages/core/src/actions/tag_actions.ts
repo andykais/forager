@@ -12,7 +12,6 @@ class TagActions extends Actions {
 
     let contextual_query: undefined | SelectManyFilters
     if (parsed?.contextual_query && Object.keys(parsed.contextual_query).length) {
-      console.log(parsed)
       const tag_ids: number[] | undefined = parsed.contextual_query.tags
         ?.map(tag => this.models.Tag.select_one({name: tag.name, group: tag.group }, {or_raise: true}).id)
         .filter((tag): tag is number => tag !== undefined)

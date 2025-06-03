@@ -4,7 +4,6 @@ import {TagGroup} from './tag_group.ts'
 import {MediaReferenceTag} from './media_reference_tag.ts'
 import {MediaReference, SelectManyFilters} from './media_reference.ts'
 import { SQLBuilder } from "~/models/lib/sql_builder.ts";
-import { MediaReferenceQuery } from "~/inputs/media_reference_inputs.ts";
 
 export type TagJoin =
   & torm.InferSchemaTypes<typeof Tag.result>
@@ -180,7 +179,6 @@ class Tag extends Model {
 
       results = select_contextual_tags.stmt.all({})
       total = count_contextual_tags.stmt.one({})!.total
-      console.log({results, total})
 
     } else if (params.tag_match !== undefined) {
       const {name, group} = params.tag_match
