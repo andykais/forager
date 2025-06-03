@@ -127,6 +127,7 @@ class Tag extends Model {
     tags_sql_builder
       .set_select_clause(`SELECT tag.*, tag_group.name as 'group', tag_group.color as 'color' FROM tag`)
       .add_join_clause('INNER JOIN', 'tag_group', 'tag_group.id = tag.tag_group_id')
+      .set_limit_clause(`LIMIT ${params.limit}`)
       .add_result_fields([...Tag.result['*'] as any, TagGroup.result.name.as('group')] as any)
       .add_result_fields([
         ...Tag.result['*'] as any,
