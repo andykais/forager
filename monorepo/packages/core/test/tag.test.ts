@@ -45,11 +45,11 @@ test('tag actions', async (ctx) => {
     ctx.assert.tag_search_result(forager.tag.search(), {
       total: 5,
       results: [
-        {group: 'genre', name: 'procedural_generation'},
-        {group: '', name: 'generated'},
-        {group: 'colors', name: 'black'},
         {group: '', name: 'wallpaper', media_reference_count: 2},
         {group: 'genre', name: 'cartoon'},
+        {group: 'colors', name: 'black'},
+        {group: '', name: 'generated'},
+        {group: 'genre', name: 'procedural_generation'},
       ]
     })
 
@@ -107,11 +107,11 @@ test('tag actions', async (ctx) => {
     const assert_tags_before = {
       total: 5,
       results: [
-        {group: 'genre', name: 'procedural_generation'},
-        {group: '', name: 'generated'},
-        {group: 'colors', name: 'black'},
         {group: '', name: 'wallpaper', media_reference_count: 2},
         {group: 'genre', name: 'cartoon'},
+        {group: 'colors', name: 'black'},
+        {group: '', name: 'generated'},
+        {group: 'genre', name: 'procedural_generation'},
       ]
     }
     ctx.assert.tag_search_result(forager.tag.search(), assert_tags_before)
@@ -126,12 +126,12 @@ test('tag actions', async (ctx) => {
     const assert_tags_after = {
       total: 6,
       results: [
-        {group: 'genre', name: 'procedural_generation'},
-        {group: '', name: 'generated'},
-        {group: 'colors', name: 'black'},
         {group: '', name: 'wallpaper', media_reference_count: 2},
-        {group: 'genre', name: 'cartoon'},
         {group: '', name: 'foobar'},
+        {group: 'genre', name: 'cartoon'},
+        {group: 'colors', name: 'black'},
+        {group: '', name: 'generated'},
+        {group: 'genre', name: 'procedural_generation'},
       ]
     }
     ctx.assert.tag_search_result(forager.tag.search(), assert_tags_after)
@@ -153,7 +153,45 @@ test('tag actions', async (ctx) => {
     doodle = forager.media.update(doodle.media_reference.id, {}, {replace: []})
     ctx.assert.list_partial(doodle.tags, [])
     // now observe that the tag _does_ exist
-    ctx.assert.tag_search_result(forager.tag.search(), assert_tags_after)
+    ctx.assert.tag_search_result(forager.tag.search(), {
+      total: 6,
+      results: [
+        {group: '', name: 'wallpaper', media_reference_count: 2},
+        {group: 'genre', name: 'cartoon'},
+        {group: 'colors', name: 'black'},
+        {group: '', name: 'generated'},
+        {group: 'genre', name: 'procedural_generation'},
+        {group: '', name: 'foobar', media_reference_count: 0},
+      ]
+    })
+  })
+
+  await ctx.subtest(`tag sort`, async () => {
+    // default sort is by 'media_reference_count'
+    ctx.assert.tag_search_result(forager.tag.search({sort_by: 'media_reference_count'}), {
+      total: 6,
+      results: [
+        {group: '', name: 'wallpaper', media_reference_count: 2},
+        {group: 'genre', name: 'cartoon'},
+        {group: 'colors', name: 'black'},
+        {group: '', name: 'generated'},
+        {group: 'genre', name: 'procedural_generation'},
+        {group: '', name: 'foobar', media_reference_count: 0},
+      ]
+    })
+
+    forager.media.update(doodle.media_reference.id, {}, {add: ['genre:cartoon']})
+
+    ctx.assert.tag_search_result(forager.tag.search({sort_by: 'updated_at'}), {
+      results: [
+        {name: 'cartoon', media_reference_count: 2},
+        {group: '', name: 'foobar', media_reference_count: 0},
+        {name: 'wallpaper', media_reference_count: 2},
+        {name: 'black', media_reference_count: 1},
+        {name: 'generated', media_reference_count: 1},
+        {name: 'procedural_generation', media_reference_count: 1},
+      ]
+    })
   })
 })
 
@@ -169,11 +207,11 @@ test('tag contextual search', async ctx => {
   ctx.assert.tag_search_result(forager.tag.search(), {
     total: 5,
     results: [
-      {name: 'procedural_generation'},
-      {name: 'mathmatical'},
       {name: 'wallpaper'},
-      {name: 'cartoon', group: 'genre'},
       {name: 'cat', group: 'animal'},
+      {name: 'cartoon', group: 'genre'},
+      {name: 'mathmatical'},
+      {name: 'procedural_generation'},
     ]
   })
 

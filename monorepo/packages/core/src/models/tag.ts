@@ -73,33 +73,6 @@ class Tag extends Model {
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
     WHERE media_reference_tag.media_reference_id = ${MediaReferenceTag.params.media_reference_id}
     ORDER BY tag.media_reference_count DESC, tag.updated_at DESC, tag.id DESC`
-
-  #select_by_match_group_and_name = this.query`
-    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')}, ${TagGroup.result.color} FROM tag
-    INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
-    WHERE tag.name GLOB ${Tag.params.name} AND tag_group.name GLOB ${TagGroup.params.name.as('group')}
-    ORDER BY tag.media_reference_count DESC, tag.updated_at DESC, tag.id DESC
-    LIMIT ${PaginationVars.params.limit}`
-
-  #count_by_match_group_and_name = this.query`
-    SELECT COUNT(1) AS ${PaginationVars.result.total} FROM tag
-    INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
-    WHERE tag.name GLOB ${Tag.params.name} AND tag_group.name GLOB ${TagGroup.params.name.as('group')}
-    LIMIT ${PaginationVars.params.limit}`
-
-  #select_by_match_name = this.query`
-    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')}, ${TagGroup.result.color} FROM tag
-    INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
-    WHERE tag.name GLOB ${Tag.params.name}
-    ORDER BY tag.media_reference_count DESC, tag.updated_at DESC, tag.id DESC
-    LIMIT ${PaginationVars.params.limit}`
-
-  #count_by_match_name = this.query`
-    SELECT COUNT(1) AS ${PaginationVars.result.total} FROM tag
-    INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
-    WHERE tag.name GLOB ${Tag.params.name}
-    LIMIT ${PaginationVars.params.limit}`
-
   #delete_by_count = this.query`
     DELETE FROM tag
     WHERE tag.media_reference_count = 0`
@@ -139,6 +112,7 @@ class Tag extends Model {
   public select_paginated(params: {
     limit: number
     cursor: PaginatedResult<unknown>['cursor']
+    sort_by: 'unread_media_reference_count' | 'media_reference_count' | 'created_at' | 'updated_at'
     tag_match?: {
       name: string
       group: string | undefined
@@ -147,6 +121,38 @@ class Tag extends Model {
   }): PaginatedResult<TagJoin> {
     if (params.cursor !== undefined) {
       throw new Error('unimplemented')
+    }
+
+    const tags_sql_builder = new SQLBuilder(this.driver)
+    tags_sql_builder
+      .set_select_clause(`SELECT tag.*, tag_group.name as 'group', tag_group.color as 'color' FROM tag`)
+      .add_join_clause('INNER JOIN', 'tag_group', 'tag_group.id = tag.tag_group_id')
+      .add_result_fields([...Tag.result['*'] as any, TagGroup.result.name.as('group')] as any)
+      .add_result_fields([
+        ...Tag.result['*'] as any,
+        TagGroup.result.name.as('group'),
+        TagGroup.result.color,
+      ])
+
+      if (params.sort_by === 'media_reference_count') {
+        tags_sql_builder.set_order_by_clause(`ORDER BY tag.media_reference_count DESC, tag.updated_at DESC, tag.id DESC`)
+      } else if (params.sort_by === 'unread_media_reference_count') {
+        tags_sql_builder.set_order_by_clause(`ORDER BY tag.unread_media_reference_count DESC, tag.updated_at DESC, tag.id DESC`)
+      } else if (params.sort_by === 'updated_at') {
+        tags_sql_builder.set_order_by_clause(`ORDER BY tag.updated_at DESC, tag.id DESC`)
+      } else if (params.sort_by === 'created_at') {
+        tags_sql_builder.set_order_by_clause(`ORDER BY tag.created_at DESC, tag.id DESC`)
+      } else {
+        throw new Error(`unexpected tag sort_by: ${params.sort_by}`)
+      }
+
+    if (params.tag_match) {
+      const {name, group} = params.tag_match
+      if (group === undefined) {
+        tags_sql_builder.add_where_clause(`tag.name GLOB '${name}'`)
+      } else {
+        tags_sql_builder.add_where_clause(`tag.name GLOB '${name}' AND tag_group.name GLOB '${group}'`)
+      }
     }
 
     let results: TagJoin[]
@@ -158,56 +164,24 @@ class Tag extends Model {
       media_reference_tag_builder.add_join_clause(`INNER JOIN`, 'media_reference_tag', 'media_reference_tag.media_reference_id = media_reference.id')
       MediaReference.set_select_many_filters(media_reference_tag_builder, params.contextual_query)
 
-      const tags_sql_builder = new SQLBuilder(this.driver)
       tags_sql_builder
-        .set_select_clause(`SELECT tag.*, tag_group.name as 'group', tag_group.color as 'color' FROM tag`)
-        .add_result_fields([...Tag.result['*'] as any, TagGroup.result.name.as('group')] as any)
-        .add_result_fields([
-          ...Tag.result['*'] as any,
-          TagGroup.result.name.as('group'),
-          TagGroup.result.color,
-        ])
-        .add_join_clause('INNER JOIN', 'tag_group', 'tag_group.id = tag.tag_group_id')
         .add_join_clause('INNER JOIN', 'media_reference_tag', 'media_reference_tag.tag_id = tag.id')
         .add_join_clause('INNER JOIN', `(
           ${media_reference_tag_builder.generate_sql()}
         ) M`, 'M.media_reference_id = media_reference_tag.media_reference_id')
         .add_group_clause(`GROUP BY tag.id`)
-        .set_order_by_clause(`ORDER BY tag.media_reference_count DESC, tag.updated_at DESC, tag.id DESC`)
-
-      if (params.tag_match) {
-        if (params.tag_match.group && params.tag_match.name) {
-          // NOTE escape these
-          tags_sql_builder.add_where_clause(`WHERE tag.name GLOB '${params.tag_match.name}' AND tag_group.name GLOB '${params.tag_match.group}'`)
-        } else {
-          tags_sql_builder.add_where_clause(`WHERE tag.name GLOB '${params.tag_match.name}'`)
-        }
-      }
-
-      const select_contextual_tags = tags_sql_builder.build()
-
-      tags_sql_builder
-        .set_select_clause(`SELECT COUNT(DISTINCT(tag.id)) as total FROM tag`)
-        .set_result_fields({total: PaginationVars.result.total})
-        .clear_group_clause()
-      const count_contextual_tags = tags_sql_builder.build()
-
-      results = select_contextual_tags.stmt.all({})
-      total = count_contextual_tags.stmt.one({})!.total
-
-    } else if (params.tag_match !== undefined) {
-      const {name, group} = params.tag_match
-      if (group === undefined) {
-        results = this.#select_by_match_name.all({name, limit: params.limit})
-        total = this.#count_by_match_name.one({name, limit: params.limit})!.total
-      } else {
-        results = this.#select_by_match_group_and_name.all({name, group, limit: params.limit})
-        total = this.#count_by_match_group_and_name.one({name, group, limit: params.limit})!.total
-      }
-    } else {
-      results = this.#select.all({})
-      total = this.#count.one({})!.total
     }
+
+    const select_tags = tags_sql_builder.build()
+
+    tags_sql_builder
+      .set_select_clause(`SELECT COUNT(DISTINCT(tag.id)) as total FROM tag`)
+      .set_result_fields({total: PaginationVars.result.total})
+      .clear_group_clause()
+    const count_tags = tags_sql_builder.build()
+
+    results = select_tags.stmt.all({})
+    total = count_tags.stmt.one({})!.total
 
     return {
       results,
