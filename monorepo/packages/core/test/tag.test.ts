@@ -187,10 +187,10 @@ test('tag contextual search', async ctx => {
   // all our tags except animal:cat can be found under media with the tag "wallpaper"
   ctx.assert.tag_search_result(all_tags_related_to_wallpaper, {
     results: [
-      {name: 'procedural_generation'},
-      {name: 'mathmatical'},
       {name: 'wallpaper'},
       {name: 'cartoon', group: 'genre'},
+      {name: 'mathmatical'},
+      {name: 'procedural_generation'},
     ]
   })
 })

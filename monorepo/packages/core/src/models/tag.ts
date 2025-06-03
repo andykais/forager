@@ -160,14 +160,29 @@ class Tag extends Model {
 
       const tags_sql_builder = new SQLBuilder(this.driver)
       tags_sql_builder
-        .set_select_clause(`SELECT tag.*, tag_group.name as 'group' FROM tag`)
+        .set_select_clause(`SELECT tag.*, tag_group.name as 'group', tag_group.color as 'color' FROM tag`)
         .add_result_fields([...Tag.result['*'] as any, TagGroup.result.name.as('group')] as any)
+        .add_result_fields([
+          ...Tag.result['*'] as any,
+          TagGroup.result.name.as('group'),
+          TagGroup.result.color,
+        ])
         .add_join_clause('INNER JOIN', 'tag_group', 'tag_group.id = tag.tag_group_id')
         .add_join_clause('INNER JOIN', 'media_reference_tag', 'media_reference_tag.tag_id = tag.id')
         .add_join_clause('INNER JOIN', `(
           ${media_reference_tag_builder.generate_sql()}
         ) M`, 'M.media_reference_id = media_reference_tag.media_reference_id')
         .add_group_clause(`GROUP BY tag.id`)
+        .set_order_by_clause(`ORDER BY tag.media_reference_count DESC, tag.updated_at DESC, tag.id DESC`)
+
+      if (params.tag_match) {
+        if (params.tag_match.group && params.tag_match.name) {
+          // NOTE escape these
+          tags_sql_builder.add_where_clause(`WHERE tag.name GLOB '${params.tag_match.name}' AND tag_group.name GLOB '${params.tag_match.group}'`)
+        } else {
+          tags_sql_builder.add_where_clause(`WHERE tag.name GLOB '${params.tag_match.name}'`)
+        }
+      }
 
       const select_contextual_tags = tags_sql_builder.build()
 

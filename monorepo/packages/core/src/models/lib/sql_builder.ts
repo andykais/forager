@@ -87,7 +87,7 @@ class SQLBuilder {
     return this
   }
 
-  add_result_fields(result_fields: Fields) {
+  add_result_fields(result_fields: Fields | SchemaFieldGeneric[]) {
     if (Array.isArray(result_fields)) {
       Object.assign(
         this.#result_fields,
