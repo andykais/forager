@@ -7,16 +7,16 @@
 
   controller.keybinds.component_listen({
     NextMedia: () => {
-      controller.runes.media_selections.next_media(controller.runes.search.results)
+      controller.runes.media_selections.next_media(controller.runes.media_list.results)
     },
     PrevMedia: () => {
-      controller.runes.media_selections.prev_media(controller.runes.search.results)
+      controller.runes.media_selections.prev_media(controller.runes.media_list.results)
     }
   })
 </script>
 
 <Scroller
-  more={() => controller.runes.search.paginate()}
+  more={() => controller.runes.media_list.paginate()}
   class={[
     "w-full focus:outline-none",
      controller.runes.media_selections.current_selection.show ? "overflow-hidden" : "overflow-y-scroll",

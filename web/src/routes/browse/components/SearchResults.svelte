@@ -11,7 +11,7 @@
   }
 
   let {controller}: Props = $props()
-  const {queryparams, settings, media_selections, search} = controller.runes
+  const {queryparams, settings, media_selections, media_list} = controller.runes
 
   let tile_size = settings.ui.media_list.thumbnail_size
   const icon_size = 14
@@ -53,7 +53,7 @@
 
 
 <div class="container-masonry p-4" style="--thumbnail-size: {settings.ui.media_list.thumbnail_size}px">
-  {#each search.results as result, result_index}
+  {#each media_list.results as result, result_index}
     <div>
       <button 
         type="button"
@@ -134,6 +134,6 @@
     </div>
   {/each}
 </div>
-{#if search.loading}
+{#if media_list.loading}
   Loading...
 {/if}

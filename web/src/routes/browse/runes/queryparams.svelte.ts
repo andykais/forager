@@ -233,6 +233,64 @@ export class QueryParamsRune extends Rune {
     }
   }
 
+  public search_input(params: State) {
+    const tags = params.search_string.split(' ').filter(t => t.length > 0)
+    const sort_by = params.sort
+    const order = params.order
+    const filepath = params.filepath
+
+    const query: inputs.PaginatedSearch['query'] = {
+      tags,
+      filepath
+    }
+    switch(params.media_type) {
+      case 'all': {
+        // do nothing
+        break
+      }
+      case 'animated': {
+        query.animated = true
+        break
+      }
+      default: {
+        throw new Error(`Unimplemented media type ${params.media_type}`)
+      }
+    }
+
+    if (params.search_mode === 'media') {
+      return {
+        type: params.search_mode,
+        params: {
+          query: query,
+          sort_by,
+          order
+        }
+      }
+    } else if (params.search_mode === 'group_by') {
+      if (params.group_by === undefined) {
+        throw new Error(`params must be defined!`)
+      }
+      return {
+        type: params.search_mode,
+        params: {
+          group_by: {
+            tag_group: params.group_by,
+          },
+          query: query,
+          sort_by: 'count', // TODO we want to support created_at as well. Sorting is a bit janky with group by for now
+          order
+        }
+      }
+    } else {
+      throw new Error('unimplemented')
+    }
+  }
+
+  public get contextual_query() {
+    const params = this.search_input(this.current_url)
+    return params.params.query
+  }
+
   public popstate_listener(fn: (params: State) => void) {
     this.popstate_listener_fn = fn
   }

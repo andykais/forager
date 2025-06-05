@@ -65,7 +65,7 @@
     </div>
 
     <span class="">
-      Total results {controller.runes.search.total}
+      Total results {controller.runes.media_list.total}
     </span>
   </div>
 </footer>

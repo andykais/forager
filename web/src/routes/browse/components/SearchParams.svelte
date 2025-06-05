@@ -36,7 +36,12 @@
   }}>
   <div class="flex flex-col gap-y-2 p-3 justify-center items-center">
     <div class="w-full grid grid-cols-[1fr_auto] gap-2">
-      <TagAutoCompleteInput {controller} bind:search_string={params.search_string} kind="search" allow_multiple_tags />
+      <TagAutoCompleteInput
+        {controller}
+        bind:search_string={params.search_string}
+        contextual_query={null}
+        kind="search"
+        allow_multiple_tags />
       <button
         class="hover:cursor-pointer"
         title="click to {advanced_filters_state === 'hidden' ? 'show' : 'hide'} advanced filters"

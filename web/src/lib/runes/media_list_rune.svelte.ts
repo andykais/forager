@@ -33,6 +33,7 @@ interface MediaListState {
 export class MediaListRune extends Rune {
   #saved_params_type: 'media' | 'group_by' = 'media'
   #saved_params: {} | undefined
+  #prev_query_hash: string = ''
   #fetch_count = 0
   #has_more = true
   #cursor: Result['cursor'] = undefined
@@ -103,5 +104,26 @@ export class MediaListRune extends Rune {
       results: this.#state.results.concat(results),
       loading: false,
     }
+
+    const query_hash = JSON.stringify(fetch_params.query)
+    if (this.#prev_query_hash !== query_hash) {
+      this.#prev_query_hash = query_hash
+      await this.fetch_tag_summary(params)
+    }
+  }
+
+  async fetch_tag_summary(params: Input) {
+    // NOTE this currently just does a "union". We want an "intersection" for this view. Otherwise our default view returns all tags!
+    return
+
+
+    if (params.type !== 'media') {
+      return
+    }
+
+    const content = await this.client.forager.tag.search({
+      contextual_query: params.params?.query
+    })
+    console.log(content)
   }
 }

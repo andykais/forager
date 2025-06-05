@@ -8,7 +8,7 @@ import { QueryParamsRune } from './runes/queryparams.svelte.ts'
 
 class BrowseController extends BaseController {
   runes: {
-    search: MediaListRune
+    media_list: MediaListRune
     focus: ReturnType<typeof create_focuser>
     dimensions: ReturnType<typeof create_dimensional_rune>
     settings: ReturnType<typeof create_settings>
@@ -19,14 +19,14 @@ class BrowseController extends BaseController {
   public constructor(config: Config) {
     super(config)
 
-    const search_rune = new MediaListRune(this.client, this.settings)
+    const media_list_rune = new MediaListRune(this.client, this.settings)
     this.runes = {
-      search: search_rune,
+      media_list: media_list_rune,
       focus: create_focuser(),
       dimensions: create_dimensional_rune(),
       settings: create_settings(this.config),
-      media_selections: new MediaSelectionsRune(this.client, this.settings),
-      queryparams: new QueryParamsRune(this.client, search_rune),
+      media_selections: new MediaSelectionsRune(this.client, media_list_rune),
+      queryparams: new QueryParamsRune(this.client, media_list_rune),
     }
   }
 }
