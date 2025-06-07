@@ -5,6 +5,9 @@
     controller: BrowseController
   }
 
+  // TODO wire this into settings
+  let show_controls = $state<boolean>(false);
+
   controller.keybinds.component_listen({
     Escape: e => {
       dialog.close()
@@ -18,6 +21,9 @@
       // TODO we need to be aware of the focus when making this call. Currently this will take over hitting "Enter" on the search bar
       media_selections.open_media()
       */
+    },
+    ToggleMediaControls: async e => {
+      show_controls = !show_controls
     },
     CopyMedia: async e => {
       if (media_selections.current_selection.media_response) {
@@ -88,6 +94,7 @@
             loop
             bind:paused
             bind:currentTime={animation_progress}
+            controls={show_controls}
             use:video_loader={media_url}
             >
             <source src={media_url}>

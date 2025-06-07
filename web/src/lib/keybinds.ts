@@ -10,6 +10,7 @@ type KeybindAction =
   | 'PrevTagSuggestion'
   | 'NextTagSuggestion'
   | 'PlayPauseMedia'
+  | 'ToggleMediaControls'
 
 type KeybindActionListener = (e: KeyboardEvent) => void
 

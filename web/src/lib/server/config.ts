@@ -64,6 +64,7 @@ export const PackagesConfig = z.object({
       ToggleFullScreen: Keybind('KeyF'),
       PlayPauseMedia: Keybind('Space'),
       ToggleVideoMute: Keybind('KeyM'),
+      ToggleMediaControls: Keybind('Ctrl-C'),
 
       Search: Keybind('Slash'),
       AddTag: Keybind('Ctrl-M'),
