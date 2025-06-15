@@ -20,11 +20,11 @@
 
   function human_readable_duration(seconds: number) {
     if (seconds < 100) {
-      return `${seconds}s`
+      return `${seconds.toFixed(1)}s`
     }
     const minutes = seconds / 60
     if (minutes < 60) {
-      return `${minutes.toFixed(2)}m`
+      return `${minutes.toFixed(1)}m`
     }
     const hours = minutes / 60
     return `${hours.toFixed(2)}h`
@@ -98,7 +98,6 @@
           <!-- info chips -->
           <div class="flex text-xs text-gray-400 justify-between  p-0.5">
             {#if result.media_type === 'media_file'}
-              <span>id: {result.media_reference.id}</span>
               {#if result.media_file.media_type === 'VIDEO'}
                 <span class="flex">
                   <Icon data={icons.PlayCircle} fill={icon_color} stroke="none" size={icon_size} />

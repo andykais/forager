@@ -39,7 +39,7 @@
       <TagAutoCompleteInput
         {controller}
         bind:search_string={params.search_string}
-        contextual_query={null}
+        contextual_query={/* TODO re-add queryparams.contextual_query */ null}
         kind="search"
         allow_multiple_tags />
       <button

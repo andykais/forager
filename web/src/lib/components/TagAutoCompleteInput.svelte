@@ -46,7 +46,11 @@
       this.#last_query_hash = current_query_hash
 
       // TODO only do this when the query has changed. Currently any time we focus in/out of the browser tab, it will re-search
-      const tags = await controller.client.forager.tag.search({query:{tag_match}})
+      const search_options = {query:{tag_match}}
+      if (contextual_query) {
+        search_options.contextual_query = contextual_query
+      }
+      const tags = await controller.client.forager.tag.search(search_options)
       input_state.suggestion_buttons = Array(tags.results.length).fill(null)
       this.state = tags.results
     }
@@ -86,6 +90,7 @@
     placeholder = 'genre:adventure...',
     input_classes = 'w-full rounded-lg py-0.5 px-3 text-slate-100 bg-gray-800',
     allow_multiple_tags = false,
+    contextual_query,
   }: {
     controller: BaseController
     search_string: string

@@ -294,4 +294,13 @@ export class QueryParamsRune extends Rune {
   public popstate_listener(fn: (params: State) => void) {
     this.popstate_listener_fn = fn
   }
+
+  public get human_readable_summary() {
+    let summary = ''
+    if (this.current_url.search_string) {
+      summary += this.current_url.search_string
+    }
+
+    return summary
+  }
 }
