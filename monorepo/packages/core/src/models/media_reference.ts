@@ -348,14 +348,28 @@ ${group_builder.generate_sql()}
     }
 
     if (params.stars !== undefined) {
-      throw new Error('unimplemented')
-      if (params.stars_equality !== undefined) {
-        throw new Error('unimplemented')
-      }
+      const operator = this.#get_operator(params.stars_equality)
+
+      builder.add_where_clause(`media_reference.stars ${operator} ${params.stars}`)
     }
 
     if (params.unread === true) {
       throw new Error('unimplemented')
+    }
+  }
+
+  static #get_operator(operator: 'gte' | 'eq' | undefined) {
+    const operator_internal = operator ?? 'eq'
+    switch(operator_internal) {
+      case 'gte': {
+        return '>='
+      }
+      case 'eq': {
+        return '='
+      }
+      default: {
+        throw new Error(`Cannot find sql operator for '${operator}'`)
+      }
     }
   }
 

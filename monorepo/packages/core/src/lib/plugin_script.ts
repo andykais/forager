@@ -77,8 +77,9 @@ export abstract class FileSystemReceiver {
         ctx.stats.errored ++
       } else {
         ctx.logger.error(`${file_identifier} import failed.`)
-        // ctx.stats.errored ++
-        throw e
+        ctx.logger.error(e)
+        ctx.stats.errored ++
+        // throw e
       }
     }
   }

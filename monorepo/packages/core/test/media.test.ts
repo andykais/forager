@@ -457,6 +457,35 @@ test('search sort', async ctx => {
   })
 })
 
+test('media search stars', async ctx => {
+  using forager = new Forager(ctx.get_test_config())
+  forager.init()
+
+  const art_1 = await forager.media.create(ctx.resources.media_files['koch.tif'], {stars: 0})
+
+  ctx.assert.search_result(forager.media.search(), {
+    total: 1
+  })
+  ctx.assert.search_result(forager.media.search({query: {stars: 1, stars_equality: "gte"}}), {
+    total: 0
+  })
+
+  forager.media.update(art_1.media_reference.id, {stars: 2})
+
+  ctx.assert.search_result(forager.media.search({query: {stars: 1, stars_equality: "gte"}}), {
+    total: 1
+  })
+  ctx.assert.search_result(forager.media.search({query: {stars: 3, stars_equality: "gte"}}), {
+    total: 0
+  })
+  ctx.assert.search_result(forager.media.search({query: {stars: 3, stars_equality: "eq"}}), {
+    total: 0
+  })
+  ctx.assert.search_result(forager.media.search({query: {stars: 2, stars_equality: "eq"}}), {
+    total: 1
+  })
+})
+
 
 test('search group by', async ctx => {
   using forager = new Forager(ctx.get_test_config())
