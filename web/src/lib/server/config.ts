@@ -20,13 +20,13 @@ export const PackagesConfig = z.object({
       search: z.object({
         advanced_filters: z.object({
           hide: z.boolean().default(true)
-        }).default({})
-      }).default({}),
+        }).strict().default({})
+      }).strict().default({}),
 
       media_list: z.object({
         thumbnail_size: z.number().default(110),
         thumbnail_shape: z.enum(['square', 'original']).default('original') as z.ZodEnum<['square', 'original']>
-      }).default({}),
+      }).strict().default({}),
 
       sidebar: z.object({
         hide: z.boolean().default(true),
@@ -35,16 +35,16 @@ export const PackagesConfig = z.object({
           order: z.object({
             group: z.string(),
           }).array().default([])
-        }),
-      }).default({}),
+        }).strict(),
+      }).strict().default({}),
 
       media_view: z.object({
         filmstrip: z.object({
           enabled: z.boolean().default(false),
             thumbnail_size: z.number().default(100),
-        }).optional().transform(f => f ?? {enabled: false})
-      }).default({}),
-    }).default({}),
+        }).strict().optional().transform(f => f ?? {enabled: false})
+      }).strict().default({}),
+    }).strict().default({}),
 
     shortcuts: z.object({
       OpenMedia: Keybind('Enter'),

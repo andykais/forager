@@ -15,6 +15,7 @@ interface State {
   search_mode: 'media' | 'group_by' | 'filesystem'
   group_by: string | undefined
   stars: number | undefined
+  stars_equality: 'lte' | 'gte' | 'eq' | undefined
   order: 'desc' | 'asc'
   media_type: string
 }
@@ -28,6 +29,7 @@ const DEFAULTS: State = {
   search_mode: 'media',
   group_by: undefined,
   stars: undefined,
+  stars_equality: undefined,
   media_type: 'all',
 }
 
@@ -73,11 +75,17 @@ export class QueryParamsRune extends Rune {
       let deserialized_value = val
       if (params_key === 'search_string') {
         deserialized_value = val.replaceAll(',', ' ')
+      } else if (params_key === 'stars') {
+        deserialized_value = parseInt(val)
       } else if (params_key === 'filepath') {
         deserialized_value = decodeURIComponent(val)
       }
       params[params_key] = deserialized_value
     }
+
+    // if (params.stars === undefined && params.stars_equality !== undefined) {
+    //   delete params.stars_equality
+    // }
     // re-add inferred keys
     if (params['group_by']) {
       params['search_mode'] = 'group_by'
@@ -180,6 +188,8 @@ export class QueryParamsRune extends Rune {
 
   private async submit_internal(params: State) {
 
+    const stars = params.stars
+    const stars_equality = params.stars_equality
     const tags = params.search_string.split(' ').filter(t => t.length > 0)
     const sort_by = params.sort
     const order = params.order
@@ -190,6 +200,12 @@ export class QueryParamsRune extends Rune {
       tags,
       filepath
     }
+
+    if (stars !== undefined) {
+      query.stars = parseInt(stars)
+      query.stars_equality = stars_equality ?? 'gte'
+    }
+
     switch(params.media_type) {
       case 'all': {
         // do nothing
@@ -205,6 +221,7 @@ export class QueryParamsRune extends Rune {
     }
 
     if (params.search_mode === 'media') {
+      console.log({query})
       await this.search_rune.paginate({
         type: params.search_mode,
         params: {

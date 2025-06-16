@@ -7,6 +7,7 @@
   import TagAutoCompleteInput from "$lib/components/TagAutoCompleteInput.svelte";
   import type { BrowseController } from "../controller.ts";
   import { onMount } from 'svelte'
+  import StarInput from '$lib/components/StarInput.svelte'
 
   let {controller}: {controller: BrowseController} = $props()
 
@@ -29,7 +30,7 @@
   const icon_size = "22px"
 </script>
 
-<form class="grid grid-rows-1 w-[80%]"
+<form class="grid grid-rows-1 w-full"
   onsubmit={async e => {
     e.preventDefault()
     await update_search()
@@ -108,6 +109,46 @@
             type="checkbox"
             bind:checked={params.unread_only}
             onchange={update_search}>
+        </div>
+
+        <div class="flex gap-2 text-gray-400">
+          <StarInput bind:value={params.stars} star={1} onclick={update_search} />
+          <StarInput bind:value={params.stars} star={2} onclick={update_search} />
+          <StarInput bind:value={params.stars} star={3} onclick={update_search} />
+          <StarInput bind:value={params.stars} star={4} onclick={update_search} />
+          <StarInput bind:value={params.stars} star={5} onclick={update_search} />
+          <button
+            type="button"
+            class="px-2 bg-gray-800"
+            onclick={() => {
+              switch(params.stars_equality) {
+                /*
+                case 'lte': {
+                  params.stars_equality = 'eq'
+                  break
+                }
+                */
+                case 'eq': {
+                  params.stars_equality = 'gte'
+                  break
+                }
+                case 'gte': {
+                  params.stars_equality = 'eq'
+                  break
+                }
+                case undefined: {
+                  params.stars_equality = 'eq'
+                  break
+                }
+                default: {
+                  throw new Error(`Unexpected params.stars_equality ${params.stars_equality}`)
+                }
+
+              }
+              update_search()
+            }}>
+            {params.stars_equality ?? 'gte'}
+          </button>
         </div>
 
         <div class="flex gap-2">
