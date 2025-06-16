@@ -66,9 +66,16 @@
           style="width:{settings.ui.media_list.thumbnail_size}px"
         >
           <div
-            class="grid justify-items-center items-center overflow-hidden
-                   "
+            class="grid justify-items-center items-center overflow-hidden"
             style="width:{settings.ui.media_list.thumbnail_size}px; height: {settings.ui.media_list.thumbnail_size}px"
+            onkeydown={e => {
+              console.log('keydown')
+              if (e.key === 'Enter') {
+                media_selections.set_current_selection(result, result_index)
+              }
+            }}
+            role="button"
+            tabindex="0"
             onclick={e => media_selections.set_current_selection(result, result_index)}
           >
             {#if settings.ui.media_list.thumbnail_shape === 'original'}

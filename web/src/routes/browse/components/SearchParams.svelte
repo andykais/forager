@@ -11,7 +11,7 @@
 
   let {controller}: {controller: BrowseController} = $props()
 
-  const {queryparams, media_selections} = controller.runes
+  const {queryparams, media_selections, settings} = controller.runes
 
   let params = $state<typeof queryparams.DEFAULTS>({...queryparams.DEFAULTS})
   queryparams.popstate_listener(url_params => {
@@ -24,9 +24,6 @@
     media_selections.clear_current_selection()
 
   }
-  type AdvancedFiltersState = 'hidden' | 'shown'
-  const advanced_filters_default_state = controller.runes.settings.ui.search.advanced_filters.hide ? 'hidden' : 'shown'
-  let advanced_filters_state = $state<AdvancedFiltersState>(advanced_filters_default_state)
   const icon_color = theme.colors.gray[800]
   const icon_size = "22px"
 </script>
@@ -46,21 +43,17 @@
         allow_multiple_tags />
       <button
         class="hover:cursor-pointer"
-        title="click to {advanced_filters_state === 'hidden' ? 'show' : 'hide'} advanced filters"
+        title="click to {settings.ui.search.advanced_filters.hide ? 'show' : 'hide'} advanced filters"
         type="button"
         onclick={e => {
-          if (advanced_filters_state === 'hidden') {
-            advanced_filters_state = 'shown'
-          } else {
-            advanced_filters_state = 'hidden'
-          }
+          settings.toggle('ui.search.advanced_filters.hide')
         }}>
         <Icon class="fill-gray-800 hover:fill-gray-600" data={Filter} size={icon_size} fill={icon_color} stroke={"none"} />
       </button>
     </div>
 
     <div class="grid grid-rows-2 justify-center items-center text-slate-950 w-full gap-y-2"
-      style="display: {advanced_filters_state === 'hidden' ? 'none' : 'grid'}">
+      style="display: {settings.ui.search.advanced_filters.hide ? 'none' : 'grid'}">
       <div class="flex flex-row justify-between gap-8">
         <div class="flex gap-1">
           <select

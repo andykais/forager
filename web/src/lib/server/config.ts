@@ -35,7 +35,7 @@ export const PackagesConfig = z.object({
           order: z.object({
             group: z.string(),
           }).array().default([])
-        }).strict(),
+        }).strict().default({}),
       }).strict().default({}),
 
       media_view: z.object({

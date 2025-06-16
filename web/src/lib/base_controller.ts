@@ -2,7 +2,7 @@ import * as svelte from 'svelte'
 import type {ApiSpec} from '$lib/api.ts'
 import * as rpc from '@andykais/ts-rpc/client.ts'
 import type { Config } from '$lib/server/config.ts'
-import {create_focuser, create_settings} from '$lib/runes/index.ts'
+import {create_focuser, SettingsRune} from '$lib/runes/index.ts'
 import {Keybinds} from '$lib/keybinds.ts'
 
 
@@ -13,7 +13,7 @@ abstract class BaseController {
 
   abstract runes: {
     focus: ReturnType<typeof create_focuser>
-    settings: ReturnType<typeof create_settings>
+    settings: SettingsRune
   }
 
   constructor(config: Config) {

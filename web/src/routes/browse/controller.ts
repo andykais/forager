@@ -1,6 +1,6 @@
 import type { Config } from '$lib/server/config.ts'
 import {BaseController} from '$lib/base_controller.ts'
-import {create_focuser, create_settings, MediaListRune } from '$lib/runes/index.ts'
+import {create_focuser, SettingsRune, MediaListRune } from '$lib/runes/index.ts'
 import { create_dimensional_rune } from './runes/dimensions.svelte.ts'
 import { MediaSelectionsRune } from './runes/media_selections.svelte.ts'
 import { QueryParamsRune } from './runes/queryparams.svelte.ts'
@@ -11,7 +11,7 @@ class BrowseController extends BaseController {
     media_list: MediaListRune
     focus: ReturnType<typeof create_focuser>
     dimensions: ReturnType<typeof create_dimensional_rune>
-    settings: ReturnType<typeof create_settings>
+    settings: SettingsRune
     media_selections: MediaSelectionsRune
     queryparams: QueryParams
   }
@@ -24,7 +24,7 @@ class BrowseController extends BaseController {
       media_list: media_list_rune,
       focus: create_focuser(),
       dimensions: create_dimensional_rune(),
-      settings: create_settings(this.config),
+      settings: new SettingsRune(this.client, this.config),
       media_selections: new MediaSelectionsRune(this.client, media_list_rune),
       queryparams: new QueryParamsRune(this.client, media_list_rune),
     }

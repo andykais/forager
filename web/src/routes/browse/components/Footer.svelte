@@ -46,7 +46,9 @@
         type="range"
         min={50}
         max={500}
-        bind:value={runes.settings.ui.media_list.thumbnail_size}>
+        oninput={e => {
+          runes.settings.set('ui.media_list.thumbnail_size', e.target.value)
+        }}>
       <span>{runes.settings.ui.media_list.thumbnail_size}px</span>
     </div>
 
@@ -55,17 +57,16 @@
         title="Toggle thumbnail shape"
         class="rounded-sm bg-gray-800 px-2 text-slate-400 hover:bg-gray-600 transition-colors"
         onclick={e => {
-          if (runes.settings.ui.media_list.thumbnail_shape === 'square') {
-            runes.settings.ui.media_list.thumbnail_shape = 'original'
-          } else {
-            runes.settings.ui.media_list.thumbnail_shape = 'square'
-          }
+          const updated_shape = runes.settings.ui.media_list.thumbnail_shape === 'square'
+            ? 'original'
+            : 'square'
+          runes.settings.set('ui.media_list.thumbnail_shape', updated_shape)
         }}
       >{runes.settings.ui.media_list.thumbnail_shape}</button>
     </div>
 
     <span class="">
-      Total results {controller.runes.media_list.total}
+      Total results {runes.media_list.total}
     </span>
   </div>
 </footer>

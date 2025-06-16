@@ -114,8 +114,7 @@ export class MediaListRune extends Rune {
 
   async fetch_tag_summary(params: Input) {
     // NOTE this currently just does a "union". We want an "intersection" for this view. Otherwise our default view returns all tags!
-    return
-
+    /*
 
     if (params.type !== 'media') {
       return
@@ -125,5 +124,6 @@ export class MediaListRune extends Rune {
       contextual_query: params.params?.query
     })
     console.log(content)
+    */
   }
 }
