@@ -131,7 +131,7 @@ export class MediaGroupRune extends MediaViewRune {
 
     const {group_by, cursor, ...merged_search_params} = search_params
 
-    if (group_by['tag_group']) {
+    if (group_by['tag_group'] !== undefined) {
       merged_search_params.query = {...merged_search_params.query}
       merged_search_params.query.tags = merged_search_params.query.tags
           ? [...merged_search_params.query.tags]

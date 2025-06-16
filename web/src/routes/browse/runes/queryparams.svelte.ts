@@ -87,7 +87,8 @@ export class QueryParamsRune extends Rune {
     //   delete params.stars_equality
     // }
     // re-add inferred keys
-    if (params['group_by']) {
+    if (queryparams.has('group_by')) {
+      console.log('re-adding group by params', params)
       params['search_mode'] = 'group_by'
     }
     this.current_url = {...params}
@@ -221,7 +222,6 @@ export class QueryParamsRune extends Rune {
     }
 
     if (params.search_mode === 'media') {
-      console.log({query})
       await this.search_rune.paginate({
         type: params.search_mode,
         params: {
@@ -231,14 +231,12 @@ export class QueryParamsRune extends Rune {
         }
       })
     } else if (params.search_mode === 'group_by') {
-      if (params.group_by === undefined) {
-        throw new Error(`params must be defined!`)
-      }
+      let group_by = params.group_by ?? ''
       await this.search_rune.paginate({
         type: params.search_mode,
         params: {
           group_by: {
-            tag_group: params.group_by,
+            tag_group: group_by,
           },
           query: query,
           sort_by: 'count', // TODO we want to support created_at as well. Sorting is a bit janky with group by for now

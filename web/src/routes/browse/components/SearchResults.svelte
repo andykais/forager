@@ -122,7 +122,7 @@
               <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
               <SearchLink
                 class="hover:text-green-500 hover:bg-gray-700 px-2 rounded-sm transition-colors"
-                {controller} params={queryparams.merge({mode: 'media', tags: `${queryparams.current_url.group_by}:${result.group_metadata.value}`})}> {result.group_metadata.value} 
+                {controller} params={queryparams.merge({mode: 'media', tags: `${queryparams.current_url.group_by ?? ''}:${result.group_metadata.value}`})}> {result.group_metadata.value} 
               </SearchLink>
               <span>{result.group_metadata.count}</span>
           {:else}

@@ -19,6 +19,7 @@
   })
 
   async function update_search() {
+    console.log($state.snapshot(params))
     await queryparams.submit(params)
     media_selections.clear_current_selection()
 
