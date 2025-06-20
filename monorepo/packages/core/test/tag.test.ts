@@ -3,7 +3,7 @@ import { Forager } from '~/mod.ts'
 
 
 test('tag actions', async (ctx) => {
-  using forager = new Forager(ctx.get_test_config())
+  let forager = new Forager(ctx.get_test_config())
   forager.init()
 
   const art = await forager.media.create(ctx.resources.media_files['koch.tif'], {}, [
@@ -144,7 +144,12 @@ test('tag actions', async (ctx) => {
 
 
     // now (jankily) update the config to not auto clean up the tag
-    forager.config.tags.auto_cleanup = false
+    forager.close()
+    const config = ctx.get_test_config()
+    config.tags = {auto_cleanup: false}
+    forager = new Forager(config)
+    forager.init()
+
     doodle = forager.media.update(doodle.media_reference.id, {}, {add: ['foobar']})
     ctx.assert.list_partial(doodle.tags, [
       {name: 'foobar'}
@@ -193,6 +198,7 @@ test('tag actions', async (ctx) => {
       ]
     })
   })
+  forager.close()
 })
 
 
