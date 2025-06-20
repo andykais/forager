@@ -77,11 +77,6 @@ class MediaActions extends Actions {
       series_id = query.series_id
     }
 
-    if (query.directory) {
-      const directory_reference = this.models.MediaReference.media_series_select_one({directory_path: query.directory})
-      series_id = directory_reference.id
-    }
-
     const records = this.models.MediaReference.select_many({
       id: query.media_reference_id,
       series: query.series,
@@ -96,7 +91,6 @@ class MediaActions extends Actions {
       stars: query.stars,
       stars_equality: query.stars_equality,
       unread: query.unread,
-      filesystem: query.filesystem,
       filepath: query.filepath,
     })
 
@@ -164,11 +158,6 @@ class MediaActions extends Actions {
       series_id = query.series_id
     }
 
-    if (query.directory) {
-      const directory_reference = this.models.MediaReference.media_series_select_one({directory_path: query.directory})
-      series_id = directory_reference.id
-    }
-
     const tag_group = this.models.TagGroup.select_one({name: parsed.group_by.tag_group}, {or_raise: true})
     const group_by = { tag_group_id: tag_group.id }
     const records = this.models.MediaReference.select_many_group_by_tags({
@@ -186,7 +175,6 @@ class MediaActions extends Actions {
       stars: query.stars,
       stars_equality: query.stars_equality,
       unread: query.unread,
-      filesystem: query.filesystem,
       filepath: query.filepath,
     })
 
@@ -214,7 +202,6 @@ class MediaActions extends Actions {
           stars: query.stars,
           stars_equality: query.stars_equality,
           unread: query.unread,
-          filesystem: query.filesystem,
           filepath: query.filepath,
         })
         media = this.#map_media_records_to_media_responses(records, parsed.thumbnail_limit, keypoint_tag_id)

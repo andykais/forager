@@ -15,7 +15,6 @@ class MediaSeriesItem extends Model {
     id:                   field.number(),
     media_reference_id:   field.number(),
     series_id:            field.number(),
-    filesystem_reference: field.boolean().default(false),
     series_index:         field.number(),
     updated_at:           field.datetime(),
     created_at:           field.datetime(),
@@ -27,14 +26,12 @@ class MediaSeriesItem extends Model {
     INSERT INTO media_series_item (
       media_reference_id,
       series_id,
-      series_index,
-      filesystem_reference
+      series_index
     )
     VALUES (${[
       MediaSeriesItem.params.media_reference_id,
       MediaSeriesItem.params.series_id,
       MediaSeriesItem.params.series_index,
-      MediaSeriesItem.params.filesystem_reference,
     ]})
     RETURNING ${MediaSeriesItem.result.id}`
 
@@ -87,7 +84,6 @@ class MediaSeriesItem extends Model {
         media_reference_id,
         series_id,
         series_index,
-        filesystem_reference: true,
       })
     } catch(e) {
       if (e instanceof torm.errors.UniqueConstraintError) {

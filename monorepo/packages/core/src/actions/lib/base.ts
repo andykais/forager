@@ -106,11 +106,6 @@ class Actions {
       // NOTE that on create calls, we ignore tags.remove. This is mostly an implementation detail, since tags.remove is not exposed to the forager.media.create action
       this.#manage_media_tags(media_reference.id, {...parsed.tags, remove: []})
 
-      this.#create_series_for_media_directories({
-        media_reference_id: media_reference.id,
-        media_filepath: media_file_info.filepath,
-      })
-
       for (const thumbnail of thumbnails.thumbnails) {
         this.models.MediaThumbnail.create({
           media_file_id: media_file.id,
@@ -223,52 +218,6 @@ class Actions {
       tags: this.models.Tag.select_all({media_reference_id: media_reference_id}),
       thumbnails: this.models.MediaThumbnail.select_many({media_file_id: media_file_id, limit: thumbnail_limit}),
     }
-  }
-
-  #create_series_for_media_directories(params: {
-    media_reference_id: number
-    media_filepath: string
-  }) {
-    const recursive_path_parse = (path_segment: string): string[] => {
-      const parsed_path = path.parse(path_segment)
-      if (parsed_path.root === parsed_path.dir) {
-        return [parsed_path.dir, path_segment]
-      } else {
-        return [...recursive_path_parse(parsed_path.dir), path_segment]
-      }
-    }
-    const path_segments = recursive_path_parse(path.parse(params.media_filepath).dir)
-
-    let parent_series_id: number | undefined
-    for (const [index, path_segment] of path_segments.entries()) {
-      const directory_root = index === 0
-      const series = this.models.MediaReference.get_or_create({
-        media_series_reference: true,
-        directory_reference: true,
-        directory_path: path_segment,
-        directory_root: directory_root,
-        stars: 0,
-        view_count: 0,
-      })
-
-      if (parent_series_id) {
-        this.models.MediaSeriesItem.create_series({
-          series_id: parent_series_id,
-          media_reference_id: series.id,
-        })
-      }
-
-      parent_series_id = series.id
-    }
-
-    if (parent_series_id === undefined) {
-      throw new errors.UnExpectedError('Media files should always have at least one parent dir')
-    }
-
-    this.models.MediaSeriesItem.create_series({
-      series_id: parent_series_id,
-      media_reference_id: params.media_reference_id,
-    })
   }
 
   #manage_media_tags(media_reference_id: number, tags: outputs.MediaReferenceUpdateTags) {

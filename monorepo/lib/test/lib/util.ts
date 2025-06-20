@@ -32,10 +32,11 @@ const media_files = resource_file_mapper([
 ] as const)
 
 if (!import.meta.dirname) throw new Error(`unexpected value in import.meta.dirname`)
+const resources_dir = path.join(path.resolve(import.meta.dirname, '..'), 'resources')
 const resources = {
-  resources_directory: path.join(path.resolve(import.meta.dirname, '..'), 'resources'),
+  resources_directory: resources_dir,
   media_files,
-  books_db_1_0_0: 'test/resources/migrations_1.0.0.db',
+  migration_db_v1: path.join(resources_dir, 'migration_databases/database_v1'),
 }
 
 

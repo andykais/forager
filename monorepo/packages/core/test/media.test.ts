@@ -277,6 +277,7 @@ test('media actions', async (ctx) => {
      */
   })
 
+  /*
   await ctx.subtest('filesystem browsing', () => {
     // basic workflows: starting at the top level dir
     const root_dir = path.parse(Deno.cwd()).root
@@ -332,6 +333,7 @@ test('media actions', async (ctx) => {
 
     // TODO support a decent "cd .." workflow. Currently its only easy to go "down" directories
   })
+  */
 
   await ctx.subtest('media update', async () => {
     media_doodle = forager.media.update(media_doodle.media_reference.id, {}, ['cat'])

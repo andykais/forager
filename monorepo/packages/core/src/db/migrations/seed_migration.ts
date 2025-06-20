@@ -1,18 +1,10 @@
 import * as torm from '@torm/sqlite'
-import { migrations } from './registry.ts'
-
-
-const TIMESTAMP_SQLITE = `STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'NOW')`
-const TIMESTAMP_COLUMN = `TIMESTAMP DATETIME DEFAULT(${TIMESTAMP_SQLITE})`
-
-
-// this function is a noop "identity" tagged template literal. It exists purely because some editors pick up the 'sql`....`' template literal to syntax highly the SQL below
-const sql = (strings: TemplateStringsArray, ...values: any[]) => String.raw({ raw: strings }, ...values);
+import { migrations, sql, TIMESTAMP_SQLITE, TIMESTAMP_COLUMN } from './registry.ts'
 
 
 @migrations.register()
 export class Migration extends torm.SeedMigration {
-  version = '1.0.0'
+  version = 2
 
   sql = sql`
     CREATE TABLE media_file (
@@ -75,7 +67,6 @@ export class Migration extends torm.SeedMigration {
       media_reference_id INTEGER NOT NULL,
       series_id INTEGER NOT NULL,
       series_index INTEGER NOT NULL,
-      filesystem_reference BOOLEAN NOT NULL,
 
       updated_at ${TIMESTAMP_COLUMN},
       created_at ${TIMESTAMP_COLUMN},
@@ -101,9 +92,6 @@ export class Migration extends torm.SeedMigration {
 
       -- media series reference fields
       media_series_reference BOOLEAN NOT NULL,
-      directory_reference BOOLEAN NOT NULL,
-      directory_path TEXT,
-      directory_root BOOLEAN NOT NULL,
 
       updated_at ${TIMESTAMP_COLUMN},
       created_at ${TIMESTAMP_COLUMN},
@@ -243,9 +231,6 @@ export class Migration extends torm.SeedMigration {
     CREATE UNIQUE INDEX tag_name ON tag (name, tag_group_id);
     CREATE UNIQUE INDEX media_file_reference ON media_file (media_reference_id);
     CREATE UNIQUE INDEX media_filepath ON media_file (filepath);
-    -- it seems like sqlite doesnt count NULL values as unique? This works for our use case so whatevs
-    CREATE UNIQUE INDEX media_reference_directory_path ON media_reference (directory_path);
-    CREATE UNIQUE INDEX directory_media_series_item ON media_series_item (series_id, media_reference_id) WHERE media_series_item.filesystem_reference = 1;
     `
 
 
