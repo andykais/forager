@@ -74,7 +74,7 @@ class Assertions {
     }
   }
   search_result(search_result: ForagerMediaSearchResult, assertions: SearchResultAssertions) {
-    if (assertions.total) {
+    if (assertions.total !== undefined) {
       this.equals(search_result.total, assertions.total)
     }
     if ('cursor' in assertions) {

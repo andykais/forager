@@ -32,7 +32,7 @@ class Database {
     this.#ctx = ctx
   }
 
-  public init() {
+  public init(): torm.InitInfo {
     const init_options: torm.InitOptions = {
       migrate: {
         auto: true,
@@ -44,8 +44,9 @@ class Database {
       }
       init_options.migrate!.backup = true
     }
-    this.#torm.init(init_options)
+    const init_info = this.#torm.init(init_options)
     this.#torm.driver.exec(`PRAGMA journal_mode=WAL`)
+    return init_info
   }
 
   get models() {

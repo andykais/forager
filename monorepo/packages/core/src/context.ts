@@ -1,9 +1,13 @@
+import * as torm from '@torm/sqlite'
 import { outputs } from '~/inputs/mod.ts'
 import { Logger } from '~/lib/logger.ts'
 import { Database } from '~/db/mod.ts'
 import { PluginScript } from "~/lib/plugin_script.ts";
 import type { Forager } from '~/mod.ts'
 
+export interface ContextInitInfo {
+  db: torm.InitInfo
+}
 
 class Context {
   public config: outputs.ForagerConfig
@@ -21,9 +25,12 @@ class Context {
     this.plugin_script = plugin_script
   }
 
-  public init() {
+  public init(): ContextInitInfo {
     this.logger.info(`Connecting to sqlite database ${this.config.database_path}`)
-    this.db.init()
+    const db_init_info = this.db.init()
+    return {
+      db: db_init_info
+    }
   }
 }
 

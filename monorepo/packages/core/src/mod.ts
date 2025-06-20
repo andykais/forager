@@ -24,7 +24,7 @@
   * ```
   */
 
-import { Context } from './context.ts'
+import { Context, type ContextInitInfo } from './context.ts'
 import { PluginScript } from '~/lib/plugin_script.ts'
 import * as actions from './actions/mod.ts'
 import { type inputs, outputs, parsers } from '~/inputs/mod.ts'
@@ -50,8 +50,8 @@ class Forager {
     this.tag = new actions.TagActions(this.#ctx)
   }
 
-  public init() {
-    this.#ctx.init()
+  public init(): ContextInitInfo {
+    return this.#ctx.init()
   }
 
   public close() {
