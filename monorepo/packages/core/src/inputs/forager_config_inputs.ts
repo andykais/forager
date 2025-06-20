@@ -5,6 +5,9 @@ export const ForagerConfig = z.object({
   /** Path to the forager sqlite database */
   database_path: z.string(),
 
+  /** Path backup the sqlite database when there are migrations */
+  database_backups_path: z.string().optional(),
+
   logger: z.object({
     level: z.enum(LOG_LEVELS).optional(),
   }).default({ level: 'ERROR' }),

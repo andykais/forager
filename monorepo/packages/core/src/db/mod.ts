@@ -24,14 +24,27 @@ class ForagerTorm extends torm.Torm {
 }
 
 class Database {
+  #ctx: Context
   #torm: ForagerTorm
 
   public constructor(ctx: Context) {
     this.#torm = new ForagerTorm(ctx.config.database_path)
+    this.#ctx = ctx
   }
 
   public init() {
-    this.#torm.init()
+    const init_options: torm.InitOptions = {
+      migrate: {
+        auto: true,
+      }
+    }
+    if (this.#ctx.config.database_backups_path) {
+      init_options.backups = {
+        folder: this.#ctx.config.database_backups_path
+      }
+      init_options.migrate!.backup = true
+    }
+    this.#torm.init(init_options)
     this.#torm.driver.exec(`PRAGMA journal_mode=WAL`)
   }
 
