@@ -15,6 +15,20 @@ export const PaginatedQuery = z.object({
 }).strict()
 
 
+export const Editing = z.object({
+  editor: z.string().optional(),
+}).strict()
+
+
+export const CreateEditing = Editing.extend({
+}).optional()
+
+
+export const UpdateEditing = Editing.extend({
+  overwrite: z.boolean().default(true)
+}).optional()
+
+
 export const Timestamp = z.number()
 
 

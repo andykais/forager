@@ -63,7 +63,8 @@ class MediaReference extends Model {
       description,
       metadata,
       stars,
-      view_count
+      view_count,
+      editors
     ) VALUES (${[
       MediaReference.params.media_series_reference,
       MediaReference.params.source_url,
@@ -73,6 +74,7 @@ class MediaReference extends Model {
       MediaReference.params.metadata,
       MediaReference.params.stars,
       MediaReference.params.view_count,
+      MediaReference.params.editors,
     ]}) RETURNING ${MediaReference.result.id}`
 
   #update = this.query`UPDATE media_reference SET
@@ -81,7 +83,8 @@ class MediaReference extends Model {
       metadata = IFNULL(${MediaReference.params.metadata}, metadata),
       source_url = IFNULL(${MediaReference.params.source_url}, source_url),
       source_created_at = IFNULL(${MediaReference.params.source_created_at}, source_created_at),
-      stars = IFNULL(${MediaReference.params.stars}, stars)
+      stars = IFNULL(${MediaReference.params.stars}, stars),
+      editors = IFNULL(${MediaReference.params.editors}, editors)
     WHERE id = ${MediaReference.params.id}`
 
   #select_by_id = this.query`

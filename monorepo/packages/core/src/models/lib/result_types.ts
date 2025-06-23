@@ -10,6 +10,7 @@ export type TagGroup = InferSchemaTypes<typeof models.TagGroup.result>
 export type Tag = InferSchemaTypes<typeof models.Tag.result> & {group: TagGroup['name']; color: TagGroup['color']}
 export type MediaKeypoint = InferSchemaTypes<typeof models.MediaKeypoint.result>
 export type View = InferSchemaTypes<typeof models.View.result>
+export type EditLog = InferSchemaTypes<typeof models.EditLog.result>
 
 export type PaginatedResult<T> = {
   cursor: Record<string, string | number | null> | undefined

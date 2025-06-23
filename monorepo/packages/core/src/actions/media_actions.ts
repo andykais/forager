@@ -1,4 +1,4 @@
-import { Actions, type MediaFileResponse, type MediaSeriesResponse, type MediaResponse, type MediaGroupResponse } from '~/actions/lib/base.ts'
+import { Actions, type MediaFileResponse, type MediaSeriesResponse, type MediaResponse, type MediaGroupResponse, type EditInfo, CreateEditor, UpdateEditor } from '~/actions/lib/base.ts'
 import { type inputs, parsers } from '~/inputs/mod.ts'
 import type * as result_types from '~/models/lib/result_types.ts'
 import { errors } from "~/mod.ts";
@@ -9,8 +9,8 @@ import { errors } from "~/mod.ts";
   */
 class MediaActions extends Actions {
 
-  create = async (filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.Tag[]): Promise<MediaFileResponse> => {
-    return await this.media_create(filepath, media_info, tags)
+  create = async (filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.Tag[], editing?: CreateEditor): Promise<MediaFileResponse> => {
+    return await this.media_create(filepath, media_info, tags, editing)
   }
 
   update = (media_reference_id: number, media_info?: inputs.MediaInfo, tags?: inputs.MediaReferenceUpdateTags) => {

@@ -28,6 +28,7 @@ export interface MediaFileResponse {
   media_file: result_types.MediaFile
   tags: result_types.Tag[]
   thumbnails: result_types.PaginatedResult<result_types.MediaThumbnail>
+  edit_log?: result_types.EditLog[]
 }
 
 /**
@@ -50,6 +51,16 @@ export interface MediaGroupResponse {
   }
 }
 
+
+export interface EditInfo {
+  editor?: string
+}
+
+export interface CreateEditor extends EditInfo {}
+export interface UpdateEditor extends EditInfo {
+  overwrite?: boolean
+}
+
 class Actions {
   protected ctx: Context
   public constructor(ctx: Context) {
@@ -60,12 +71,13 @@ class Actions {
     return this.ctx.db.models
   }
 
-  protected async media_create(filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.MediaReferenceUpdateTags): Promise<MediaFileResponse> {
+  protected async media_create(filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.MediaReferenceUpdateTags, editing?: CreateEditor): Promise<MediaFileResponse> {
     const start_time = performance.now()
     const parsed = {
       filepath: parsers.Filepath.parse(filepath),
       media_info: parsers.MediaReferenceUpdate.parse(media_info ?? {}),
       tags: parsers.MediaReferenceUpdateTags.parse(tags ?? []),
+      editing: parsers.CreateEditing.parse(editing),
     }
 
     const file_processor = new FileProcessor(this.ctx, filepath)
@@ -92,7 +104,8 @@ class Actions {
         media_series_reference: false,
         stars: 0,
         view_count: 0,
-        ...parsed.media_info 
+        ...parsed.media_info,
+        editors: parsed.editing?.editor ? [parsed.editing.editor] : null
       })
 
       const media_file = this.models.MediaFile.create({
@@ -104,7 +117,19 @@ class Actions {
       })!
 
       // NOTE that on create calls, we ignore tags.remove. This is mostly an implementation detail, since tags.remove is not exposed to the forager.media.create action
-      this.#manage_media_tags(media_reference.id, {...parsed.tags, remove: []})
+      const tag_edits = this.#manage_media_tags(media_reference.id, {...parsed.tags, remove: []})
+
+      if (parsed.editing?.editor) {
+        this.models.EditLog.create({
+          editor: parsed.editing.editor,
+          operation_type: 'CREATE',
+          changes: {
+            media_info: parsed.media_info,
+            tags: tag_edits,
+          },
+          media_reference_id: media_reference.id
+        })
+      }
 
       for (const thumbnail of thumbnails.thumbnails) {
         this.models.MediaThumbnail.create({
@@ -193,6 +218,7 @@ class Actions {
         media_file,
         tags: this.models.Tag.select_all({media_reference_id: media_reference.id}),
         thumbnails: this.models.MediaThumbnail.select_many({media_file_id: media_file.id, limit: thumbnail_limit}),
+        edit_log: this.models.EditLog.select_many({ media_reference_id: media_reference.id }),
       }
     }
   }
@@ -217,32 +243,51 @@ class Actions {
       media_file: this.models.MediaFile.select_one({media_reference_id: media_reference_id}, {or_raise: true}),
       tags: this.models.Tag.select_all({media_reference_id: media_reference_id}),
       thumbnails: this.models.MediaThumbnail.select_many({media_file_id: media_file_id, limit: thumbnail_limit}),
+      edit_log: this.models.EditLog.select_many({ media_reference_id: media_reference_id }),
+
     }
   }
 
-  #manage_media_tags(media_reference_id: number, tags: outputs.MediaReferenceUpdateTags) {
+  #manage_media_tags(media_reference_id: number, tags: outputs.MediaReferenceUpdateTags): result_types.EditLog['changes']['tags'] {
+    const tags_added = new Set<string>()
+    const tags_removed = new Set<string>()
+
     if (tags.replace) {
+      const existing_tags = this.models.Tag.select_all({media_reference_id: media_reference_id})
+      for (const tag of existing_tags) {
+        tags_removed.add(this.models.Tag.format_identifier(tag))
+      }
       // remove all existing tags first
       this.models.MediaReferenceTag.delete({media_reference_id: media_reference_id})
 
       for (const tag of tags.replace) {
         const tag_record = this.tag_create(tag)
         this.models.MediaReferenceTag.get_or_create({ media_reference_id: media_reference_id, tag_id: tag_record.id, tag_group_id: tag_record.tag_group_id })
+        tags_removed.delete(this.models.Tag.format_identifier(tag))
+        tags_added.add(this.models.Tag.format_identifier(tag))
       }
     }
 
     for (const tag of tags.add) {
       const tag_record = this.tag_create(tag)
       this.models.MediaReferenceTag.get_or_create({ media_reference_id: media_reference_id, tag_id: tag_record.id, tag_group_id: tag_record.tag_group_id })
+      tags_removed.delete(this.models.Tag.format_identifier(tag))
+      tags_added.add(this.models.Tag.format_identifier(tag))
     }
 
     for (const tag of tags.remove) {
       const tag_record = this.models.Tag.select_one({name: tag.name, group: tag.group }, {or_raise: true})
       this.models.MediaReferenceTag.delete({ media_reference_id: media_reference_id, tag_id: tag_record.id })
+      tags_removed.add(this.models.Tag.format_identifier(tag))
     }
 
     if (this.ctx.config.tags.auto_cleanup) {
       this.models.Tag.delete_unreferenced()
+    }
+
+    return {
+      added: [...tags_added],
+      removed: [...tags_removed],
     }
   }
 

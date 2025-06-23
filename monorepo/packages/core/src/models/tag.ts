@@ -213,6 +213,10 @@ class Tag extends Model {
   public delete_unreferenced() {
     this.#delete_by_count.exec()
   }
+
+  public format_identifier(tag: {group: string; name: string}): string {
+    return tag.group + ':' + tag.name
+  }
 }
 
 export { Tag }

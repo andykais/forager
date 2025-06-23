@@ -1,3 +1,4 @@
+export * from '~/lib/inputs_base.ts'
 export * from '~/inputs/media_reference_inputs.ts'
 export * from '~/inputs/tag_inputs.ts'
 export * from '~/inputs/tag_search_input.ts'
