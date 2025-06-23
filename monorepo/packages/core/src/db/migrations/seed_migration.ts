@@ -4,7 +4,7 @@ import { migrations, sql, TIMESTAMP_SQLITE, TIMESTAMP_COLUMN } from './registry.
 
 @migrations.register()
 export class Migration extends torm.SeedMigration {
-  version = 2
+  version = 3
 
   sql = sql`
     CREATE TABLE media_file (
@@ -93,6 +93,9 @@ export class Migration extends torm.SeedMigration {
       -- media series reference fields
       media_series_reference BOOLEAN NOT NULL,
 
+      -- a denormalized field derived from edit_log listing all editors who have edited this media reference: ["editor1", "editor2", ...]
+      editors JSON,
+
       updated_at ${TIMESTAMP_COLUMN},
       created_at ${TIMESTAMP_COLUMN},
 
@@ -106,8 +109,8 @@ export class Migration extends torm.SeedMigration {
       media_reference_id INTEGER NOT NULL,
       tag_id INTEGER NOT NULL,
       tag_group_id INTEGER NOT NULL,
-      updated_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
-      created_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
+      updated_at ${TIMESTAMP_COLUMN},
+      created_at ${TIMESTAMP_COLUMN},
 
       PRIMARY KEY (media_reference_id, tag_id),
       FOREIGN KEY (media_reference_id) REFERENCES media_reference(id),
@@ -125,8 +128,8 @@ export class Migration extends torm.SeedMigration {
       alias_tag_id INTEGER,
       description TEXT,
       metadata JSON,
-      updated_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
-      created_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
+      updated_at ${TIMESTAMP_COLUMN},
+      created_at ${TIMESTAMP_COLUMN},
       -- denormalized fields
       media_reference_count INTEGER NOT NULL DEFAULT 0,
       unread_media_reference_count INTEGER NOT NULL DEFAULT 0,
@@ -140,8 +143,8 @@ export class Migration extends torm.SeedMigration {
       id INTEGER PRIMARY KEY NOT NULL,
       name TEXT NOT NULL UNIQUE,
       color TEXT NOT NULL,
-      updated_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
-      created_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
+      updated_at ${TIMESTAMP_COLUMN},
+      created_at ${TIMESTAMP_COLUMN},
       -- denormalized fields
       tag_count INTEGER NOT NULL DEFAULT 0
     );
@@ -153,8 +156,8 @@ export class Migration extends torm.SeedMigration {
       end_timestamp FLOAT,
       num_loops INTEGER NOT NULL,
       duration FLOAT NOT NULL,
-      updated_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
-      created_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
+      updated_at ${TIMESTAMP_COLUMN},
+      created_at ${TIMESTAMP_COLUMN},
 
       FOREIGN KEY (media_reference_id) REFERENCES media_reference(id)
     );
@@ -165,15 +168,26 @@ export class Migration extends torm.SeedMigration {
       singleton INTEGER NOT NULL UNIQUE DEFAULT 1 CHECK (singleton = 1), -- ensure only a single row can be inserted
       version FLOAT NOT NULL,
       name TEXT NOT NULL,
-      updated_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
-      created_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW'))
+      updated_at ${TIMESTAMP_COLUMN},
+      created_at ${TIMESTAMP_COLUMN}
     );
 
     CREATE TABLE duplicate_log (
       filepath TEXT NOT NULL,
       checksum TEXT NOT NULL,
-      updated_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
-      created_at TIMESTAMP DATETIME DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW'))
+      updated_at ${TIMESTAMP_COLUMN},
+      created_at ${TIMESTAMP_COLUMN}
+    );
+
+    CREATE TABLE edit_log (
+      id INTEGER PRIMARY KEY NOT NULL,
+      media_reference_id INTEGER NOT NULL,
+      editor TEXT NOT NULL,
+      operation_type TEXT NOT NULL CHECK( operation_type IN ('CREATE', 'UPDATE') ),
+      -- JSON schema for media info and tag changes: {"media_info": {"title": "new title", "description": "new desc", ...}, "tags": {"added": ["group1:tag1", "group2:tag2"], "removed": ["group1:tag3"]}}
+      changes JSON NOT NULL,
+      created_at ${TIMESTAMP_COLUMN},
+      FOREIGN KEY (media_reference_id) REFERENCES media_reference(id)
     );
 
 
@@ -231,6 +245,7 @@ export class Migration extends torm.SeedMigration {
     CREATE UNIQUE INDEX tag_name ON tag (name, tag_group_id);
     CREATE UNIQUE INDEX media_file_reference ON media_file (media_reference_id);
     CREATE UNIQUE INDEX media_filepath ON media_file (filepath);
+    CREATE INDEX media_reference_edit_log ON edit_log (media_reference_id, created_at);
     `
 
 

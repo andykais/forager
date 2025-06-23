@@ -43,7 +43,9 @@ class MediaReference extends Model {
     stars:                  field.number().optional(),
     view_count:             field.number().optional(),
     media_series_reference: field.boolean(),
-    // auto generated fields
+
+    // denormalized fields
+    editors:                field.json<string[]>().optional(),
     media_series_length:    field.number(),
     tag_count:              field.number(),
     updated_at:             field.datetime(),
