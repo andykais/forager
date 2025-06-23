@@ -1,13 +1,10 @@
-import { schema, field, errors } from '@torm/sqlite'
+import { schema, field } from '@torm/sqlite'
+import { type outputs } from '~/inputs/mod.ts'
 import { Model } from '~/models/lib/base.ts'
 
 interface Changes {
   [key: string]: any
-  media_info: {
-    title?: string
-    description?: string
-    stars?: number
-  }
+  media_info: outputs.MediaInfo
   tags: {
     added?: string[]
     removed?: string[]
@@ -34,7 +31,7 @@ class EditLog extends Model {
   #select_many_by_media_reference = this.query.many`
     SELECT ${EditLog.result['*']} FROM edit_log
     WHERE media_reference_id = ${EditLog.params.media_reference_id}
-    ORDER BY created_at DESC`
+    ORDER BY created_at DESC, id DESC`
 
   public create = this.create_fn(this.#create)
 
@@ -44,6 +41,22 @@ class EditLog extends Model {
     return this.#select_many_by_media_reference({
       media_reference_id: params.media_reference_id
     })
+  }
+
+  public get_media_info_last_editors(params: {
+    media_reference_id: number
+  }) {
+    const media_info_field_last_editor: Partial<Record<keyof outputs.MediaInfo, string>> = {}
+    const edit_logs = this.select_many({media_reference_id: params.media_reference_id})
+    for (const edit_log of edit_logs) {
+      const edit_log_media_info_changes = Object.keys(edit_log.changes.media_info) as (keyof outputs.MediaInfo)[]
+      for (const media_info_field of edit_log_media_info_changes) {
+        if (media_info_field in media_info_field_last_editor === false) {
+          media_info_field_last_editor[media_info_field] = edit_log.editor
+        }
+      }
+    }
+    return media_info_field_last_editor
   }
 }
 

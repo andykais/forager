@@ -27,6 +27,13 @@ export const CreateEditing = Editing.extend({
 export const UpdateEditing = Editing.extend({
   overwrite: z.boolean().default(true)
 }).optional()
+.refine(editing => {
+  if (editing?.overwrite === false && editing.editor === undefined) {
+    return false
+  } else {
+    return true
+  }
+}, 'Overwrite behavor cannot be specified without supplying an editor')
 
 
 export const Timestamp = z.number()

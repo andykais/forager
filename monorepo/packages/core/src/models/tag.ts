@@ -4,12 +4,14 @@ import {TagGroup} from './tag_group.ts'
 import {MediaReferenceTag} from './media_reference_tag.ts'
 import {MediaReference, SelectManyFilters} from './media_reference.ts'
 import { SQLBuilder } from "~/models/lib/sql_builder.ts";
+import { tag_slug_format } from "../inputs/tag_inputs.ts";
 
 export type TagJoin =
   & torm.InferSchemaTypes<typeof Tag.result>
   & {
-    group: torm.InferSchemaTypes<typeof TagGroup.result>['name']
-    color: torm.InferSchemaTypes<typeof TagGroup.result>['color']
+    group:  torm.InferSchemaTypes<typeof TagGroup.result>['name']
+    color:  torm.InferSchemaTypes<typeof TagGroup.result>['color']
+    editor: torm.InferSchemaTypes<typeof MediaReferenceTag.result>['editor']
   }
 
 class Tag extends Model {
@@ -68,7 +70,7 @@ class Tag extends Model {
     WHERE tag_group_id = ${Tag.params.tag_group_id} AND tag.name = ${Tag.params.name}`
 
   #select_by_media_reference_id = this.query`
-    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')}, ${TagGroup.result.color} FROM tag
+    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')}, ${TagGroup.result.color}, ${MediaReferenceTag.result.editor} FROM tag
     INNER JOIN media_reference_tag ON media_reference_tag.tag_id = tag.id
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
     WHERE media_reference_tag.media_reference_id = ${MediaReferenceTag.params.media_reference_id}
@@ -214,8 +216,12 @@ class Tag extends Model {
     this.#delete_by_count.exec()
   }
 
-  public format_identifier(tag: {group: string; name: string}): string {
-    return tag.group + ':' + tag.name
+  public static format_slug(tag: {group: string; name: string}): string {
+    return tag_slug_format(tag)
+  }
+
+  public format_slug(tag: {group: string; name: string}): string {
+    return Tag.format_slug(tag)
   }
 }
 

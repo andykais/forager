@@ -7,6 +7,7 @@ class MediaReferenceTag extends Model {
     media_reference_id:           field.number(),
     tag_id:                       field.number(),
     tag_group_id:                 field.number(),
+    editor:                       field.string().optional(),
     // auto generated fields
     updated_at:                   field.datetime(),
     created_at:                   field.datetime(),
@@ -18,11 +19,13 @@ class MediaReferenceTag extends Model {
     INSERT INTO media_reference_tag (
       media_reference_id,
       tag_id,
-      tag_group_id
+      tag_group_id,
+      editor
     ) VALUES (${[
       MediaReferenceTag.params.media_reference_id,
       MediaReferenceTag.params.tag_id,
       MediaReferenceTag.params.tag_group_id,
+      MediaReferenceTag.params.editor,
     ]}) RETURNING ${MediaReferenceTag.result['*']}`
 
   #select_one_by_media_reference_and_tag = this.query.one`

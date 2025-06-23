@@ -8,6 +8,7 @@ import type * as result_types from '~/models/lib/result_types.ts'
 import { FileProcessor } from '~/lib/file_processor.ts'
 import * as errors from '~/lib/errors.ts'
 import { get_hash_color } from "~/lib/text_processor.ts";
+import { TagJoin } from "../../models/tag.ts";
 
 /**
  * A common return type from {@linkcode Forager.prototype.media} and {@linkcode Forager.prototype.series} actions. Contains a media reference for a series of media and its associated metadata.
@@ -117,7 +118,7 @@ class Actions {
       })!
 
       // NOTE that on create calls, we ignore tags.remove. This is mostly an implementation detail, since tags.remove is not exposed to the forager.media.create action
-      const tag_edits = this.#manage_media_tags(media_reference.id, {...parsed.tags, remove: []})
+      const tag_edits = this.#manage_media_tags(media_reference.id, {...parsed.tags, remove: []}, parsed.editing)
 
       if (parsed.editing?.editor) {
         this.models.EditLog.create({
@@ -158,20 +159,47 @@ class Actions {
     return output_result
   }
 
-  protected media_update(media_reference_id: number, media_info?: inputs.MediaInfo, tags?: inputs.MediaReferenceUpdateTags) {
+  protected media_update(media_reference_id: number, media_info?: inputs.MediaInfo, tags?: inputs.MediaReferenceUpdateTags, editing?: UpdateEditor) {
     const parsed = {
       media_reference_id: parsers.MediaReferenceId.parse(media_reference_id),
       media_info: parsers.MediaInfo.parse(media_info ?? {}),
       tags: parsers.MediaReferenceUpdateTags.parse(tags ?? []),
+      editing: parsers.UpdateEditing.parse(editing),
     }
 
     const transaction = this.ctx.db.transaction_sync(() => {
+      const media_info_updates = {...parsed.media_info}
+
+      // when overwrite is false, we will only overwrite fields that are already owned by this editor (or by no editors at all)
+      if (parsed.editing?.overwrite === false) {
+        const media_info_last_editors = this.models.EditLog.get_media_info_last_editors({media_reference_id})
+        const media_info_update_fields = Object.keys(media_info_updates) as (keyof outputs.MediaInfo)[]
+        for (const media_info_field of media_info_update_fields) {
+          if (media_info_last_editors[media_info_field] && media_info_last_editors[media_info_field] !== parsed.editing.editor) {
+            delete media_info_updates[media_info_field]
+          }
+        }
+
+      }
+
       this.models.MediaReference.update({
         id: media_reference_id,
-        ...parsed.media_info,
+        ...media_info_updates,
       })
 
-      this.#manage_media_tags(media_reference_id, parsed.tags)
+      const tag_changes = this.#manage_media_tags(media_reference_id, parsed.tags, parsed.editing)
+
+      if (parsed.editing?.editor) {
+        this.models.EditLog.create({
+          media_reference_id: media_reference_id,
+          operation_type: 'UPDATE',
+          editor: parsed.editing?.editor,
+          changes: {
+            media_info: media_info_updates,
+            tags: tag_changes,
+          }
+        })
+      }
     })
 
     transaction()
@@ -248,37 +276,51 @@ class Actions {
     }
   }
 
-  #manage_media_tags(media_reference_id: number, tags: outputs.MediaReferenceUpdateTags): result_types.EditLog['changes']['tags'] {
+  #manage_media_tags(media_reference_id: number, tags: outputs.MediaReferenceUpdateTags, editing?: CreateEditor | UpdateEditor): result_types.EditLog['changes']['tags'] {
     const tags_added = new Set<string>()
     const tags_removed = new Set<string>()
+    const tags_existing = new Map<string, TagJoin>()
+    const editor = editing?.editor
+    const overwrite_edits_by_others = editing && 'overwrite' in editing && editing.overwrite
+
+    const existing_tags = this.models.Tag.select_all({media_reference_id: media_reference_id})
+    for (const tag of existing_tags) {
+      tags_existing.set(this.models.Tag.format_slug(tag), tag)
+    }
 
     if (tags.replace) {
-      const existing_tags = this.models.Tag.select_all({media_reference_id: media_reference_id})
-      for (const tag of existing_tags) {
-        tags_removed.add(this.models.Tag.format_identifier(tag))
+      // remove all existing tags matching the editing stragegy first
+      for (const [tag_slug, tag] of tags_existing.entries()) {
+        if (editor === undefined || tag.editor === null || tag.editor === editor || overwrite_edits_by_others) {
+          this.models.MediaReferenceTag.delete({media_reference_id, tag_id: tag.id})
+          tags_removed.add(tag_slug)
+        }
       }
-      // remove all existing tags first
-      this.models.MediaReferenceTag.delete({media_reference_id: media_reference_id})
 
       for (const tag of tags.replace) {
         const tag_record = this.tag_create(tag)
-        this.models.MediaReferenceTag.get_or_create({ media_reference_id: media_reference_id, tag_id: tag_record.id, tag_group_id: tag_record.tag_group_id })
-        tags_removed.delete(this.models.Tag.format_identifier(tag))
-        tags_added.add(this.models.Tag.format_identifier(tag))
+        this.models.MediaReferenceTag.get_or_create({ media_reference_id: media_reference_id, tag_id: tag_record.id, tag_group_id: tag_record.tag_group_id, editor })
+
+        tags_removed.delete(this.models.Tag.format_slug(tag))
+        if (!tags_existing.has(tag.slug)) {
+          tags_added.add(this.models.Tag.format_slug(tag))
+        }
       }
     }
 
     for (const tag of tags.add) {
       const tag_record = this.tag_create(tag)
-      this.models.MediaReferenceTag.get_or_create({ media_reference_id: media_reference_id, tag_id: tag_record.id, tag_group_id: tag_record.tag_group_id })
-      tags_removed.delete(this.models.Tag.format_identifier(tag))
-      tags_added.add(this.models.Tag.format_identifier(tag))
+      this.models.MediaReferenceTag.get_or_create({ media_reference_id: media_reference_id, tag_id: tag_record.id, tag_group_id: tag_record.tag_group_id, editor })
+      if (!tags_existing.has(tag.slug)) {
+        tags_removed.delete(tag.slug)
+        tags_added.add(tag.slug)
+      }
     }
 
     for (const tag of tags.remove) {
       const tag_record = this.models.Tag.select_one({name: tag.name, group: tag.group }, {or_raise: true})
       this.models.MediaReferenceTag.delete({ media_reference_id: media_reference_id, tag_id: tag_record.id })
-      tags_removed.add(this.models.Tag.format_identifier(tag))
+      tags_removed.add(tag.slug)
     }
 
     if (this.ctx.config.tags.auto_cleanup) {

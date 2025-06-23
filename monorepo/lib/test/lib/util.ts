@@ -108,7 +108,7 @@ class Assertions {
     }
   }
   list_partial<T extends object>(actual_list: T[], expected_list: Partial<T>[], sort_fn?: (a: T, b: T) => number) {
-    this.equals(actual_list.length, expected_list.length, `Expected list length to be ${actual_list.length} but is actually ${expected_list.length}`)
+    this.equals(actual_list.length, expected_list.length, `Expected list length to be ${expected_list.length} but is actually ${actual_list.length}`)
     const expected_list_keys = expected_list.map(item => Object.keys(item))
     for (const expected_keys of expected_list_keys) this.equals(expected_keys, expected_list_keys[0], 'list_partial must supply the same keys for each element')
     const expected_keys = expected_list_keys[0]

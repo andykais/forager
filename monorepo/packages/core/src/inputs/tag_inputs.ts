@@ -54,6 +54,10 @@ export const TagObject = z.object({
   }),
   description: z.string().optional(),
   metadata: z.record(z.any()).optional(),
+}).transform(tag => {
+
+  const slug = tag_slug_format(tag)
+  return {...tag, slug}
 })
 
 
@@ -68,6 +72,14 @@ export const TagMatchObject = z.object({
 }).transform(v => {
   return {group: undefined, ...v}
 })
+
+export function tag_slug_format(tag: {group?: string; name: string}) {
+  let slug = tag.name
+  if (tag.group) {
+    slug = tag.group + ':' + tag.name
+  }
+  return slug
+}
 
 export const Tag = TagObject.or(TagShorthand.pipe(TagObject))
 
