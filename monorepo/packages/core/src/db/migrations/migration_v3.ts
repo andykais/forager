@@ -11,6 +11,9 @@ export class Migration extends torm.Migration {
     console.log(`Adding column 'editors' to media_reference table`)
     this.driver.exec(`ALTER TABLE media_reference ADD COLUMN editors JSON`)
 
+    console.log(`Adding column 'editor' to media_reference_tag table`)
+    this.driver.exec(`ALTER TABLE media_reference_tag ADD COLUMN editor TEXT`)
+
     console.log(`Creating edit_log table`)
     this.driver.exec(`
       CREATE TABLE edit_log (

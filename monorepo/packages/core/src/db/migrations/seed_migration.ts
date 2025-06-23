@@ -108,6 +108,7 @@ export class Migration extends torm.SeedMigration {
     CREATE TABLE media_reference_tag (
       media_reference_id INTEGER NOT NULL,
       tag_id INTEGER NOT NULL,
+      editor TEXT,
       tag_group_id INTEGER NOT NULL,
       updated_at ${TIMESTAMP_COLUMN},
       created_at ${TIMESTAMP_COLUMN},
