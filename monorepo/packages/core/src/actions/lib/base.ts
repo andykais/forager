@@ -1,7 +1,6 @@
 import type z from 'zod'
 import type { Context } from '~/context.ts'
 import * as fs from '@std/fs'
-import * as path from '@std/path'
 import * as fmt_bytes from '@std/fmt/bytes'
 import { type inputs, type outputs, parsers } from '~/inputs/mod.ts'
 import type * as result_types from '~/models/lib/result_types.ts'

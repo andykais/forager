@@ -1,4 +1,4 @@
-import { Actions, type MediaFileResponse, type MediaSeriesResponse, type MediaResponse, type MediaGroupResponse, type EditInfo, CreateEditor, UpdateEditor } from '~/actions/lib/base.ts'
+import { Actions, type MediaFileResponse, type MediaSeriesResponse, type MediaResponse, type MediaGroupResponse, type CreateEditor, type UpdateEditor } from '~/actions/lib/base.ts'
 import { type inputs, parsers } from '~/inputs/mod.ts'
 import type * as result_types from '~/models/lib/result_types.ts'
 import { errors } from "~/mod.ts";

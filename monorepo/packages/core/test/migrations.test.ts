@@ -1,7 +1,7 @@
 import { test } from 'forager-test'
 import * as fs from '@std/fs'
 import * as path from '@std/path'
-import { Forager, errors } from '~/mod.ts'
+import { Forager } from '~/mod.ts'
 
 const CURRENT_VERSION = 3
 

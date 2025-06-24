@@ -1,6 +1,5 @@
-import type * as sqlite from 'node:sqlite'
 import * as torm from '@torm/sqlite'
-import { migrations, sql, TIMESTAMP_SQLITE, TIMESTAMP_COLUMN } from './registry.ts'
+import { migrations, TIMESTAMP_COLUMN } from './registry.ts'
 
 
 @migrations.register()
