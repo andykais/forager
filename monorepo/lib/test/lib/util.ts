@@ -1,6 +1,5 @@
 import * as asserts from 'https://deno.land/std@0.155.0/testing/asserts.ts'
 export { expectType as expect_type } from "npm:ts-expect"
-import * as colors from 'jsr:@std/fmt@0.225.4/colors'
 import * as path from '@std/path'
 import { Debugger } from './debugger.ts'
 import { Forager, ForagerConfig } from '../../../packages/core/src/mod.ts'
@@ -145,7 +144,13 @@ class TestContext {
 
   get_test_config(): ForagerConfig {
     return {
-      database_path: this.create_fixture_path('forager.db'),
+      database: {
+        folder: this.create_fixture_path('database'),
+        migrations: {
+          // auto migrations would only hide errors. We should only enable these in specific migrationt tests
+          automatic: false
+        }
+      },
       thumbnails: {
         folder: this.create_fixture_path('thumbnails')
       }

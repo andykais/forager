@@ -26,7 +26,7 @@ class Context {
   }
 
   public init(): ContextInitInfo {
-    this.logger.info(`Connecting to sqlite database ${this.config.database_path}`)
+    this.logger.info(`Connecting to sqlite database ${this.db.sqlite_path}`)
     const db_init_info = this.db.init()
     return {
       db: db_init_info

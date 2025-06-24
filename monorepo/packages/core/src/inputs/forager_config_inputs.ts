@@ -2,11 +2,19 @@ import z from 'zod'
 import { LOG_LEVELS } from '~/lib/logger.ts'
 
 export const ForagerConfig = z.object({
-  /** Path to the forager sqlite database */
-  database_path: z.string(),
+  database: z.object({
+    /** Path to the forager sqlite database */
+    folder: z.string(),
+    filename: z.string().default('forager.db'),
 
-  /** Path backup the sqlite database when there are migrations */
-  database_backups_path: z.string().optional(),
+    migrations: z.object({
+      /** Whether or not migrations should be automatically ran when forager initializes */
+      automatic: z.boolean().default(true),
+    }).default({}),
+
+    /** Whether or not backups are enabled during migrations (backups will be saved in <database.folder>/backups/) */
+    backups: z.boolean().default(true),
+  }),
 
   logger: z.object({
     level: z.enum(LOG_LEVELS).optional(),

@@ -11,10 +11,9 @@ test('migrate from v1 schema', async (ctx) => {
 
   await fs.copy(ctx.resources.migration_db_v1, forager_v1_path)
 
-  const database_backups_path = ctx.create_fixture_path('backups')
+  const database_backups_path = path.join(forager_v1_path, 'backups')
   using forager = new Forager({
-    database_path: path.join(forager_v1_path, 'forager.db'),
-    database_backups_path,
+    database: {folder: forager_v1_path, backups: true},
     thumbnails: {
       folder: path.join(forager_v1_path, 'thumbnails')
     }
@@ -35,7 +34,7 @@ test('migrate from v1 schema', async (ctx) => {
     }
   ])
 
-  const backup_files = await Array.fromAsync(await Deno.readDir(database_backups_path))
+  const backup_files = await Array.fromAsync(Deno.readDir(database_backups_path))
   ctx.assert.equals(backup_files.length, 2)
 
   // prove that our migration was a success

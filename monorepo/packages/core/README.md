@@ -13,8 +13,8 @@ import { Forager } from '@forager/core'
 
 
 using forager = new Forager({
-  database_path: 'forager.db',
-  thumbnail_folder: '~/.local/share/forager_thumbnails',
+  database: { folder: 'forager.db' },
+  thumbnails: { folder: 'thumbnails' },
 })
 forager.init()
 

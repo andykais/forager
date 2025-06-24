@@ -2,6 +2,7 @@ import * as torm from '@torm/sqlite'
 import type { Context } from '../context.ts'
 import * as forager_models from '../models/mod.ts'
 import {migrations} from '~/db/migrations/mod.ts'
+import path from "node:path";
 
 // import { ModelClass } from '/home/andrew/Code/development/torm/src/model.ts'
 // type ModelsBuilder<T extends Record<string, ModelClass>> = {
@@ -27,9 +28,14 @@ class Database {
   #ctx: Context
   #torm: ForagerTorm
 
+  public sqlite_path: string
+  public sqlite_backups_folder: string
+
   public constructor(ctx: Context) {
-    this.#torm = new ForagerTorm(ctx.config.database_path)
     this.#ctx = ctx
+    this.sqlite_path = path.join(ctx.config.database.folder, ctx.config.database.filename)
+    this.sqlite_backups_folder = path.join(ctx.config.database.folder, 'backups')
+    this.#torm = new ForagerTorm(this.sqlite_path)
   }
 
   public init(): torm.InitInfo {
@@ -38,12 +44,13 @@ class Database {
         auto: true,
       }
     }
-    if (this.#ctx.config.database_backups_path) {
+    if (this.#ctx.config.database.backups) {
       init_options.backups = {
-        folder: this.#ctx.config.database_backups_path
+        folder: this.sqlite_backups_folder
       }
       init_options.migrate!.backup = true
     }
+    Deno.mkdirSync(this.#ctx.config.database.folder, { recursive: true })
     const init_info = this.#torm.init(init_options)
     this.#torm.driver.exec(`PRAGMA journal_mode=WAL`)
     return init_info
