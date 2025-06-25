@@ -185,6 +185,8 @@ test('tag actions', async (ctx) => {
       ]
     })
 
+    // ensure the timestamp for cartoon happens later than the above actions
+    await ctx.timeout(10)
     forager.media.update(doodle.media_reference.id, {}, {add: ['genre:cartoon']})
 
     ctx.assert.tag_search_result(forager.tag.search({sort_by: 'updated_at'}), {

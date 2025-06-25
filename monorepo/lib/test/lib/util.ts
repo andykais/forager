@@ -125,6 +125,7 @@ class TestContext {
   resources = resources
   assert = new Assertions()
   #deno_test_ctx: Deno.TestContext
+  timeout = (millis: number) => new Promise(resolve => setTimeout(resolve, millis))
 
   constructor(test_name: string, deno_test_ctx: Deno.TestContext) {
     this.test_name = test_name
