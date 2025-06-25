@@ -77,7 +77,7 @@ class Actions {
       filepath: parsers.Filepath.parse(filepath),
       media_info: parsers.MediaReferenceUpdate.parse(media_info ?? {}),
       tags: parsers.MediaReferenceUpdateTags.parse(tags ?? []),
-      editing: parsers.CreateEditing.parse(editing),
+      editing: parsers.CreateEditing.parse(editing) ?? this.ctx.config.editing,
     }
 
     const file_processor = new FileProcessor(this.ctx, filepath)
@@ -163,7 +163,7 @@ class Actions {
       media_reference_id: parsers.MediaReferenceId.parse(media_reference_id),
       media_info: parsers.MediaInfo.parse(media_info ?? {}),
       tags: parsers.MediaReferenceUpdateTags.parse(tags ?? []),
-      editing: parsers.UpdateEditing.parse(editing),
+      editing: parsers.UpdateEditing.parse(editing) ?? this.ctx.config.editing,
     }
 
     const transaction = this.ctx.db.transaction_sync(() => {

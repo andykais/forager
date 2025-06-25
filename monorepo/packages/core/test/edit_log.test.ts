@@ -133,7 +133,17 @@ test('media edit log', async (ctx) => {
         removed: ['color:black'],
       }
     })
-
   })
 
+
+  await ctx.subtest('editor defined via config', () => {
+    forager.config.editing = {
+      editor: 'default-manual-user',
+      overwrite: true
+    }
+
+    const source_created_at = new Date('2012/2/3')
+    media_generated_art = forager.media.update(media_generated_art.media_reference.id, {source_created_at})
+    ctx.assert.equals(media_generated_art.media_reference.source_created_at, source_created_at)
+  })
 })

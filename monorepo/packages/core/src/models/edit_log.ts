@@ -2,22 +2,27 @@ import { schema, field } from '@torm/sqlite'
 import { type outputs } from '~/inputs/mod.ts'
 import { Model } from '~/models/lib/base.ts'
 
-interface Changes {
-  [key: string]: any
-  media_info: outputs.MediaInfo
-  tags: {
-    added?: string[]
-    removed?: string[]
-  }
-}
-
 class EditLog extends Model {
   static schema = schema('edit_log', {
     id:                 field.number(),
     media_reference_id: field.number(),
     editor:             field.string(),
     operation_type:     field.string(),
-    changes:            field.json<Changes>(),
+    changes:            field.schema({
+      media_info:          field.schema({
+        title:             field.string().optional(),
+        description:       field.string().optional(),
+        metadata:          field.json().optional(),
+        source_url:        field.string().optional(),
+        source_created_at: field.datetime().optional(),
+        stars:             field.number().optional(),
+        view_count:        field.number().optional(),
+      }),
+      tags: field.schema({
+        added: field.list(field.string()).optional(),
+        removed: field.list(field.string()).optional(),
+      })
+    }),
     created_at:         field.datetime(),
   })
   static params = this.schema.params
