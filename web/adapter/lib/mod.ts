@@ -11,7 +11,9 @@ import deno_json from './deno.json' with { type: 'json' }
 
 interface ServerOptions {
   // log level for server messages
-  log_level?: LogLevel
+  logger?: {
+    level: LogLevel
+  }
 
   // the port the server is hosted on
   port?: number
@@ -54,7 +56,7 @@ class Server {
   #serve_dir_options: ServeDirOptions
 
   constructor(options: ServerOptions) {
-    this.#logger = new Logger('forager.web', options?.log_level)
+    this.#logger = new Logger('forager.web', options?.logger?.level)
     this.#options = options ?? {}
     this.#prerendered = new Set(PRERENDERED);
     this.#appDir = 'APP_DIR';
@@ -77,7 +79,7 @@ class Server {
     }
     this.#serve_dir_options = {
       fsRoot: this.#rootDir,
-      quiet: this.#options.log_level !== 'DEBUG',
+      quiet: this.#options.logger?.level !== 'DEBUG',
     }
   }
 
@@ -97,7 +99,7 @@ class Server {
     await this.#kitServerInitialized
   }
 
-  start(): Promise<void> {
+  async start(): Promise<void> {
     this.#logger.debug('Starting deno http server')
     this.#server = Deno.serve({
       port: this.#options.port ?? 8000,
@@ -112,7 +114,7 @@ class Server {
       },
     }, this.#handle_request)
 
-    return this.#server.finished
+    await this.#server.finished
   }
 
   get status(): Promise<void> | undefined {
@@ -255,7 +257,7 @@ if (import.meta.main) {
   const forager = new Forager(config.core)
   env.FORAGER_INSTANCE = forager
   const server = new Server({
-    log_level: config.web.log_level,
+    logger: config.web.logger,
     asset_folder: path.join(Deno.cwd(), 'static_assets'),
     preview: true,
     kit: {

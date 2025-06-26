@@ -8,28 +8,23 @@ import { type Config, load_config, PackagesConfig } from '$lib/server/config.ts'
 let forager: Forager
 let config: Config
 if (dev) {
-  if (env.FORAGER_CONFIG_PATH) {
+  if (env.FORAGER_CONFIG) {
     // TODO make this dev-only
-    config = await load_config(env.FORAGER_CONFIG_PATH)
+    config = await load_config(env.FORAGER_CONFIG)
     forager = new Forager(config.core)
   } else {
     config = PackagesConfig.parse({
-      core: {database_path: 'forager.db', thumbnail_folder: 'thumbnails/', log_level: 'INFO'},
-      web: {asset_folder: 'static_assets', log_level: 'INFO'}
+      core: {database: {folder: 'database'}, thumbnail_folder: 'thumbnails', logger: {level: 'INFO'}},
+      web: {asset_folder: 'static_assets', logger: {level: 'INFO'}}
     })
     forager = new Forager(config.core)
   }
 } else {
   if (env.FORAGER_INSTANCE) {
     forager = env.FORAGER_INSTANCE
-  } else {
-    throw new Error(`FORAGER_INSTANCE must be passed to sveltekit hooks`)
-  }
-
-  if (env.FORAGER_CONFIG) {
     config = env.FORAGER_CONFIG
   } else {
-    throw new Error(`FORAGER_CONFIG must be passed to sveltekit hooks`)
+    throw new Error(`FORAGER_INSTANCE must be passed to sveltekit hooks`)
   }
 }
 forager.init()

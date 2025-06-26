@@ -89,6 +89,7 @@
       {/each}
       <TagAutoCompleteInput
         {controller}
+        sort_by="updated_at"
         bind:search_string={new_tag_str}
         placeholder=""
         kind="details"

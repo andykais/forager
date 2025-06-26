@@ -46,7 +46,7 @@
       this.#last_query_hash = current_query_hash
 
       // TODO only do this when the query has changed. Currently any time we focus in/out of the browser tab, it will re-search
-      const search_options = {query:{tag_match}}
+      const search_options = {query:{tag_match}, sort_by}
       if (contextual_query) {
         search_options.contextual_query = contextual_query
       }
@@ -86,12 +86,14 @@
   let {
     controller,
     kind,
+    sort_by = 'media_reference_count',
     search_string = $bindable(),
     placeholder = 'genre:adventure...',
     input_classes = 'w-full rounded-lg py-0.5 px-3 text-slate-100 bg-gray-800',
     allow_multiple_tags = false,
     contextual_query,
   }: {
+    sort_by?: 'updated_at' | 'media_reference_count'
     controller: BaseController
     search_string: string
     kind: 'search' | 'details'

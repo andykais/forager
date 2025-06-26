@@ -13,7 +13,10 @@ export const PackagesConfig = z.object({
   web: z.object({
     port: z.number().default(8000),
     asset_folder: z.string(),
-    log_level: LogLevel.default('INFO'),
+
+    logger: z.object({
+      level: LogLevel.default('INFO'),
+    }).strict().default({}),
 
     ui_defaults: z.object({
 
@@ -79,7 +82,7 @@ export const PackagesConfig = z.object({
       // Star5: Keybind('Digit5'),
     }).default(() => ({})),
   })
-})
+}).strict()
 
 export type Config = z.infer<typeof PackagesConfig>
 
