@@ -11,6 +11,9 @@ if (dev) {
   if (env.FORAGER_CONFIG) {
     // TODO make this dev-only
     config = await load_config(env.FORAGER_CONFIG)
+    if (config.web.editing) {
+      config.core.editing = config.web.editing
+    }
     forager = new Forager(config.core)
   } else {
     config = PackagesConfig.parse({

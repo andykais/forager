@@ -253,6 +253,9 @@ if (import.meta.main) {
     throw new Error(`FORAGER_CONFIG environment variable must be set to run @forager/web module directly`)
   }
   const config = await load_config(FORAGER_CONFIG)
+  if (config.web.editing) {
+    config.core.editing = config.web.editing
+  }
   env.FORAGER_CONFIG = config
   const forager = new Forager(config.core)
   env.FORAGER_INSTANCE = forager

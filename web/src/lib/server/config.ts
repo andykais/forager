@@ -11,6 +11,13 @@ export const PackagesConfig = z.object({
   core: forager.parsers.ForagerConfig,
 
   web: z.object({
+
+    // TODO reuse core editing config parser
+    editing: z.object({
+      editor: z.string(),
+      overwrite: z.boolean().default(true),
+    }).strict().optional(),
+
     port: z.number().default(8000),
     asset_folder: z.string(),
 
