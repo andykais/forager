@@ -81,6 +81,7 @@
     "jsr:@torm/sqlite@^1.9.1": "1.9.1",
     "jsr:@torm/sqlite@^1.9.2": "1.9.2",
     "jsr:@torm/sqlite@^1.9.3": "1.9.3",
+    "jsr:@torm/sqlite@^1.9.4": "1.9.4",
     "npm:@sveltejs/kit@2.5.24": "2.5.24_@sveltejs+vite-plugin-svelte@4.0.0__svelte@5.0.3___acorn@8.13.0__vite@5.4.9_svelte@5.0.3__acorn@8.13.0_vite@5.4.9",
     "npm:@types/node@*": "18.16.19",
     "npm:cookie@0.6": "0.6.0",
@@ -470,6 +471,12 @@
     },
     "@torm/sqlite@1.9.3": {
       "integrity": "3b6ff3438e93129a216788d6451b7260991ee6cf20bc15d88d96f4ff9658f305",
+      "dependencies": [
+        "npm:zod@^3.23.8"
+      ]
+    },
+    "@torm/sqlite@1.9.4": {
+      "integrity": "0195998679bd1bf5de6764fe2cf78ebedac5331d571c4b58d8e76e797fc1f882",
       "dependencies": [
         "npm:zod@^3.23.8"
       ]
@@ -1030,7 +1037,7 @@
           "jsr:@std/log@~0.224.6",
           "jsr:@std/media-types@0.224.0",
           "jsr:@std/path@1.0.0",
-          "jsr:@torm/sqlite@^1.9.3",
+          "jsr:@torm/sqlite@^1.9.4",
           "npm:ts-pattern@5.2.0",
           "npm:zod@^3.24.2"
         ]

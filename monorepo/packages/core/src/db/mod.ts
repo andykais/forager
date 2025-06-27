@@ -41,7 +41,7 @@ class Database {
   public init(): torm.InitInfo {
     const init_options: torm.InitOptions = {
       migrate: {
-        auto: this.#ctx.config.database.migrations.automatie,
+        auto: this.#ctx.config.database.migrations.automatic,
       }
     }
     if (this.#ctx.config.database.backups) {
