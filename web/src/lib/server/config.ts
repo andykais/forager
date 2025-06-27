@@ -5,7 +5,10 @@ import * as forager from '@forager/core'
 
 const LogLevel: z.ZodEnum<["SILENT", "ERROR", "WARN", "INFO", "DEBUG"]>  = z.enum(['SILENT', 'ERROR', 'WARN', 'INFO', 'DEBUG'])
 
-const Keybind = (default_keybind: string): z.ZodDefault<z.ZodString> => z.string().default(default_keybind)
+const Keybind = (default_keybind: string) => z.union([z.string(), z.string().array()]).default(default_keybind).transform(keybind => {
+  if (Array.isArray(keybind)) return keybind
+  else return [keybind]
+})
 
 export const PackagesConfig = z.object({
   core: forager.parsers.ForagerConfig,
@@ -87,8 +90,8 @@ export const PackagesConfig = z.object({
       // Star3: Keybind('Digit3'),
       // Star4: Keybind('Digit4'),
       // Star5: Keybind('Digit5'),
-    }).default(() => ({})),
-  })
+    }).strict().default(() => ({})),
+  }).strict(),
 }).strict()
 
 export type Config = z.infer<typeof PackagesConfig>

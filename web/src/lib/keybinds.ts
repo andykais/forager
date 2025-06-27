@@ -25,14 +25,12 @@ export class Keybinds {
     this.disabled = false
     this.#config = config
 
-    const keyboard_actions_entries = Object.entries(this.#config.web.shortcuts).map(entry => {
-      const keyboard_action: KeybindAction = entry[0] as KeybindAction
-      const keyboard_shortcut = entry[1]
-
-      return [keyboard_shortcut, keyboard_action] as [string, KeybindAction]
-    })
-
-    this.#keybind_mapper = new Map<string, KeybindAction>(keyboard_actions_entries)
+    this.#keybind_mapper = new Map<string, KeybindAction>()
+    for (const [keyboard_action, keyboard_shortcuts] of Object.entries(this.#config.web.shortcuts)) {
+      for (const keyboard_shortcut of keyboard_shortcuts) {
+        this.#keybind_mapper.set(keyboard_shortcut, keyboard_action as KeybindAction)
+      }
+    }
   }
 
   public component_listen(handlers: Partial<Record<KeybindAction, KeybindActionListener>>) {
