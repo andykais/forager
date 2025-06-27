@@ -9,7 +9,7 @@ export const ForagerConfig = z.object({
 
     /** Overwrite edits of another editor */
     overwrite: z.boolean().default(true),
-  }).optional(),
+  }).strict().optional(),
 
   database: z.object({
     /** Path to the forager sqlite database */
@@ -21,15 +21,15 @@ export const ForagerConfig = z.object({
     migrations: z.object({
       /** Automatically run migrations when forager initializes */
       automatic: z.boolean().default(true),
-    }).default({}),
+    }).strict().default({}),
 
     /** Enable backups during migrations (saved in <database.folder>/backups/) */
     backups: z.boolean().default(true),
-  }),
+  }).strict(),
 
   logger: z.object({
     level: z.enum(LOG_LEVELS).optional(),
-  }).default({ level: 'ERROR' }),
+  }).strict().default({ level: 'ERROR' }),
 
   thumbnails: z.object({
     /** Storage location of thumbnails */
@@ -40,13 +40,13 @@ export const ForagerConfig = z.object({
 
     /** Percentage into an animated media file that a thumbnail should be shown. This field is somewhat special. It only matters when searching with thumbnail_limit: 1 */
     preview_duration_threshold: z.number().max(100).default(10),
-  }),
+  }).strict(),
 
   tags: z.object({
     /** Delete tags whenever they no longer reference any media */
     auto_cleanup: z.boolean().default(true),
-  }).default({ auto_cleanup: true }),
+  }).strict().default({ auto_cleanup: true }),
 
   /** Path to a js file to extend forager functionality. Namely file system discovery actions */
   script: z.string().optional(),
-})
+}).strict()
