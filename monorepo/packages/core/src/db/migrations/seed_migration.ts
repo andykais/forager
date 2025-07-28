@@ -4,7 +4,7 @@ import { migrations, sql, TIMESTAMP_SQLITE, TIMESTAMP_COLUMN } from './registry.
 
 @migrations.register()
 export class Migration extends torm.SeedMigration {
-  version = 3
+  version = 4
 
   sql = sql`
     CREATE TABLE media_file (
@@ -47,6 +47,22 @@ export class Migration extends torm.SeedMigration {
       created_at ${TIMESTAMP_COLUMN},
 
       FOREIGN KEY (media_file_id) REFERENCES media_file(id)
+    );
+
+    CREATE TABLE filesystem_path (
+      id INTEGER PRIMARY KEY NOT NULL,
+      filepath TEXT NOT NULL,
+      directory INTEGER NOT NULL CHECK(directory IN (0, 1)),
+      checksum TEXT, -- populated after a file is ingested into forager
+      -- these fields are null for directories
+      last_ingest_id INTEGER CHECK((directory = 0 AND last_ingest_id IS NOT NULL) OR last_ingest_id IS NULL),
+      ingest_priority INTEGER CHECK((directory = 0 AND ingest_priority IS NOT NULL) OR ingest_priority IS NULL),
+      filename TEXT CHECK((directory = 0 AND filename IS NOT NULL) OR filename IS NULL),
+      ingest_retriever TEXT CHECK((directory = 0 AND ingest_retriever IS NOT NULL) OR ingest_retriever IS NULL),
+
+      ingested_at TIMESTAMP DATETIME,
+      updated_at ${TIMESTAMP_COLUMN},
+      created_at ${TIMESTAMP_COLUMN}
     );
 
     CREATE TABLE media_keypoint (
@@ -173,13 +189,6 @@ export class Migration extends torm.SeedMigration {
       created_at ${TIMESTAMP_COLUMN}
     );
 
-    CREATE TABLE duplicate_log (
-      filepath TEXT NOT NULL,
-      checksum TEXT NOT NULL,
-      updated_at ${TIMESTAMP_COLUMN},
-      created_at ${TIMESTAMP_COLUMN}
-    );
-
     CREATE TABLE edit_log (
       id INTEGER PRIMARY KEY NOT NULL,
       media_reference_id INTEGER NOT NULL,
@@ -247,6 +256,11 @@ export class Migration extends torm.SeedMigration {
     CREATE UNIQUE INDEX media_file_reference ON media_file (media_reference_id);
     CREATE UNIQUE INDEX media_filepath ON media_file (filepath);
     CREATE INDEX media_reference_edit_log ON edit_log (media_reference_id, created_at);
+    CREATE UNIQUE INDEX filesystem_path_lookup ON filesystem_path (filepath);
+    CREATE UNIQUE INDEX filesystem_path_priority ON filesystem_path (ingest_priority) WHERE directory = 0;
+    CREATE INDEX filesystem_path_created_at ON filesystem_path (created_at, id);
+    CREATE INDEX filesystem_path_ingest_id ON filesystem_path (last_ingest_id);
+    CREATE INDEX filesystem_path_directory ON filesystem_path (directory);
     `
 
 

@@ -132,8 +132,12 @@ class TestContext {
     this.#deno_test_ctx = deno_test_ctx
   }
 
-  subtest(subtest_name: string, subtest_fn: () => Promise<void> | void): Promise<boolean> {
-    return this.#deno_test_ctx.step(subtest_name, subtest_fn)
+  subtest(subtest_name: string, subtest_fn: () => Promise<void> | void, options?: {ignore: boolean}): Promise<boolean> {
+    return this.#deno_test_ctx.step({
+      name: subtest_name,
+      fn: subtest_fn,
+      ignore: options?.ignore,
+    })
   }
 
   get fixture_folder() {

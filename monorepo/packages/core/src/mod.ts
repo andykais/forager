@@ -34,6 +34,7 @@ class Forager {
   public media: actions.MediaActions
   public series: actions.SeriesActions
   public filesystem: actions.FileSystemActions
+  public ingest: actions.IngestActions
   public keypoints: actions.KeypointActions
   public views: actions.ViewActions
   public tag: actions.TagActions
@@ -45,6 +46,7 @@ class Forager {
     this.media = new actions.MediaActions(this.#ctx)
     this.series = new actions.SeriesActions(this.#ctx)
     this.filesystem = new actions.FileSystemActions(this.#ctx)
+    this.ingest = new actions.IngestActions(this.#ctx)
     this.keypoints = new actions.KeypointActions(this.#ctx)
     this.views = new actions.ViewActions(this.#ctx)
     this.tag = new actions.TagActions(this.#ctx)

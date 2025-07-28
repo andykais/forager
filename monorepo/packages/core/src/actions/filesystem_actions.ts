@@ -1,10 +1,23 @@
 import * as fs from '@std/fs'
 import * as path from '@std/path'
 import { Actions } from '~/actions/lib/base.ts'
+import * as torm from '@torm/sqlite'
 import { inputs, parsers } from '~/inputs/mod.ts'
 import * as plugin from '~/lib/plugin_script.ts'
 
-
+interface FileSystemDiscoverStats {
+  created: {
+    directories: number
+    files: number
+  }
+  existing: {
+    directories: number
+    files: number
+  }
+  ignored: {
+    files: number
+  }
+}
 /**
   * Actions associated with interacting with the file system
   */
@@ -17,6 +30,12 @@ class FileSystemActions extends Actions {
     const start_time = performance.now()
     const parsed = {
       params: parsers.FileSystemDiscover.parse(params)
+    }
+
+    const stats: FileSystemDiscoverStats = {
+      created: { directories: 0, files: 0 },
+      existing: { directories: 0, files: 0 },
+      ignored: { files: 0 }
     }
 
     const walk_options: fs.WalkOptions = { includeDirs: false, includeSymlinks: false }
@@ -40,53 +59,69 @@ class FileSystemActions extends Actions {
       walk_options.match = [path.globToRegExp(parsed.params.path)]
     }
 
-    const queued_entries: fs.WalkEntry[] = []
     this.ctx.logger.info(`Collecting files in ${walk_path}...`)
     for await (const entry of fs.walk(walk_path, walk_options)) {
-      for (const receiver of this.ctx.plugin_script.recievers) {
-        if (receiver.matches(entry)) {
-          queued_entries.push(entry)
-          break
-        }
-      }
-    }
-    this.ctx.logger.info(`Found ${queued_entries.length} files`)
-
-    const stats: plugin.FileSystemReceiverContext['stats'] = {
-      created: 0,
-      updated: 0,
-      existing: 0,
-      duplicate: 0,
-      errored: 0,
-    }
-    for (const [index, entry] of queued_entries.entries()) {
       const receiver = this.ctx.plugin_script.recievers.find(receiver => receiver.matches(entry))
-      if (receiver === undefined) {
-        throw new Error(`unexpected code path`)
+      if (receiver) {
+        this.#add_filepath(stats, receiver, entry)
+      } else {
+        stats.ignored.files ++
       }
-
-      try {
-        await receiver.foreach({
-          default_metadata: params.set, // NOTE we use the unparsed input here because our layer below here also parses media_info/tags
-          stats,
-          entry,
-          forager: this.ctx.forager,
-          logger: this.ctx.logger,
-        })
-      } catch (e) {
-        this.ctx.logger.error(e)
-        throw e
-      }
-      this.ctx.logger.info(() => {
-        const progress_index = index + 1
-        const percent_complete = this.format_decimals((progress_index / queued_entries.length) * 100) + '%'
-        return `Stats: progress: ${progress_index}/${queued_entries.length} (${percent_complete}), created: ${stats.created}, updated: ${stats.updated}, duplicates: ${stats.duplicate}, nooped: ${stats.existing}, errored: ${stats.errored}\n`
-      })
     }
 
     const duration = performance.now() - start_time
-    this.ctx.logger.info(`Created ${stats.created} media files and ignored ${stats.existing} existing and ${stats.duplicate} duplicate files in ${this.format_duration(duration)}.`)
+    this.ctx.logger.info(`Found ${stats.created.files} new files in ${this.format_duration(duration)}.`)
     return { stats }
+  }
+
+  #add_filepath(stats: FileSystemDiscoverStats, receiver: plugin.FileSystemReceiver, entry: fs.WalkEntry) {
+      try {
+        this.models.FilesystemPath.create({
+          directory: false,
+          filepath: entry.path,
+          priority_instruction: 'first',
+          last_ingest_id: null,
+          ingest_retriever: receiver.name,
+          ingested_at: null,
+          checksum: null,
+          filename: entry.name,
+        })
+        stats.created.files ++
+        this.#add_directories(stats, path.dirname(entry.path))
+      } catch (e) {
+        if (e instanceof torm.errors.UniqueConstraintError) {
+          stats.existing.files ++
+          // TODO handle updates...
+          throw new Error('unimplemented', {cause: e})
+        }
+        else throw e
+      }
+  }
+
+  #add_directories(stats: FileSystemDiscoverStats, filepath: string) {
+    try {
+      this.models.FilesystemPath.create({
+        directory: true,
+        filepath: filepath,
+        priority_instruction: 'none',
+        last_ingest_id: null,
+        ingest_retriever: null,
+        ingested_at: null,
+        checksum: null,
+        filename: null,
+      })
+      stats.created.directories ++
+      const parent_path = path.dirname(filepath)
+      if (parent_path !== filepath) {
+        this.#add_directories(stats, parent_path)
+      }
+    } catch (e) {
+      if (e instanceof torm.errors.UniqueConstraintError) {
+        stats.existing.directories ++
+      } else {
+        throw e
+      }
+    }
   }
 
   #find_globless_parent_dir(globpath: string): string {

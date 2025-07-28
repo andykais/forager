@@ -3,11 +3,12 @@ import * as fs from '@std/fs'
 import * as path from '@std/path'
 import { Forager } from '~/mod.ts'
 
-const CURRENT_VERSION = 3
-
+const CURRENT_VERSION = 4
+import * as torm from '@torm/sqlite'
 
 test('migrate from v1 schema', async (ctx) => {
   const forager_v1_path = ctx.create_fixture_path('forager_v1')
+  const forager_new_path = ctx.create_fixture_path('forager_new')
 
   await fs.copy(ctx.resources.migration_db_v1, forager_v1_path)
 
@@ -19,9 +20,9 @@ test('migrate from v1 schema', async (ctx) => {
     }
   })
   // initialize and migrate the database
-  const info = forager.init()
-  ctx.assert.equals(info.db.current_version, CURRENT_VERSION)
-  ctx.assert.equals(info.db.migration_operations, [
+  const v1_migration_info = forager.init()
+  ctx.assert.equals(v1_migration_info.db.current_version, CURRENT_VERSION)
+  ctx.assert.equals(v1_migration_info.db.migration_operations, [
     {
       start_version: 1,
       next_version: 2,
@@ -31,11 +32,16 @@ test('migrate from v1 schema', async (ctx) => {
       start_version: 2,
       next_version: 3,
       backup: true,
-    }
+    },
+    {
+      start_version: 3,
+      next_version: 4,
+      backup: true,
+    },
   ])
 
   const backup_files = await Array.fromAsync(Deno.readDir(database_backups_path))
-  ctx.assert.equals(backup_files.length, 2)
+  ctx.assert.equals(backup_files.length, 3)
 
   // prove that our migration was a success
   ctx.assert.search_result(forager.media.search(), {
@@ -46,4 +52,18 @@ test('migrate from v1 schema', async (ctx) => {
       {media_file: {filename: "koch.tif"}},
     ]
   })
+
+  // check if the schemas are identical between a freshly seeded database, and a database migrated from v1
+  const forager_new = new Forager({
+    database: {folder: forager_new_path, backups: true},
+    thumbnails: {
+      folder: path.join(forager_new_path, 'thumbnails')
+    }
+  })
+  const forager_new_info = forager_new.init()
+
+  await ctx.subtest('assert migrated schema has no diff with freshly seeded schema', async () => {
+    // TODO this currently fails because of some weird older datetime strings. We should write a proper migration for those
+    ctx.assert.equals(v1_migration_info.schemas.tables, forager_new_info.schemas.tables)
+  }, {ignore: true})
 })

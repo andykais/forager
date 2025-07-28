@@ -4,12 +4,14 @@ import * as forager_models from '../models/mod.ts'
 import {migrations} from '~/db/migrations/mod.ts'
 import path from "node:path";
 
-// import { ModelClass } from '/home/andrew/Code/development/torm/src/model.ts'
-// type ModelsBuilder<T extends Record<string, ModelClass>> = {
 export type Constructor<T = any> = new (...args: any[]) => T;
 export type Class<T = any> = InstanceType<Constructor<T>>;
 type ModelsBuilder<T extends Record<string, Class>> = {
   [K in keyof T]: InstanceType<T[K]>
+}
+
+export interface DatabaseInfo {
+  tables: ReturnType<torm.Torm['schemas']['tables']>
 }
 
 class ForagerTorm extends torm.Torm {
@@ -56,6 +58,11 @@ class Database {
     return init_info
   }
 
+  public info(): DatabaseInfo {
+    const tables = this.#torm.schemas.tables()
+    return { tables }
+  }
+
   get models() {
     return this.#torm.models
   }
@@ -79,6 +86,7 @@ class Database {
       this.#torm.driver.exec('COMMIT')
       return result
     } catch(e) {
+      console.log(e)
       this.#torm.driver.exec('ROLLBACK')
       throw e
     }

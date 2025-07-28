@@ -19,6 +19,13 @@ export type SeriesItem = z.input<typeof parsers.SeriesItem>
 export type SeriesId = z.input<typeof parsers.SeriesId>
 
 export type FileSystemDiscover = z.input<typeof parsers.FileSystemDiscover>
+export type FileSystemSearch = z.input<typeof parsers.FileSystemSearch>
+
+export type IngestStart = z.input<typeof parsers.IngestStart>
+export type IngestStop = z.input<typeof parsers.IngestStop>
+export type IngestStatus = z.input<typeof parsers.IngestStatus>
+export type IngestSearch = z.input<typeof parsers.IngestSearch>
+export type IngestUpdate = z.input<typeof parsers.IngestUpdate>
 
 export type KeypointCreate = z.input<typeof parsers.KeypointCreate>
 
