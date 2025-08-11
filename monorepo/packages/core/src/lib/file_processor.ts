@@ -335,6 +335,9 @@ class FileProcessor {
     }
 
     if (media_type !== 'AUDIO' && width === 0 || height === 0) {
+      if (path.extname(this.#filepath) === '.webp') {
+        throw new errors.InvalidFileError(`webp decoding is not yet supported by ffmpeg. See here https://trac.ffmpeg.org/ticket/4907`, new Error(`width: ${width} and height: ${height} values cannot be zero`))
+      }
       throw new errors.InvalidFileError(`Invalid file`, new Error(`width: ${width} and height: ${height} values cannot be zero`))
     }
 
