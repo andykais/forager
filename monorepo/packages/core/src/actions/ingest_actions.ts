@@ -46,7 +46,10 @@ class IngestActions extends Actions {
       errored: 0,
     }
 
-    const total = this.models.FilesystemPath.count_entries({})
+    const total = this.models.FilesystemPath.count_entries({
+      ingest_retriever: parsed.params.query?.retriever,
+      filepath: parsed.params.query?.path
+    })
 
     const max_ingest_id = this.models.FilesystemPath.get_max_ingest_id()
     const ingest_id = max_ingest_id + 1
@@ -54,7 +57,9 @@ class IngestActions extends Actions {
     let total_progress = 0
     while (true) {
       const file = this.models.FilesystemPath.select_one({
+        ingest_retriever: parsed.params.query?.retriever,
         exclude_ingest_id: ingest_id,
+        filepath: parsed.params.query?.path,
       })
 
       if (file === undefined) {
@@ -100,6 +105,8 @@ class IngestActions extends Actions {
 
     const duration = performance.now() - start_time
     this.ctx.logger.info(`Created ${stats.created} media files and ignored ${stats.existing} existing and ${stats.duplicate} duplicate files in ${this.format_duration(duration)}.`)
+    this.#singleton_data.status = 'stopped'
+    this.#singleton_data.ingest_id = null
     return { stats }
   }
 
@@ -110,6 +117,8 @@ class IngestActions extends Actions {
     if (ctx.default_metadata?.tags) {
       tags = ctx.default_metadata.tags.concat(tags ?? [] as inputs.TagList)
     }
+
+    // NOTE we frontload the update ahead of the create call for a faster path (the create call will do filesystem checksum checks before doing sqlite checks)
     try {
       const existing_media = ctx.forager.media.get({filepath})
       if (media_info || tags) {
@@ -120,18 +129,30 @@ class IngestActions extends Actions {
       } else {
         ctx.stats.existing ++
       }
+
+      this.models.FilesystemPath.update({
+        id: ctx.file_id,
+        ingested_at: new Date(),
+        last_ingest_id: ctx.ingest_id,
+        checksum: undefined,
+        updated_at: new Date(),
+        ingest_retriever: undefined,
+      })
       return
     } catch(e) {
       if (e instanceof errors.NotFoundError) {} // this is the normal flow for adding new media
       else throw e
     }
+
     try {
       const {media_file} = await ctx.forager.media.create(filepath, media_info, tags, {editor: ctx.receiver.name})
-      this.models.FilesystemPath.update_ingest({
+      this.models.FilesystemPath.update({
         id: ctx.file_id,
-        checksum: media_file.checksum,
         ingested_at: new Date(),
         last_ingest_id: ctx.ingest_id,
+        checksum: media_file.checksum,
+        updated_at: new Date(),
+        ingest_retriever: undefined,
       })
       ctx.stats.created += 1
     } catch (e) {
@@ -142,6 +163,14 @@ class IngestActions extends Actions {
 
       if (e instanceof errors.DuplicateMediaError) {
         ctx.logger.warn(`${file_identifier} has a duplicate checksum (${e.checksum}) to ${e.existing_media_filepath}, skipping`)
+        this.models.FilesystemPath.update({
+          id: ctx.file_id,
+          ingested_at: new Date(),
+          last_ingest_id: ctx.ingest_id,
+          checksum: e.checksum,
+          updated_at: new Date(),
+          ingest_retriever: undefined,
+        })
         ctx.stats.duplicate += 1
       } else if (e instanceof errors.MediaAlreadyExistsError) {
         if (media_info || tags) {
@@ -149,11 +178,13 @@ class IngestActions extends Actions {
           const {media_reference} = ctx.forager.media.get({filepath: e.filepath})
           // const media_file = this.models.MediaFile.select_one({filepath: e.filepath}, {or_raise: true})
           const {media_file} = ctx.forager.media.update(media_reference.id, media_info, tags, {editor: ctx.receiver.name})
-          this.models.FilesystemPath.update_ingest({
+          this.models.FilesystemPath.update({
             id: ctx.file_id,
-            checksum: media_file.checksum,
             ingested_at: new Date(),
             last_ingest_id: ctx.ingest_id,
+            checksum: media_file.checksum,
+            updated_at: new Date(),
+            ingest_retriever: undefined,
           })
           ctx.stats.updated += 1
         } else {
@@ -162,10 +193,27 @@ class IngestActions extends Actions {
         ctx.stats.existing += 1
       } else if (e instanceof errors.InvalidFileError) {
         ctx.logger.warn(`${filepath} was an invalid file, skipping`)
+
+        this.models.FilesystemPath.update({
+          id: ctx.file_id,
+          ingested_at: new Date(),
+          last_ingest_id: ctx.ingest_id,
+          checksum: undefined,
+          updated_at: new Date(),
+          ingest_retriever: undefined,
+        })
         ctx.stats.errored ++
       } else {
         ctx.logger.error(`${file_identifier} import failed.`)
         ctx.logger.error(e)
+        this.models.FilesystemPath.update({
+          id: ctx.file_id,
+          ingested_at: new Date(),
+          last_ingest_id: ctx.ingest_id,
+          checksum: undefined,
+          updated_at: new Date(),
+          ingest_retriever: undefined,
+        })
         ctx.stats.errored ++
         // throw e
       }

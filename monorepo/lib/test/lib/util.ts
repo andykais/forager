@@ -1,4 +1,4 @@
-import * as asserts from 'https://deno.land/std@0.155.0/testing/asserts.ts'
+import * as asserts from 'jsr:@std/assert'
 export { expectType as expect_type } from "npm:ts-expect"
 import * as path from '@std/path'
 import { Debugger } from './debugger.ts'

@@ -1,11 +1,20 @@
 import * as torm from '@torm/sqlite'
 import { Model, field } from '~/models/lib/base.ts'
+import { SQLBuilder } from '~/models/lib/sql_builder.ts'
 
 const FilesystemPathVars = torm.Vars({
   priority_instruction: field.string(), // TODO support enums in torm. This should be constrained to "first" | "last" | "none"
   max_ingest_id: field.number().optional(),
   total: field.number(),
 })
+
+
+interface SelectFilesystemPathFilters {
+  exclude_ingest_id?: number
+  filepath?: string
+  ingest_retriever?: string
+}
+
 
 const PRIORITY_SPACER = 1000
 
@@ -57,6 +66,8 @@ class FilesystemPath extends Model {
 
   #select_max_ingest_id = this.query`SELECT MAX(last_ingest_id) AS ${FilesystemPathVars.result.max_ingest_id} FROM filesystem_path`
 
+  #select_by_filepath = this.query`SELECT ${FilesystemPath.result['*']} FROM filesystem_path WHERE filepath = ${FilesystemPath.params.filepath}`
+
   #select_highest_priority_ingest = this.query.one`SELECT ${[
     FilesystemPath.result.id,
     FilesystemPath.result.filepath,
@@ -76,7 +87,49 @@ class FilesystemPath extends Model {
     )
   ORDER BY ingest_priority DESC`
 
+  #select_highest_priority_ingest_w_filepath = this.query.one`SELECT ${[
+    FilesystemPath.result.id,
+    FilesystemPath.result.filepath,
+    FilesystemPath.result.filename,
+    FilesystemPath.result.checksum,
+    FilesystemPath.result.last_ingest_id,
+    FilesystemPath.result.ingest_retriever,
+    FilesystemPath.result.ingested_at,
+    FilesystemPath.result.ingest_priority,
+    FilesystemPath.result.created_at,
+  ]} FROM filesystem_path
+  WHERE
+    filepath GLOB ${FilesystemPath.params.filepath} AND
+    directory = 0 AND
+    (
+      last_ingest_id IS NULL OR
+      last_ingest_id != ${FilesystemPath.params.last_ingest_id}
+    )
+  ORDER BY ingest_priority DESC`
+
+  #select_highest_priority_ingest_w_ingest_retriever = this.query.one`SELECT ${[
+    FilesystemPath.result.id,
+    FilesystemPath.result.filepath,
+    FilesystemPath.result.filename,
+    FilesystemPath.result.checksum,
+    FilesystemPath.result.last_ingest_id,
+    FilesystemPath.result.ingest_retriever,
+    FilesystemPath.result.ingested_at,
+    FilesystemPath.result.ingest_priority,
+    FilesystemPath.result.created_at,
+  ]} FROM filesystem_path
+  WHERE
+    ingest_retriever = ${FilesystemPath.params.ingest_retriever} AND
+    directory = 0 AND
+    (
+      last_ingest_id IS NULL OR
+      last_ingest_id != ${FilesystemPath.params.last_ingest_id}
+    )
+  ORDER BY ingest_priority DESC`
+
   #count_entries = this.query.one`SELECT COUNT(id) AS ${FilesystemPathVars.result.total} FROM filesystem_path`
+  #count_entries_w_filepath = this.query.one`SELECT COUNT(id) AS ${FilesystemPathVars.result.total} FROM filesystem_path WHERE filepath GLOB ${FilesystemPath.params.filepath}`
+  #count_entries_w_ingest_retriever = this.query.one`SELECT COUNT(id) AS ${FilesystemPathVars.result.total} FROM filesystem_path WHERE filepath GLOB ${FilesystemPath.params.ingest_retriever}`
 
   #update_filepath_ingest = this.query.exec`
     UPDATE filesystem_path SET
@@ -85,20 +138,30 @@ class FilesystemPath extends Model {
       checksum = ${FilesystemPath.params.checksum}
     WHERE id = ${FilesystemPath.params.id}`
 
-  #select_one_impl(params: {
-    exclude_ingest_id: number
-    filepath?: string
-  }) {
-    if (params.filepath) {
-      throw new Error('unimplemented')
-    }
+  #update = this.query`UPDATE filesystem_path SET
+      last_ingest_id = IFNULL(${FilesystemPath.params.last_ingest_id}, last_ingest_id),
+      ingested_at = IFNULL(${FilesystemPath.params.ingested_at}, ingested_at),
+      checksum = IFNULL(${FilesystemPath.params.checksum}, checksum),
+      ingest_retriever = IFNULL(${FilesystemPath.params.ingest_retriever}, ingest_retriever),
+      updated_at = IFNULL(${FilesystemPath.params.updated_at}, updated_at)
+    WHERE id = ${FilesystemPath.params.id}`
 
-    return this.#select_highest_priority_ingest({last_ingest_id: params.exclude_ingest_id})
+
+  #select_one_impl(params: SelectFilesystemPathFilters): torm.InferSchemaTypes<typeof FilesystemPath.result> | undefined {
+    const builder = new SQLBuilder(this.driver)
+    builder.set_select_clause(`SELECT * FROM filesystem_path`)
+    builder.add_result_fields(FilesystemPath.result['*'] as any)
+    builder.set_order_by_clause(`ORDER BY filesystem_path.ingest_priority DESC, updated_at DESC`)
+    this.#set_filters(builder, params)
+    const query = builder.build()
+    return query.stmt.one({})!
   }
 
   public select_one = this.select_one_fn(this.#select_one_impl.bind(this))
 
   public create = this.create_fn(this.#create)
+
+  public update = this.#update.exec
 
   public get_max_ingest_id() {
     return this.#select_max_ingest_id.one()?.max_ingest_id ?? 0
@@ -106,14 +169,38 @@ class FilesystemPath extends Model {
 
   public update_ingest = this.#update_filepath_ingest
 
-  public count_entries(params: {
-    filepath?: string
-  }) {
+  public count_entries(params: SelectFilesystemPathFilters) {
+    const builder = new SQLBuilder(this.driver)
+    builder.set_select_clause(`SELECT COUNT() AS total FROM filesystem_path`)
+    builder.add_result_fields({ total: FilesystemPathVars.result.total })
+    this.#set_filters(builder, params)
+    const query = builder.build()
+    const { total } = query.stmt.one({})!
+    return total
+  }
+
+  #set_filters(builder: SQLBuilder, params: SelectFilesystemPathFilters) {
+    if (params.exclude_ingest_id !== undefined) {
+      builder.add_where_clause(`directory = 0`)
+      builder.add_where_clause(`
+        (
+          last_ingest_id IS NULL OR
+          last_ingest_id != ${params.exclude_ingest_id}
+        )
+      `)
+    }
     if (params.filepath) {
-      throw new Error('unimplemented')
+      if (params.filepath.includes('*')) {
+        builder.add_where_clause(`filepath GLOB :filepath`)
+      } else {
+        builder.add_where_clause(`filepath = :filepath`)
+      }
+      // TODO escape these params
     }
 
-    return this.#count_entries()!.total
+    if (params.ingest_retriever) {
+      builder.add_where_clause(`ingest_retriever = '${params.ingest_retriever}'`)
+    }
   }
 }
 

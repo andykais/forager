@@ -11,6 +11,7 @@ export const FileSystemDiscover = z.object({
 
 export const FileSystemQuery = z.object({
   path: z.string().optional(),
+  retriever: z.string().optional(),
   extensions: z.string()
                .refine(ext => !ext.startsWith('.'), 'Extensions must not start with "."')
                .array()

@@ -109,7 +109,7 @@ export class Migration extends torm.Migration {
         }
         filepath = paths.dir
       }
-      ingest_priority = ingest_priority * 1000
+      ingest_priority = ingest_priority + 1000
     }
   }
 }

@@ -139,7 +139,7 @@ ${this.fragments.limit_clause}`
 ${sql}
 )`
     }
-    return sql
+    return sql.trim()
   }
 
   build() {
