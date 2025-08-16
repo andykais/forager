@@ -1,4 +1,3 @@
-import * as fs from '@std/fs'
 import * as path from '@std/path'
 import * as errors from '~/lib/errors.ts'
 import { Actions } from '~/actions/lib/base.ts'
@@ -223,28 +222,28 @@ class IngestActions extends Actions {
   /**
     * check the status of ingestion
     */
-  status = async (params: inputs.IngestStatus) => {
+  status = async (_params: inputs.IngestStatus) => {
     throw new Error('unimplemented')
   }
 
   /**
     * Stop the ingester from running. If it is not running, this call will error
     */
-  stop = async (params: inputs.IngestStop) => {
+  stop = async (_params: inputs.IngestStop) => {
     throw new Error('unimplemented')
   }
 
   /**
     * Retrieve the file system paths previously discovered
     */
-  search = (params: inputs.IngestSearch) => {
+  search = (_params: inputs.IngestSearch) => {
     throw new Error('unimplemented')
   }
 
   /**
     * bulk update the ingest priority on files matching a particular search
     */
-  update = (params: inputs.IngestUpdate) => {
+  update = (_params: inputs.IngestUpdate) => {
     throw new Error('unimplemented')
   }
 

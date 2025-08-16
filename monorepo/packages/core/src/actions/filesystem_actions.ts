@@ -4,7 +4,6 @@ import { Actions } from '~/actions/lib/base.ts'
 import * as torm from '@torm/sqlite'
 import { inputs, parsers } from '~/inputs/mod.ts'
 import * as plugin from '~/lib/plugin_script.ts'
-import { receiveMessageOnPort } from "node:worker_threads";
 
 interface FileSystemDiscoverStats {
   created: {

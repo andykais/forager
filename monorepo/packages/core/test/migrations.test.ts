@@ -4,7 +4,6 @@ import * as path from '@std/path'
 import { Forager } from '~/mod.ts'
 
 const CURRENT_VERSION = 4
-import * as torm from '@torm/sqlite'
 
 test('migrate from v1 schema', async (ctx) => {
   const forager_v1_path = ctx.create_fixture_path('forager_v1')
