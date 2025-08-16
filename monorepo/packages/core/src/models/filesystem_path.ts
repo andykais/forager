@@ -152,9 +152,9 @@ class FilesystemPath extends Model {
     builder.set_select_clause(`SELECT * FROM filesystem_path`)
     builder.add_result_fields(FilesystemPath.result['*'] as any)
     builder.set_order_by_clause(`ORDER BY filesystem_path.ingest_priority DESC, updated_at DESC`)
-    this.#set_filters(builder, params)
+    const sql_params = this.#set_filters(builder, params)
     const query = builder.build()
-    return query.stmt.one({})!
+    return query.stmt.one(sql_params)!
   }
 
   public select_one = this.select_one_fn(this.#select_one_impl.bind(this))
@@ -173,13 +173,14 @@ class FilesystemPath extends Model {
     const builder = new SQLBuilder(this.driver)
     builder.set_select_clause(`SELECT COUNT() AS total FROM filesystem_path`)
     builder.add_result_fields({ total: FilesystemPathVars.result.total })
-    this.#set_filters(builder, params)
+    const sql_params = this.#set_filters(builder, params)
     const query = builder.build()
-    const { total } = query.stmt.one({})!
+    const { total } = query.stmt.one(sql_params)!
     return total
   }
 
   #set_filters(builder: SQLBuilder, params: SelectFilesystemPathFilters) {
+    const sql_params: Record<string, any> = {}
     if (params.exclude_ingest_id !== undefined) {
       builder.add_where_clause(`directory = 0`)
       builder.add_where_clause(`
@@ -190,6 +191,8 @@ class FilesystemPath extends Model {
       `)
     }
     if (params.filepath) {
+      sql_params.filepath = params.filepath
+      builder.add_param('filepath', FilesystemPath.params.filepath)
       if (params.filepath.includes('*')) {
         builder.add_where_clause(`filepath GLOB :filepath`)
       } else {
@@ -201,6 +204,8 @@ class FilesystemPath extends Model {
     if (params.ingest_retriever) {
       builder.add_where_clause(`ingest_retriever = '${params.ingest_retriever}'`)
     }
+
+    return sql_params
   }
 }
 
