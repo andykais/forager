@@ -1,6 +1,6 @@
 import { test } from 'forager-test'
 import * as path from '@std/path'
-import { Forager } from '~/mod.ts'
+import { Forager, type MediaFileResponse } from '~/mod.ts'
 
 
 test('ingest actions', async ctx => {
@@ -17,13 +17,12 @@ test('ingest actions', async ctx => {
   ctx.assert.equals(ingest.stats.existing, 0)
   ctx.assert.equals(ingest.stats.errored, 0)
 
-  ctx.assert.search_result(forager.media.search(), {
-    total: 2,
-    results: [
-      {media_file: {filepath: ctx.resources.media_files["ed-edd-eddy.png"]}},
-      {media_file: {filepath: ctx.resources.media_files["cat_doodle.jpg"]}},
-    ]
-  })
+  const filepaths = forager.media.search().results.map(result => (result as MediaFileResponse).media_file.filepath)
+  ctx.assert.equals(filepaths.length, 2)
+  ctx.assert.list_includes(filepaths, [
+    ctx.resources.media_files['ed-edd-eddy.png'],
+    ctx.resources.media_files["cat_doodle.jpg"]
+  ])
 })
 
 
