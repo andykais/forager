@@ -1,6 +1,6 @@
 {
   "name": "@forager/core",
-  "version": "0.7.26",
+  "version": "0.7.27",
 
   "tasks": {
     "lint": "deno lint",
