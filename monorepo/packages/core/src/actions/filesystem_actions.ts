@@ -90,6 +90,18 @@ class FileSystemActions extends Actions {
         checksum: null,
         filename: entry.name,
       }
+
+      const filesystem_path = this.models.FilesystemPath.select_one({filepath: filesystem_path_data.filepath})
+      if (filesystem_path) {
+          this.models.FilesystemPath.update({
+            id: filesystem_path.id,
+            ingest_retriever: filesystem_path_data.ingest_retriever,
+            updated_at: new Date(),
+          })
+          stats.existing.files ++
+          return
+      }
+
       try {
         this.models.FilesystemPath.create(filesystem_path_data)
         stats.created.files ++

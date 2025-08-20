@@ -91,6 +91,7 @@ class IngestActions extends Actions {
           add: this.#add.bind(this)
         })
       } catch (e) {
+        this.ctx.logger.error(`An error occurred at entry '${file.filepath}':`)
         this.ctx.logger.error(e)
         throw e
       }
