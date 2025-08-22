@@ -103,6 +103,7 @@ class Server {
   async start(): Promise<void> {
     this.#logger.debug('Starting deno http server')
     this.#server = Deno.serve({
+      hostname: '127.0.0.1', // Only bind to localhost'
       port: this.#options.port ?? 8000,
       onError: (error) => {
         this.#logger.error(`An error occured on the server: ${error}`)
