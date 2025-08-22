@@ -50,6 +50,7 @@
   function video_loader(node: HTMLVideoElement) {
     return {
       update(video_source_url: string) {
+        animation_progress = 0
         node.load()
       }
     }
@@ -65,6 +66,12 @@
     const escaped_url = `/files/media_file/${encodeURIComponent(escaped_path)}`
     return escaped_url
   })
+  $effect(() => {
+    if (media_url) {
+      animation_progress = 0
+    }
+  })
+
 
   let dialog: HTMLDialogElement
   let animation_width = $state(0)

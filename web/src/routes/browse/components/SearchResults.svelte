@@ -34,8 +34,6 @@
 <style>
   .container-masonry {
     display: grid;
-    grid-gap: 10px;
-    grid-column-gap: 15px;
     grid-template-columns: repeat(auto-fill, minmax(var(--thumbnail-size), 1fr));
     justify-items: center;
   }
