@@ -3,6 +3,7 @@ import {Forager} from '@forager/core'
 import {env} from '$env/dynamic/private'
 import { dev } from '$app/environment'
 import { type Config, load_config, PackagesConfig } from '$lib/server/config.ts'
+import { trace } from "@opentelemetry/api"
 
 
 let forager: Forager
@@ -33,6 +34,11 @@ if (dev) {
 forager.init()
 
 export const handle: sveltekit.Handle = async ({ event, resolve }) => {
+  const span = trace.getActiveSpan()
+  if (span) {
+    const url_pathname = new URL(event.request.url).pathname
+    span.updateName(`${event.request.method} ${url_pathname}`)
+  }
   event.locals.forager = forager
   event.locals.config = config
   const response = await resolve(event)
