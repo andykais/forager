@@ -68,11 +68,11 @@ class IngestActions extends Actions {
 
       const receiver = this.ctx.plugin_script.recievers.find(receiver => receiver.name === file?.ingest_retriever)
 
-      if (receiver === undefined) {
-        throw new Error(`unhandled code branch, no plugin is registered with receiver name '${file?.ingest_retriever}'`)
-      }
-
       try {
+        if (receiver === undefined) {
+          throw new Error(`unhandled code branch, no plugin is registered with receiver name '${file?.ingest_retriever}'`)
+        }
+
         await receiver.foreach({
           default_metadata: params?.set, // NOTE we use the unparsed input here because our layer below here also parses media_info/tags
           ingest_id,

@@ -54,9 +54,14 @@ export class UnExpectedError extends ForagerError {
 export class FileProcessingError extends ForagerError {
   override name = 'FileProcessingError'
 
-  constructor(message: string, cause: Error) {
+  constructor(message: string, cause?: Error) {
     super(message, {cause})
   }
+}
+
+
+export class FileNotFound extends FileProcessingError {
+  override name = 'FileNotFound'
 }
 
 export class InvalidFileError extends FileProcessingError {

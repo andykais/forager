@@ -1,5 +1,6 @@
 import * as node_crypto from 'node:crypto'
 import * as path from '@std/path'
+import * as fs from '@std/fs'
 import z from 'zod'
 
 import { Context } from '~/context.ts'
@@ -218,6 +219,10 @@ class FileProcessor {
 
   @throw_contextually()
   public async get_info(): Promise<FileInfo> {
+    const filepath_exists = await fs.exists(this.#filepath) 
+    if (!filepath_exists) {
+      throw new errors.FileNotFound(`Cannot process file because it does not exist`)
+    }
     const ffprobe_command = [
       'ffprobe',
       '-v', 'error',
