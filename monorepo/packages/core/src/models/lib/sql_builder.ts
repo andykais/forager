@@ -145,7 +145,7 @@ ${sql}
   build() {
     const sql = this.generate_sql()
     const stmt = Statement.create<any, any>(sql, this.#param_fields, this.#result_fields)
-    stmt.prepare_query(this.#driver)
+    stmt.prepare(this.#driver)
     return {stmt, arguments: this.#default_arguments}
   }
 }
