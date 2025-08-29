@@ -10,11 +10,11 @@ on:
     branches: ["main"]
 env:
   DENO_DIR: deno_dependency_cache
-  DENO_LOCKFILE: ${{ github.workspace }}/monorepo/deno.lock
+  DENO_LOCKFILE: ${{ github.workspace }}/deno.lock
 
 defaults:
   run:
-    working-directory: './monorepo/packages/cli/'
+    working-directory: './packages/cli/'
 
 
 jobs:
