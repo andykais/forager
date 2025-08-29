@@ -134,6 +134,7 @@
             UNEXPECTED MEDIA TYPE {result.media_type}
           {/if}
         </div>
+        </div>
       </button>
     </div>
   {/each}

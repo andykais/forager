@@ -38,10 +38,18 @@ export default defineConfig({
       ...resolve_workspace_imports('core'),
     }
   },
-  // NOTE that this disables hmr and hard server refresh.
-  // refreshing manually may be a better iterative workflow
   server: {
+    fs: {
+      allow: [
+        // allow the workspace root node_modules folder (this is not auto detected by vite like a package.json "workspaces" would be)
+        path.join(path.resolve(__dirname, '..', '..'), 'node_modules'),
+      ]
+    },
+
     host: '127.0.0.1', // Only bind to localhost'
+
+    // NOTE that this disables hmr and hard server refresh.
+    // refreshing manually may be a better iterative workflow
     hmr: {
       port: false,
       clientPort: false

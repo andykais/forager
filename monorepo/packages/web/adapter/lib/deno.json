@@ -4,8 +4,8 @@
   "license": "MIT",
 
   "imports": {
+    "@opentelemetry/api": "npm:@opentelemetry/api@1.9.0",
     "@andykais/ts-rpc": "jsr:@andykais/ts-rpc@^0.2.2",
-    "@forager/core": "jsr:@forager/core@^0.7.29",
     "@std/http/file-server": "jsr:@std/http@0.224.5/file-server",
     "@std/path": "jsr:@std/path@^1.0.3",
     "@std/yaml": "jsr:@std/yaml@^1.0.4",

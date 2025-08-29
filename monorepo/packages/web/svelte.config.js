@@ -1,5 +1,5 @@
-// import adapter from './adapter/adapter.js'
-import adapter from '@sveltejs/adapter-auto';
+import * as forager from '@forager/core'
+import adapter from './adapter/adapter.js'
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 /** @type {import('@sveltejs/kit').Config} */

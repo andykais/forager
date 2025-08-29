@@ -1,7 +1,7 @@
 import {fileURLToPath} from 'node:url';
 import * as fs from 'jsr:@std/fs';
 import * as path from 'jsr:@std/path'
-import {build} from 'esbuild';
+import {build} from 'npm:esbuild';
 
 /** @type {import('.').default} */
 export default function (opts = {}) {
