@@ -7,8 +7,8 @@ export class Migration extends torm.Migration {
   version = 2
 
   call = () => {
-    const all_count = this.driver.prepare(`SELECT COUNT() as total FROM media_reference`).get()
-    const directory_reference_counts = this.driver.prepare(`SELECT COUNT() as total FROM media_reference WHERE directory_reference = 1`).get()
+    const all_count = this.driver.prepare(`SELECT COUNT() as total FROM media_reference`).get()!
+    const directory_reference_counts = this.driver.prepare(`SELECT COUNT() as total FROM media_reference WHERE directory_reference = 1`).get()!
     console.log(`Cleaning up ${directory_reference_counts.total} media reference directories out of ${all_count.total} media references`)
     const media_reference_directories_stmt = this.driver.prepare(`SELECT id FROM media_reference WHERE directory_reference = 1`)
     // this.driver.exec(`DELETE FROM media_series_item`)
