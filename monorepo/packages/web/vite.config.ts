@@ -37,5 +37,14 @@ export default defineConfig({
     alias: {
       ...resolve_workspace_imports('core'),
     }
+  },
+  // NOTE that this disables hmr and hard server refresh.
+  // refreshing manually may be a better iterative workflow
+  server: {
+    host: '127.0.0.1', // Only bind to localhost'
+    hmr: {
+      port: false,
+      clientPort: false
+    }
   }
 });
