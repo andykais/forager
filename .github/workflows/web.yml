@@ -78,11 +78,11 @@ jobs:
         with:
           deno-version: v1.x
 
-      - name: Cache Deno dependencies 
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.DENO_DIR }}
-          key: ${{ hashFiles(env.DENO_LOCKFILE) }}
+      # - name: Cache Deno dependencies 
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: ${{ env.DENO_DIR }}
+      #     key: ${{ hashFiles(env.DENO_LOCKFILE) }}
 
       - name: Build
         run: deno task build
