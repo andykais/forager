@@ -11,6 +11,7 @@ import {load_config} from './build/config.ts'
 import build_manifest from './build/build.json' with { type: 'json' }
 import {Server as KitServer} from './build/server/index.js';
 import {manifest} from './build/server/manifest.js';
+import * as static_asset_bytes from './build/bytes_imports.ts'
 export const kitServer = new KitServer(manifest);
 
 interface ServerOptions {
@@ -88,14 +89,7 @@ class Server {
   }
 
   async init() {
-    if (!this.#options.preview) {
-      await this.#fetch_static_assets()
-    }
-    const dirEntries = await Array.fromAsync(Deno.readDir(this.#rootDir))
-    const dirFilenames = dirEntries.map(entry => entry.name)
-    if (dirFilenames.length !== 2 || !dirFilenames.includes('favicon.png') || !dirFilenames.includes('_app')) {
-      throw new Error(`Root dir ${this.#rootDir} does not contain expected asset files`)
-    }
+    await this.#ensure_static_assets_exist()
 
     this.#logger.debug('Initializing sveltekit server instance')
     const env = this.#options?.kit?.env ?? Deno.env.toObject()
@@ -133,55 +127,46 @@ class Server {
     await this.#server.shutdown()
   }
 
-  async #fetch_static_assets() {
-    const local_manifest_path = path.join(this.#options.asset_folder, 'manifest.json')
+  async #ensure_static_assets_exist() {
+    // in preview mode, we will just use the locally generated built files
+    if (this.#options.preview) {
+      return
+    }
+
+    const asset_version_folders = await Array.fromAsync(Deno.readDir(this.#options.asset_folder))
+
+    // check if the version assets are already downloaded in the asset folder
+    if (asset_version_folders.includes(deno_json.version)) {
+      return
+    }
+
+    if (build_manifest.version !== deno_json.version) {
+      throw new Error(`unexpected code path. Static asset manifest build.json package version ${build_manifest.version} does not match deno.json version ${deno_json.version}`)
+    }
+
+    this.#logger.debug(`Local downloaded asset files (${asset_version_folders}) do not match target version. Clearing asset folder ${this.#options.asset_folder}.`)
+    // if not, just clear the whole dir away and start over
+    await Deno.remove(this.#options.asset_folder, {recursive: true})
+
     const static_assets_folder = path.join(this.#options.asset_folder, deno_json.version)
 
-    try {
-      const file_contents = await Deno.readTextFile(local_manifest_path)
-      const local_manifest: LocalManifest = JSON.parse(file_contents)
-      if (local_manifest.version !== deno_json.version) {
-        this.#logger.debug(`Local manifest version ${local_manifest.version} does not match target version. Clearing asset folder ${this.#options.asset_folder}.`)
-        await Deno.remove(this.#options.asset_folder, {recursive: true})
-      } else {
-        // everything up to date, nothing else to do
-        return
-      }
-    } catch (e) {
-      if (e instanceof Deno.errors.NotFound) {
-        this.#logger.debug(`No local manifest found`)
-      } else {
-        await Deno.remove(this.#options.asset_folder, {recursive: true})
-      }
+    this.#logger.debug(`Writing static assets from raw imports into folder ${static_assets_folder}`)
+
+    for (const [file_id, file_bytes] of Object.entries(static_asset_bytes)) {
+      const relative_path = build_manifest.generated_files[file_id]
+      const asset_output_path = path.join(static_assets_folder, relative_path)
+      await Deno.writeFile(asset_output_path, file_bytes)
+      this.#logger.debug(`Wrote ${asset_output_path}`)
     }
 
-    this.#logger.debug(`Fetching static assets from jsr package ${deno_json.version} into folder ${static_assets_folder}`)
-    const jsr_manifest_res = await fetch(`https://jsr.io/@forager/web/${deno_json.version}_meta.json`)
-    const jsr_manifest = await jsr_manifest_res.json()
-    const static_assets = Object.keys(jsr_manifest.manifest)
+    this.#logger.debug(`Completed writing asset files to ${static_assets_folder}`)
 
-    for (const remote_asset_path of static_assets) {
-      // chop off the leading "/" on assets
-      const asset_path = remote_asset_path.substring(1)
-
-      const url = `https://jsr.io/@forager/web/${deno_json.version}/${asset_path}`
-      this.#logger.debug(`Fetching ${url}`)
-      const response = await fetch(url)
-      const asset_output_path = path.join(static_assets_folder, asset_path)
-      await Deno.mkdir(path.dirname(asset_output_path), { recursive: true })
-      const asset_file = await Deno.open(asset_output_path, { createNew: true, write: true })
-      await response.body?.pipeTo(asset_file.writable)
-      this.#logger.debug(`Saved ${asset_output_path}`)
-
-      const static_assets_manifest: LocalManifest = {
-        version: deno_json.version,
-        files: static_assets,
-      }
-      await Deno.writeTextFile(
-        local_manifest_path,
-        JSON.stringify(static_assets_manifest)
-      )
+    const dir_entries = await Array.fromAsync(Deno.readDir(this.#rootDir))
+    const dir_filenames = dir_entries.map(entry => entry.name)
+    if (dir_filenames.length !== 2 || !dir_filenames.includes('favicon.png') || !dir_filenames.includes('_app')) {
+      throw new Error(`Root dir ${this.#rootDir} does not contain expected asset files`)
     }
+
   }
 
   #handle_request = async (request: Request, info: Deno.ServeHandlerInfo): Promise<Response> => {
