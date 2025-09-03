@@ -1,4 +1,5 @@
 node_modules
+adapter/lib/build
 
 # Output
 .output

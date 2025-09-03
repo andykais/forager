@@ -1,5 +1,5 @@
 {
-	"name": "@forager/web",
+	"name": "@forager/web-impl",
 	"private": true,
 	"version": "0.0.1",
 	"type": "module",

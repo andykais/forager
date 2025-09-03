@@ -5,7 +5,7 @@ import {build} from 'npm:esbuild';
 
 /** @type {import('.').default} */
 export default function (opts = {}) {
-  const {out = 'build', buildOptions = {}} = opts;
+  const {out = './adapter/lib/build', buildOptions = {}} = opts;
 
   return {
     name: 'deno-deploy-adapter',
@@ -23,24 +23,17 @@ export default function (opts = {}) {
 
       builder.writeServer(`${out}/server`);
 
-      const denoPath = fileURLToPath(new URL('./lib', import.meta.url).href);
-      builder.copy(denoPath, `${out}`, {});
-
       const modPath = fileURLToPath(
         new URL('./lib/mod.ts', import.meta.url).href
       );
-      builder.copy(modPath, `${out}/mod.ts`, {
-        replace: {
-          // SERVER: './server.js',
-          APP_DIR: builder.getAppPath(),
-          PRERENDERED: JSON.stringify(builder.prerendered.paths)
-        }
-      });
+      const build_manifest = {
+        APP_DIR: builder.getAppPath(),
+        PRERENDERED: JSON.stringify(builder.prerendered.paths),
+      }
+      await Deno.writeTextFile(path.join(out, 'build.json'), JSON.stringify(build_manifest))
 
       const webPackageRoot = path.resolve(import.meta.dirname, '..')
-      builder.copy(path.join(webPackageRoot, 'README.md'), path.join(out, 'README.md'))
       builder.copy(path.join(webPackageRoot, 'src/lib/server/config.ts'), path.join(out, 'config.ts'))
-      builder.copy(path.join(webPackageRoot, 'LICENSE'), path.join(out, 'LICENSE'))
 
       /*
       // transpile build/server.js and build/server/* into a single esm compatible bundle

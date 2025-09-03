@@ -10,10 +10,6 @@
     "@std/path": "jsr:@std/path@^1.0.3",
     "@std/yaml": "jsr:@std/yaml@^1.0.4",
     "svelte": "npm:svelte@~5.23.2",
-    "clsx": "npm:clsx@~2.1.1",
-    "cookie": "npm:cookie@^0.6.0",
-    "devalue": "npm:devalue@^5.0.0",
-    "set-cookie-parser": "npm:set-cookie-parser@^2.7.0",
     "zod": "npm:zod@^3.23.8"
   },
 

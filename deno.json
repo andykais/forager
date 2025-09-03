@@ -2,6 +2,7 @@
   "workspace": [
     "./packages/core",
     "./packages/web",
+    "./packages/web/adapter/lib",
   ],
 
   "nodeModulesDir": "auto",
