@@ -88,6 +88,6 @@ jobs:
         run: deno task build
 
       - name: Publish package
-        if: github.ref == 'refs/heads/main'
+        #if: github.ref == 'refs/heads/main'
         run: deno publish --allow-slow-types
         working-directory: ./web/build
