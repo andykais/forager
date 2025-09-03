@@ -42,11 +42,11 @@ jobs:
         with:
           ffmpeg-version: 7.0.1
 
-      - name: Cache Deno dependencies 
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.DENO_DIR }}
-          key: ${{ hashFiles(env.DENO_LOCKFILE) }}
+      # - name: Cache Deno dependencies 
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: ${{ env.DENO_DIR }}
+      #     key: ${{ hashFiles(env.DENO_LOCKFILE) }}
 
       # - name: Lint
       # run: deno task lint
@@ -56,7 +56,7 @@ jobs:
 
       # package.json based projects need to run deno install step
       - name: Install Dependencies
-        run: deno install
+        run: deno install --allow-scripts
 
       - name: Build
         run: deno task build
