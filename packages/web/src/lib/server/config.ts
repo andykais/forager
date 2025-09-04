@@ -38,7 +38,7 @@ export const PackagesConfig = z.object({
 
       media_list: z.object({
         thumbnail_size: z.number().default(110),
-        thumbnail_shape: z.enum(['square', 'original']).default('original') as z.ZodEnum<['square', 'original']>
+        thumbnail_shape: z.enum(['square', 'original']).default('original') as z.ZodDefault<z.ZodEnum<['square', 'original']>>
       }).strict().default({}),
 
       sidebar: z.object({

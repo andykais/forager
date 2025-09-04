@@ -3,6 +3,7 @@
     "./packages/core",
     "./packages/web",
     "./packages/web/adapter/lib",
+    "./packages/cli",
   ],
 
   "nodeModulesDir": "auto",

@@ -4,3 +4,6 @@ export async function load(event) {
     config: event.locals.config
   }
 }
+
+export const ssr = false
+export const prerender = false

@@ -40,6 +40,14 @@ export default function (opts = {}) {
         generated_files: {},
       }
 
+      // annoying code here, but sveltekit outputs type hints that are perhaps correct, but not resolved properly by deno, so we get checker errors https://github.com/sveltejs/kit/issues/12930
+      const server_index_filepath = path.join(out_server_dir, 'index.js')
+      let file_contents = await Deno.readTextFile(server_index_filepath)
+      file_contents = file_contents.replaceAll(/@type.+import\(.*[*]/g, '*')
+      file_contents = file_contents.replaceAll(/@param.+import\(.*[*]/g, '*')
+      file_contents = file_contents.replaceAll(/@param.+import\(.*/g, '')
+      await Deno.writeTextFile(server_index_filepath, file_contents)
+
       const vite_generated_build_files = [
         // ...await Array.fromAsync(fs.walk(out_server_dir, {includeDirs: false})),
         ...await Array.fromAsync(fs.walk(out_static_dir, {includeDirs: false})),

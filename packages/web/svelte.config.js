@@ -9,7 +9,11 @@ const config = {
 	preprocess: vitePreprocess(),
 
 	kit: {
-		adapter: adapter()
+		adapter: adapter(),
+    prerender: {
+      crawl: false,
+			entries: []
+		}
 	}
 };
 

@@ -3,14 +3,18 @@
   "version": "0.0.13",
   "license": "MIT",
 
+  "tasks": {
+    "preview": "deno run -A --check --unstable-raw-imports mod.ts",
+    "preview:watch": "deno run -A --check --unstable-raw-imports --watch mod.ts"
+  },
+
   "imports": {
     "@opentelemetry/api": "npm:@opentelemetry/api@1.9.0",
     "@andykais/ts-rpc": "jsr:@andykais/ts-rpc@^0.2.2",
     "@std/http/file-server": "jsr:@std/http@0.224.5/file-server",
     "@std/path": "jsr:@std/path@^1.0.3",
     "@std/yaml": "jsr:@std/yaml@^1.0.4",
-    "svelte": "npm:svelte@~5.23.2",
-    "zod": "npm:zod@^3.23.8"
+    "svelte": "npm:svelte@~5.23.2"
   },
 
   "exports": {
