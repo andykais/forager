@@ -39,9 +39,16 @@ class ForagerHelpers {
     // ensure we are dealing with absolute paths
     const config_dir = path.resolve(path.dirname(this.config_filepath))
     await Deno.mkdir(config_dir, {recursive: true})
-    const default_config: z.infer<typeof Config> = {
+    const default_config = Config.parse({
       core: {
-        database_path: path.join(config_dir, 'forager.db'),
+        database: {
+          folder: path.join(config_dir, 'database'),
+          filename: 'forager.db',
+          migrations: {
+            automatic: true
+          },
+          backups: true,
+        },
         // TODO add prompt options for each of these
         thumbnails: {
           folder: path.join(config_dir, 'thumbnails'),
@@ -60,9 +67,11 @@ class ForagerHelpers {
       web: {
         port: 8000,
         asset_folder: path.join(config_dir, 'static_assets'),
-        log_level: 'INFO',
+        logger: {
+          level: 'INFO',
+        }
       }
-    }
+    })
 
     await Deno.writeTextFile(this.config_filepath, yaml.stringify(default_config))
     await this.#read_config()

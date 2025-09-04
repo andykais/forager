@@ -6,6 +6,10 @@
     "./packages/cli",
   ],
 
+  "tasks": {
+    "develop": "deno task --cwd packages/web build:local && deno task --cwd packages/cli develop --config ~/.config/forager/forager.yml --log-level DEBUG gui"
+  },
+
   "nodeModulesDir": "auto",
 
   "imports": {

@@ -24,7 +24,7 @@ const cli = new cliffy.Command()
       const server = new web.Server({
         asset_folder: forager_helpers.config.web.asset_folder,
         port: forager_helpers.config.web.port,
-        log_level: forager_helpers.config.web.log_level,
+        logger: forager_helpers.config.web.logger,
         kit: {
           env: {
             FORAGER_INSTANCE: forager as any,
@@ -37,7 +37,7 @@ const cli = new cliffy.Command()
 
   .command('search', 'search for media in the forager database')
     .option('--tags=<tags>', 'A comma separated list of tags to search with')
-    .option('--directory=<directory>', 'Find media files in forager within a directory on the file system')
+    .option('--filepath=<filepath>', 'A globpath to search for media files in the file system')
     .option('--media-reference-id=<media_reference_id:number>', 'A forager database media reference id')
     .action(async opts => {
       const forager_helpers = new ForagerHelpers(opts)
@@ -45,7 +45,7 @@ const cli = new cliffy.Command()
       const result = forager.media.search({
         query: {
           media_reference_id: opts.mediaReferenceId,
-          directory: opts.directory,
+          filepath: opts.filepath,
           tags: opts.tags?.split(','),
         }
       })
@@ -99,11 +99,11 @@ const cli = new cliffy.Command()
       const server = new web.Server({
         asset_folder: forager_helpers.config.web.asset_folder,
         port: forager_helpers.config.web.port,
-        log_level: forager_helpers.config.web.log_level,
+        logger: forager_helpers.config.web.logger,
         kit: {
           env: {
             FORAGER_INSTANCE: forager as any,
-            // FORAGER_CONFIG: forager_helpers.config_filepath,
+            FORAGER_CONFIG: forager_helpers.config as any,
           }
         }
       })

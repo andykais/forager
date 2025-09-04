@@ -31,14 +31,19 @@ export default function (opts = {}) {
       builder.copy(path.join(web_package_root, 'src/lib/server/config.ts'), path.join(out, 'config.ts'))
 
       const deno_json = JSON.parse(await Deno.readTextFile(path.join(published_package_dir, 'deno.json')))
+      const LOCAL_BUILD = Deno.env.get('LOCAL_BUILD')
+      const package_version = LOCAL_BUILD
+        ? `local_build_${Date.now()}`
+        : deno_json.version
 
       const js_static_imports = {}
       const build_manifest = {
-        package_version: deno_json.version,
+        package_version: package_version,
         APP_DIR: builder.getAppPath(),
         PRERENDERED: builder.prerendered.paths,
         generated_files: {},
       }
+
 
       // annoying code here, but sveltekit outputs type hints that are perhaps correct, but not resolved properly by deno, so we get checker errors https://github.com/sveltejs/kit/issues/12930
       const server_index_filepath = path.join(out_server_dir, 'index.js')
@@ -59,8 +64,8 @@ export default function (opts = {}) {
         if (js_static_imports[file_id]) {
           throw new Error(`Naming conflict on build asset ${relative_path} on file_id ${file_id} with ${js_static_imports[file_id]}`)
         }
-        build_manifest.generated_files[file_id] = relative_path
-        js_static_imports[file_id] = `import ${file_id} from './${relative_path}' with { type: 'bytes' }`
+        build_manifest.generated_files[file_id] = path.relative(out_static_dir, file.path)
+        js_static_imports[file_id] = `export { default as ${file_id} } from './${relative_path}' with { type: 'bytes' }`
       }
 
       const js_static_import_file = [...Object.values(js_static_imports)].join('\n')
