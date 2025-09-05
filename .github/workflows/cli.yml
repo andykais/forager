@@ -69,10 +69,14 @@ jobs:
     # if: github.ref_type == 'tag'
 
     steps:
+      - name: Setup repo
+        uses: actions/checkout@v4
+
       - name: Download Artifacts (Compiled Binaries)
         uses: actions/download-artifact@v5
         with:
           name: compiled-binaries
+          path: releases/binaries/
 
       - name: debug list
         run: ls -l
