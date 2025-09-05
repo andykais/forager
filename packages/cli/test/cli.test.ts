@@ -8,7 +8,7 @@ import { test } from 'forager-test'
 
 import '../src/cli.ts'
 
-function forager_cli(strings: TemplateStringsArray, ...params: any[]) {
+function forager_cli(strings: TemplateStringsArray, ...params: string[]) {
   const cli_entrypoint = path.join(path.resolve(import.meta.dirname!, '..'), 'src/cli.ts')
   const forager_bin = `deno run --check -A --unstable-raw-imports ${$.escapeArg(cli_entrypoint)}`
   let command_string = ''
@@ -89,7 +89,7 @@ test('cli basics', async ctx => {
   })
 })
 
-test.only('cli filesystem discover subcommand', async ctx => {
+test('cli filesystem discover subcommand', async ctx => {
   const forager_config: z.input<typeof Config> = {
     core: {
       database: {
