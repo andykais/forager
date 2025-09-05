@@ -8,13 +8,10 @@ on:
     branches: ["main"]
   pull_request:
     branches: ["main"]
-env:
-  DENO_DIR: deno_dependency_cache
-  DENO_LOCKFILE: ${{ github.workspace }}/web/deno.lock
 
 defaults:
   run:
-    working-directory: ./web
+    working-directory: './packages/web'
 
 
 jobs:
@@ -42,12 +39,6 @@ jobs:
         with:
           ffmpeg-version: 7.0.1
 
-      - name: Cache Deno dependencies 
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.DENO_DIR }}
-          key: ${{ hashFiles(env.DENO_LOCKFILE) }}
-
       # - name: Lint
       # run: deno task lint
 
@@ -56,38 +47,40 @@ jobs:
 
       # package.json based projects need to run deno install step
       - name: Install Dependencies
-        run: deno install
+        run: deno install --allow-scripts
 
       - name: Build
         run: deno task build
 
-  publish:
-    runs-on: ubuntu-latest
-    needs: test
+  # TODO uncomment publishing @forager/web once we have proper support for raw byte imports in jsr https://github.com/denoland/deno/issues/29904
+  # publish:
+  #   runs-on: ubuntu-latest
+  #   needs: test
 
-    permissions:
-      contents: read
-      id-token: write
+  #   permissions:
+  #     contents: read
+  #     id-token: write
 
-    steps:
-      - name: Setup repo
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Setup repo
+  #       uses: actions/checkout@v4
 
-      - name: Setup Deno
-        uses: denoland/setup-deno@v1
-        with:
-          deno-version: v1.x
+  #     - name: Setup Deno
+  #       uses: denoland/setup-deno@v2
+  #       with:
+  #         deno-version: canary
 
-      - name: Cache Deno dependencies 
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.DENO_DIR }}
-          key: ${{ hashFiles(env.DENO_LOCKFILE) }}
 
-      - name: Build
-        run: deno task build
+  #     - name: Cache Deno dependencies 
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: ${{ env.DENO_DIR }}
+  #         key: ${{ hashFiles(env.DENO_LOCKFILE) }}
 
-      - name: Publish package
-        if: github.ref == 'refs/heads/main'
-        run: deno publish --allow-slow-types
-        working-directory: ./web/build
+  #     - name: Build
+  #       run: deno task build
+
+  #     - name: Publish package
+  #       if: github.ref == 'refs/heads/main'
+  #       run: deno publish --allow-slow-types
+  #       working-directory: ./packages/web/adapter/lib

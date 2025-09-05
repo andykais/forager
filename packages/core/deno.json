@@ -1,0 +1,33 @@
+{
+  "name": "@forager/core",
+  "version": "0.7.29",
+
+  "tasks": {
+    "lint": "deno lint",
+    "test":       "deno test --allow-run=ffprobe,ffmpeg --check --allow-read --allow-write --trace-leaks test",
+    "test:watch": "deno test --allow-run=ffprobe,ffmpeg --check --allow-read --allow-write --trace-leaks --fail-fast --watch",
+    "docs:preview": "deno doc --html ./src/mod.ts && deno run --allow-read=. --allow-net=0.0.0.0:8000 jsr:@std/http/file-server docs"
+  },
+
+  "imports": {
+    "~/": "./src/"
+  },
+
+  "exports": {
+    ".": "./src/mod.ts",
+    "./logger": "./src/lib/logger.ts"
+  },
+
+  "lint": {
+    "include": [
+      "./src/",
+      "./test/"
+    ],
+    "rules": {
+      "tags": [],
+      "include": [
+        "no-unused-vars"
+      ]
+    }
+  }
+}
