@@ -95,8 +95,9 @@ jobs:
       - name: Download Artifacts (Compiled Binaries)
         uses: actions/download-artifact@v5
         with:
-          name: "compiled-binary-*"
+          pattern: "compiled-binary-*"
           path: releases/binaries/
+          merge-multiple: true
 
       - name: Generate Release Notes
         run: |
