@@ -22,11 +22,7 @@ jobs:
         # TODO actually build this on different OS's, and compile the binaries separately
         os:
           - ubuntu-latest
-
-          ##################################################################################################################################################
-          # Sigh, macos builds seem to be pretty limited on github workflows, so we're disabling this for the time being.                                  #
-          ##################################################################################################################################################
-          # - macos-12
+          - macos-latest
 
           ##################################################################################################################################################
           # Windows builds are currently disabled because path resolution doesn't seem to work                                                             #
