@@ -79,7 +79,7 @@ jobs:
       - name: Upload Artifact (Compiled Binaries)
         uses: actions/upload-artifact@v4
         with:
-          name: compiled-binaries
+          name: compiled-binary-${{ runner.os }}
           path: releases/binaries/
           retention-days: 1
 
@@ -95,7 +95,7 @@ jobs:
       - name: Download Artifacts (Compiled Binaries)
         uses: actions/download-artifact@v5
         with:
-          name: compiled-binaries
+          name: "compiled-binary-*"
           path: releases/binaries/
 
       - name: Generate Release Notes
