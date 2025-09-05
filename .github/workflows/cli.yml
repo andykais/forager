@@ -60,19 +60,25 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: compiled-binaries
-          path: releases/binaries
+          path: releases/binaries/
           retention-days: 1
 
   release:
     runs-on: ubuntu-latest
     needs: test
-    if: github.ref_type == 'tag'
+    # if: github.ref_type == 'tag'
 
     steps:
       - name: Download Artifacts (Compiled Binaries)
         uses: actions/download-artifact@v5
         with:
           name: compiled-binaries
+
+      - name: debug list
+        run: ls -l
+
+      - name: debug tree
+        run: tree
 
       - name: Generate Release Notes
         run: |
