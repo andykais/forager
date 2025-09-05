@@ -22,9 +22,16 @@ jobs:
         # TODO actually build this on different OS's, and compile the binaries separately
         os:
           - ubuntu-latest
-          - macos-12
-          # windows builds are currently disabled because path resolution doesn't seem to work
-          # Example: [vite]: Rollup failed to resolve import "~/inputs/lib/inputs_parsers.ts" from "D:\a\forager\forager\packages\core\src\inputs\mod.ts".
+
+          ##################################################################################################################################################
+          # Sigh, macos builds seem to be pretty limited on github workflows, so we're disabling this for the time being.                                  #
+          ##################################################################################################################################################
+          # - macos-12
+
+          ##################################################################################################################################################
+          # Windows builds are currently disabled because path resolution doesn't seem to work                                                             #
+          # Example: [vite]: Rollup failed to resolve import "~/inputs/lib/inputs_parsers.ts" from "D:\a\forager\forager\packages\core\src\inputs\mod.ts". #
+          ##################################################################################################################################################
           # - windows-latest
 
     runs-on: ${{ matrix.os }}
