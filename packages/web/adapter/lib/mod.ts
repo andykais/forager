@@ -254,6 +254,7 @@ if (import.meta.main) {
   }
   env.FORAGER_CONFIG = config
   const forager = new Forager(config.core)
+  forager.init()
   env.FORAGER_INSTANCE = forager
   const server = new Server({
     logger: config.web.logger,

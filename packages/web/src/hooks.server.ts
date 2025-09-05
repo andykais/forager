@@ -25,6 +25,8 @@ if (!building) {
       })
       forager = new Forager(config.core)
     }
+
+    forager.init()
   } else {
     if (env.FORAGER_INSTANCE) {
       forager = env.FORAGER_INSTANCE
@@ -33,7 +35,6 @@ if (!building) {
       throw new Error(`FORAGER_INSTANCE must be passed to sveltekit hooks`)
     }
   }
-  forager.init()
 }
 
 export const handle: sveltekit.Handle = async ({ event, resolve }) => {

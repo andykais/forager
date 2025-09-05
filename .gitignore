@@ -1,2 +1,5 @@
 packages/*/deno_dependency_cache
 node_modules
+
+# compile binary
+forager
