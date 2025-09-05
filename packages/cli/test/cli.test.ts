@@ -1,5 +1,5 @@
 import $ from 'jsr:@david/dax'
-import z from 'zod'
+import type z from 'zod'
 import * as path from '@std/path'
 import { Config } from '../src/inputs.ts'
 import { errors, Forager } from '@forager/core'

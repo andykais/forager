@@ -11,7 +11,7 @@ on:
 
 defaults:
   run:
-    working-directory: './packages/cli/'
+    working-directory: '.'
 
 
 jobs:
@@ -41,8 +41,14 @@ jobs:
       # lint source code & jsr publish requirements. Currently disabled because we should get jsr published before addressing
       #   run: deno lint --ignore=deno_dependency_cache
 
+      - name: "Install dependencies"
+        run: deno install --allow-scripts
+
+      - name: "Build @forager/web Dependency"
+        run: deno task --cwd packages/web build
+
       - name: Test
-        run: deno task test
+        run: deno task --cwd packages/cli test
 
       - name: Compile
         run: deno task compile
