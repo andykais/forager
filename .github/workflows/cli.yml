@@ -22,7 +22,11 @@ jobs:
         # TODO actually build this on different OS's, and compile the binaries separately
         os:
           - ubuntu-latest
-          - macos-latest
+
+          ##################################################################################################################################################
+          # MacOS arm builds are currently not supported with setup-ffmpeg action, so we are sticking to macos-13 x86 builds                               #
+          ##################################################################################################################################################
+          - macos-13
 
           ##################################################################################################################################################
           # Windows builds are currently disabled because path resolution doesn't seem to work                                                             #
