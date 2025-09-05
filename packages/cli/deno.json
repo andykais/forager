@@ -7,8 +7,8 @@
     "compile":       "deno compile     --check --unstable-raw-imports --allow-run=ffprobe,ffmpeg --allow-write --allow-read --allow-net=127.0.0.1:8000  --output=$INIT_CWD/forager src/cli.ts",
     "develop":       "deno run         --check --unstable-raw-imports --allow-run=ffprobe,ffmpeg --allow-write --allow-read --allow-net=127.0.0.1:8000 src/cli.ts",
     "develop:watch": "deno run --watch --check --unstable-raw-imports --allow-run=ffprobe,ffmpeg --allow-write --allow-read --allow-net=127.0.0.1:8000 src/cli.ts",
-    "test": "deno test --check --allow-run=deno --allow-write --allow-read --allow-env --trace-leaks test",
-    "test:watch": "deno test --check --allow-run=deno --allow-write --allow-read --allow-env --trace-leaks --watch src"
+    "test":       "deno test --check --allow-run=deno --allow-write --allow-read --allow-env --trace-leaks --unstable-raw-imports test",
+    "test:watch": "deno test --check --allow-run=deno --allow-write --allow-read --allow-env --trace-leaks --unstable-raw-imports --watch src"
   },
 
   "imports": {
