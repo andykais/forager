@@ -20,8 +20,19 @@ jobs:
     strategy:
       matrix:
         # TODO actually build this on different OS's, and compile the binaries separately
-        # os: [ubuntu-latest, macos-12, windows-latest]
-        os: [ubuntu-latest]
+        os:
+          - ubuntu-latest
+
+          ##################################################################################################################################################
+          # MacOS arm builds are currently not supported with setup-ffmpeg action, so we are sticking to macos-13 x86 builds                               #
+          ##################################################################################################################################################
+          - macos-13
+
+          ##################################################################################################################################################
+          # Windows builds are currently disabled because path resolution doesn't seem to work                                                             #
+          # Example: [vite]: Rollup failed to resolve import "~/inputs/lib/inputs_parsers.ts" from "D:\a\forager\forager\packages\core\src\inputs\mod.ts". #
+          ##################################################################################################################################################
+          # - windows-latest
 
     runs-on: ${{ matrix.os }}
 
@@ -53,14 +64,23 @@ jobs:
       - name: Test
         run: deno task --cwd packages/cli test
 
-      - name: Compile
-        run: deno task compile
+      - name: Compile Binary (Linux)
+        if: runner.os == 'Linux'
+        run: deno task --cwd packages/cli compile:os:linux
+
+      - name: Compile Binary (Windows)
+        if: runner.os == 'Windows'
+        run: deno task --cwd packages/cli compile:os:windows
+
+      - name: Compile Binary (macOS)
+        if: runner.os == 'macOS'
+        run: deno task --cwd packages/cli compile:os:macos
 
       - name: Upload Artifact (Compiled Binaries)
         uses: actions/upload-artifact@v4
         with:
-          name: compiled-binaries
-          path: releases/binaries
+          name: compiled-binary-${{ runner.os }}
+          path: releases/binaries/
           retention-days: 1
 
   release:
@@ -69,10 +89,14 @@ jobs:
     if: github.ref_type == 'tag'
 
     steps:
+      - name: Setup repo
+        uses: actions/checkout@v4
+
       - name: Download Artifacts (Compiled Binaries)
         uses: actions/download-artifact@v5
         with:
-          name: compiled-binaries
+          name: "compiled-binary-*"
+          path: releases/binaries/
 
       - name: Generate Release Notes
         run: |
