@@ -88,6 +88,9 @@ jobs:
     needs: test
     if: github.ref_type == 'tag'
 
+    permissions:
+      contents: write
+
     steps:
       - name: Setup repo
         uses: actions/checkout@v4
