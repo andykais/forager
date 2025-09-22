@@ -3,16 +3,14 @@
     "./packages/core",
     "./packages/web",
     "./packages/web/adapter/lib",
-    "./packages/cli",
+    "./packages/cli"
   ],
 
   "tasks": {
-    "develop": "deno task --cwd packages/web build:local && deno task --cwd packages/cli develop --config ~/.config/forager/forager.yml --log-level DEBUG gui"
+    "develop": "deno task --cwd packages/web build:local && deno task --cwd packages/cli develop --config ~/.config/forager/forager.yml --log-level DEBUG gui",
     "compile":       "deno task --cwd packages/web build       && deno task --cwd packages/cli compile",
-    "compile:local": "deno task --cwd packages/web build:local && deno task --cwd packages/cli compile:linux",
+    "compile:local": "deno task --cwd packages/web build:local && deno task --cwd packages/cli compile:linux"
   },
-
-  "nodeModulesDir": "auto",
 
   "imports": {
     "@std/datetime": "jsr:@std/datetime@^0.225.3",
@@ -28,5 +26,9 @@
     "zod": "npm:zod@^3.24.2",
 
     "forager-test": "./lib/test/lib/util.ts"
-  }
+  },
+
+  "unstable": ["raw-imports"],
+
+  "nodeModulesDir": "auto"
 }
