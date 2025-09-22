@@ -4,8 +4,8 @@
 
   "tasks": {
     "lint": "deno lint",
-    "test":       "deno test --allow-run=ffprobe,ffmpeg --check --allow-read --allow-write --trace-leaks test",
-    "test:watch": "deno test --allow-run=ffprobe,ffmpeg --check --allow-read --allow-write --trace-leaks --fail-fast --watch",
+    "test":       "deno test -P=test --check --trace-leaks test",
+    "test:watch": "deno test -P=test --check --trace-leaks --fail-fast --watch",
     "docs:preview": "deno doc --html ./src/mod.ts && deno run --allow-read=. --allow-net=0.0.0.0:8000 jsr:@std/http/file-server docs"
   },
 
@@ -16,6 +16,14 @@
   "exports": {
     ".": "./src/mod.ts",
     "./logger": "./src/lib/logger.ts"
+  },
+
+  "permissions": {
+    "test": {
+      "run": ["ffprobe", "ffmpeg"],
+      "read": true,
+      "write": true
+    }
   },
 
   "lint": {
