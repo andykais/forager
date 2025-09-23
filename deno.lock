@@ -87,6 +87,7 @@
     "npm:typescript-svelte-plugin@0.3.50": "0.3.50_svelte@5.23.2__acorn@8.15.0_typescript@5.9.2",
     "npm:typescript@5.9.2": "5.9.2",
     "npm:vite@7.0.4": "7.0.4_picomatch@4.0.3_lightningcss@1.29.2_@types+node@24.2.0",
+    "npm:zod@4.1.11": "4.1.11",
     "npm:zod@^3.23.8": "3.25.76",
     "npm:zod@^3.24.2": "3.25.76"
   },
@@ -767,7 +768,7 @@
       "integrity": "sha512-naligACB12UtWD43fd0QtUCIgNotPoiib3r/qFHAMj0Hy2RxapfR24dSH2U5gHQM4DSBCt2/sqwcjojY2T3SMw==",
       "dependencies": [
         "@opentelemetry/api",
-        "zod"
+        "zod@3.25.76"
       ],
       "tarball": "https://npm.jsr.io/~/11/@jsr/torm__sqlite/1.9.7.tgz"
     },
@@ -1650,6 +1651,9 @@
     },
     "zod@3.25.76": {
       "integrity": "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="
+    },
+    "zod@4.1.11": {
+      "integrity": "sha512-WPsqwxITS2tzx1bzhIKsEs19ABD5vmCVa4xBo2tq/SrV4RNZtfws1EnCWQXM6yh8bD08a1idvkB5MZSBiZsjwg=="
     }
   },
   "workspace": {
@@ -1663,7 +1667,7 @@
       "jsr:@std/yaml@^1.0.5",
       "jsr:@torm/sqlite@^1.9.7",
       "npm:ts-pattern@5.2.0",
-      "npm:zod@^3.24.2"
+      "npm:zod@4.1.11"
     ],
     "members": {
       "packages/cli": {

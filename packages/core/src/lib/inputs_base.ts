@@ -5,9 +5,8 @@ export type Literal = string | boolean | number | null
 export type Json = Literal | { [key: string]: Json } | Json[];
 
 export const LiteralInput = z.union([z.string(), z.number(), z.boolean(), z.null()]);
-export const JsonInput: z.ZodSchema<Json> = z.lazy(() =>
-  z.union([LiteralInput, z.array(JsonInput), z.record(JsonInput)])
-)
+export const JsonInput = z.json()
+export const JsonDictionary = z.record(z.string(), z.json())
 
 export const PaginatedQuery = z.object({
   limit: z.number().default(100),

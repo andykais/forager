@@ -112,7 +112,7 @@ class IngestActions extends Actions {
 
   async #add(ctx: plugin.FileSystemReceiverContext, filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.TagList) {
     if (ctx.default_metadata?.media_info) {
-      media_info = {...ctx.default_metadata.media_info, ...media_info}
+      media_info = {...ctx.default_metadata.media_info as inputs.MediaInfo, ...media_info}
     }
     if (ctx.default_metadata?.tags) {
       tags = ctx.default_metadata.tags.concat(tags ?? [] as inputs.TagList)

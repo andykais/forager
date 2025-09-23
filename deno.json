@@ -23,7 +23,7 @@
     "forager": "./src/mod.ts",
     "ts-pattern": "npm:ts-pattern@5.2.0",
     "@torm/sqlite": "jsr:@torm/sqlite@^1.9.7",
-    "zod": "npm:zod@^3.24.2",
+    "zod": "npm:zod@4.1.11",
 
     "forager-test": "./lib/test/lib/util.ts"
   },

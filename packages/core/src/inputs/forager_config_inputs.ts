@@ -21,7 +21,7 @@ export const ForagerConfig = z.object({
     migrations: z.object({
       /** Automatically run migrations when forager initializes */
       automatic: z.boolean().default(true),
-    }).strict().default({}),
+    }).strict().prefault({}),
 
     /** Enable backups during migrations (saved in <database.folder>/backups/) */
     backups: z.boolean().default(true),
