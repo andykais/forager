@@ -3,7 +3,7 @@ import z from 'zod'
 import * as forager from '@forager/core'
 
 
-const LogLevel: z.ZodEnum<["SILENT", "ERROR", "WARN", "INFO", "DEBUG"]>  = z.enum(['SILENT', 'ERROR', 'WARN', 'INFO', 'DEBUG'])
+const LogLevel = z.enum(['SILENT', 'ERROR', 'WARN', 'INFO', 'DEBUG'])
 
 const Keybind = (default_keybind: string) => z.union([z.string(), z.string().array()]).default(default_keybind).transform(keybind => {
   if (Array.isArray(keybind)) return keybind
@@ -26,20 +26,20 @@ export const PackagesConfig = z.object({
 
     logger: z.object({
       level: LogLevel.default('INFO'),
-    }).strict().default({}),
+    }).strict().prefault({}),
 
     ui_defaults: z.object({
 
       search: z.object({
         advanced_filters: z.object({
           hide: z.boolean().default(true)
-        }).strict().default({})
-      }).strict().default({}),
+        }).strict().prefault({})
+      }).strict().prefault({}),
 
       media_list: z.object({
         thumbnail_size: z.number().default(110),
-        thumbnail_shape: z.enum(['square', 'original']).default('original') as z.ZodDefault<z.ZodEnum<['square', 'original']>>
-      }).strict().default({}),
+        thumbnail_shape: z.enum(['square', 'original']).prefault('original')
+      }).strict().prefault({}),
 
       sidebar: z.object({
         hide: z.boolean().default(true),
@@ -47,17 +47,17 @@ export const PackagesConfig = z.object({
         tags: z.object({
           order: z.object({
             group: z.string(),
-          }).array().default([])
-        }).strict().default({}),
-      }).strict().default({}),
+          }).array().prefault([])
+        }).strict().prefault({}),
+      }).strict().prefault({}),
 
       media_view: z.object({
         filmstrip: z.object({
           enabled: z.boolean().default(false),
             thumbnail_size: z.number().default(100),
         }).strict().optional().transform(f => f ?? {enabled: false})
-      }).strict().default({}),
-    }).strict().default({}),
+      }).strict().prefault({}),
+    }).strict().prefault({}),
 
     shortcuts: z.object({
       OpenMedia: Keybind('Enter'),
@@ -90,7 +90,7 @@ export const PackagesConfig = z.object({
       // Star3: Keybind('Digit3'),
       // Star4: Keybind('Digit4'),
       // Star5: Keybind('Digit5'),
-    }).strict().default(() => ({})),
+    }).strict().prefault({}),
   }).strict(),
 }).strict()
 
