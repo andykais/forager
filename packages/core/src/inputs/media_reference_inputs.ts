@@ -1,5 +1,5 @@
 import z from 'zod'
-import { JsonInput, PaginatedQuery } from '~/lib/inputs_base.ts'
+import { JsonDictionary, PaginatedQuery } from '~/lib/inputs_base.ts'
 import { Tag } from './tag_inputs.ts'
 
 
@@ -18,7 +18,7 @@ export const MediaReferenceGet = z.object({
 export const MediaInfo = z.object({
   title: z.string().optional(),
   description: z.string().optional(),
-  metadata: JsonInput.optional(),
+  metadata: JsonDictionary.optional(),
   source_url: z.string().optional(),
   source_created_at: z.coerce.date().optional(),
   stars: z.number().optional(),
@@ -42,7 +42,7 @@ export const MediaReferenceQuery = z.object({
   .optional()
 
 export const PaginatedSearch = PaginatedQuery.extend({
-  query: MediaReferenceQuery.default({}),
+  query: MediaReferenceQuery.prefault({}),
   thumbnail_limit: z.number().default(1),
   sort_by: z.enum(['created_at', 'updated_at', 'source_created_at', 'view_count']).default('source_created_at'),
   order: z.enum(['desc', 'asc']).default('desc'),
@@ -56,7 +56,7 @@ export const PaginatedSearchGroupBy = PaginatedSearch.extend({
   grouped_media: z.object({
     limit: z.number().optional(),
     sort_by: z.enum(['created_at', 'updated_at', 'source_created_at', 'view_count']).default('source_created_at'),
-  }).default({}),
+  }).prefault({}),
   sort_by: z.enum(['count']).default('count'), // TODO support created_at (count is going to be unreliable for pagination)
 })
 

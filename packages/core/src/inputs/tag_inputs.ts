@@ -1,5 +1,6 @@
 import z from 'zod'
 import { errors } from "~/mod.ts";
+import { JsonDictionary } from "~/lib/inputs_base.ts";
 
 
 const RESERVED = {
@@ -39,21 +40,23 @@ export const TagObject = z.object({
   name: TagValue.superRefine((val, ctx) => {
     if (RESERVED.names.includes(val)) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `'${val}' is a reserved tag name`
+        code: 'custom',
+        message: `'${val}' is a reserved tag name`,
+        input: val,
       })
     }
   }),
   group: TagValue.optional().default('').superRefine((val, ctx) => {
     if (RESERVED.groups.includes(val)) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `'${val}' is a reserved tag group`
+        code: 'custom',
+        message: `'${val}' is a reserved tag group`,
+        input: val,
       })
     }
   }),
   description: z.string().optional(),
-  metadata: z.record(z.any()).optional(),
+  metadata: JsonDictionary.optional(),
 }).transform(tag => {
 
   const slug = tag_slug_format(tag)
