@@ -15,10 +15,7 @@
   },
 
   "imports": {
-    "@cliffy/command": "jsr:@cliffy/command@1.0.0-rc.4",
-    "@std/cli": "jsr:@std/cli@^1.0.2",
-    "@std/yaml": "jsr:@std/yaml@^1.0.3",
-    "zod": "npm:zod@^3.24.2"
+    "@cliffy/command": "jsr:@cliffy/command@1.0.0-rc.4"
   },
 
   "exports": "./src/cli.ts",

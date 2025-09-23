@@ -1,6 +1,5 @@
 import z from 'zod'
-import * as cli from '@std/cli'
-import {Forager, type ForagerConfig} from '@forager/core'
+import {Forager } from '@forager/core'
 import {Config} from './inputs.ts'
 import * as fs from '@std/fs'
 import * as path from '@std/path'
