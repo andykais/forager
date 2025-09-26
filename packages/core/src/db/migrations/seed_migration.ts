@@ -4,7 +4,7 @@ import { migrations, sql, TIMESTAMP_SQLITE, TIMESTAMP_COLUMN } from './registry.
 
 @migrations.register()
 export class Migration extends torm.SeedMigration {
-  version = 4
+  version = 5
 
   sql = sql`
     CREATE TABLE media_file (
@@ -55,7 +55,7 @@ export class Migration extends torm.SeedMigration {
       directory INTEGER NOT NULL CHECK(directory IN (0, 1)),
       checksum TEXT, -- populated after a file is ingested into forager
       -- these fields are null for directories
-      last_ingest_id INTEGER CHECK((directory = 0 AND last_ingest_id IS NOT NULL) OR last_ingest_id IS NULL),
+      ingested BOOLEAN NOT NULL,
       ingest_priority INTEGER CHECK((directory = 0 AND ingest_priority IS NOT NULL) OR ingest_priority IS NULL),
       filename TEXT CHECK((directory = 0 AND filename IS NOT NULL) OR filename IS NULL),
       ingest_retriever TEXT CHECK((directory = 0 AND ingest_retriever IS NOT NULL) OR ingest_retriever IS NULL),
@@ -259,7 +259,7 @@ export class Migration extends torm.SeedMigration {
     CREATE UNIQUE INDEX filesystem_path_lookup ON filesystem_path (filepath);
     CREATE UNIQUE INDEX filesystem_path_priority ON filesystem_path (ingest_priority) WHERE directory = 0;
     CREATE INDEX filesystem_path_created_at ON filesystem_path (created_at, id);
-    CREATE INDEX filesystem_path_ingest_id ON filesystem_path (last_ingest_id);
+    CREATE INDEX filesystem_path_ingested ON filesystem_path (ingested);
     CREATE INDEX filesystem_path_directory ON filesystem_path (directory);
     `
 

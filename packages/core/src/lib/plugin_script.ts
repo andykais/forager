@@ -6,7 +6,6 @@ import { Logger } from "~/lib/logger.ts";
 import { CODECS } from '~/lib/codecs.ts'
 
 export interface FileSystemReceiverContext {
-  ingest_id: number
   file_id: number
   receiver: FileSystemReceiver
 

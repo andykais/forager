@@ -111,5 +111,6 @@ export class Migration extends torm.Migration {
       }
       ingest_priority = ingest_priority + 1000
     }
+    console.log('v4 migration complete')
   }
 }

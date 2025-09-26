@@ -13,10 +13,8 @@ class IngestActions extends Actions {
   // NOTE this part of the design is somewhat "brittle" because we are protecting against multiple runners within a single process
   // if for some reason, someone ran multiple forager instances pointed at the same database, we would not be able to enforce this constraint
   #singleton_data: {
-    ingest_id: number | null
     status: 'running' | 'stopped'
   } = {
-    ingest_id: null,
     status: 'stopped',
   }
 
@@ -33,7 +31,6 @@ class IngestActions extends Actions {
       throw new Error(`Ingest is already active. Forager does not support running multiple ingestions at the same time.`)
     }
     this.#singleton_data.status = 'running'
-    this.#singleton_data.ingest_id = -1 // TODO we need a new ingest id here. We can either use a uuid and just hope its unique, or we can grab the max id from the filesystem_path schema and return it
 
     // this.ctx.logger.info(`Starting ingest with ${queued_entries.length} files`)
 
@@ -50,14 +47,11 @@ class IngestActions extends Actions {
       filepath: parsed.params.query?.path
     })
 
-    const max_ingest_id = this.models.FilesystemPath.get_max_ingest_id()
-    const ingest_id = max_ingest_id + 1
-
     let total_progress = 0
     while (true) {
       const file = this.models.FilesystemPath.select_one({
+        ingested: false,
         ingest_retriever: parsed.params.query?.retriever,
-        exclude_ingest_id: ingest_id,
         filepath: parsed.params.query?.path,
       })
 
@@ -75,7 +69,6 @@ class IngestActions extends Actions {
 
         await receiver.foreach({
           default_metadata: params?.set, // NOTE we use the unparsed input here because our layer below here also parses media_info/tags
-          ingest_id,
           file_id: file.id,
           receiver,
           stats,
@@ -106,7 +99,6 @@ class IngestActions extends Actions {
     const duration = performance.now() - start_time
     this.ctx.logger.info(`Created ${stats.created} media files and ignored ${stats.existing} existing and ${stats.duplicate} duplicate files in ${this.format_duration(duration)}.`)
     this.#singleton_data.status = 'stopped'
-    this.#singleton_data.ingest_id = null
     return { stats }
   }
 
@@ -132,8 +124,8 @@ class IngestActions extends Actions {
 
       this.models.FilesystemPath.update({
         id: ctx.file_id,
+        ingested: true,
         ingested_at: new Date(),
-        last_ingest_id: ctx.ingest_id,
         checksum: undefined,
         updated_at: new Date(),
         ingest_retriever: undefined,
@@ -148,8 +140,8 @@ class IngestActions extends Actions {
       const {media_file} = await ctx.forager.media.create(filepath, media_info, tags, {editor: ctx.receiver.name})
       this.models.FilesystemPath.update({
         id: ctx.file_id,
+        ingested: true,
         ingested_at: new Date(),
-        last_ingest_id: ctx.ingest_id,
         checksum: media_file.checksum,
         updated_at: new Date(),
         ingest_retriever: undefined,
@@ -165,8 +157,8 @@ class IngestActions extends Actions {
         ctx.logger.warn(`${file_identifier} has a duplicate checksum (${e.checksum}) to ${e.existing_media_filepath}, skipping`)
         this.models.FilesystemPath.update({
           id: ctx.file_id,
+          ingested: true,
           ingested_at: new Date(),
-          last_ingest_id: ctx.ingest_id,
           checksum: e.checksum,
           updated_at: new Date(),
           ingest_retriever: undefined,
@@ -180,8 +172,8 @@ class IngestActions extends Actions {
           const {media_file} = ctx.forager.media.update(media_reference.id, media_info, tags, {editor: ctx.receiver.name})
           this.models.FilesystemPath.update({
             id: ctx.file_id,
+          ingested: true,
             ingested_at: new Date(),
-            last_ingest_id: ctx.ingest_id,
             checksum: media_file.checksum,
             updated_at: new Date(),
             ingest_retriever: undefined,
@@ -196,8 +188,8 @@ class IngestActions extends Actions {
 
         this.models.FilesystemPath.update({
           id: ctx.file_id,
+          ingested: true,
           ingested_at: new Date(),
-          last_ingest_id: ctx.ingest_id,
           checksum: undefined,
           updated_at: new Date(),
           ingest_retriever: undefined,
@@ -208,8 +200,8 @@ class IngestActions extends Actions {
         ctx.logger.error(e)
         this.models.FilesystemPath.update({
           id: ctx.file_id,
+          ingested: true,
           ingested_at: new Date(),
-          last_ingest_id: ctx.ingest_id,
           checksum: undefined,
           updated_at: new Date(),
           ingest_retriever: undefined,

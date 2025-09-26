@@ -84,7 +84,7 @@ class FileSystemActions extends Actions {
         directory: false,
         filepath: entry.path,
         priority_instruction: 'first',
-        last_ingest_id: null,
+        ingested: false,
         ingest_retriever: receiver.name,
         ingested_at: null,
         checksum: null,
@@ -96,6 +96,7 @@ class FileSystemActions extends Actions {
           this.models.FilesystemPath.update({
             id: filesystem_path.id,
             ingest_retriever: filesystem_path_data.ingest_retriever,
+            ingested: false,
             updated_at: new Date(),
           })
           stats.existing.files ++
@@ -108,10 +109,12 @@ class FileSystemActions extends Actions {
         this.#add_directories(stats, path.dirname(entry.path))
       } catch (e) {
         if (e instanceof torm.errors.UniqueConstraintError) {
+          // this is just being defensive against potential concurrency conflicts that shouldn't arise
           stats.existing.files ++
           const filesystem_path = this.models.FilesystemPath.select_one({filepath: e.params.filepath}, {or_raise: true})
           this.models.FilesystemPath.update({
             id: filesystem_path.id,
+            ingested: false,
             ingest_retriever: filesystem_path_data.ingest_retriever,
             updated_at: new Date(),
           })
@@ -126,7 +129,7 @@ class FileSystemActions extends Actions {
         directory: true,
         filepath: filepath,
         priority_instruction: 'none',
-        last_ingest_id: null,
+        ingested: false,
         ingest_retriever: null,
         ingested_at: null,
         checksum: null,

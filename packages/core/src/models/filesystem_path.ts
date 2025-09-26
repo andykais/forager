@@ -4,13 +4,12 @@ import { SQLBuilder } from '~/models/lib/sql_builder.ts'
 
 const FilesystemPathVars = torm.Vars({
   priority_instruction: field.string(), // TODO support enums in torm. This should be constrained to "first" | "last" | "none"
-  max_ingest_id: field.number().optional(),
   total: field.number(),
 })
 
 
 interface SelectFilesystemPathFilters {
-  exclude_ingest_id?: number
+  ingested?: boolean
   filepath?: string
   ingest_retriever?: string
 }
@@ -25,7 +24,7 @@ class FilesystemPath extends Model {
     filename:         field.string().optional(),
     directory:        field.boolean(),
     checksum:         field.string().optional(),
-    last_ingest_id:   field.number().optional(),
+    ingested:         field.boolean(),
     ingest_priority:  field.number().optional(),
     ingest_retriever: field.string().optional(),
     ingested_at:      field.datetime().optional(),
@@ -40,7 +39,7 @@ class FilesystemPath extends Model {
     filename,
     directory,
     checksum,
-    last_ingest_id,
+    ingested,
     ingest_retriever,
     ingested_at,
     ingest_priority
@@ -49,7 +48,7 @@ class FilesystemPath extends Model {
     FilesystemPath.params.filename,
     FilesystemPath.params.directory,
     FilesystemPath.params.checksum,
-    FilesystemPath.params.last_ingest_id,
+    FilesystemPath.params.ingested,
     FilesystemPath.params.ingest_retriever,
     FilesystemPath.params.ingested_at,
   ]},
@@ -64,8 +63,6 @@ class FilesystemPath extends Model {
     END
   ) RETURNING ${FilesystemPath.result.id}`
 
-  #select_max_ingest_id = this.query`SELECT MAX(last_ingest_id) AS ${FilesystemPathVars.result.max_ingest_id} FROM filesystem_path`
-
   #select_by_filepath = this.query`SELECT ${FilesystemPath.result['*']} FROM filesystem_path WHERE filepath = ${FilesystemPath.params.filepath}`
 
   #select_highest_priority_ingest = this.query.one`SELECT ${[
@@ -73,18 +70,13 @@ class FilesystemPath extends Model {
     FilesystemPath.result.filepath,
     FilesystemPath.result.filename,
     FilesystemPath.result.checksum,
-    FilesystemPath.result.last_ingest_id,
+    FilesystemPath.result.ingested,
     FilesystemPath.result.ingest_retriever,
     FilesystemPath.result.ingested_at,
     FilesystemPath.result.ingest_priority,
     FilesystemPath.result.created_at,
   ]} FROM filesystem_path
-  WHERE
-    directory = 0 AND
-    (
-      last_ingest_id IS NULL OR
-      last_ingest_id != ${FilesystemPath.params.last_ingest_id}
-    )
+  WHERE directory = 0 AND ingested = 0
   ORDER BY ingest_priority DESC`
 
   #select_highest_priority_ingest_w_filepath = this.query.one`SELECT ${[
@@ -92,7 +84,7 @@ class FilesystemPath extends Model {
     FilesystemPath.result.filepath,
     FilesystemPath.result.filename,
     FilesystemPath.result.checksum,
-    FilesystemPath.result.last_ingest_id,
+    FilesystemPath.result.ingested,
     FilesystemPath.result.ingest_retriever,
     FilesystemPath.result.ingested_at,
     FilesystemPath.result.ingest_priority,
@@ -100,11 +92,7 @@ class FilesystemPath extends Model {
   ]} FROM filesystem_path
   WHERE
     filepath GLOB ${FilesystemPath.params.filepath} AND
-    directory = 0 AND
-    (
-      last_ingest_id IS NULL OR
-      last_ingest_id != ${FilesystemPath.params.last_ingest_id}
-    )
+    directory = 0 AND ingested = 0
   ORDER BY ingest_priority DESC`
 
   #select_highest_priority_ingest_w_ingest_retriever = this.query.one`SELECT ${[
@@ -112,7 +100,7 @@ class FilesystemPath extends Model {
     FilesystemPath.result.filepath,
     FilesystemPath.result.filename,
     FilesystemPath.result.checksum,
-    FilesystemPath.result.last_ingest_id,
+    FilesystemPath.result.ingested,
     FilesystemPath.result.ingest_retriever,
     FilesystemPath.result.ingested_at,
     FilesystemPath.result.ingest_priority,
@@ -120,11 +108,7 @@ class FilesystemPath extends Model {
   ]} FROM filesystem_path
   WHERE
     ingest_retriever = ${FilesystemPath.params.ingest_retriever} AND
-    directory = 0 AND
-    (
-      last_ingest_id IS NULL OR
-      last_ingest_id != ${FilesystemPath.params.last_ingest_id}
-    )
+    directory = 0 AND ingested
   ORDER BY ingest_priority DESC`
 
   #count_entries = this.query.one`SELECT COUNT(id) AS ${FilesystemPathVars.result.total} FROM filesystem_path`
@@ -133,13 +117,13 @@ class FilesystemPath extends Model {
 
   #update_filepath_ingest = this.query.exec`
     UPDATE filesystem_path SET
-      last_ingest_id = ${FilesystemPath.params.last_ingest_id},
+      ingested = ${FilesystemPath.params.ingested},
       ingested_at = ${FilesystemPath.params.ingested_at},
       checksum = ${FilesystemPath.params.checksum}
     WHERE id = ${FilesystemPath.params.id}`
 
   #update = this.query`UPDATE filesystem_path SET
-      last_ingest_id = IFNULL(${FilesystemPath.params.last_ingest_id}, last_ingest_id),
+      ingested = IFNULL(${FilesystemPath.params.ingested}, ingested),
       ingested_at = IFNULL(${FilesystemPath.params.ingested_at}, ingested_at),
       checksum = IFNULL(${FilesystemPath.params.checksum}, checksum),
       ingest_retriever = IFNULL(${FilesystemPath.params.ingest_retriever}, ingest_retriever),
@@ -163,10 +147,6 @@ class FilesystemPath extends Model {
 
   public update = this.#update.exec
 
-  public get_max_ingest_id() {
-    return this.#select_max_ingest_id.one()?.max_ingest_id ?? 0
-  }
-
   public update_ingest = this.#update_filepath_ingest
 
   public count_entries(params: SelectFilesystemPathFilters) {
@@ -181,14 +161,9 @@ class FilesystemPath extends Model {
 
   #set_filters(builder: SQLBuilder, params: SelectFilesystemPathFilters) {
     const sql_params: Record<string, any> = {}
-    if (params.exclude_ingest_id !== undefined) {
+    if (params.ingested !== undefined) {
       builder.add_where_clause(`directory = 0`)
-      builder.add_where_clause(`
-        (
-          last_ingest_id IS NULL OR
-          last_ingest_id != ${params.exclude_ingest_id}
-        )
-      `)
+      builder.add_where_clause(`ingested = ${Boolean(params.ingested)}`)
     }
     if (params.filepath) {
       sql_params.filepath = params.filepath

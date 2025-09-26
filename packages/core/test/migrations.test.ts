@@ -3,7 +3,7 @@ import * as fs from '@std/fs'
 import * as path from '@std/path'
 import { Forager } from '~/mod.ts'
 
-const CURRENT_VERSION = 4
+const CURRENT_VERSION = 5
 
 test('migrate from v1 schema', async (ctx) => {
   const forager_v1_path = ctx.create_fixture_path('forager_v1')
@@ -21,7 +21,7 @@ test('migrate from v1 schema', async (ctx) => {
   // initialize and migrate the database
   const v1_migration_info = forager.init()
   ctx.assert.equals(v1_migration_info.db.current_version, CURRENT_VERSION)
-  ctx.assert.equals(v1_migration_info.db.migration_operations, [
+  const expected_migration_operations = [
     {
       start_version: 1,
       next_version: 2,
@@ -37,10 +37,16 @@ test('migrate from v1 schema', async (ctx) => {
       next_version: 4,
       backup: true,
     },
-  ])
+    {
+      start_version: 4,
+      next_version: 5,
+      backup: true,
+    },
+  ]
+  ctx.assert.equals(v1_migration_info.db.migration_operations, expected_migration_operations)
 
   const backup_files = await Array.fromAsync(Deno.readDir(database_backups_path))
-  ctx.assert.equals(backup_files.length, 3)
+  ctx.assert.equals(backup_files.length, expected_migration_operations.length)
 
   // prove that our migration was a success
   ctx.assert.search_result(forager.media.search(), {
