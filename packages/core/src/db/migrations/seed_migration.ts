@@ -4,7 +4,7 @@ import { migrations, sql, TIMESTAMP_SQLITE, TIMESTAMP_COLUMN } from './registry.
 
 @migrations.register()
 export class Migration extends torm.SeedMigration {
-  version = 5
+  version = 6
 
   sql = sql`
     CREATE TABLE media_file (
@@ -245,6 +245,10 @@ export class Migration extends torm.SeedMigration {
 
     CREATE TRIGGER media_series_length_dec AFTER DELETE ON media_series_item BEGIN
       UPDATE media_reference SET media_series_length = media_series_length - 1 WHERE OLD.series_id = id;
+    END;
+
+    CREATE TRIGGER media_reference_view_count AFTER INSERT ON view BEGIN
+      UPDATE media_reference SET view_count = view_count + 1 WHERE NEW.media_reference_id = media_reference.id;
     END;
 
 
