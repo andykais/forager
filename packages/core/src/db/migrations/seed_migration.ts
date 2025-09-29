@@ -112,6 +112,7 @@ export class Migration extends torm.SeedMigration {
       -- a denormalized field derived from edit_log listing all editors who have edited this media reference: ["editor1", "editor2", ...]
       editors JSON,
 
+      last_viewed_at ${TIMESTAMP_COLUMN},
       updated_at ${TIMESTAMP_COLUMN},
       created_at ${TIMESTAMP_COLUMN},
 
@@ -248,7 +249,10 @@ export class Migration extends torm.SeedMigration {
     END;
 
     CREATE TRIGGER media_reference_view_count AFTER INSERT ON view BEGIN
-      UPDATE media_reference SET view_count = view_count + 1 WHERE NEW.media_reference_id = media_reference.id;
+      UPDATE media_reference SET
+        view_count = view_count + 1,
+        last_viewed_at = ${TIMESTAMP_SQLITE}
+        WHERE NEW.media_reference_id = media_reference.id;
     END;
 
 
