@@ -299,10 +299,6 @@ ${group_builder.generate_sql()}
     }
   }
 
-  #set_sort_by_clause(builder: SQLBuilder, cursor: Record<string, any>, sort_by: string, nullable_sort_by_fields: string[]) {
-
-  }
-
   public static set_select_many_filters(builder: SQLBuilder, params: SelectManyFilters) {
     if (params.id !== undefined) {
       builder.add_where_clause(`id = ${params.id}`)

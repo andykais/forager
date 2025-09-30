@@ -1,4 +1,3 @@
-import { argv0 } from "node:process";
 import z from 'zod'
 
 
