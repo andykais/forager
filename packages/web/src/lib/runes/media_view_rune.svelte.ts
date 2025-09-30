@@ -59,6 +59,11 @@ export class MediaViewRune extends Rune {
     throw new Error('requires override')
   }
 
+  public async add_view() {
+    // TODO track view and update it as a video loops, or as an image has stayed open for a while
+    await this.client.forager.views.start({media_reference_id: this.media_reference.id })
+  }
+
   static create(client: BaseController['client'], media_response: MediaResponse, search_params: SearchParams) {
     if (media_response.media_type === 'media_file') {
       return new MediaFileRune(client, media_response)
@@ -70,6 +75,11 @@ export class MediaViewRune extends Rune {
       throw new Error(`Unexpected media_response ${JSON.stringify(media_response)}`)
     }
   }
+
+  public img_fit_classes() {
+    throw new Error('requires override')
+  }
+
 }
 
 
@@ -112,6 +122,11 @@ export class MediaSeriesRune extends MediaViewRune {
     this.state!.full_thumbnails = series.thumbnails
     const series_items = await forager.media.search({query: {series_id: media_response.media_reference.id }})
     // TODO attach series items
+  }
+
+  public img_fit_classes() {
+    console.warn(`media series img fit functions are not implemented`)
+    return "w-full"
   }
 }
 

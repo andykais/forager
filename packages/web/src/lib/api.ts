@@ -16,6 +16,8 @@ class ForagerApi extends rpc.ApiController<Context> {
   media = this.context.forager.media
   series = this.context.forager.series
   tag = this.module(ForagerTagApi)
+  views = this.context.forager.views
+
 }
 
 export class Api extends rpc.ApiController<Context> {

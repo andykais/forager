@@ -78,6 +78,7 @@ export class MediaSelectionsRune extends Rune {
       this.#current_selection.show = true
     }
     await this.#current_selection.media_response?.load_detailed_view()
+    await this.#current_selection.media_response?.add_view()
   }
 
   public close_media = () => {
