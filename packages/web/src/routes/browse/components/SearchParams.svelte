@@ -65,6 +65,7 @@
             <option value="created_at">Added On</option>
             <option value="updated_at">Updated At</option>
             <option value="view_count">View Count</option>
+            <option value="last_viewed_at">Last Viewed</option>
           </select>
           <button
             class="hover:cursor-pointer"
