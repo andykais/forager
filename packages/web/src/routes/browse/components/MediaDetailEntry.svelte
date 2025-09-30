@@ -12,6 +12,7 @@
     content: string | number | Date | null | Json
     type?: "text" | "datetime-local"
     editable?: boolean
+    hide_if_null?: boolean
   } = $props()
 
   let value = $derived.by(() => {
@@ -34,25 +35,39 @@
     if (props.content instanceof Date) {
       return "date"
     }
-    
+
     if (props.content === null) {
       return "text"
     }
 
     throw new Error(`Unexpected media detail content ${props.content}`)
   })
+
+  let display_inline = ['Views', 'Stars'].includes(props.label)
+  console.log({label:props.label, display_inline})
 </script>
 
-<div class="py-2">
-  <div class="grid grid-cols-[auto_1fr] justify-items-end items-center">
+{#if props.hide_if_null && props.content === null}
+{:else}
+  <div class={[
+    "py-1.5",
+    display_inline ? "grid grid-cols-[1fr_auto]" : ''
+  ]}>
     <label class="text-green-50" for="{props.label}"><span>{props.label}</span></label>
-    <button class="hover:cursor-pointer" title="Copy to clipboard">
-      <Icon class="hover:stroke-green-300" data={Copy} fill={"none"} size="18px" stroke={theme.colors.green['50']} />
-    </button>
+    <div>
+      {#if props.editable}
+        <input
+          class="bg-slate-400 w-full rounded-sm px-1 text-sm"
+          type={props.type ?? "text"}
+          value={value}
+          >
+      {:else}
+        <span
+          class="bg-slate-400 w-full inline rounded-sm px-1 text-sm text-nowrap select-all"
+          >
+          {value}
+          </span>
+      {/if}
+    </div>
   </div>
-  <input
-    class="bg-slate-400 w-full rounded-sm px-1 text-sm"
-    type={props.type ?? "text"}
-    value={value}
-    disabled={!props.editable}>
-</div>
+{/if}

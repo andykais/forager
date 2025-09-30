@@ -37,4 +37,22 @@ export const UpdateEditing = Editing.extend({
 export const Timestamp = z.number()
 
 
-export const Duration = z.number()
+export const DurationSeconds = z.number()
+export const DurationSpec = z.object({
+  seconds: DurationSeconds,
+  minutes: z.number(),
+  hours: z.number(),
+  days: z.number(),
+  years: z.number(),
+}).transform(spec => {
+  let duration_seconds = 0
+  duration_seconds += spec.seconds ?? 0
+  duration_seconds += spec.minutes ? spec.minutes * 60 : 0
+  duration_seconds += spec.hours ? spec.hours * 60 * 60 : 0
+  duration_seconds += spec.days ? spec.hours * 60 * 60 * 24 : 0
+  duration_seconds += spec.years ? spec.years * 60 * 60 * 24 * 365 : 0
+
+  return duration_seconds
+})
+
+export const Duration = z.union([DurationSeconds, DurationSpec])

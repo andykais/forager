@@ -5,6 +5,7 @@ export const sql = (strings: TemplateStringsArray, ...values: any[]) => String.r
 
 export const TIMESTAMP_SQLITE = `STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'NOW')`
 export const TIMESTAMP_COLUMN = `TIMESTAMP DATETIME DEFAULT(${TIMESTAMP_SQLITE})`
+export const TIMESTAMP_COLUMN_OPTIONAL = `TIMESTAMP DATETIME`
 
 
 export const migrations = new MigrationRegistry()

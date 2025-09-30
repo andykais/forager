@@ -60,12 +60,20 @@ export class MediaSelectionsRune extends Rune {
     return false
   }
 
-  public set_current_selection(media_response: runes.MediaViewRune, result_index: number) {
+  public async set_current_selection(media_response: runes.MediaViewRune, result_index: number) {
+    this.#current_selection.show
     if (this.is_currently_selected(media_response.media_reference.id)) {
-      this.open_media()
+      await this.open_media()
     } else {
       this.#current_selection.media_response = media_response
       this.#current_selection.result_index = result_index
+    }
+  }
+
+  public async view_media() {
+    await this.#current_selection.media_response?.load_detailed_view()
+    if (this.#current_selection.show) {
+      await this.#current_selection.media_response?.add_view()
     }
   }
 
@@ -77,7 +85,7 @@ export class MediaSelectionsRune extends Rune {
     if (this.#current_selection.media_response) {
       this.#current_selection.show = true
     }
-    await this.#current_selection.media_response?.load_detailed_view()
+    await this.view_media()
   }
 
   public close_media = () => {
@@ -98,7 +106,7 @@ export class MediaSelectionsRune extends Rune {
     this.#current_selection.media_response = results[next_index]
     this.#current_selection.result_index = next_index
 
-    await this.#current_selection.media_response?.load_detailed_view()
+    await this.view_media()
   }
 
   async prev_media(results: MediaResponse[]) {
@@ -117,6 +125,6 @@ export class MediaSelectionsRune extends Rune {
     this.#current_selection.media_response = results[prev_index]
     this.#current_selection.result_index = prev_index
 
-    await this.#current_selection.media_response?.load_detailed_view()
+    await this.view_media()
   }
 }

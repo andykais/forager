@@ -5,6 +5,8 @@ export type { PaginatedResult } from './result_types.ts'
 
 
 export const PaginationVars = Vars({
+  cursor_number: field.number().optional(),
+  cursor_string: field.string().optional(),
   cursor_id: field.number(),
   limit: field.number(),
   total: field.number(),

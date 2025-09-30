@@ -1,6 +1,6 @@
 import {Rune} from '$lib/runes/rune.ts'
 import type { BaseController } from '$lib/base_controller.ts'
-import type { MediaResponse, inputs } from '@forager/core'
+import type { MediaResponse, inputs, type model_types } from '@forager/core'
 
 
 interface State {
@@ -14,6 +14,7 @@ interface SearchParams {}
 export class MediaViewRune extends Rune {
   media_type!: MediaResponse['media_type'] | 'grouped'
   state = $state<State>()
+  current_view: model_types.View
 
   protected constructor(client: BaseController['client'], media_response: MediaResponse) {
     super(client)
@@ -59,6 +60,14 @@ export class MediaViewRune extends Rune {
     throw new Error('requires override')
   }
 
+  public async add_view() {
+    // TODO track view and update it as a video loops, or as an image has stayed open for a while
+    const view_response = await this.client.forager.views.start({media_reference_id: this.media_reference.id })
+    this.current_view = view_response.view
+    console.log('setting view count to ', view_response.media_reference.view_count)
+    this.state.media.media_reference.view_count = view_response.media_reference.view_count
+  }
+
   static create(client: BaseController['client'], media_response: MediaResponse, search_params: SearchParams) {
     if (media_response.media_type === 'media_file') {
       return new MediaFileRune(client, media_response)
@@ -70,6 +79,11 @@ export class MediaViewRune extends Rune {
       throw new Error(`Unexpected media_response ${JSON.stringify(media_response)}`)
     }
   }
+
+  public img_fit_classes() {
+    throw new Error('requires override')
+  }
+
 }
 
 
@@ -112,6 +126,11 @@ export class MediaSeriesRune extends MediaViewRune {
     this.state!.full_thumbnails = series.thumbnails
     const series_items = await forager.media.search({query: {series_id: media_response.media_reference.id }})
     // TODO attach series items
+  }
+
+  public img_fit_classes() {
+    console.warn(`media series img fit functions are not implemented`)
+    return "w-full"
   }
 }
 

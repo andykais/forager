@@ -4,11 +4,16 @@ import type * as result_types from '~/models/lib/result_types.ts'
 import * as errors from '~/lib/errors.ts'
 
 
+interface ViewResponse {
+  view: result_types.View
+  media_reference: { view_count: number }
+}
+
 /**
   * Actions associated with media views. Record when a media reference is viewed, and for animated media, record how much of it has been viewed..
   */
 class ViewActions extends Actions {
-  start = (params: inputs.ViewCreate): result_types.View => {
+  start = (params: inputs.ViewCreate): ViewResponse => {
     const parsed = parsers.ViewCreate.parse(params)
     const media_reference = this.models.MediaReference.select_one({id: params.media_reference_id}, {or_raise: true})
 
@@ -20,13 +25,20 @@ class ViewActions extends Actions {
       num_loops: 0,
     })
 
-    return view
+    const view_count = (media_reference.view_count ?? 0) + 1
+    return {
+      view,
+      media_reference: {
+        view_count,
+      }
+    }
   }
 
-  update = (params: inputs.ViewUpdate): result_types.View => {
+  update = (params: inputs.ViewUpdate): ViewResponse => {
     const parsed = parsers.ViewUpdate.parse(params)
     let view = this.models.View.select_one({id: params.view_id}, {or_raise: true})
 
+    const media_reference = this.models.MediaReference.select_one({id: view.media_reference_id}, {or_raise: true})
     const media_file = this.models.MediaFile.select_one({media_reference_id: view.media_reference_id}, {or_raise: true})
     if (!media_file.animated) {
       if (parsed.start_timestamp !== undefined) throw new errors.BadInputError(`Cannot specify animated view field start_timestamp on non-animated media`)
@@ -44,7 +56,12 @@ class ViewActions extends Actions {
     })
 
     view = this.models.View.select_one({id: params.view_id}, {or_raise: true})
-    return view
+    return {
+      view,
+      media_reference: {
+        view_count: media_reference.view_count ?? 0,
+      }
+    }
   }
 }
 

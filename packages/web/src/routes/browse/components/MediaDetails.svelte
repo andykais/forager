@@ -99,25 +99,21 @@
       <MediaDetailEntry
         {controller}
         editable
+        hide_if_null
         label="Title"
         content={media_selections.current_selection.media_response.media_reference.title}/>
 
       <MediaDetailEntry
         {controller}
         editable
+        hide_if_null
         label="Description"
         content={media_selections.current_selection.media_response.media_reference.description}/>
 
       <MediaDetailEntry
         {controller}
-        editable
-        label="Source URL"
-        content={media_selections.current_selection.media_response.media_reference.source_url}/>
-
-      <MediaDetailEntry
-        {controller}
-        label="Metadata"
-        content={media_selections.current_selection.media_response.media_reference.metadata}/>
+        label="Views"
+        content={media_selections.current_selection.media_response.media_reference.view_count}/>
 
       <MediaDetailEntry
         {controller}
@@ -126,20 +122,11 @@
 
       <MediaDetailEntry
         {controller}
-        label="Views"
-        content={media_selections.current_selection.media_response.media_reference.view_count}/>
-
-      {#if media_selections.current_selection.media_response.media_type === 'media_file'}
-        <MediaDetailEntry
-          {controller}
-          label="Filename"
-          content={path.basename(media_selections.current_selection.media_response.media_file.filepath)}/>
-
-        <MediaDetailEntry
-          {controller}
-          label="File"
-          content={media_selections.current_selection.media_response.media_file.filepath}/>
-      {/if}
+        editable
+        hide_if_null
+        label="Created"
+        type="datetime-local"
+        content={media_selections.current_selection.media_response.media_reference.source_created_at}/>
 
       <!-- TODO we should support datetimes in @andykais/ts-rpc -->
       <MediaDetailEntry
@@ -152,9 +139,27 @@
       <MediaDetailEntry
         {controller}
         editable
-        label="Created"
-        type="datetime-local"
-        content={media_selections.current_selection.media_response.media_reference.source_created_at}/>
+        hide_if_null
+        label="Source URL"
+        content={media_selections.current_selection.media_response.media_reference.source_url}/>
+
+      <MediaDetailEntry
+        {controller}
+        hide_if_null
+        label="Metadata"
+        content={media_selections.current_selection.media_response.media_reference.metadata}/>
+
+      {#if media_selections.current_selection.media_response.media_type === 'media_file'}
+        <MediaDetailEntry
+          {controller}
+          label="File"
+          content={media_selections.current_selection.media_response.media_file.filepath}/>
+
+        <MediaDetailEntry
+          {controller}
+          label="Filename"
+          content={path.basename(media_selections.current_selection.media_response.media_file.filepath)}/>
+      {/if}
 
     {:else}
       TODO: show tag summary
