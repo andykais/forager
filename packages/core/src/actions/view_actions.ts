@@ -25,10 +25,11 @@ class ViewActions extends Actions {
       num_loops: 0,
     })
 
+    const view_count = (media_reference.view_count ?? 0) + 1
     return {
       view,
       media_reference: {
-        view_count: media_reference.view_count ?? 0,
+        view_count,
       }
     }
   }

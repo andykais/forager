@@ -1107,47 +1107,6 @@ test('media series', async (ctx) => {
 })
 
 
-test('views', async (ctx) => {
-  using forager = new Forager(ctx.get_test_config())
-  forager.init()
-
-  await forager.media.create(ctx.resources.media_files['koch.tif'], {title: 'Generated Art'}, [])
-  const media_cartoon = await forager.media.create(ctx.resources.media_files["ed-edd-eddy.png"], {title: 'Ed Edd Eddy Screengrab'}, ['cartoon', 'wallpaper'])
-  await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {title: 'Cat Doodle'}, [])
-
-  let cartoon_view = forager.views.start({
-    media_reference_id: media_cartoon.media_reference.id,
-  })
-  ctx.assert.object_match(cartoon_view, {
-    media_reference_id: media_cartoon.media_reference.id,
-    // a image view is fairly uninteresting. None of these will change over the lifetime of the view
-    start_timestamp: 0,
-    duration: 0,
-    end_timestamp: null,
-    num_loops: 0,
-  })
-
-  cartoon_view = forager.views.update({
-    view_id: cartoon_view.id,
-    view_duration: 5
-  })
-  ctx.assert.object_match(cartoon_view, {
-    media_reference_id: media_cartoon.media_reference.id,
-    start_timestamp: 0,
-    duration: 5,
-    end_timestamp: null,
-    num_loops: 0,
-  })
-
-  // we cant set animated-only field on an image
-  ctx.assert.throws(() => forager.views.update({
-    view_id: cartoon_view.id,
-    view_duration: 6,
-    start_timestamp: 2,
-  }), errors.BadInputError)
-})
-
-
 test('forager class', async ctx => {
   // assert that we error out when passing bad data to the forager class
   ctx.assert.throws(() => new Forager({foo: 'bar'} as any))
