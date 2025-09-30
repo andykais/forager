@@ -48,11 +48,11 @@ export default defineConfig({
 
     host: '127.0.0.1', // Only bind to localhost'
 
-    // NOTE that this disables hmr and hard server refresh.
-    // refreshing manually may be a better iterative workflow
-    hmr: {
-      port: false,
-      clientPort: false
-    }
+    // // NOTE that this disables hmr and hard server refresh.
+    // // refreshing manually may be a better iterative workflow
+    // hmr: {
+    //   port: false,
+    //   clientPort: false
+    // }
   }
 });

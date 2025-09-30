@@ -44,6 +44,7 @@ class IngestActions extends Actions {
 
     const total = this.models.FilesystemPath.count_entries({
       ingest_retriever: parsed.params.query?.retriever,
+      ingested: false,
       filepath: parsed.params.query?.path
     })
 
@@ -97,7 +98,7 @@ class IngestActions extends Actions {
     }
 
     const duration = performance.now() - start_time
-    this.ctx.logger.info(`Created ${stats.created} media files and ignored ${stats.existing} existing and ${stats.duplicate} duplicate files in ${this.format_duration(duration)}.`)
+    this.ctx.logger.info(`Created ${stats.created} media files, updated ${stats.updated} and ignored ${stats.existing} existing and ${stats.duplicate} duplicate files in ${this.format_duration(duration)}.`)
     this.#singleton_data.status = 'stopped'
     return { stats }
   }

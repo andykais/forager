@@ -64,7 +64,7 @@ class FileSystemActions extends Actions {
     for await (const entry of fs.walk(walk_path, walk_options)) {
       const receiver = this.ctx.plugin_script.recievers.find(receiver => receiver.matches(entry))
       if (receiver) {
-        this.#add_filepath(stats, receiver, entry)
+        this.#add_filepath(stats, receiver, entry, parsed.params.reingest)
       } else {
         stats.ignored.files ++
       }
@@ -79,7 +79,7 @@ class FileSystemActions extends Actions {
     return { stats }
   }
 
-  #add_filepath(stats: FileSystemDiscoverStats, receiver: plugin.FileSystemReceiver, entry: fs.WalkEntry) {
+  #add_filepath(stats: FileSystemDiscoverStats, receiver: plugin.FileSystemReceiver, entry: fs.WalkEntry, reingest: boolean) {
       const filesystem_path_data = {
         directory: false,
         filepath: entry.path,
@@ -96,7 +96,7 @@ class FileSystemActions extends Actions {
           this.models.FilesystemPath.update({
             id: filesystem_path.id,
             ingest_retriever: filesystem_path_data.ingest_retriever,
-            ingested: false,
+            ingested: reingest ? false : filesystem_path.ingested,
             updated_at: new Date(),
           })
           stats.existing.files ++
@@ -114,7 +114,7 @@ class FileSystemActions extends Actions {
           const filesystem_path = this.models.FilesystemPath.select_one({filepath: e.params.filepath}, {or_raise: true})
           this.models.FilesystemPath.update({
             id: filesystem_path.id,
-            ingested: false,
+            ingested: reingest ? false : filesystem_path.ingested,
             ingest_retriever: filesystem_path_data.ingest_retriever,
             updated_at: new Date(),
           })

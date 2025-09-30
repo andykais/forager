@@ -7,6 +7,7 @@ export const FileSystemDiscover = z.object({
                .refine(ext => !ext.startsWith('.'), 'Extensions must not start with "."')
                .array()
                .optional(),
+  reingest: z.boolean().default(false),
 })
 
 export const FileSystemQuery = z.object({

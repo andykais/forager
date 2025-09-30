@@ -53,7 +53,7 @@
 <div class="container-masonry p-4" style="--thumbnail-size: {settings.ui.media_list.thumbnail_size}px">
   {#each media_list.results as result, result_index}
     <div>
-      <button 
+      <div 
         type="button"
         class="inline-flex items-center justify-center p-1
                outline-none"
@@ -79,7 +79,7 @@
             {#if settings.ui.media_list.thumbnail_shape === 'original'}
               <img
                 class={[
-                  "border-2 shadow shadow-gray-700 rounded-md",
+                  "shadow shadow-gray-700 rounded-md",
                   result.img_fit_classes()
                 ]}
                 class:hover:border-slate-400={result_index !== media_selections.current_selection.result_index}
@@ -135,7 +135,7 @@
           {/if}
         </div>
         </div>
-      </button>
+      </div>
     </div>
   {/each}
 </div>

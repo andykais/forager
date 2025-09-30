@@ -54,6 +54,9 @@ class Database {
     }
     Deno.mkdirSync(this.#ctx.config.database.folder, { recursive: true })
     const init_info = this.#torm.init(init_options)
+    if (this.#torm.migrations.application_version() !== init_info.current_version) {
+      throw new Error(`Version mismatch: Forager app version is ${this.#torm.migrations.application_version()}, while the database version is currently ${init_info.current_version}. Consider turning on automatic migrations, or manually migrating the database`)
+    }
     this.#torm.driver.exec(`PRAGMA journal_mode=WAL`)
     return init_info
   }
