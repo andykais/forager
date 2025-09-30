@@ -27,7 +27,7 @@
 import { Context, type ContextInitInfo } from './context.ts'
 import { PluginScript } from '~/lib/plugin_script.ts'
 import * as actions from './actions/mod.ts'
-import { type inputs, outputs, parsers } from '~/inputs/mod.ts'
+import { type inputs, type outputs, parsers } from '~/inputs/mod.ts'
 
 class Forager {
   public config: outputs.ForagerConfig
@@ -71,6 +71,7 @@ export type ForagerConfig = inputs.ForagerConfig
 export type {MediaResponse, MediaFileResponse, MediaSeriesResponse, MediaGroupResponse} from './actions/lib/base.ts'
 export type * from './actions/mod.ts'
 export { type inputs }
+export type * as model_types from '~/models/lib/result_types.ts'
 export type * from '~/inputs/mod.ts'
 export { parsers }
 export * from '~/lib/plugin_script.ts'
