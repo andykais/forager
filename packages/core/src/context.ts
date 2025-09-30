@@ -1,5 +1,5 @@
 import * as torm from '@torm/sqlite'
-import { outputs } from '~/inputs/mod.ts'
+import { type outputs } from '~/inputs/mod.ts'
 import { Logger } from '~/lib/logger.ts'
 import { Database, type DatabaseInfo } from '~/db/mod.ts'
 import { PluginScript } from "~/lib/plugin_script.ts";

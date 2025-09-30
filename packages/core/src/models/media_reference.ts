@@ -2,6 +2,7 @@ import * as torm from '@torm/sqlite'
 import * as errors from '~/lib/errors.ts'
 import { Model, field, PaginationVars, GroupByVars, type PaginatedResult } from '~/models/lib/base.ts'
 import { SQLBuilder } from '~/models/lib/sql_builder.ts'
+import { type outputs } from '~/inputs/mod.ts'
 
 export interface SelectManyFilters {
   id: number | undefined
@@ -22,7 +23,7 @@ export interface SelectManyFilters {
 
 
 interface SelectManyParams extends SelectManyFilters {
-  sort_by: 'created_at' | 'updated_at' | 'source_created_at' | 'view_count'
+  sort_by: outputs.MediaReferenceSearchSortBy
 }
 
 
@@ -30,6 +31,20 @@ interface SelectManyGroupByParams extends SelectManyFilters {
   group_by: {tag_group_id: number}
   sort_by: 'count'
 }
+
+
+const PaginationCursorVars = torm.Vars({
+  last_viewed_at: torm.field.string().optional(),
+  source_created_at: torm.field.string().optional(),
+  created_at: torm.field.string(),
+  updated_at: torm.field.string(),
+  view_count: torm.field.number(),
+})
+
+const NULLABLE_SORT_BY_FIELDS = new Set([
+  'source_created_at',
+  'last_viewed_at'
+])
 
 
 class MediaReference extends Model {
@@ -108,6 +123,7 @@ class MediaReference extends Model {
 
   public select_many(params: SelectManyParams): PaginatedResult<torm.InferSchemaTypes<typeof MediaReference.result>> {
     const records_builder = new SQLBuilder(this.driver)
+    const sql_params: Record<string, any> = {}
     // this nested select clause exists so that we can create a reliable cursor_id for pagination
     // it uses ROW_NUMBER with an explicit order clause to ensure that we can reliably paginate
     records_builder
@@ -125,44 +141,45 @@ class MediaReference extends Model {
     records_builder.set_order_by_clause(`ORDER BY media_reference.${params.sort_by} ${params.order} NULLS LAST, media_reference.id ${params.order}`)
 
     if (params.cursor !== undefined) {
-      const sort_by_field = `media_reference.${params.sort_by}`
-      const sort_by_cursor_value_raw = params.cursor[params.sort_by]
       const cursor_sort_direction = params.order === 'desc' ? '<' : '>'
-      // TODO use better string escaping code
-      const sort_by_cursor_value = sort_by_cursor_value_raw === null
-        ? null
-        : typeof sort_by_cursor_value_raw !== 'number'
-          ? `'${sort_by_cursor_value_raw}'`
-          : sort_by_cursor_value_raw
+      const sort_by_field = `media_reference.${params.sort_by}`
+      const sort_by_cursor = params.cursor[params.sort_by]
 
+      if (sort_by_cursor === undefined) {
+        throw new errors.UnExpectedError(`A cursor was supplied (${JSON.stringify(params.cursor)} but did not have a corresponding key for ${params.sort_by}`)
+      }
 
-      if (sort_by_cursor_value === undefined) throw new errors.UnExpectedError(`A cursor was supplied (${JSON.stringify(params.cursor)} but did not have a corresponding key for ${params.sort_by}`)
-
-      if (sort_by_cursor_value === null) {
+      if (sort_by_cursor === null) {
+        // null values are always last, so we can simplify the sort here
         records_builder.add_where_clause(`${params.sort_by} IS NULL AND media_reference.id ${cursor_sort_direction} ${params.cursor.id}`)
       } else {
-        const column_can_be_null = params.sort_by === 'source_created_at'
+        const column_can_be_null = NULLABLE_SORT_BY_FIELDS.has(params.sort_by)
         const where_clauses = column_can_be_null
           ? [
-            `${sort_by_field} ${cursor_sort_direction} ${sort_by_cursor_value}`,
-            `${sort_by_field} IS NULL`,
-            `${sort_by_field} = ${sort_by_cursor_value} AND media_reference.id ${cursor_sort_direction} ${params.cursor.id}`,
+              `${sort_by_field} ${cursor_sort_direction} :sort_by_cursor`,
+              `${sort_by_field} IS NULL`,
+              `${sort_by_field} = :sort_by_cursor AND media_reference.id ${cursor_sort_direction} :media_reference_id_cursor`,
             ]
           : [
-            `${sort_by_field} ${cursor_sort_direction} ${sort_by_cursor_value}`,
-            `${sort_by_field} = ${sort_by_cursor_value} AND media_reference.id ${cursor_sort_direction} ${params.cursor.id}`,
+              `${sort_by_field} ${cursor_sort_direction} :sort_by_cursor`,
+              `${sort_by_field} = :sort_by_cursor AND media_reference.id ${cursor_sort_direction} :media_reference_id_cursor`,
             ]
-
         records_builder.add_where_clause(`(${where_clauses.join(' OR ')})`)
+
+        records_builder.add_param('sort_by_cursor', PaginationCursorVars.params[params.sort_by].as('sort_by_cursor'))
+        records_builder.add_param('media_reference_id_cursor', PaginationVars.params.cursor_id.as('media_reference_id_cursor'))
+        sql_params['sort_by_cursor'] = sort_by_cursor
+        sql_params['media_reference_id_cursor'] = params.cursor.id
       }
     }
+
     if (params.limit !== undefined) {
       records_builder.set_limit_clause(`LIMIT ${params.limit}`)
     }
 
     const records_query = records_builder.build()
     type PaginatedRow = torm.InferSchemaTypes<typeof MediaReference.result> & {cursor_id: number}
-    const results: PaginatedRow[] = records_query.stmt.all({})
+    const results: PaginatedRow[] = records_query.stmt.all(sql_params)
 
     const count_query = count_builder.build()
     const { total } = count_query.stmt.one({})! as {total: number}
@@ -280,6 +297,10 @@ ${group_builder.generate_sql()}
       cursor: next_cursor,
       total,
     }
+  }
+
+  #set_sort_by_clause(builder: SQLBuilder, cursor: Record<string, any>, sort_by: string, nullable_sort_by_fields: string[]) {
+
   }
 
   public static set_select_many_filters(builder: SQLBuilder, params: SelectManyFilters) {
