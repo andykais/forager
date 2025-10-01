@@ -47,26 +47,26 @@
   console.log({label:props.label, display_inline})
 </script>
 
-<div class={[
-  "py-1.5",
-  display_inline ? "grid grid-cols-[1fr_auto]" : ''
-]}>
-  {#if props.hide_if_null && props.content === null}
-      <label class="text-green-50" for="{props.label}"><span>{props.label}</span></label>
-      <div>
-        {#if props.editable}
-          <input
-            class="bg-slate-400 w-full rounded-sm px-1 text-sm"
-            type={props.type ?? "text"}
-            value={value}
-            >
-        {:else}
-          <span
-            class="bg-slate-400 w-full inline rounded-sm px-1 text-sm text-nowrap select-all"
-            >
-            {value}
-            </span>
-        {/if}
-      </div>
-  {/if}
-</div>
+{#if !(props.hide_if_null && props.content === null)}
+  <div class={[
+    "py-1.5",
+    display_inline ? "grid grid-cols-[1fr_auto]" : ''
+  ]}>
+        <label class="text-green-50" for="{props.label}"><span>{props.label}</span></label>
+        <div>
+          {#if props.editable}
+            <input
+              class="bg-slate-400 w-full rounded-sm px-1 text-sm"
+              type={props.type ?? "text"}
+              value={value}
+              >
+          {:else}
+            <span
+              class="bg-slate-400 w-full inline rounded-sm px-1 text-sm text-nowrap select-all py-0.5"
+              >
+              {value}
+              </span>
+          {/if}
+        </div>
+  </div>
+{/if}
