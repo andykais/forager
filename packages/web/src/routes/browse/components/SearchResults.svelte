@@ -79,22 +79,25 @@
             {#if settings.ui.media_list.thumbnail_shape === 'original'}
               <img
                 class={[
-                  "shadow shadow-gray-700 rounded-md",
-                  result.img_fit_classes()
+                  "shadow shadow-gray-700 rounded-md hover:shadow-slate-400 hover:border-slate-400 hover:border hover:border-2",
+                  result.img_fit_classes(),
+                  result_index !== media_selections.current_selection.result_index
+                    && "shadow-slate-900 shadow-green-300",
+                  result_index === media_selections.current_selection.result_index
+                    && "hover:border-slate-400 border-green-300 border border-2 hover:shadow-slate-400 shadow-green-300",
                 ]}
-                class:hover:shadow-slate-400={result_index !== media_selections.current_selection.result_index}
-                class:shadow-slate-900={      result_index !== media_selections.current_selection.result_index}
-                class:shadow-green-300={      result_index === media_selections.current_selection.result_index}
                 src="/files/thumbnail{result.preview_thumbnail.filepath}"
                 alt="/files/thumbnail{result.preview_thumbnail.filepath}"/>
             {:else}
               <img
-                class="
-                  w-full h-full object-cover
-                  border-2 shadow shadow-gray-700 rounded-md"
-                class:hover:shadow-slate-400={result_index !== media_selections.current_selection.result_index}
-                class:shadow-slate-900={      result_index !== media_selections.current_selection.result_index}
-                class:shadow-green-300={      result_index === media_selections.current_selection.result_index}
+                class={[
+                  "w-full h-full object-cover shadow shadow-gray-700 rounded-md hover:shadow-slate-400 hover:border-slate-400 hover:border hover:border-2",
+                  result.img_fit_classes(),
+                  result_index !== media_selections.current_selection.result_index
+                    && "hover:shadow-slate-400 shadow-slate-900 shadow-green-300",
+                  result_index === media_selections.current_selection.result_index
+                    && "hover:border-slate-400 border-green-300 border border-2 hover:shadow-slate-400 shadow-green-300",
+                ]}
                 src="/files/thumbnail{result.preview_thumbnail.filepath}"
                 alt="/files/thumbnail{result.preview_thumbnail.filepath}"/>
             {/if}
