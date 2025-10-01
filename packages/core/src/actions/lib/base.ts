@@ -162,7 +162,7 @@ class Actions {
     const parsed = {
       media_reference_id: parsers.MediaReferenceId.parse(media_reference_id),
       media_info: parsers.MediaInfo.parse(media_info ?? {}),
-      tags: parsers.MediaReferenceUpdateTags.parse(tags ?? []),
+      tags: parsers.MediaReferenceUpdateTags.parse(tags),
       editing: parsers.UpdateEditing.parse(editing) ?? this.ctx.config.editing,
     }
 

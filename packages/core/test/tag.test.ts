@@ -200,6 +200,20 @@ test('tag actions', async (ctx) => {
       ]
     })
   })
+
+  await ctx.subtest(`updates w/out tag changes`, async () => {
+    ctx.assert.equals(doodle.media_reference.stars, 0)
+
+    let doodle_media = forager.media.get({media_reference_id: doodle.media_reference.id})
+    ctx.assert.equals(doodle_media.tags.length, 1)
+    ctx.assert.equals(doodle_media.tags[0].name, 'cartoon')
+    doodle_media = forager.media.update(doodle.media_reference.id, {stars: 1})
+
+    ctx.assert.equals(doodle_media.media_reference.stars, 1)
+    // ensure tags do not change
+    ctx.assert.equals(doodle_media.tags.length, 1)
+    ctx.assert.equals(doodle_media.tags[0].name, 'cartoon')
+  })
   forager.close()
 })
 
