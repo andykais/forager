@@ -1,23 +1,29 @@
 import z from 'zod'
-import {Forager } from '@forager/core'
-import {Config} from './inputs.ts'
+import { Forager, type outputs } from '@forager/core'
+import { Config } from './inputs.ts'
 import * as fs from '@std/fs'
 import * as path from '@std/path'
 import * as yaml from '@std/yaml'
 
+
+type LogLevel = 'SILENT' | 'ERROR' | 'WARN' | 'INFO' | 'DEBUG'
+
+
 interface ForagerHelpersOptions {
   config?: string
   json?: boolean
-  logLevel: 'SILENT' | 'ERROR' | 'WARN' | 'INFO' | 'DEBUG'
+  logLevel?: LogLevel | undefined
   quiet?: boolean
 }
 
 class ForagerHelpers {
   public config_filepath: string
   #config: z.infer<typeof Config> | undefined
+  #log_level: LogLevel
 
   constructor(public options: ForagerHelpersOptions) {
     this.config_filepath = options.config ?? this.#get_config_filepath() 
+    this.#log_level = options.logLevel ?? 'INFO'
   }
 
   async ensure_config() {
@@ -60,14 +66,14 @@ class ForagerHelpers {
         },
 
         logger: {
-          level: 'INFO',
+          level: this.options.logLevel,
         }
       },
       web: {
         port: 8000,
         asset_folder: path.join(config_dir, 'static_assets'),
         logger: {
-          level: 'INFO',
+          level: this.options.logLevel,
         }
       }
     })
@@ -101,6 +107,10 @@ class ForagerHelpers {
       config.core.logger.level = 'SILENT'
     }
     this.#config = config
+    if (this.options.logLevel) {
+      this.#config.core.logger.level = this.#log_level
+      this.#config.web.logger.level = this.#log_level
+    }
   }
 
   async launch_forager() {

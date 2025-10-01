@@ -1,5 +1,4 @@
 import * as cliffy from '@cliffy/command'
-import {Forager, type ForagerConfig} from '@forager/core'
 import * as web from '@forager/web'
 import deno_json from '../deno.json' with { type: "json" };
 import { ForagerHelpers } from './helpers.ts'
@@ -13,7 +12,7 @@ const cli = new cliffy.Command()
   .version(deno_json.version)
   .option('--config=<config>', 'The path to a config file. If not specified, forager will look in the default config directory', {global: true})
   .type("log-level", LOG_LEVEL_TYPE)
-  .option('-l, --log-level <level:log-level>', 'The log level forager will output.', { default: 'INFO', global: true })
+  .option('-l, --log-level <level:log-level>', 'The log level forager will output.', { global: true })
   .option('--json', 'Silence logs and print structured json after a command completes', { global: true })
   .option('-q, --quiet', 'Shorthand for --log-level=SILENT', { global: true })
 
@@ -62,8 +61,15 @@ const cli = new cliffy.Command()
       if (opts.tags) {
         throw new Error('unimplemented')
       }
-      const result = await forager.filesystem.discover({ path: globpath, extensions })
-      forager_helpers.print_output(result)
+      const discover_output = await forager.filesystem.discover({ path: globpath, extensions, })
+      globpath = globpath.includes('*')
+        ? globpath
+        : globpath + '*'
+      const ingest_output = await forager.ingest.start({ query: {path: globpath, extensions }})
+      forager_helpers.print_output({
+        discover_output,
+        ingest_output
+      })
     })
 
   .command('create <filepath>', 'add a file to the forager database')

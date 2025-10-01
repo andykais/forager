@@ -93,7 +93,7 @@ class IngestActions extends Actions {
       total_progress ++
       this.ctx.logger.info(() => {
         const percent_complete = this.format_decimals((total_progress / total) * 100) + '%'
-        return `Stats: progress: ${total_progress}/${total} (${percent_complete}), created: ${stats.created}, updated: ${stats.updated}, duplicates: ${stats.duplicate}, nooped: ${stats.existing}, errored: ${stats.errored}\n`
+        return `Stats: progress: ${total_progress}/${total} (${percent_complete}), created: ${stats.created}, updated: ${stats.updated}, duplicates: ${stats.duplicate}, nooped: ${stats.existing}, errored: ${stats.errored}`
       })
     }
 
