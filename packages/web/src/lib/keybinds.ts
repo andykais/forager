@@ -11,6 +11,12 @@ type KeybindAction =
   | 'NextTagSuggestion'
   | 'PlayPauseMedia'
   | 'ToggleMediaControls'
+  | 'Star0'
+  | 'Star1'
+  | 'Star2'
+  | 'Star3'
+  | 'Star4'
+  | 'Star5'
 
 type KeybindActionListener = (e: KeyboardEvent) => void
 

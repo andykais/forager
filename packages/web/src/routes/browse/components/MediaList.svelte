@@ -20,7 +20,26 @@
         else return
       }
       controller.runes.media_selections.prev_media(controller.runes.media_list.results)
-    }
+    },
+
+    Star0: () => {
+      controller.runes.media_selections.current_selection.media_response?.star(0)
+    },
+    Star1: () => {
+      controller.runes.media_selections.current_selection.media_response?.star(1)
+    },
+    Star2: () => {
+      controller.runes.media_selections.current_selection.media_response?.star(2)
+    },
+    Star3: () => {
+      controller.runes.media_selections.current_selection.media_response?.star(3)
+    },
+    Star4: () => {
+      controller.runes.media_selections.current_selection.media_response?.star(4)
+    },
+    Star5: () => {
+      controller.runes.media_selections.current_selection.media_response?.star(5)
+    },
   })
 </script>
 

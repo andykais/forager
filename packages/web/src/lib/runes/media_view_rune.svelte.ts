@@ -56,6 +56,14 @@ export class MediaViewRune extends Rune {
     throw new Error('requires override')
   }
 
+  public async star(stars: number) {
+    const updated = await this.client.forager.media.update(
+      this.media_reference.id,
+      {stars}
+    )
+    this.media = updated
+  }
+
   public async load_detailed_view() {
     throw new Error('requires override')
   }

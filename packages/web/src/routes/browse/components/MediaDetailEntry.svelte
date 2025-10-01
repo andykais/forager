@@ -44,7 +44,6 @@
   })
 
   let display_inline = ['Views', 'Stars'].includes(props.label)
-  console.log({label:props.label, display_inline})
 </script>
 
 {#if !(props.hide_if_null && props.content === null)}

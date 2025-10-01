@@ -84,12 +84,12 @@ export const PackagesConfig = z.object({
 
       // ToggleVideoPreviewVsThumbails: Keybind('KeyT'),
 
-      // Star0: Keybind('Digit0'),
-      // Star1: Keybind('Digit1'),
-      // Star2: Keybind('Digit2'),
-      // Star3: Keybind('Digit3'),
-      // Star4: Keybind('Digit4'),
-      // Star5: Keybind('Digit5'),
+      Star0: Keybind('Digit0'),
+      Star1: Keybind('Digit1'),
+      Star2: Keybind('Digit2'),
+      Star3: Keybind('Digit3'),
+      Star4: Keybind('Digit4'),
+      Star5: Keybind('Digit5'),
     }).strict().prefault({}),
   }).strict(),
 }).strict()
