@@ -82,9 +82,9 @@
                   "shadow shadow-gray-700 rounded-md",
                   result.img_fit_classes()
                 ]}
-                class:hover:border-slate-400={result_index !== media_selections.current_selection.result_index}
-                class:border-slate-900={      result_index !== media_selections.current_selection.result_index}
-                class:border-green-300={      result_index === media_selections.current_selection.result_index}
+                class:hover:shadow-slate-400={result_index !== media_selections.current_selection.result_index}
+                class:shadow-slate-900={      result_index !== media_selections.current_selection.result_index}
+                class:shadow-green-300={      result_index === media_selections.current_selection.result_index}
                 src="/files/thumbnail{result.preview_thumbnail.filepath}"
                 alt="/files/thumbnail{result.preview_thumbnail.filepath}"/>
             {:else}
@@ -92,9 +92,9 @@
                 class="
                   w-full h-full object-cover
                   border-2 shadow shadow-gray-700 rounded-md"
-                class:hover:border-slate-400={result_index !== media_selections.current_selection.result_index}
-                class:border-slate-900={      result_index !== media_selections.current_selection.result_index}
-                class:border-green-300={      result_index === media_selections.current_selection.result_index}
+                class:hover:shadow-slate-400={result_index !== media_selections.current_selection.result_index}
+                class:shadow-slate-900={      result_index !== media_selections.current_selection.result_index}
+                class:shadow-green-300={      result_index === media_selections.current_selection.result_index}
                 src="/files/thumbnail{result.preview_thumbnail.filepath}"
                 alt="/files/thumbnail{result.preview_thumbnail.filepath}"/>
             {/if}
