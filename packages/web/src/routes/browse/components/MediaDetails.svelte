@@ -138,7 +138,6 @@
 
       <MediaDetailEntry
         {controller}
-        editable
         hide_if_null
         label="Source URL"
         content={media_selections.current_selection.media_response.media_reference.source_url}/>
