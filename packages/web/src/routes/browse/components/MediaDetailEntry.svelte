@@ -1,15 +1,11 @@
 <script lang="ts">
-  import Icon from '$lib/components/Icon.svelte'
-  import * as theme from '$lib/theme.ts'
   import * as datetime from '@std/datetime'
-  import { Copy } from '$lib/icons/mod.ts'
-  import type { Json } from '@andykais/ts-rpc/adapters/sveltekit.ts'
 
   import { BrowseController } from '../controller.ts'
   let {controller, ...props}: {
     controller: BrowseController
     label: string
-    content: string | number | Date | null | Json
+    content: string | number | Date | null | Record<string, any>
     type?: "text" | "datetime-local"
     editable?: boolean
     hide_if_null?: boolean

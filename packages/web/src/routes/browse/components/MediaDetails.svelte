@@ -129,7 +129,6 @@
         type="datetime-local"
         content={media_selections.current_selection.media_response.media_reference.source_created_at}/>
 
-      <!-- TODO we should support datetimes in @andykais/ts-rpc -->
       <MediaDetailEntry
         {controller}
         editable

@@ -1,6 +1,7 @@
 import {Rune} from '$lib/runes/rune.ts'
 import type { Forager, MediaResponse, outputs } from '@forager/core'
-import { MediaViewRune } from '.'
+import {forager} from '$lib/api/client'
+import { MediaViewRune } from './media_view_rune.svelte.ts'
 
 
 type Result =
@@ -79,20 +80,24 @@ export class MediaListRune extends Rune {
     }
 
     const params_type = params?.type ?? this.#saved_params_type
+    if (params_type === 'filesystem') {
+      throw new Error('unimplemented for filesystem queries')
+    }
+
     this.#saved_params_type = params_type
     let content: Result
     if (params_type === 'media') {
-      content = await this.client.forager.media.search(fetch_params)
+      content = await forager.media.search(fetch_params as SearchInput['params'])
     }
     else if (params_type === 'group_by') {
       fetch_params.limit = fetch_params.limit ?? 30
-      content = await this.client.forager.media.group(fetch_params)
+      content = await forager.media.group(fetch_params)
     } else {
       throw new Error('unimplemented')
     }
 
     const results = content.results.map(result => {
-      return MediaViewRune.create(this.client, result, fetch_params)
+      return MediaViewRune.create(result, fetch_params)
     })
 
     this.#cursor = content.cursor
@@ -120,7 +125,7 @@ export class MediaListRune extends Rune {
       return
     }
 
-    const content = await this.client.forager.tag.search({
+    const content = await forager.tag.search({
       contextual_query: params.params?.query
     })
     console.log(content)

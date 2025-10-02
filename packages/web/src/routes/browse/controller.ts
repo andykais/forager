@@ -19,14 +19,14 @@ class BrowseController extends BaseController {
   public constructor(config: Config) {
     super(config)
 
-    const media_list_rune = new MediaListRune(this.client, this.settings)
+    const media_list_rune = new MediaListRune(this.settings)
     this.runes = {
       media_list: media_list_rune,
       focus: create_focuser(),
       dimensions: create_dimensional_rune(),
-      settings: new SettingsRune(this.client, this.config),
-      media_selections: new MediaSelectionsRune(this.client, media_list_rune),
-      queryparams: new QueryParamsRune(this.client, media_list_rune),
+      settings: new SettingsRune(this.config),
+      media_selections: new MediaSelectionsRune(media_list_rune),
+      queryparams: new QueryParamsRune(media_list_rune),
     }
   }
 }

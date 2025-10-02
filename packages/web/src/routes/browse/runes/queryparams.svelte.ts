@@ -1,10 +1,8 @@
 import type { inputs } from '@forager/core'
-import type { BrowseController } from '../controller.ts'
 import type { MediaListRune } from '$lib/runes/index.ts'
 import * as parsers from '$lib/parsers.ts'
 import {onMount} from 'svelte'
 import { pushState } from '$app/navigation';
-import { page } from '$app/state';
 import {Rune} from '$lib/runes/rune.ts'
 
 interface State {
@@ -48,8 +46,8 @@ export class QueryParamsRune extends Rune {
   private search_rune: MediaListRune
   private popstate_listener_fn!: (params: State) => void
 
-  public constructor(client: BrowseController['client'], search_rune: MediaListRune) {
-    super(client)
+  public constructor(search_rune: MediaListRune) {
+    super()
     this.search_rune = search_rune
 
     onMount(async () => {

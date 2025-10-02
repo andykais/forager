@@ -40,8 +40,8 @@ export class MediaSelectionsRune extends Rune {
   #selected_thumbnails = $state<ThumbnailSelections>({type: 'none'})
   #current_selection = $state<CurrentSelection>({...CURRENT_SELECTION_DEFAULTS})
 
-  public constructor(client: BaseController['client'], media_list_rune: MediaListRune) {
-    super(client)
+  public constructor(media_list_rune: MediaListRune) {
+    super()
   }
 
   public get thumbnail_selections() {

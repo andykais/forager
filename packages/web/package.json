@@ -13,7 +13,6 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
 	},
 	"dependencies": {
-    "@andykais/ts-rpc": "npm:@jsr/andykais__ts-rpc@^0.2.4",
     "@torm/sqlite": "npm:@jsr/torm__sqlite@^1.9.7",
     "@opentelemetry/api": "1.9.0"
 	},

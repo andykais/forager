@@ -1,5 +1,6 @@
 <script lang="ts">
   import * as parsers from '$lib/parsers.ts'
+  import {forager} from '$lib/api/client'
   import type { Forager } from '@forager/core'
   import type { BaseController } from "$lib/base_controller.ts";
   import Tag from '$lib/components/Tag.svelte'
@@ -50,7 +51,7 @@
       if (contextual_query) {
         search_options.contextual_query = contextual_query
       }
-      const tags = await controller.client.forager.tag.search(search_options)
+      const tags = await forager.tag.search(search_options)
       input_state.suggestion_buttons = Array(tags.results.length).fill(null)
       this.state = tags.results
     }
