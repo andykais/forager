@@ -1,6 +1,5 @@
 import type { Config } from '$lib/server/config.ts'
 import { Rune } from './rune';
-import type { BaseController } from '$lib/base_controller.ts'
 
 interface MutatableSettings {
   'ui.media_list.thumbnail_size': Config['web']['ui_defaults']['media_list']['thumbnail_size']
@@ -11,8 +10,8 @@ interface MutatableSettings {
 export class SettingsRune extends Rune {
   #state = $state<Config>({} as Config);
 
-  constructor(client: BaseController['client'], config: Config) {
-    super(client)
+  constructor(config: Config) {
+    super()
     this.#state = config
   }
 

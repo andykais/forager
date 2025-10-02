@@ -1,4 +1,5 @@
 import {Rune} from '$lib/runes/rune.ts'
+import {forager} from '$lib/api/client.ts'
 import type { BaseController } from '$lib/base_controller.ts'
 import type { MediaResponse, inputs, type model_types } from '@forager/core'
 
@@ -16,8 +17,8 @@ export class MediaViewRune extends Rune {
   state = $state<State>()
   current_view: model_types.View
 
-  protected constructor(client: BaseController['client'], media_response: MediaResponse) {
-    super(client)
+  protected constructor(media_response: MediaResponse) {
+    super()
     this.state = {
       media: media_response,
       full_thumbnails: undefined
@@ -57,7 +58,7 @@ export class MediaViewRune extends Rune {
   }
 
   public async star(stars: number) {
-    const updated = await this.client.forager.media.update(
+    const updated = await forager.media.update(
       this.media_reference.id,
       {stars}
     )
@@ -70,19 +71,19 @@ export class MediaViewRune extends Rune {
 
   public async add_view() {
     // TODO track view and update it as a video loops, or as an image has stayed open for a while
-    const view_response = await this.client.forager.views.start({media_reference_id: this.media_reference.id })
+    const view_response = await forager.views.start({media_reference_id: this.media_reference.id })
     this.current_view = view_response.view
     console.log('setting view count to ', view_response.media_reference.view_count)
     this.state.media.media_reference.view_count = view_response.media_reference.view_count
   }
 
-  static create(client: BaseController['client'], media_response: MediaResponse, search_params: SearchParams) {
+  static create(media_response: MediaResponse, search_params: SearchParams) {
     if (media_response.media_type === 'media_file') {
-      return new MediaFileRune(client, media_response)
+      return new MediaFileRune(media_response)
     } else if (media_response.media_type === 'media_series') {
-      return new MediaSeriesRune(client, media_response)
+      return new MediaSeriesRune(media_response)
     } else if (media_response.media_type === 'grouped') {
-      return new MediaGroupRune(client, media_response, search_params)
+      return new MediaGroupRune(media_response, search_params)
     } else {
       throw new Error(`Unexpected media_response ${JSON.stringify(media_response)}`)
     }
@@ -99,7 +100,7 @@ export class MediaFileRune extends MediaViewRune {
   media_type  = 'media_file' as const satisfies MediaResponse['media_type']
 
   public override async update(media_info: inputs.MediaInfo, tags: inputs.MediaReferenceUpdateTags) {
-    const updated = await this.client.forager.media.update(
+    const updated = await forager.media.update(
       this.media_reference.id,
       media_info,
       tags
@@ -109,7 +110,7 @@ export class MediaFileRune extends MediaViewRune {
 
   public override async load_detailed_view() {
     if (this.state!.full_thumbnails) return
-    const result = await this.client.forager.media.get({media_reference_id: this.media_reference.id })
+    const result = await forager.media.get({media_reference_id: this.media_reference.id })
     this.state!.full_thumbnails = result.thumbnails
   }
 
@@ -152,9 +153,9 @@ export class MediaGroupRune extends MediaViewRune {
     media_list: []
   })
 
-  protected constructor(client: BaseController['client'], media_response: MediaResponse, search_params: SearchParams) {
+  public constructor(media_response: MediaResponse, search_params: SearchParams) {
     // debugger
-    super(client, media_response)
+    super(media_response)
 
     const {group_by, cursor, ...merged_search_params} = search_params
 
@@ -173,7 +174,7 @@ export class MediaGroupRune extends MediaViewRune {
       throw new Error(`unexpected search group`)
     }
 
-    this.client.forager.media.search(merged_search_params)
+    forager.media.search(merged_search_params)
       .then((result: {}) => {
         this.grouped_state.media_list = result.results
       })
