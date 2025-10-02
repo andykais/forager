@@ -83,7 +83,16 @@ class Server {
 
     this.#logger.debug('Initializing sveltekit server instance')
     const env = this.#options?.kit?.env ?? Deno.env.toObject()
-    this.#kitServerInitialized = kitServer.init({ env })
+    this.#kitServerInitialized = kitServer.init({
+      env,
+      read: undefined,
+
+      /* leaving this for future optimizations, we let sveltekit pick the default file reader, but we can wrap this however we want */
+      // read: async (filepath: string) => {
+      //   const file = await Deno.open(filepath)
+      //   return file.readable
+      // }
+    })
     await this.#kitServerInitialized
   }
 

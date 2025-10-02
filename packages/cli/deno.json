@@ -25,7 +25,7 @@
       "run": ["ffmpeg", "ffprobe"],
       "write": true,
       "read": true,
-      "env": ["HOME"],
+      "env": ["HOME", "NODE_ENV"],
       "net": ["127.0.0.1:8000"]
     },
     "test": {
