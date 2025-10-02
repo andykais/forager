@@ -1,4 +1,3 @@
-import * as forager from '@forager/core'
 import adapter from './adapter/adapter.js'
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
@@ -10,11 +9,19 @@ const config = {
 
 	kit: {
 		adapter: adapter(),
+    experimental: {
+      remoteFunctions: true,
+    },
     prerender: {
       crawl: false,
 			entries: []
 		}
-	}
+	},
+	// compilerOptions: {
+	// 	experimental: {
+	// 		async: true
+	// 	}
+	// }
 };
 
 export default config;
