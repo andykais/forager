@@ -68,6 +68,16 @@
     }}
     >
     {#if media_selections.current_selection.media_response}
+      <MediaDetailEntry
+        {controller}
+        label="Views"
+        content={media_selections.current_selection.media_response.media_reference.view_count}/>
+
+      <MediaDetailEntry
+        {controller}
+        label="Stars"
+        content={media_selections.current_selection.media_response.media_reference.stars}/>
+
       <label class="text-green-50" for="tags"><span>Tags</span></label>
       {#each sorted_tags as tag_group_entry, tag_entry_index (tag_group_entry[0])}
         {#each tag_group_entry[1] as tag, tag_index (tag.id)}
@@ -95,6 +105,7 @@
         kind="details"
         input_classes="mt-2 bg-slate-400 w-full rounded-sm px-1 text-sm"
       />
+      <input type="submit" class='hidden'>
 
       <MediaDetailEntry
         {controller}
@@ -109,16 +120,6 @@
         hide_if_null
         label="Description"
         content={media_selections.current_selection.media_response.media_reference.description}/>
-
-      <MediaDetailEntry
-        {controller}
-        label="Views"
-        content={media_selections.current_selection.media_response.media_reference.view_count}/>
-
-      <MediaDetailEntry
-        {controller}
-        label="Stars"
-        content={media_selections.current_selection.media_response.media_reference.stars}/>
 
       <MediaDetailEntry
         {controller}

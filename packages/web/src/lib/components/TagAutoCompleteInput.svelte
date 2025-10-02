@@ -99,7 +99,7 @@
     kind: 'search' | 'details'
     placeholder?: string
     input_classes?: string
-    allow_multiple_tags: boolean
+    allow_multiple_tags?: boolean
     // NOTE contextual_query works, but it is too slow on large tag/media_reference databases, so we need to rethink this
     contextual_query?: {}
   } = $props()
