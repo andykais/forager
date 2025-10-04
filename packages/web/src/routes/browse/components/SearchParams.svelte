@@ -19,7 +19,6 @@
   })
 
   async function update_search() {
-    console.log($state.snapshot(params))
     await queryparams.submit(params)
     media_selections.clear_current_selection()
 
@@ -28,12 +27,12 @@
   const icon_size = "22px"
 </script>
 
-<form class="grid grid-rows-1 w-full"
+<form class="grid grid-rows-1 w-screen"
   onsubmit={async e => {
     e.preventDefault()
     await update_search()
   }}>
-  <div class="flex flex-col gap-y-2 p-3 justify-center items-center">
+  <div class="flex flex-col gap-y-2 p-3 justify-center items-center w-screen">
     <div class="w-full grid grid-cols-[1fr_auto] gap-2">
       <TagAutoCompleteInput
         {controller}
@@ -52,7 +51,7 @@
       </button>
     </div>
 
-    <div class="grid grid-rows-2 justify-center items-center text-slate-950 w-full gap-y-2"
+    <div class="grid grid-rows-2 justify-center items-center text-slate-950 w-screen gap-y-2"
       style="display: {settings.ui.search.advanced_filters.hide ? 'none' : 'grid'}">
       <div class="flex flex-row justify-between gap-8">
         <div class="flex gap-1">
@@ -96,15 +95,18 @@
           onchange={update_search}
         />
 
-        <div class="flex gap-2">
-          <label class="" for="unread">Unread:</label>
-          <input
-            class="rounded-lg"
-            name="unread"
-            type="checkbox"
-            bind:checked={params.unread_only}
-            onchange={update_search}>
-        </div>
+        <button
+          class={[
+            'rounded-lg px-2 border border-2 border-gray-800 hover:border-gray-400',
+            params.unread_only
+              ? 'bg-gray-800 text-gray-400'
+              : ''
+          ]}
+          onclick={e => params.unread_only = !params.unread_only}
+          title="Show unread results only"
+        >
+          Unread
+        </button>
 
         <div class="flex gap-2 text-gray-400">
           <StarInput bind:value={params.stars} star={1} onclick={update_search} />
@@ -114,7 +116,7 @@
           <StarInput bind:value={params.stars} star={5} onclick={update_search} />
           <button
             type="button"
-            class="px-2 bg-gray-800"
+            class="px-2 bg-gray-800 rounded-lg"
             onclick={() => {
               switch(params.stars_equality) {
                 /*
@@ -123,16 +125,16 @@
                   break
                 }
                 */
-                case 'eq': {
-                  params.stars_equality = 'gte'
+                case '=': {
+                  params.stars_equality = '>='
                   break
                 }
-                case 'gte': {
-                  params.stars_equality = 'eq'
+                case '>=': {
+                  params.stars_equality = '='
                   break
                 }
                 case undefined: {
-                  params.stars_equality = 'eq'
+                  params.stars_equality = '='
                   break
                 }
                 default: {
@@ -142,10 +144,13 @@
               }
               update_search()
             }}>
-            {params.stars_equality ?? 'gte'}
+            {params.stars_equality ?? '>='}
           </button>
         </div>
 
+      </div>
+
+      <div class="flex flex-row gap-8 justify-between">
         <div class="flex gap-2">
           <label class="" for="filepath">Filepath:</label>
           <input
@@ -156,9 +161,6 @@
             bind:value={params.filepath}>
         </div>
 
-      </div>
-
-      <div class="flex flex-row gap-8 justify-between">
         <SelectInput
           label="Search Mode"
           options={[

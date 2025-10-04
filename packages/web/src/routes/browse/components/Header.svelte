@@ -12,6 +12,6 @@
 </script>
 
 <header class="drop-shadow-md bg-gray-700 flex justify-center border-b-slate-800 border-b-2 relative z-10" bind:clientHeight={height}>
-  <title>{queryparams.human_readable_summary}</title>
+  <title>{queryparams.human_readable_summary || 'Forager'}</title>
   <SearchParams {controller} />
 </header>
