@@ -84,7 +84,7 @@
   style="height: {controller.runes.dimensions.heights.media_list}px;"
   bind:this={dialog}
   onclose={controller.runes.media_selections.close_media}>
-  <div class="grid justify-items-center items-center h-full"
+  <div class="flex items-center justify-center"
   style="height: {controller.runes.dimensions.heights.media_list}px;"
   >
     {#if media_selections.current_selection.show && media_selections.current_selection.media_response}

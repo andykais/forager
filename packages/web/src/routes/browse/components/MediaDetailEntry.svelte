@@ -1,8 +1,5 @@
 <script lang="ts">
-  import Icon from '$lib/components/Icon.svelte'
-  import * as theme from '$lib/theme.ts'
   import * as datetime from '@std/datetime'
-  import { Copy } from '$lib/icons/mod.ts'
   import type { Json } from '@andykais/ts-rpc/adapters/sveltekit.ts'
 
   import { BrowseController } from '../controller.ts'
@@ -23,24 +20,6 @@
     }
 
     return props.content
-  })
-
-  let input_type = $derived.by(() => {
-    switch(typeof props.content) {
-      case 'string': {
-        return "text"
-      }
-    }
-
-    if (props.content instanceof Date) {
-      return "date"
-    }
-
-    if (props.content === null) {
-      return "text"
-    }
-
-    throw new Error(`Unexpected media detail content ${props.content}`)
   })
 
   let display_inline = ['Views', 'Stars'].includes(props.label)
