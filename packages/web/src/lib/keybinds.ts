@@ -11,6 +11,7 @@ type KeybindAction =
   | 'NextTagSuggestion'
   | 'PlayPauseMedia'
   | 'ToggleMediaControls'
+  | 'ToggleSidebar'
   | 'Star0'
   | 'Star1'
   | 'Star2'
@@ -42,12 +43,12 @@ export class Keybinds {
   public component_listen(handlers: Partial<Record<KeybindAction, KeybindActionListener>>) {
     onMount(() => {
       for (const [keybind_event, handler] of Object.entries(handlers)) {
-        this.listen(keybind_event, handler)
+        this.listen(keybind_event as KeybindAction, handler)
       }
 
       return () => {
         for (const [keybind_event, handler] of Object.entries(handlers)) {
-          this.remove_listener(keybind_event, handler)
+          this.remove_listener(keybind_event as KeybindAction, handler)
         }
       }
     })

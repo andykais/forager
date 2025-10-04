@@ -4,8 +4,11 @@
 	import type { SvelteHTMLElements } from 'svelte/elements';
   import { ChevronLeft, ChevronRight, Pause } from '$lib/icons/mod.ts'
 
-  const icon_color = theme.colors.lime[700]
-  let props: {
+  const icon_color = theme.colors.green[200]
+  let {
+    hide = $bindable(),
+    ...props
+  }: {
     height: number
     width: number
     hide: boolean
@@ -13,7 +16,13 @@
   } = $props()
 
   type SidebarState = 'hidden' | 'shown' | 'dragging'
-  let sidebar_state = $state<SidebarState>(props.hide ? 'hidden' : 'shown')
+  let sidebar_state: SidebarState = $derived.by(() => {
+    if (hide) {
+      return 'hidden'
+    } else {
+      return 'shown'
+    }
+  })
   let widths = $state({
     screen: 0,
     button: 0,

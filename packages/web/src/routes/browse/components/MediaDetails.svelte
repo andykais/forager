@@ -47,12 +47,18 @@
     })
     return entries
   })
+
+  controller.keybinds.component_listen({
+    ToggleSidebar: e => {
+      settings.set('ui.sidebar.hide', !settings.ui.sidebar.hide)
+    }
+  })
 </script>
 
 <Sidebar
   height={dimensions.heights.media_list}
-  bind:width={settings.ui.sidebar.size}
-  hide={settings.ui.sidebar.hide}
+  width={settings.ui.sidebar.size}
+  bind:hide={settings.ui.sidebar.hide}
 >
   <form
     class="pl-1 pr-3"

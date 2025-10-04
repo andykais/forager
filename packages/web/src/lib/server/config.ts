@@ -71,6 +71,8 @@ export const PackagesConfig = z.object({
 
       CopyMedia: Keybind('Ctrl-C'),
 
+      ToggleSidebar: Keybind('Ctrl-Backslash'),
+
       // DownMedia: Keybind('ArrowDown'),
       // UpMedia: Keybind('ArrowUp'),
       ToggleFitMedia: Keybind('Ctrl-Space'),

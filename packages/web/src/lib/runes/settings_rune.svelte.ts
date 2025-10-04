@@ -6,6 +6,7 @@ interface MutatableSettings {
   'ui.media_list.thumbnail_size': Config['web']['ui_defaults']['media_list']['thumbnail_size']
   'ui.media_list.thumbnail_shape': Config['web']['ui_defaults']['media_list']['thumbnail_shape']
   'ui.search.advanced_filters.hide': Config['web']['ui_defaults']['search']['advanced_filters']['hide']
+  'ui.sidebar.hide': Config['web']['ui_defaults']['sidebar']['hide']
 }
 
 export class SettingsRune extends Rune {
@@ -36,6 +37,10 @@ export class SettingsRune extends Rune {
       }
       case 'ui.search.advanced_filters.hide': {
         this.ui.search.advanced_filters.hide = value
+        break
+      }
+      case 'ui.sidebar.hide': {
+        this.ui.sidebar.hide = value
         break
       }
       default: {
