@@ -350,7 +350,7 @@ ${group_builder.generate_sql()}
     }
 
     if (params.unread === true) {
-      throw new Error('unimplemented')
+      builder.add_where_clause(`media_reference.view_count = 0`)
     }
   }
 

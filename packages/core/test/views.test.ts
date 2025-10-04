@@ -113,21 +113,44 @@ test('view actions', async (ctx) => {
   ctx.assert.equals(view_gif.view.duration, 5.1)
 
 
-  // test search cursors when ordering by last_viewed_at
-  const page_1 = forager.media.search({ sort_by: 'last_viewed_at', limit: 3 })
-  ctx.assert.search_result(page_1, {
-    total: 4,
-    results: [
-      {media_reference: {id: media_gif.media_reference.id}},
-      {media_reference: {id: media_koch.media_reference.id}},
-      {media_reference: {id: media_doodle.media_reference.id}},
-    ]
+  await ctx.subtest(`assert 'last_viewed_at' search sort`, () => {
+    // test search cursors when ordering by last_viewed_at
+    const page_1 = forager.media.search({ sort_by: 'last_viewed_at', limit: 3 })
+    ctx.assert.search_result(page_1, {
+      total: 4,
+      results: [
+        {media_reference: {id: media_gif.media_reference.id}},
+        {media_reference: {id: media_koch.media_reference.id}},
+        {media_reference: {id: media_doodle.media_reference.id}},
+      ]
+    })
+    const page_2 = forager.media.search({ sort_by: 'last_viewed_at', limit: 3, cursor: page_1.cursor })
+    ctx.assert.search_result(page_2, {
+      total: 4,
+      results: [
+        {media_reference: {id: media_cartoon.media_reference.id}},
+      ]
+    })
   })
-  const page_2 = forager.media.search({ sort_by: 'last_viewed_at', limit: 3, cursor: page_1.cursor })
-  ctx.assert.search_result(page_2, {
-    total: 4,
-    results: [
-      {media_reference: {id: media_cartoon.media_reference.id}},
-    ]
+
+  await ctx.subtest(`assert 'unread' search param`, () => {
+    ctx.assert.search_result(forager.media.search({ query: { unread: false }}), {
+      total: 4,
+      results: [
+        {media_reference: { id: media_gif.media_reference.id, view_count: 1 }},
+        {media_reference: { id: media_doodle.media_reference.id, view_count: 2 }},
+        {media_reference: { id: media_cartoon.media_reference.id, view_count: 0 }},
+        {media_reference: { id: media_koch.media_reference.id, view_count: 1 }},
+      ]
+    })
+
+    ctx.assert.search_result(forager.media.search({ query: { unread: true } }), {
+      total: 1,
+      results: [
+        {
+          media_reference: { id: media_cartoon.media_reference.id }
+        }
+      ]
+    })
   })
 })
