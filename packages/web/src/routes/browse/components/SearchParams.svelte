@@ -1,12 +1,10 @@
 <script lang="ts">
-  import type { inputs } from '@forager/core'
   import SelectInput from '$lib/components/SelectInput.svelte'
   import * as theme from '$lib/theme.ts'
   import Icon from '$lib/components/Icon.svelte'
   import { Filter, ChevronUp, ChevronDown, ArrowDown, ArrowUp } from '$lib/icons/mod.ts'
   import TagAutoCompleteInput from "$lib/components/TagAutoCompleteInput.svelte";
   import type { BrowseController } from "../controller.ts";
-  import { onMount } from 'svelte'
   import StarInput from '$lib/components/StarInput.svelte'
 
   let {controller}: {controller: BrowseController} = $props()

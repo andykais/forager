@@ -350,7 +350,7 @@ ${group_builder.generate_sql()}
     }
 
     if (params.unread === true) {
-      builder.add_where_clause(`media_reference.view_count = 0`)
+      builder.add_where_clause(`(media_reference.view_count IS NULL OR media_reference.view_count = 0)`)
     }
   }
 

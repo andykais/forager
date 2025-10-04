@@ -72,7 +72,6 @@ export class MediaViewRune extends Rune {
     // TODO track view and update it as a video loops, or as an image has stayed open for a while
     const view_response = await this.client.forager.views.start({media_reference_id: this.media_reference.id })
     this.current_view = view_response.view
-    console.log('setting view count to ', view_response.media_reference.view_count)
     this.state.media.media_reference.view_count = view_response.media_reference.view_count
   }
 

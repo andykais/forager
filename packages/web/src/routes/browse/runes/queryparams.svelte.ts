@@ -199,7 +199,13 @@ export class QueryParamsRune extends Rune {
     this.search_rune.clear()
     const query: inputs.PaginatedSearch['query'] = {
       tags,
-      filepath
+      filepath,
+    }
+
+    if (params.unread_only) {
+      if (params.unread_only === 'true' || params.unread_only === true) {
+        query.unread = true
+      }
     }
 
     if (stars !== undefined) {
@@ -256,7 +262,8 @@ export class QueryParamsRune extends Rune {
 
     const query: inputs.PaginatedSearch['query'] = {
       tags,
-      filepath
+      filepath,
+      unread: params.unread_only,
     }
     switch(params.media_type) {
       case 'all': {
