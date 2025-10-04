@@ -73,7 +73,7 @@
     <div>
       <button
         title="Toggle thumbnail shape"
-        class="rounded-sm bg-gray-800 px-2 text-slate-400 hover:bg-gray-600 transition-colors"
+        class="rounded-sm bg-gray-800 px-2 text-slate-400 hover:bg-gray-600"
         onclick={e => {
           const updated_shape = runes.settings.ui.media_list.thumbnail_shape === 'square'
             ? 'original'

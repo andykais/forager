@@ -49,7 +49,7 @@
       </button>
     </div>
 
-    <div class="grid grid-rows-2 justify-center items-center text-slate-950 w-screen gap-y-2"
+    <div class="w-full grid grid-rows-2 justify-space-between items-center text-slate-950 gap-y-2"
       style="display: {settings.ui.search.advanced_filters.hide ? 'none' : 'grid'}">
       <div class="flex flex-row justify-between gap-8">
         <div class="flex gap-1">
