@@ -1,6 +1,7 @@
 <script lang="ts">
   import Scroller from '$lib/components/Scroller.svelte'
-  import SearchResults from './SearchResults.svelte'
+  import MediaListTiles from './MediaListTiles.svelte'
+  import MediaListTable from './MediaListTable.svelte'
   import type { BrowseController } from '../controller.ts'
 
   let {controller}: {controller: BrowseController} = $props()
@@ -53,6 +54,14 @@
     ]}
     style="height: {controller.runes.dimensions.heights.media_list}px"
   >
-    <SearchResults {controller} />
+    {#if controller.runes.settings.ui.media_list.display_type === 'tiles'}
+      <MediaListTiles {controller} />
+    {:else if controller.runes.settings.ui.media_list.display_type === 'table'}
+      <MediaListTable {controller} />
+    {:else if controller.runes.settings.ui.media_list.display_type === 'filmstrip'}
+      filmstrip is not yet implemented
+    {:else}
+      UNKNOWN media_list.display_type "{controller.runes.settings.ui.media_list.display_type}"
+    {/if}
   </Scroller>
 </div>

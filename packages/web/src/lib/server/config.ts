@@ -37,6 +37,7 @@ export const PackagesConfig = z.object({
       }).strict().prefault({}),
 
       media_list: z.object({
+        display_type: z.enum(['tiles', 'table', 'filmstrip']).default('table'),
         thumbnail_size: z.number().default(110),
         thumbnail_shape: z.enum(['square', 'original']).prefault('original')
       }).strict().prefault({}),

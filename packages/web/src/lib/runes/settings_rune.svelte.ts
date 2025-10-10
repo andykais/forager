@@ -3,6 +3,7 @@ import { Rune } from './rune';
 import type { BaseController } from '$lib/base_controller.ts'
 
 interface MutatableSettings {
+  'ui.media_list.display_type': Config['web']['ui_defaults']['media_list']['display_type']
   'ui.media_list.thumbnail_size': Config['web']['ui_defaults']['media_list']['thumbnail_size']
   'ui.media_list.thumbnail_shape': Config['web']['ui_defaults']['media_list']['thumbnail_shape']
   'ui.search.advanced_filters.hide': Config['web']['ui_defaults']['search']['advanced_filters']['hide']
@@ -27,6 +28,10 @@ export class SettingsRune extends Rune {
 
   public set<K extends keyof MutatableSettings>(path: K, value: MutatableSettings[K]) {
     switch(path) {
+      case 'ui.media_list.display_type': {
+        this.ui.media_list.display_type = value
+        break
+      }
       case 'ui.media_list.thumbnail_size': {
         this.ui.media_list.thumbnail_size = value
         break

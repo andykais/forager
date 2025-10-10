@@ -55,7 +55,20 @@
   bind:clientHeight={height}
 >
 
-  <div class="grid grid-cols-[1fr_auto_auto] gap-4 justify-between">
+  <div class="grid grid-cols-[auto_1fr_auto_auto] gap-4 justify-between">
+    <div>
+      <select
+        name="display_type"
+        id="display_type"
+        onchange={e => {
+          runes.settings.set('ui.media_list.display_type', e.target.value)
+        }}>
+      >
+        <option value="tiles">Tiles</option>
+        <option value="table">Table</option>
+        <option value="filmstrip">Filmstrip</option>
+      </select>
+    </div>
     <div class="w-full grid grid-cols-[auto_1fr_auto] gap-4 items-center" style="--slider-thumb-color: {theme.colors.green[300]}; --slider-thumb-color-hover: {theme.colors.green[500]}">
       <label for="thumbnail-size">Thumbnail Size</label>
       <input
@@ -64,6 +77,7 @@
         type="range"
         min={50}
         max={500}
+        value={runes.settings.ui.media_list.thumbnail_size}
         oninput={e => {
           runes.settings.set('ui.media_list.thumbnail_size', e.target.value)
         }}>
