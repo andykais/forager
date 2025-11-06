@@ -19,9 +19,10 @@
 </script>
 <div class="flex gap-2 items-center">
   {#if label}
-    <label class="text-nowrap" for="unread">{label}:</label>
+    <label class="text-nowrap" for="select-input">{label}:</label>
   {/if}
   <select
+    name="select-input"
     bind:value={value}
     onchange={e => {
       if (onchange) {

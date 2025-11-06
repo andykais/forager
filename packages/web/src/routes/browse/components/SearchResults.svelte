@@ -64,7 +64,7 @@
           style="width:{settings.ui.media_list.thumbnail_size}px"
         >
           <div
-            class="grid justify-items-center items-center overflow-hidden"
+            class="flex justify-center items-center overflow-hidden"
             style="width:{settings.ui.media_list.thumbnail_size}px; height: {settings.ui.media_list.thumbnail_size}px"
             onkeydown={e => {
               if (e.key === 'Enter') {

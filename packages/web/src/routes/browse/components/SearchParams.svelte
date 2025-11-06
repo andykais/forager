@@ -100,7 +100,11 @@
               ? 'bg-gray-800 text-gray-400'
               : ''
           ]}
-          onclick={e => params.unread_only = !params.unread_only}
+          type="button"
+          onclick={e => {
+            params.unread_only = !params.unread_only
+            update_search()
+        }}
           title="Show unread results only"
         >
           Unread
