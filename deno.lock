@@ -59,6 +59,7 @@
     "npm:@jsr/torm__sqlite@^1.9.7": "1.9.7",
     "npm:@opentelemetry/api@1.9.0": "1.9.0",
     "npm:@opentelemetry/api@^1.9.0": "1.9.0",
+    "npm:@sveltejs/kit@*": "2.5.24_@sveltejs+vite-plugin-svelte@6.2.1__svelte@5.39.8___acorn@8.15.0__vite@7.1.8___@types+node@24.2.0___picomatch@4.0.3__@types+node@24.2.0_svelte@5.39.8__acorn@8.15.0_vite@7.1.8__@types+node@24.2.0__picomatch@4.0.3_@types+node@24.2.0",
     "npm:@sveltejs/kit@2.43.7": "2.43.7_@opentelemetry+api@1.9.0_@sveltejs+vite-plugin-svelte@6.2.1__svelte@5.39.8___acorn@8.15.0__vite@7.1.8___@types+node@24.2.0___picomatch@4.0.3__@types+node@24.2.0_svelte@5.39.8__acorn@8.15.0_vite@7.1.8__@types+node@24.2.0__picomatch@4.0.3_acorn@8.15.0_@types+node@24.2.0",
     "npm:@sveltejs/kit@2.5.24": "2.5.24_@sveltejs+vite-plugin-svelte@6.2.1__svelte@5.39.8___acorn@8.15.0__vite@7.1.8___@types+node@24.2.0___picomatch@4.0.3__@types+node@24.2.0_svelte@5.39.8__acorn@8.15.0_vite@7.1.8__@types+node@24.2.0__picomatch@4.0.3_@types+node@24.2.0",
     "npm:@sveltejs/vite-plugin-svelte@6.2.1": "6.2.1_svelte@5.39.8__acorn@8.15.0_vite@7.1.8__@types+node@24.2.0__picomatch@4.0.3_@types+node@24.2.0",
@@ -75,6 +76,7 @@
     "npm:ts-pattern@5.2.0": "5.2.0",
     "npm:typescript-svelte-plugin@0.3.50": "0.3.50_svelte@5.39.8__acorn@8.15.0_typescript@5.9.3",
     "npm:typescript@5.9.3": "5.9.3",
+    "npm:vite@*": "7.1.8_@types+node@24.2.0_picomatch@4.0.3",
     "npm:vite@7.1.8": "7.1.8_@types+node@24.2.0_picomatch@4.0.3",
     "npm:zod@4.1.11": "4.1.11",
     "npm:zod@^3.23.8": "3.25.76"
