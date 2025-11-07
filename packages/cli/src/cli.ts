@@ -17,6 +17,7 @@ const cli = new cliffy.Command()
   .option('-q, --quiet', 'Shorthand for --log-level=SILENT', { global: true })
 
   .command('init', 'set up a forager config file and initialize a the database')
+    .option('--no-prompt', 'Initialize confg file with default values, ignoring prompts')
     .action(async opts => {
       const forager_helpers = new ForagerHelpers(opts)
       const forager = await forager_helpers.launch_forager()

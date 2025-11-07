@@ -11,6 +11,7 @@ type LogLevel = 'SILENT' | 'ERROR' | 'WARN' | 'INFO' | 'DEBUG'
 
 interface ForagerHelpersOptions {
   config?: string
+  prompt?: boolean
   json?: boolean
   logLevel?: LogLevel | undefined
   quiet?: boolean
@@ -20,10 +21,12 @@ class ForagerHelpers {
   public config_filepath: string
   #config: z.infer<typeof Config> | undefined
   #log_level: LogLevel
+  #prompt_user: boolean
 
   constructor(public options: ForagerHelpersOptions) {
     this.config_filepath = options.config ?? this.#get_config_filepath() 
     this.#log_level = options.logLevel ?? 'INFO'
+    this.#prompt_user = options.prompt ?? true
   }
 
   async ensure_config() {
@@ -32,12 +35,16 @@ class ForagerHelpers {
       return
     }
 
-    const answer = prompt(`forager has not been set up at ${this.config_filepath}. Create a config now? (Y/n)`)
-    const answer_safe = z.enum(['n', 'Y', 'y', '']).parse(answer)
+    if (this.#prompt_user) {
+      const answer = prompt(`forager has not been set up at ${this.config_filepath}. Create a config now? (Y/n)`)
+      const answer_safe = z.enum(['n', 'Y', 'y', '']).parse(answer)
 
-    if (answer_safe === 'n') {
-      console.log('Aborting.')
-      Deno.exit(0)
+      if (answer_safe === 'n') {
+        console.log('Aborting.')
+        Deno.exit(0)
+      }
+    } else {
+      console.log(`forager has not been set up at ${this.config_filepath}. Creating a config now.`)
     }
     // everything else means go
 
@@ -66,19 +73,20 @@ class ForagerHelpers {
         },
 
         logger: {
-          level: this.options.logLevel,
+          level: this.#log_level,
         }
       },
       web: {
         port: 8000,
         asset_folder: path.join(config_dir, 'static_assets'),
         logger: {
-          level: this.options.logLevel,
+          level: this.#log_level,
         }
       }
     })
 
     await Deno.writeTextFile(this.config_filepath, yaml.stringify(default_config))
+    console.log(`Wrote ${path.resolve(this.config_filepath)}`)
     await this.#read_config()
   }
 
