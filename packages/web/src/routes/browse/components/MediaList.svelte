@@ -46,6 +46,7 @@
 <div
   bind:this={media_list_element}>
   <Scroller
+    loading={controller.runes.media_list.loading}
     more={() => controller.runes.media_list.paginate()}
     class={[
       "w-full focus:outline-none",

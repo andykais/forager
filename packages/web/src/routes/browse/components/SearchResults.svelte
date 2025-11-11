@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { BrowseController } from '../controller.ts'
   import * as theme from '$lib/theme.ts'
-  import { focusable } from '$lib/actions/mod.ts'
+  import { focusable, scrollable } from '$lib/actions/mod.ts'
   import Icon from '$lib/components/Icon.svelte'
   import SearchLink from './SearchLink.svelte'
   import * as icons from '$lib/icons/mod.ts'
@@ -57,14 +57,14 @@
         type="button"
         class="inline-flex items-center justify-center p-1
                outline-none"
-        use:focusable={!media_selections.current_selection.show && media_selections.current_selection.result_index === result_index}
+        use:scrollable={media_selections.current_selection.result_index === result_index}
       >
         <div
           class="container-media-tile"
           style="width:{settings.ui.media_list.thumbnail_size}px"
         >
           <div
-            class="flex justify-center items-center overflow-hidden"
+            class="flex justify-center items-center overflow-hidden focus:outline-none"
             style="width:{settings.ui.media_list.thumbnail_size}px; height: {settings.ui.media_list.thumbnail_size}px"
             onkeydown={e => {
               if (e.key === 'Enter') {
@@ -73,6 +73,7 @@
             }}
             role="button"
             tabindex="0"
+            use:focusable={!media_selections.current_selection.show && media_selections.current_selection.result_index === result_index}
             onclick={e => media_selections.set_current_selection(result, result_index)}
           >
             {#if settings.ui.media_list.thumbnail_shape === 'original'}

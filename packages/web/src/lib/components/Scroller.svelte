@@ -1,29 +1,30 @@
 <script lang="ts">
-  let { more, children, ...props } = $props()
-  let first_mount = true
+  let { more, loading, children, ...props } = $props()
   let observer: IntersectionObserver | undefined = $state()
   let viewport: HTMLDivElement | undefined = $state()
   let end_of_page_element: HTMLDivElement | undefined = $state()
+
+  // my thought is that we should make the observer be the height of two rows of thumbnails
+  // that would need to be reactive based on the chosen thumbnail size. 500px might just be a sane default though too
+  let bottom_of_screen_offset = 100
 
   $effect(() => {
     if (!observer && viewport && end_of_page_element) {
       observer = new IntersectionObserver((entries, _observer) => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
-            if (first_mount) {
-              // NOTE this is a tad messy, but we trust whoever is in charge of pagination to call this the first time (in this case our consumer the SearchParams needs to read the queryparams before making the first search call)
-              first_mount = false
+            if (loading) {
+              // we want to avoid hitting more() when we know data is in the process of loading
+              // ideally we check if the observer is intersecting after the load is completed
             } else {
+              console.log('is intersecting')
               more()
             }
           }
         }
       }, {
-        // my thought is that we should make the rootMargin be the height of two rows of thumbnails
-        // that would need to be reactive based on the chosen thumbnail size. 500px might just be a sane default though too
-        rootMargin: "500px",
-        threshold: 1.0,
-        // root: viewport,
+        threshold: 0.1,
+        root: viewport,
       })
 
       observer.observe(end_of_page_element)
@@ -38,5 +39,5 @@
 
 <div bind:this={viewport} class={props.class} style={props.style}>
   {@render children?.()}
-  <div class="observer" bind:this={end_of_page_element}></div>
+  <div class="observer relative" style="top: -{bottom_of_screen_offset}px; height: 10px; background:red" bind:this={end_of_page_element}></div>
 </div>
