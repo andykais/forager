@@ -1,10 +1,10 @@
 import * as torm from '@torm/sqlite'
-import { migrations, sql, TIMESTAMP_SQLITE, TIMESTAMP_COLUMN } from './registry.ts'
+import { migrations, sql, TIMESTAMP_SQLITE, TIMESTAMP_COLUMN, TIMESTAMP_COLUMN_OPTIONAL } from './registry.ts'
 
 
 @migrations.register()
 export class Migration extends torm.SeedMigration {
-  version = 6
+  version = 7
 
   sql = sql`
     CREATE TABLE media_file (
@@ -112,7 +112,7 @@ export class Migration extends torm.SeedMigration {
       -- a denormalized field derived from edit_log listing all editors who have edited this media reference: ["editor1", "editor2", ...]
       editors JSON,
 
-      last_viewed_at ${TIMESTAMP_COLUMN},
+      last_viewed_at ${TIMESTAMP_COLUMN_OPTIONAL},
       updated_at ${TIMESTAMP_COLUMN},
       created_at ${TIMESTAMP_COLUMN},
 
