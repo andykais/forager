@@ -245,7 +245,7 @@ export class QueryParamsRune extends Rune {
             tag_group: group_by,
           },
           query: query,
-          sort_by: 'count', // TODO we want to support created_at as well. Sorting is a bit janky with group by for now
+          sort_by,
           order
         }
       })

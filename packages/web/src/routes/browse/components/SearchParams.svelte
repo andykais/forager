@@ -63,6 +63,9 @@
             <option value="updated_at">Updated At</option>
             <option value="view_count">View Count</option>
             <option value="last_viewed_at">Last Viewed</option>
+            {#if params.search_mode === 'group_by'}
+            <option value="count">Count</option>
+            {/if}
           </select>
           <button
             class="hover:cursor-pointer"
