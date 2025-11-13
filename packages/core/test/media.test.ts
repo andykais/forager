@@ -1,7 +1,7 @@
 import { test } from 'forager-test'
 import * as fs from '@std/fs'
 import * as path from '@std/path'
-import { Forager, errors } from '~/mod.ts'
+import { Forager, MediaFileResponse, errors } from '~/mod.ts'
 
 
 /* A note about future test suite improvements:
@@ -489,38 +489,43 @@ test('media search stars', async ctx => {
 })
 
 
-test('search group by', async ctx => {
+test.only('search group by', async ctx => {
   using forager = new Forager(ctx.get_test_config())
   forager.init()
 
-  await forager.media.create(
+  let generated_art = await forager.media.create(
     ctx.resources.media_files['koch.tif'],
     { title: 'Generated Art', stars: 2 },
     ['artist:andrew', 'generated', 'colors:black', 'wallpaper']
   )
+  await ctx.timeout(10)
   const ed_edd_eddy = await forager.media.create(
     ctx.resources.media_files["ed-edd-eddy.png"],
     {title: 'Ed Edd Eddy Screengrab'},
     ['artist:bob']
   )
+  await ctx.timeout(10)
   const cat_doodle = await forager.media.create(
     ctx.resources.media_files['cat_doodle.jpg'],
     {title: 'Cat Doodle'},
     ['artist:andrew']
   )
+  await ctx.timeout(10)
   const succulentsaur = await forager.media.create(
     ctx.resources.media_files['Succulentsaur.mp4'],
     {title: 'Succulentsaur'},
     ['artist:andrew']
   )
 
-  const cat_cronch = await forager.media.create(
+  await ctx.timeout(10)
+  let cat_cronch = await forager.media.create(
     ctx.resources.media_files['cat_cronch.mp4'],
     {title: 'Cat Video'},
     ['artist:alice']
   )
 
   // also add media without any tags that shouldnt show up in the group calls
+  await ctx.timeout(10)
   await forager.media.create(
     ctx.resources.media_files['blink.gif'],
     {},
@@ -644,6 +649,86 @@ test('search group by', async ctx => {
         },
       ]
     })
+  })
+
+  await ctx.subtest('with sort_by / order params', async () => {
+    const group_sorted_by_count_desc = forager.media.group({
+      group_by: {tag_group: 'artist'},
+      sort_by: 'count',
+      order: 'desc'
+    })
+    ctx.assert.equals(group_sorted_by_count_desc.results[0].group.count, 3)
+    ctx.assert.equals(group_sorted_by_count_desc.results[1].group.count, 1)
+    ctx.assert.equals(group_sorted_by_count_desc.results[2].group.count, 1)
+
+    const group_sorted_by_count_asc = forager.media.group({
+      group_by: {tag_group: 'artist'},
+      sort_by: 'count',
+      order: 'asc'
+    })
+    ctx.assert.equals(group_sorted_by_count_asc.results[0].group.count, 1)
+    ctx.assert.equals(group_sorted_by_count_asc.results[1].group.count, 1)
+    ctx.assert.equals(group_sorted_by_count_asc.results[2].group.count, 3)
+
+    const group_sorted_by_created_at_desc = forager.media.group({
+      group_by: {tag_group: 'artist'},
+      sort_by: 'created_at',
+      order: 'desc',
+    })
+    ctx.assert.equals(group_sorted_by_created_at_desc.results[0].group.value, 'alice')
+    ctx.assert.equals(group_sorted_by_created_at_desc.results[0].group.created_at, cat_cronch.media_reference.created_at)
+    ctx.assert.equals(group_sorted_by_created_at_desc.results[1].group.value, 'andrew')
+    ctx.assert.equals(group_sorted_by_created_at_desc.results[1].group.created_at, succulentsaur.media_reference.created_at)
+    ctx.assert.equals(group_sorted_by_created_at_desc.results[2].group.value, 'bob')
+    ctx.assert.equals(group_sorted_by_created_at_desc.results[2].group.created_at, ed_edd_eddy.media_reference.created_at)
+
+    const group_sorted_by_created_at_asc = forager.media.group({
+      group_by: {tag_group: 'artist'},
+      sort_by: 'created_at',
+      order: 'asc',
+    })
+    ctx.assert.equals(group_sorted_by_created_at_asc.results[0].group.value, 'andrew')
+    // note that the value for 'created_at' is now the oldest value in this group, it is used for sorting, and also I believe it is usedful in the UI
+    ctx.assert.equals(group_sorted_by_created_at_asc.results[0].group.created_at, generated_art.media_reference.created_at)
+    ctx.assert.equals(group_sorted_by_created_at_asc.results[1].group.value, 'bob')
+    ctx.assert.equals(group_sorted_by_created_at_asc.results[1].group.created_at, ed_edd_eddy.media_reference.created_at)
+    ctx.assert.equals(group_sorted_by_created_at_asc.results[2].group.value, 'alice')
+    ctx.assert.equals(group_sorted_by_created_at_asc.results[2].group.created_at, cat_cronch.media_reference.created_at)
+
+    const group_sorted_by_last_viewed_at_desc = forager.media.group({
+      group_by: {tag_group: 'artist'},
+      sort_by: 'source_created_at',
+      order: 'desc',
+    })
+
+    ctx.assert.object_match(group_sorted_by_last_viewed_at_desc.results[0].group, { value: 'bob', last_viewed_at: null })
+    ctx.assert.object_match(group_sorted_by_last_viewed_at_desc.results[1].group, { value: 'andrew', last_viewed_at: null })
+    ctx.assert.object_match(group_sorted_by_last_viewed_at_desc.results[2].group, { value: 'alice', last_viewed_at: null })
+
+    forager.views.start({media_reference_id: cat_cronch.media_reference.id})
+    cat_cronch = forager.media.get({media_reference_id: cat_cronch.media_reference.id}) as MediaFileResponse
+    ctx.assert.not_equals(cat_cronch.media_reference.last_viewed_at, null)
+    await ctx.timeout(10)
+    forager.views.start({media_reference_id: generated_art.media_reference.id})
+    generated_art = forager.media.get({media_reference_id: cat_cronch.media_reference.id}) as MediaFileResponse
+    ctx.assert.not_equals(generated_art.media_reference.last_viewed_at, null)
+    const group_sorted_by_last_viewed_at_desc_2 = forager.media.group({
+      group_by: {tag_group: 'artist'},
+      sort_by: 'last_viewed_at',
+      order: 'desc',
+    })
+    ctx.assert.object_match(group_sorted_by_last_viewed_at_desc_2.results[0].group, { value: 'andrew', last_viewed_at: generated_art.media_reference.last_viewed_at })
+    ctx.assert.object_match(group_sorted_by_last_viewed_at_desc_2.results[1].group, { value: 'alice', last_viewed_at: cat_cronch.media_reference.last_viewed_at })
+    ctx.assert.object_match(group_sorted_by_last_viewed_at_desc_2.results[2].group, { value: 'bob', last_viewed_at: null })
+
+    const group_sorted_by_last_viewed_at_asc = forager.media.group({
+      group_by: {tag_group: 'artist'},
+      sort_by: 'last_viewed_at',
+      order: 'asc',
+    })
+    ctx.assert.object_match(group_sorted_by_last_viewed_at_asc.results[0].group, { value: 'alice', last_viewed_at: cat_cronch.media_reference.last_viewed_at })
+    ctx.assert.object_match(group_sorted_by_last_viewed_at_asc.results[1].group, { value: 'andrew', last_viewed_at: generated_art.media_reference.last_viewed_at })
+    ctx.assert.object_match(group_sorted_by_last_viewed_at_asc.results[2].group, { value: 'bob', last_viewed_at: null })
   })
 })
 

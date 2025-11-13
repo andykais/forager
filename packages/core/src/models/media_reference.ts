@@ -29,9 +29,18 @@ interface SelectManyParams extends SelectManyFilters {
 
 interface SelectManyGroupByParams extends SelectManyFilters {
   group_by: {tag_group_id: number}
-  sort_by: 'count'
+  sort_by: outputs.MediaReferenceGroupSearchSortBy
 }
 
+interface SelectManyGroupByResult {
+    group_value: string
+    count_value: number
+    view_count: number
+    last_viewed_at: Date | null
+    source_created_at: Date | null
+    created_at: Date
+    updated_at: Date
+}
 
 const PaginationCursorVars = torm.Vars({
   last_viewed_at: torm.field.string().optional(),
@@ -218,37 +227,57 @@ ${count_query.stmt.sql}
     }
   }
 
-  public select_many_group_by_tags(params: SelectManyGroupByParams): PaginatedResult<torm.InferSchemaTypes<typeof GroupByVars.result>>  {
+  public select_many_group_by_tags(params: SelectManyGroupByParams): PaginatedResult<SelectManyGroupByResult>  {
     const records_builder = new SQLBuilder(this.driver)
 
     MediaReference.set_select_many_filters(records_builder, {...params, sort_by: 'media_reference.created_at'})
 
     records_builder.set_select_clause(`
-      SELECT media_reference.id AS inner_media_reference_id FROM media_reference
+      SELECT
+        media_reference.id,
+        media_reference.view_count,
+        media_reference.last_viewed_at,
+        media_reference.source_created_at,
+        media_reference.created_at,
+        media_reference.updated_at
+      FROM media_reference
     `)
 
+    // some tiny special logic because 'count' is a reserved word in sqlite. We can likely just use a better word here like 'total'
+    const sort_by = params.sort_by === 'count' ? 'count_value' : params.sort_by
+    const order = params.order === 'desc' ? 'DESC' : 'ASC'
+
+    const value_aggregator = params.order === 'desc' ? 'MAX' : 'MIN'
+    const max_date = `'9999-12-31:00:00.000Z'`
+    const min_date = `'0000-01-01:00:00.000Z'`
+    const nullish_date_value = params.order === 'desc' ? min_date : max_date
     const group_builder = new SQLBuilder(this.driver)
     group_builder
     .set_select_clause(`
       SELECT
         tag.name AS group_value,
-        COUNT(0) AS count_value
+        COUNT(0) AS count_value,
+        ${value_aggregator}(inner_media_reference.view_count) AS view_count,
+        NULLIF(${value_aggregator}(IFNULL(inner_media_reference.last_viewed_at, ${nullish_date_value})), ${nullish_date_value}) AS last_viewed_at,
+        NULLIF(${value_aggregator}(IFNULL(inner_media_reference.source_created_at, ${nullish_date_value})), ${nullish_date_value}) AS source_created_at,
+        ${value_aggregator}(inner_media_reference.created_at) AS created_at,
+        ${value_aggregator}(inner_media_reference.updated_at) AS updated_at
       FROM (
         ${records_builder.generate_sql()}
-      )`
+      ) as inner_media_reference`
     )
-    .add_join_clause(`INNER JOIN`, `media_reference_tag`, `inner_media_reference_id = media_reference_tag.media_reference_id`)
+    .add_join_clause(`INNER JOIN`, `media_reference_tag`, `inner_media_reference.id = media_reference_tag.media_reference_id`)
     .add_join_clause(`INNER JOIN`, `tag`, `tag.id = media_reference_tag.tag_id`)
     .add_where_clause(`tag.tag_group_id = ${params.group_by.tag_group_id}`)
     .add_group_clause(`GROUP BY group_value`)
-    .set_order_by_clause(`ORDER BY count_value DESC`)
+    .set_order_by_clause(`ORDER BY ${sort_by} ${order} NULLS LAST`)
 
     const pagination_builder = new SQLBuilder(this.driver)
     pagination_builder.set_select_clause(`
 SELECT * FROM (
   SELECT
       *,
-      ROW_NUMBER() OVER(ORDER BY count_value DESC) cursor_id
+      ROW_NUMBER() OVER(ORDER BY ${sort_by} ${order} NULLS LAST) cursor_id
   FROM (
     ${group_builder.generate_sql()}
   )
@@ -258,6 +287,11 @@ SELECT * FROM (
       cursor_id: PaginationVars.result.cursor_id,
       group_value: GroupByVars.result.group_value,
       count_value: GroupByVars.result.count_value,
+      view_count: MediaReference.result.view_count,
+      last_viewed_at: MediaReference.result.last_viewed_at,
+      source_created_at: MediaReference.result.source_created_at,
+      created_at: MediaReference.result.created_at,
+      updated_at: MediaReference.result.updated_at,
     })
 
     if (params.cursor !== undefined) {
@@ -268,7 +302,7 @@ SELECT * FROM (
     }
 
     const group_query = pagination_builder.build()
-    type PaginatedRow = torm.InferSchemaTypes<typeof GroupByVars.result> & {cursor_id: number}
+    type PaginatedRow = SelectManyGroupByResult & {cursor_id: number}
     const results: PaginatedRow[] = group_query.stmt.all({})
 
     // TODO add a SQLBuilder.copy(records_query) rather than manipulating this

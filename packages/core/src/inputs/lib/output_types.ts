@@ -7,3 +7,4 @@ export type MediaReferenceUpdateTags = z.infer<typeof parsers.MediaReferenceUpda
 export type ForagerConfig = z.infer<typeof parsers.ForagerConfig>
 export type FileSystemDiscover = z.infer<typeof parsers.FileSystemDiscover>
 export type MediaReferenceSearchSortBy = z.infer<typeof parsers.PaginatedSearch>['sort_by']
+export type MediaReferenceGroupSearchSortBy = z.infer<typeof parsers.PaginatedSearchGroupBy>['sort_by']

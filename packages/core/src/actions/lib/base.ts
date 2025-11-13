@@ -46,6 +46,16 @@ export interface MediaGroupResponse {
     value: string
     /** The number of media references associated with the grouped value */
     count: number
+    /** The min/max view_count, depending on if order is asc/desc */
+    view_count: number
+    /** The min/max last_viewed_at, depending on if order is asc/desc */
+    last_viewed_at: Date | null
+    /** The min/max source_created_at, depending on if order is asc/desc */
+    source_created_at: Date | null
+    /** The min/max created_at, depending on if order is asc/desc */
+    created_at: Date
+    /** The min/max updated_at, depending on if order is asc/desc */
+    updated_at: Date
     /** a list of media optionally retrieved with grouped_media_limit under this group */
     media?: MediaResponse[]
   }

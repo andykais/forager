@@ -90,6 +90,7 @@ test('view actions', async (ctx) => {
   ctx.assert.equals(view_koch.view.duration, 0)
   media_koch = forager.media.get({ media_reference_id: media_koch.media_reference.id }) as MediaFileResponse
   ctx.assert.equals(media_koch.media_reference.view_count, 1)
+  ctx.assert.not_equals(media_koch.media_reference.last_viewed_at, null)
 
   // assert we can not use animated fields when updating an image (num_loops)
   ctx.assert.throws(() => {

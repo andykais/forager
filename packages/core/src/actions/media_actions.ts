@@ -207,11 +207,13 @@ class MediaActions extends Actions {
         media = this.#map_media_records_to_media_responses(records, parsed.thumbnail_limit, keypoint_tag_id)
       }
 
+      const { group_value, count_value, ...fields } = record
       return {
         media_type: 'grouped' as const,
         group: {
-          value: record.group_value,
-          count: record.count_value,
+          value: group_value,
+          count: count_value,
+          ...fields,
           media,
         },
       }
