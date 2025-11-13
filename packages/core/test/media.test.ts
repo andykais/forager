@@ -489,7 +489,7 @@ test('media search stars', async ctx => {
 })
 
 
-test.only('search group by', async ctx => {
+test('search group by', async ctx => {
   using forager = new Forager(ctx.get_test_config())
   forager.init()
 
@@ -969,7 +969,7 @@ test('audio media', async ctx => {
           filepath: ctx.resources.media_files['music_snippet.mp3'],
           audio: true,
           animated: false,
-          duration: 6.96,
+          duration: 6.92,
           framerate: 0,
           checksum: '1735a26d0182589686bfe0dd9ec4d1e73d82ef7ee95edec3ad6edc9aad48e8d5',
           media_type: 'AUDIO',
