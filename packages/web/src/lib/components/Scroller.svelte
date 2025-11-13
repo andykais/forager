@@ -17,7 +17,6 @@
               // we want to avoid hitting more() when we know data is in the process of loading
               // ideally we check if the observer is intersecting after the load is completed
             } else {
-              console.log('is intersecting')
               more()
             }
           }
@@ -39,5 +38,5 @@
 
 <div bind:this={viewport} class={props.class} style={props.style}>
   {@render children?.()}
-  <div class="observer relative" style="top: -{bottom_of_screen_offset}px; height: 10px; background:red" bind:this={end_of_page_element}></div>
+  <div class="observer relative" style="top: -{bottom_of_screen_offset}px" bind:this={end_of_page_element}></div>
 </div>
