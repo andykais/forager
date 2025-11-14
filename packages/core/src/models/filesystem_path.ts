@@ -168,7 +168,7 @@ class FilesystemPath extends Model {
     if (params.filepath) {
       sql_params.filepath = params.filepath
       builder.add_param('filepath', FilesystemPath.params.filepath)
-      if (params.filepath.includes('*')) {
+      if (params.filepath.startsWith('*') || params.filepath.endsWith('*')) {
         builder.add_where_clause(`filepath GLOB :filepath`)
       } else {
         builder.add_where_clause(`filepath = :filepath`)

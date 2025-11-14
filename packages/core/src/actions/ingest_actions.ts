@@ -89,6 +89,15 @@ class IngestActions extends Actions {
         this.ctx.logger.error(e)
         throw e
       }
+      // also mark the entry file ingested, in case the skipped it, we need to mark that it is completed
+      this.models.FilesystemPath.update({
+        id: file.id,
+        ingested: true,
+        ingested_at: new Date(),
+        // NOTE we are _not_ updating checksum in case that was overridden in the foreach
+        // checksum: undefined,
+        updated_at: new Date(),
+      })
 
       total_progress ++
       this.ctx.logger.info(() => {
