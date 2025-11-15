@@ -22,13 +22,16 @@ export class NotFoundError extends ForagerError {
 export class DuplicateMediaError extends ForagerError {
   override name = 'DuplicateMediaError'
 
-  constructor(public filepath: string, public checksum: string, public existing_media_filepath: string) {
+  constructor(public filepath: string, public checksum: string, public existing_media_filepath: string, public media_reference_id: number) {
     super(`file '${filepath}' checksum ${checksum} is a duplicate of ${existing_media_filepath}`)
   }
 }
 
 export abstract class AlreadyExistsError extends ForagerError {
   abstract get identifier(): string
+  constructor(public media_reference_id: number, message: string) {
+    super(message)
+  }
 }
 
 export class SeriesAlreadyExistsError extends AlreadyExistsError {
@@ -38,8 +41,8 @@ export class SeriesAlreadyExistsError extends AlreadyExistsError {
     return `series '${this.media_series_name}'`
   }
 
-  constructor(public media_series_name: string) {
-    super(`series '${media_series_name}' already exists`)
+  constructor(public media_series_name: string, media_reference_id: number) {
+    super(media_reference_id, `series '${media_series_name}' already exists`)
   }
 }
 export class MediaAlreadyExistsError extends AlreadyExistsError {
@@ -50,8 +53,8 @@ export class MediaAlreadyExistsError extends AlreadyExistsError {
     return `file '${this.filepath} checksum ${this.checksum}'`
   }
 
-  constructor(public filepath: string, public checksum: string) {
-    super(`file '${filepath}' checksum ${checksum} already exists`)
+  constructor(public filepath: string, public checksum: string, media_reference_id: number) {
+    super(media_reference_id, `file '${filepath}' checksum ${checksum} already exists`)
   }
 }
 

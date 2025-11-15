@@ -15,8 +15,8 @@ class SeriesActions extends Actions {
 
     if (parsed.media_info.media_series_name) {
       try {
-        this.models.MediaReference.select_one_media_series({media_series_name: parsed.media_info.media_series_name})
-        throw new errors.SeriesAlreadyExistsError(parsed.media_info.media_series_name!)
+        const existing_media_series = this.models.MediaReference.select_one_media_series({media_series_name: parsed.media_info.media_series_name})
+        throw new errors.SeriesAlreadyExistsError(parsed.media_info.media_series_name!, existing_media_series.id)
       } catch (e) {
         if (e instanceof errors.NotFoundError) {
           /** noop */

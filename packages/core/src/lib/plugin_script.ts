@@ -21,7 +21,7 @@ export interface FileSystemReceiverContext {
   entry: fs.WalkEntry
   forager: Forager
   logger: Logger
-  add(ctx: FileSystemReceiverContext, filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.TagList): Promise<void>
+  add(ctx: FileSystemReceiverContext, filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.TagList, series?: inputs.MediaSeriesBulk): Promise<void>
 }
 
 export abstract class FileSystemReceiver {
@@ -32,8 +32,8 @@ export abstract class FileSystemReceiver {
 
   public abstract foreach(ctx: FileSystemReceiverContext): Promise<void>
 
-  protected async add(ctx: FileSystemReceiverContext, filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.TagList) {
-    return ctx.add(ctx, filepath, media_info, tags)
+  protected async add(ctx: FileSystemReceiverContext, filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.TagList, series?: inputs.MediaSeriesBulk) {
+    return ctx.add(ctx, filepath, media_info, tags, series)
   }
 
   /** @internal */

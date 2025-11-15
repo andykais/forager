@@ -97,11 +97,11 @@ class Actions {
     const existing_media_file = this.models.MediaFile.select_one({checksum})
     if (existing_media_file) {
       if (existing_media_file.filepath === parsed.filepath) {
-        throw new errors.MediaAlreadyExistsError(filepath, checksum)
+        throw new errors.MediaAlreadyExistsError(filepath, checksum, existing_media_file.media_reference_id)
       } else {
         // an non-transactional step to exit early if we find the hash existing.
         // this just is a way to skip the video preview early
-        throw new errors.DuplicateMediaError(filepath, checksum, existing_media_file.filepath)
+        throw new errors.DuplicateMediaError(filepath, checksum, existing_media_file.filepath, existing_media_file.media_reference_id)
       }
     }
     const [file_size, thumbnails] = await Promise.all([

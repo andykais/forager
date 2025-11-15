@@ -16,3 +16,8 @@ export const SeriesGet = z.object({
 export const MediaSeriesInfo = MediaInfo.extend({
   media_series_name: z.string().optional(),
 })
+
+export const MediaSeriesBulk = z.object({
+  series: MediaSeriesInfo,
+  series_index: z.number().optional()
+}).array()

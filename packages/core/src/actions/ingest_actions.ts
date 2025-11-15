@@ -5,6 +5,11 @@ import { inputs, parsers } from '~/inputs/mod.ts'
 import * as plugin from '~/lib/plugin_script.ts'
 
 
+interface AddMediaFileAck {
+  media_reference_id: number | null
+  checksum?: string
+  status: 'created' | 'updated' | 'existing' | 'duplicate' | 'errored'
+}
 /**
   * Actions for ingesting new files into Forager
   */
@@ -112,7 +117,7 @@ class IngestActions extends Actions {
     return { stats }
   }
 
-  async #add(ctx: plugin.FileSystemReceiverContext, filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.TagList) {
+  async #add_media_file(ctx: plugin.FileSystemReceiverContext, filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.TagList, series?: inputs.MediaSeriesBulk): Promise<AddMediaFileAck> {
     if (ctx.default_metadata?.media_info) {
       media_info = {...ctx.default_metadata.media_info as inputs.MediaInfo, ...media_info}
     }
@@ -127,36 +132,19 @@ class IngestActions extends Actions {
         // const media_file = this.models.MediaFile.select_one({filepath: e.filepath}, {or_raise: true})
         ctx.forager.media.update(existing_media.media_reference.id, media_info, tags)
         ctx.logger.info(`Updated existing file ${ctx.entry.path}`)
-        ctx.stats.updated += 1
+        return {media_reference_id: existing_media.media_reference.id, status: 'updated'}
       } else {
         ctx.stats.existing ++
+        return {media_reference_id: existing_media.media_reference.id, status: 'existing'}
       }
-
-      this.models.FilesystemPath.update({
-        id: ctx.file_id,
-        ingested: true,
-        ingested_at: new Date(),
-        checksum: undefined,
-        updated_at: new Date(),
-        ingest_retriever: undefined,
-      })
-      return
     } catch(e) {
       if (e instanceof errors.NotFoundError) {} // this is the normal flow for adding new media
       else throw e
     }
 
     try {
-      const {media_file} = await ctx.forager.media.create(filepath, media_info, tags, {editor: ctx.receiver.name})
-      this.models.FilesystemPath.update({
-        id: ctx.file_id,
-        ingested: true,
-        ingested_at: new Date(),
-        checksum: media_file.checksum,
-        updated_at: new Date(),
-        ingest_retriever: undefined,
-      })
-      ctx.stats.created += 1
+      const created_media = await ctx.forager.media.create(filepath, media_info, tags, {editor: ctx.receiver.name})
+      return {media_reference_id: created_media.media_reference.id, checksum: created_media.media_file.checksum, status: 'created'}
     } catch (e) {
       let file_identifier = filepath
       if (filepath !== ctx.entry.path) {
@@ -165,78 +153,77 @@ class IngestActions extends Actions {
 
       if (e instanceof errors.DuplicateMediaError) {
         ctx.logger.warn(`${file_identifier} has a duplicate checksum (${e.checksum}) to ${e.existing_media_filepath}, skipping`)
-        this.models.FilesystemPath.update({
-          id: ctx.file_id,
-          ingested: true,
-          ingested_at: new Date(),
-          checksum: e.checksum,
-          updated_at: new Date(),
-          ingest_retriever: undefined,
-        })
-        ctx.stats.duplicate += 1
+        return {media_reference_id: e.media_reference_id, checksum: e.checksum, status: 'duplicate'}
       } else if (e instanceof errors.AlreadyExistsError) {
         if (!media_info || !tags) {
           ctx.logger.info(`${e.identifier} already exists in database, skipping`)
-          this.models.FilesystemPath.update({
-            id: ctx.file_id,
-            ingested: true,
-            ingested_at: new Date(),
-            updated_at: new Date(),
-          })
-          return
+          return {media_reference_id: e.media_reference_id, status: 'existing'}
         }
 
         if (e instanceof errors.MediaAlreadyExistsError) {
           const {media_reference} = ctx.forager.media.get({filepath: e.filepath})
           // const media_file = this.models.MediaFile.select_one({filepath: e.filepath}, {or_raise: true})
-          const {media_file} = ctx.forager.media.update(media_reference.id, media_info, tags, {editor: ctx.receiver.name})
-          this.models.FilesystemPath.update({
-            id: ctx.file_id,
-            ingested: true,
-            ingested_at: new Date(),
-            checksum: media_file.checksum,
-            updated_at: new Date(),
-            ingest_retriever: undefined,
-          })
+          const updated_media = ctx.forager.media.update(media_reference.id, media_info, tags, {editor: ctx.receiver.name})
+          return {media_reference_id: updated_media.media_reference.id, status: 'updated', checksum: updated_media.media_file.checksum}
         } else if (e instanceof errors.SeriesAlreadyExistsError) {
           const {media_reference} = ctx.forager.series.get({series_name: e.media_series_name})
-          ctx.forager.series.update(media_reference.id, media_info, tags, {editor: ctx.receiver.name})
-          this.models.FilesystemPath.update({
-            id: ctx.file_id,
-            ingested: true,
-            ingested_at: new Date(),
-            updated_at: new Date(),
-            ingest_retriever: undefined,
-          })
+          const updated_media = ctx.forager.series.update(media_reference.id, media_info, tags, {editor: ctx.receiver.name})
+          return {media_reference_id: updated_media.media_reference.id, status: 'updated' }
         } else {
           throw new Error(`unexpected code path for error ${e.constructor.name}: ${e}`)
         }
         ctx.stats.updated += 1
       } else if (e instanceof errors.InvalidFileError) {
         ctx.logger.warn(`${filepath} was an invalid file, skipping`)
-
-        this.models.FilesystemPath.update({
-          id: ctx.file_id,
-          ingested: true,
-          ingested_at: new Date(),
-          checksum: undefined,
-          updated_at: new Date(),
-          ingest_retriever: undefined,
-        })
-        ctx.stats.errored ++
+        return {media_reference_id: null, status: 'errored'}
       } else {
         ctx.logger.error(`${file_identifier} import failed.`)
         ctx.logger.error(e)
-        this.models.FilesystemPath.update({
-          id: ctx.file_id,
-          ingested: true,
-          ingested_at: new Date(),
-          checksum: undefined,
-          updated_at: new Date(),
-          ingest_retriever: undefined,
+        return {media_reference_id: null, status: 'errored'}
+      }
+    }
+
+  }
+
+  async #add_media_series_item(ctx: plugin.FileSystemReceiverContext, filepath: string, media_reference_id: number, series: inputs.MediaSeriesBulk[0], media_info?: inputs.MediaInfo, tags?: inputs.TagList): Promise<AddMediaFileAck> {
+      try {
+        const media_series = this.ctx.forager.series.create(series?.series)
+        this.ctx.forager.series.add({
+          series_id: media_series.media_reference.id,
+          media_reference_id: media_reference_id,
+          series_index: series.series_index
         })
-        ctx.stats.errored ++
-        // throw e
+        return { media_reference_id: media_series.media_reference.id, status: 'created' }
+      } catch (e) {
+        if (e instanceof errors.SeriesAlreadyExistsError) {
+          this.ctx.forager.series.add({
+            series_id: e.media_reference_id,
+            media_reference_id: media_reference_id,
+            series_index: series.series_index
+          })
+          return { media_reference_id: e.media_reference_id, status: 'updated' }
+        } else {
+          throw e
+        }
+      }
+  }
+
+  async #add(ctx: plugin.FileSystemReceiverContext, filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.TagList, series?: inputs.MediaSeriesBulk) {
+    const media_file_ack = await this.#add_media_file(ctx, filepath, media_info, tags)
+
+    this.models.FilesystemPath.update({
+      id: ctx.file_id,
+      ingested: true,
+      ingested_at: new Date(),
+      checksum: media_file_ack.checksum,
+      updated_at: new Date(),
+      ingest_retriever: undefined,
+    })
+    ctx.stats[media_file_ack.status] += 1
+
+    if (series && media_file_ack.media_reference_id) {
+      for (const series_input of series) {
+        await this.#add_media_series_item(ctx, filepath, media_file_ack.media_reference_id, series_input)
       }
     }
   }
