@@ -1,8 +1,13 @@
 import * as torm from '@torm/sqlite'
 import * as errors from '~/lib/errors.ts'
-import { Model, field, PaginationVars, GroupByVars, type PaginatedResult } from '~/models/lib/base.ts'
+import { Model, field, PaginationVars, GroupByVars, type PaginatedResult, SelectOneOptionsRaiseOnUndefined } from '~/models/lib/base.ts'
 import { SQLBuilder } from '~/models/lib/sql_builder.ts'
 import { type outputs } from '~/inputs/mod.ts'
+
+interface SelectOneFilters {
+  id?: number
+  media_series_name?: string
+}
 
 export interface SelectManyFilters {
   id: number | undefined
@@ -32,6 +37,7 @@ interface SelectManyGroupByParams extends SelectManyFilters {
   sort_by: outputs.MediaReferenceGroupSearchSortBy
 }
 
+
 interface SelectManyGroupByResult {
     group_value: string
     count_value: number
@@ -41,6 +47,7 @@ interface SelectManyGroupByResult {
     created_at: Date
     updated_at: Date
 }
+
 
 const PaginationCursorVars = torm.Vars({
   last_viewed_at: torm.field.string().optional(),
@@ -66,6 +73,7 @@ class MediaReference extends Model {
     metadata:               field.json().optional(),
     stars:                  field.number().optional(),
     media_series_reference: field.boolean(),
+    media_series_name:      field.string().optional(),
 
     // denormalized fields
     view_count:             field.number().optional(),
@@ -82,6 +90,7 @@ class MediaReference extends Model {
   #create = this.query.one`
     INSERT INTO media_reference (
       media_series_reference,
+      media_series_name,
       source_url,
       source_created_at,
       title,
@@ -92,6 +101,7 @@ class MediaReference extends Model {
       editors
     ) VALUES (${[
       MediaReference.params.media_series_reference,
+      MediaReference.params.media_series_name,
       MediaReference.params.source_url,
       MediaReference.params.source_created_at,
       MediaReference.params.title,
@@ -116,17 +126,26 @@ class MediaReference extends Model {
     SELECT ${MediaReference.result['*']} FROM media_reference
     WHERE id = ${MediaReference.params.id}`
 
+  #select_by_series_name = this.query`
+    SELECT ${MediaReference.result['*']} FROM media_reference
+    WHERE media_series_name = ${MediaReference.params.media_series_name}`
+
   #delete_by_id = this.query.exec`
     DELETE FROM media_reference
     WHERE id = ${MediaReference.params.id}`
 
-  #select_one_impl(params: {
-    id?: number
-  }) {
-    if (params.id !== undefined && Object.keys(params).length === 1) {
-      return this.#select_by_id.one({id: params.id})
-    } else {
+  #select_one_impl(params: SelectOneFilters) {
+    const key_count = Object.keys(params).filter((key) => params[key as keyof SelectOneFilters] !== undefined).length
+    if (key_count !== 1) {
       throw new errors.UnExpectedError(JSON.stringify(params))
+    }
+
+    if (params.id !== undefined) {
+      return this.#select_by_id.one({id: params.id})
+    }
+
+    if (params.media_series_name !== undefined) {
+      return this.#select_by_series_name.one({media_series_name: params.media_series_name})
     }
   }
 
@@ -334,6 +353,11 @@ ${group_builder.generate_sql()}
   }
 
   public static set_select_many_filters(builder: SQLBuilder, params: SelectManyFilters) {
+    // hide media references within a media series
+    if (!params.series_id && !params.series) {
+      builder.add_where_clause(`NOT EXISTS (SELECT 1 FROM media_series_item WHERE media_reference.id = media_series_item.media_reference_id)`)
+    }
+
     if (params.id !== undefined) {
       builder.add_where_clause(`id = ${params.id}`)
     }
@@ -403,20 +427,18 @@ ${group_builder.generate_sql()}
     }
   }
 
-  public select_one_media_series(series_id: number) {
-    const media_series_reference = this.select_one({id: series_id}, {or_raise: true})
+  public select_one_media_series(params: SelectOneFilters) {
+    const media_series_reference = this.select_one(params, {or_raise: true})
     if (!media_series_reference.media_series_reference) {
-      throw new errors.BadInputError(`series_id ${series_id} does not reference a series MediaReference`)
+      throw new errors.BadInputError(`series lookup ${JSON.stringify(params)} does not reference a series MediaReference`)
     }
     return media_series_reference
   }
 
-  public media_series_select_one(params: {
-    id?: number
-  }) {
-    const media_series_reference = this.select_one(params, { or_raise: true })
-    if (!media_series_reference.media_series_reference) {
-      throw new errors.BadInputError(`${JSON.stringify(params)} does not reference a series MediaReference`)
+  public select_one_media_series_optional(params: SelectOneFilters) {
+    const media_series_reference = this.select_one(params, {or_raise: false})
+    if (media_series_reference && !media_series_reference.media_series_reference) {
+      throw new errors.BadInputError(`series lookup ${JSON.stringify(params)} does not reference a series MediaReference`)
     }
     return media_series_reference
   }

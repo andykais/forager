@@ -73,7 +73,7 @@ class MediaActions extends Actions {
     let series_id: number | undefined
     if (query.series_id) {
       // ensure that a series id actually exists and is a series id
-      this.models.MediaReference.media_series_select_one({id: query.series_id})
+      this.models.MediaReference.select_one_media_series({id: query.series_id})
       series_id = query.series_id
     }
 
@@ -154,7 +154,7 @@ class MediaActions extends Actions {
     let series_id: number | undefined
     if (query.series_id) {
       // ensure that a series id actually exists and is a series id
-      this.models.MediaReference.media_series_select_one({id: query.series_id})
+      this.models.MediaReference.select_one_media_series({id: query.series_id})
       series_id = query.series_id
     }
 

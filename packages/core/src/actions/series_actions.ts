@@ -1,16 +1,31 @@
-import { Actions, type MediaSeriesResponse } from '~/actions/lib/base.ts'
-import { inputs, parsers } from '~/inputs/mod.ts'
+import { Actions, type MediaSeriesResponse, type UpdateEditor } from '~/actions/lib/base.ts'
+import { inputs, outputs, parsers } from '~/inputs/mod.ts'
+import * as errors from '~/lib/errors.ts'
 
 
 /**
   * Actions associated with media series.
   */
 class SeriesActions extends Actions {
-  public create = (media_info?: inputs.MediaInfo, tags?: inputs.Tag[]): MediaSeriesResponse => {
+  public create = (media_info?: inputs.MediaSeriesInfo, tags?: inputs.Tag[]): MediaSeriesResponse => {
     const parsed = {
-      media_info: parsers.MediaReferenceUpdate.parse(media_info ?? {}),
+      media_info: parsers.MediaSeriesInfo.parse(media_info ?? {}),
       tags: parsers.TagList.parse(tags ?? [])
     }
+
+    if (parsed.media_info.media_series_name) {
+      try {
+        this.models.MediaReference.select_one_media_series({media_series_name: parsed.media_info.media_series_name})
+        throw new errors.SeriesAlreadyExistsError(parsed.media_info.media_series_name!)
+      } catch (e) {
+        if (e instanceof errors.NotFoundError) {
+          /** noop */
+        } else {
+          throw e
+        }
+      }
+    }
+
 
     const transaction = this.ctx.db.transaction_sync(() => {
       const media_reference = this.models.MediaReference.create({
@@ -38,24 +53,22 @@ class SeriesActions extends Actions {
 
     const transaction_result = transaction()
     // no thumbnails should exist yet, so we give it limit: 0
-    const thumbnails = this.models.MediaThumbnail.select_many({series_id: transaction_result.media_reference.id, limit: 0})
-    return {
-      media_type: 'media_series',
-      media_reference: this.models.MediaReference.select_one({id: transaction_result.media_reference.id}, {or_raise: true}),
-      tags: transaction_result.tags,
-      thumbnails,
-    }
+    return this.#get_media_series_response({series_id: transaction_result.media_reference.id })
   }
 
-  public update = (series_id: number, media_info?: inputs.MediaInfo, tags?: inputs.Tag[]): MediaSeriesResponse => {
+  public update = (series_id: number, media_info?: inputs.MediaInfo, tags?: inputs.Tag[], editing?: UpdateEditor): MediaSeriesResponse => {
     const parsed = {
       series_id: parsers.MediaReferenceId.parse(series_id),
       media_info: parsers.MediaReferenceUpdate.parse(media_info ?? {}),
       tags: parsers.TagList.parse(tags ?? [])
     }
 
+    if (editing) {
+      throw new Error(`unimplemented`)
+    }
+
     // ensure this is a series reference first
-    this.models.MediaReference.select_one_media_series(series_id)
+    this.models.MediaReference.select_one_media_series({id: series_id})
 
     const transaction = this.ctx.db.transaction_sync(() => {
       this.models.MediaReference.update({
@@ -73,14 +86,14 @@ class SeriesActions extends Actions {
     })
 
     transaction()
-    return this.#get_media_series_response(parsed.series_id)
+    return this.#get_media_series_response({series_id: parsed.series_id})
   }
 
   public add = (params: inputs.SeriesItem) => {
     const parsed = parsers.SeriesItem.parse(params)
 
     // ensure this is a series reference first
-    this.models.MediaReference.select_one_media_series(parsed.series_id)
+    this.models.MediaReference.select_one_media_series({id: parsed.series_id})
 
     // making it default to the back of the list is more complicated (either storing that data on MediaReference or doing MAX() sql call) so for now we just default to putting it on the front of the list
     const series_index = parsed.series_index ?? 0
@@ -93,19 +106,19 @@ class SeriesActions extends Actions {
     return this.models.MediaSeriesItem.select_one({id: series_item.id})
   }
 
-  public get = (params: inputs.SeriesId): MediaSeriesResponse => {
-    const parsed = parsers.SeriesId.parse(params)
-    return this.#get_media_series_response(parsed.series_id)
+  public get = (params: inputs.SeriesGet): MediaSeriesResponse => {
+    const parsed = parsers.SeriesGet.parse(params)
+    return this.#get_media_series_response(parsed)
   }
 
-  #get_media_series_response(series_id: number): MediaSeriesResponse {
-    const media_reference = this.models.MediaReference.select_one_media_series(series_id)
-    const tags = this.models.Tag.select_all({media_reference_id: series_id})
+  #get_media_series_response(params: outputs.SeriesGet): MediaSeriesResponse {
+    const media_reference = this.models.MediaReference.select_one_media_series({id: params.series_id, media_series_name: params.series_name})
+    const tags = this.models.Tag.select_all({media_reference_id: media_reference.id})
     return {
       media_type: 'media_series',
       media_reference,
       tags,
-      thumbnails: this.models.MediaThumbnail.select_many({series_id: series_id, limit: 0}),
+      thumbnails: this.models.MediaThumbnail.select_many({series_id: media_reference.id, limit: 0}),
     }
   }
 }

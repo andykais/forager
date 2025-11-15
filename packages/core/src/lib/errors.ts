@@ -27,8 +27,28 @@ export class DuplicateMediaError extends ForagerError {
   }
 }
 
-export class MediaAlreadyExistsError extends ForagerError {
+export abstract class AlreadyExistsError extends ForagerError {
+  abstract get identifier(): string
+}
+
+export class SeriesAlreadyExistsError extends AlreadyExistsError {
+  override name = 'SeriesAlreadyExistsError'
+
+  override get identifier() {
+    return `series '${this.media_series_name}'`
+  }
+
+  constructor(public media_series_name: string) {
+    super(`series '${media_series_name}' already exists`)
+  }
+}
+export class MediaAlreadyExistsError extends AlreadyExistsError {
   override name = 'MediaAlreadyExistsError'
+
+  // TODO clean up these helpers
+  override get identifier() {
+    return `file '${this.filepath} checksum ${this.checksum}'`
+  }
 
   constructor(public filepath: string, public checksum: string) {
     super(`file '${filepath}' checksum ${checksum} already exists`)

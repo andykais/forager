@@ -174,25 +174,44 @@ class IngestActions extends Actions {
           ingest_retriever: undefined,
         })
         ctx.stats.duplicate += 1
-      } else if (e instanceof errors.MediaAlreadyExistsError) {
-        if (media_info || tags) {
-          // this.ctx.logger.info(`${e.filepath} already exists in database, updating`)
+      } else if (e instanceof errors.AlreadyExistsError) {
+        if (!media_info || !tags) {
+          ctx.logger.info(`${e.identifier} already exists in database, skipping`)
+          this.models.FilesystemPath.update({
+            id: ctx.file_id,
+            ingested: true,
+            ingested_at: new Date(),
+            updated_at: new Date(),
+          })
+          return
+        }
+
+        if (e instanceof errors.MediaAlreadyExistsError) {
           const {media_reference} = ctx.forager.media.get({filepath: e.filepath})
           // const media_file = this.models.MediaFile.select_one({filepath: e.filepath}, {or_raise: true})
           const {media_file} = ctx.forager.media.update(media_reference.id, media_info, tags, {editor: ctx.receiver.name})
           this.models.FilesystemPath.update({
             id: ctx.file_id,
-          ingested: true,
+            ingested: true,
             ingested_at: new Date(),
             checksum: media_file.checksum,
             updated_at: new Date(),
             ingest_retriever: undefined,
           })
-          ctx.stats.updated += 1
+        } else if (e instanceof errors.SeriesAlreadyExistsError) {
+          const {media_reference} = ctx.forager.series.get({series_name: e.media_series_name})
+          ctx.forager.series.update(media_reference.id, media_info, tags, {editor: ctx.receiver.name})
+          this.models.FilesystemPath.update({
+            id: ctx.file_id,
+            ingested: true,
+            ingested_at: new Date(),
+            updated_at: new Date(),
+            ingest_retriever: undefined,
+          })
         } else {
-          ctx.logger.info(`${e.filepath} already exists in database, skipping`)
+          throw new Error(`unexpected code path for error ${e.constructor.name}: ${e}`)
         }
-        ctx.stats.existing += 1
+        ctx.stats.updated += 1
       } else if (e instanceof errors.InvalidFileError) {
         ctx.logger.warn(`${filepath} was an invalid file, skipping`)
 

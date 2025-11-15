@@ -5,6 +5,7 @@ import * as parsers from './inputs_parsers.ts'
 export type MediaReferenceId = z.input<typeof parsers.MediaReferenceId>
 export type Filepath = z.infer<typeof parsers.Filepath>
 export type MediaInfo = z.infer<typeof parsers.MediaInfo>
+export type MediaSeriesInfo = z.infer<typeof parsers.MediaSeriesInfo>
 export type PaginatedSearch = z.input<typeof parsers.PaginatedSearch>
 export type PaginatedSearchGroupBy = z.input<typeof parsers.PaginatedSearchGroupBy>
 export type MediaReferenceUpdate = z.input<typeof parsers.MediaReferenceUpdate>
@@ -16,7 +17,7 @@ export type TagSearch = z.input<typeof parsers.TagSearch>
 export type TagList = z.input<typeof parsers.TagList>
 
 export type SeriesItem = z.input<typeof parsers.SeriesItem>
-export type SeriesId = z.input<typeof parsers.SeriesId>
+export type SeriesGet = z.input<typeof parsers.SeriesGet>
 
 export type FileSystemDiscover = z.input<typeof parsers.FileSystemDiscover>
 export type FileSystemSearch = z.input<typeof parsers.FileSystemSearch>

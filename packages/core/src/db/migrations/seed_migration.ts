@@ -4,7 +4,7 @@ import { migrations, sql, TIMESTAMP_SQLITE, TIMESTAMP_COLUMN, TIMESTAMP_COLUMN_O
 
 @migrations.register()
 export class Migration extends torm.SeedMigration {
-  version = 7
+  version = 8
 
   sql = sql`
     CREATE TABLE media_file (
@@ -108,6 +108,7 @@ export class Migration extends torm.SeedMigration {
 
       -- media series reference fields
       media_series_reference BOOLEAN NOT NULL,
+      media_series_name TEXT,
 
       -- a denormalized field derived from edit_log listing all editors who have edited this media reference: ["editor1", "editor2", ...]
       editors JSON,
@@ -260,6 +261,8 @@ export class Migration extends torm.SeedMigration {
     -- It will be cool and way easier to determine what queries are used
 
     CREATE UNIQUE INDEX media_tag_by_reference ON media_reference_tag (tag_id, media_reference_id);
+    CREATE UNIQUE INDEX media_series_name ON media_reference (media_series_name) WHERE media_series_name IS NOT NULL;
+    CREATE UNIQUE INDEX media_series_index ON media_series_item (media_reference_id, series_index);
     CREATE UNIQUE INDEX tag_name ON tag (name, tag_group_id);
     CREATE UNIQUE INDEX media_file_reference ON media_file (media_reference_id);
     CREATE UNIQUE INDEX media_filepath ON media_file (filepath);

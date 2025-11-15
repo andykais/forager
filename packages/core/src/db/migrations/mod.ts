@@ -5,5 +5,6 @@ import './migration_v4.ts'
 import './migration_v5.ts'
 import './migration_v6.ts'
 import './migration_v7.ts'
+import './migration_v8.ts'
 
 export { migrations } from './registry.ts'

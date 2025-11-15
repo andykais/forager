@@ -28,7 +28,7 @@ interface DeleteOptions {
 interface SelectOneOptionsAllowUndefined extends SelectOneOptions {
   or_raise?: false
 }
-interface SelectOneOptionsRaiseOnUndefined extends SelectOneOptions {
+export interface SelectOneOptionsRaiseOnUndefined extends SelectOneOptions {
   or_raise: true
 }
 
