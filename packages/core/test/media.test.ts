@@ -1171,6 +1171,51 @@ test('media series', async (ctx) => {
     })
   })
 
+  await ctx.subtest('series_index sorting', () => {
+    // Test ascending order (default sort behavior for series_index)
+    // Note: media_generated_art has series_index 0, doodle_series has series_index 0 (default), media_cartoon has series_index 1
+    // When series_index is the same, secondary sort is by id
+    ctx.assert.search_result(forager.media.search({
+      query: {series_id: cool_art_series.media_reference.id},
+      sort_by: 'series_index',
+      order: 'asc'
+    }), {
+      total: 3,
+      results: [
+        {media_reference: {id: media_generated_art.media_reference.id}},  // series_index 0, id 1
+        {media_reference: {id: doodle_series.media_reference.id}},        // series_index 0, id 5
+        {media_reference: {id: media_cartoon.media_reference.id}},        // series_index 1, id 2
+      ]
+    })
+
+    // Test descending order
+    ctx.assert.search_result(forager.media.search({
+      query: {series_id: cool_art_series.media_reference.id},
+      sort_by: 'series_index',
+      order: 'desc'
+    }), {
+      total: 3,
+      results: [
+        {media_reference: {id: media_cartoon.media_reference.id}},        // series_index 1, id 2
+        {media_reference: {id: doodle_series.media_reference.id}},        // series_index 0, id 5
+        {media_reference: {id: media_generated_art.media_reference.id}},  // series_index 0, id 1
+      ]
+    })
+
+    // Test that nested series (doodle_series) is also sorted by series_index
+    ctx.assert.search_result(forager.media.search({
+      query: {series_id: doodle_series.media_reference.id},
+      sort_by: 'series_index',
+      order: 'asc'
+    }), {
+      total: 2,
+      results: [
+        {media_reference: {id: media_doodle.media_reference.id}},
+        {media_reference: {id: media_doodle.media_reference.id}},
+      ]
+    })
+  })
+
   await ctx.subtest('search only series', () => {
     // try listing all the series
     ctx.assert.search_result(forager.media.search({query: {series: true}}), {
