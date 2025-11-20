@@ -44,7 +44,7 @@ export const MediaReferenceQuery = z.object({
 export const PaginatedSearch = PaginatedQuery.extend({
   query: MediaReferenceQuery.prefault({}),
   thumbnail_limit: z.number().default(1),
-  sort_by: z.enum(['created_at', 'updated_at', 'source_created_at', 'view_count', 'last_viewed_at', 'series_index']).default('source_created_at'),
+  sort_by: z.enum(['created_at', 'updated_at', 'source_created_at', 'view_count', 'last_viewed_at']).default('source_created_at'),
   order: z.enum(['desc', 'asc']).default('desc'),
 }).strict()
 
