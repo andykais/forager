@@ -36,6 +36,8 @@ jobs:
 
       - name: Setup FFmpeg
         uses: AnimMouse/setup-ffmpeg@v1
+        with:
+          version: "8"
 
       - name: Cache Deno dependencies 
         uses: actions/cache@v4
