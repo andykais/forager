@@ -78,6 +78,15 @@ const NULLABLE_SORT_BY_FIELDS = new Set([
   'last_viewed_at'
 ])
 
+const SORT_BY_TO_DB_COLUMN: Record<string, string> = {
+  'series_index': 'media_series_item.series_index',
+  'created_at': 'media_reference.created_at',
+  'updated_at': 'media_reference.updated_at',
+  'source_created_at': 'media_reference.source_created_at',
+  'view_count': 'media_reference.view_count',
+  'last_viewed_at': 'media_reference.last_viewed_at',
+}
+
 
 class MediaReference extends Model {
   static schema = torm.schema('media_reference', {
@@ -183,7 +192,7 @@ class MediaReference extends Model {
     MediaReference.set_select_many_filters(records_builder, params)
     MediaReference.set_select_many_filters(count_builder, params)
 
-    const sort_by_field = `media_reference.${params.sort_by}`
+    const sort_by_field = SORT_BY_TO_DB_COLUMN[params.sort_by]
     records_builder.set_order_by_clause(`ORDER BY ${sort_by_field} ${params.order} NULLS LAST, media_reference.id ${params.order}`)
 
     MediaReference.#apply_cursor_filter(records_builder, params.cursor, params.sort_by, sort_by_field, params.order, sql_params)
@@ -210,10 +219,6 @@ ${count_query.stmt.sql}
 
     const next_cursor = MediaReference.#generate_next_cursor(results, params.limit, params.sort_by)
 
-    for (const row of results) {
-      // now that we grabbed the last cursor_id, we can pop these columns off (minor optimization, maybe we skip this step?)
-      delete (row as any).cursor_id
-    }
     return {
       results,
       cursor: next_cursor,
@@ -247,10 +252,7 @@ ${count_query.stmt.sql}
     MediaReference.set_select_many_filters(records_builder, filter_params)
     MediaReference.set_select_many_filters(count_builder, filter_params)
 
-    // Handle series_index sorting which comes from media_series_item table
-    const sort_by_field = params.sort_by === 'series_index'
-      ? 'media_series_item.series_index'
-      : `media_reference.${params.sort_by}`
+    const sort_by_field = SORT_BY_TO_DB_COLUMN[params.sort_by]
     records_builder.set_order_by_clause(`ORDER BY ${sort_by_field} ${params.order} NULLS LAST, media_reference.id ${params.order}`)
 
     MediaReference.#apply_cursor_filter(records_builder, params.cursor, params.sort_by, sort_by_field, params.order, sql_params)
@@ -277,10 +279,6 @@ ${count_query.stmt.sql}
 
     const next_cursor = MediaReference.#generate_next_cursor(results, params.limit, params.sort_by)
 
-    for (const row of results) {
-      // now that we grabbed the last cursor_id, we can pop these columns off (minor optimization, maybe we skip this step?)
-      delete (row as any).cursor_id
-    }
     return {
       results,
       cursor: next_cursor,
@@ -515,28 +513,35 @@ ${group_builder.generate_sql()}
     limit: number | undefined,
     sort_by: string
   ): PaginatedResult<unknown>['cursor'] {
-    if (!limit || limit === -1 || results.length !== limit) {
-      return undefined
+    let next_cursor: PaginatedResult<unknown>['cursor']
+
+    if (limit && limit !== -1 && results.length === limit) {
+      const last_result = results.at(-1)
+      if (last_result) {
+        let sort_by_cursor_raw = last_result[sort_by]
+        let sort_by_cursor: string | number | null
+
+        // NOTE that if we properly serialized datetimes all throughout the system, we wouldnt need special casing here.
+        // The actual bottleneck is that ts-rpc cannot properly serialize dateimes,
+        // so by the time we got a string back from the api, weouldnt know it was meant to be a datetime
+        if (sort_by_cursor_raw instanceof Date) {
+          sort_by_cursor = sort_by_cursor_raw.toISOString()
+        } else if (sort_by_cursor_raw !== undefined) {
+          sort_by_cursor = sort_by_cursor_raw
+        } else {
+          sort_by_cursor = null
+        }
+
+        next_cursor = {[sort_by]: sort_by_cursor, id: last_result.id}
+      }
     }
 
-    const last_result = results.at(-1)
-    if (!last_result) return undefined
-
-    let sort_by_cursor_raw = last_result[sort_by]
-    let sort_by_cursor: string | number | null
-
-    // NOTE that if we properly serialized datetimes all throughout the system, we wouldnt need special casing here.
-    // The actual bottleneck is that ts-rpc cannot properly serialize dateimes,
-    // so by the time we got a string back from the api, weouldnt know it was meant to be a datetime
-    if (sort_by_cursor_raw instanceof Date) {
-      sort_by_cursor = sort_by_cursor_raw.toISOString()
-    } else if (sort_by_cursor_raw !== undefined) {
-      sort_by_cursor = sort_by_cursor_raw
-    } else {
-      sort_by_cursor = null
+    // Clean up cursor_id from results
+    for (const row of results) {
+      delete (row as any).cursor_id
     }
 
-    return {[sort_by]: sort_by_cursor, id: last_result.id}
+    return next_cursor
   }
 
   public select_one_media_series(params: SelectOneFilters) {
