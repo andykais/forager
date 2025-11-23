@@ -470,7 +470,7 @@ ${group_builder.generate_sql()}
   static #apply_cursor_filter(
     builder: SQLBuilder,
     cursor: PaginatedResult<unknown>['cursor'],
-    sort_by: string,
+    sort_by: keyof typeof PaginationCursorVars.params,
     sort_by_field: string,
     order: 'asc' | 'desc' | undefined,
     sql_params: Record<string, any>
@@ -501,7 +501,7 @@ ${group_builder.generate_sql()}
           ]
       builder.add_where_clause(`(${where_clauses.join(' OR ')})`)
 
-      builder.add_param('sort_by_cursor', (PaginationCursorVars.params as any)[sort_by].as('sort_by_cursor'))
+      builder.add_param('sort_by_cursor', PaginationCursorVars.params[sort_by].as('sort_by_cursor'))
       builder.add_param('media_reference_id_cursor', PaginationVars.params.cursor_id.as('media_reference_id_cursor'))
       sql_params['sort_by_cursor'] = sort_by_cursor
       sql_params['media_reference_id_cursor'] = cursor.id
@@ -511,7 +511,7 @@ ${group_builder.generate_sql()}
   static #generate_next_cursor<T extends Record<string, any>>(
     results: T[],
     limit: number | undefined,
-    sort_by: string
+    sort_by: keyof typeof PaginationCursorVars.params
   ): PaginatedResult<unknown>['cursor'] {
     let next_cursor: PaginatedResult<unknown>['cursor']
 
