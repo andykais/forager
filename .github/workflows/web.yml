@@ -36,7 +36,7 @@ jobs:
       - name: Setup FFmpeg
         uses: AnimMouse/setup-ffmpeg@v1
         with:
-          version: 8.0
+          version: "8.0"
 
       # - name: Lint
       # run: deno task lint
