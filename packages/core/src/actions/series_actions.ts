@@ -1,5 +1,6 @@
-import { Actions, type MediaSeriesResponse, type UpdateEditor } from '~/actions/lib/base.ts'
+import { Actions, type MediaSeriesResponse, type SeriesSearchResponse, type UpdateEditor } from '~/actions/lib/base.ts'
 import { inputs, outputs, parsers } from '~/inputs/mod.ts'
+import type * as result_types from '~/models/lib/result_types.ts'
 import * as errors from '~/lib/errors.ts'
 
 
@@ -111,6 +112,46 @@ class SeriesActions extends Actions {
     return this.#get_media_series_response(parsed)
   }
 
+  public search = (params: inputs.SeriesSearch): result_types.PaginatedResult<SeriesSearchResponse> => {
+    const parsed = parsers.SeriesSearch.parse(params)
+    const { query } = parsed
+
+    // Ensure the series exists and is valid
+    this.models.MediaReference.select_one_media_series({id: query.series_id})
+
+    const tag_ids: number[] | undefined = query.tags
+      ?.map(tag => this.models.Tag.select_one({name: tag.name, group: tag.group }, {or_raise: true}).id)
+      .filter((tag): tag is number => tag !== undefined)
+
+    let keypoint_tag_id: number | undefined
+    if (query.keypoint) {
+      keypoint_tag_id = this.models.Tag.select_one({name: query.keypoint.name, group: query.keypoint.group}, {or_raise: true}).id
+    }
+
+    const records = this.models.MediaReference.select_many_series({
+      series_id: query.series_id,
+      tag_ids,
+      keypoint_tag_id,
+      cursor: parsed.cursor,
+      limit: parsed.limit,
+      sort_by: parsed.sort_by,
+      animated: query.animated,
+      order: parsed.order,
+      stars: query.stars,
+      stars_equality: query.stars_equality,
+      unread: query.unread,
+      filepath: query.filepath,
+    })
+
+    const results = this.#map_series_records_to_responses(records, parsed.thumbnail_limit, keypoint_tag_id)
+
+    return {
+      total: records.total,
+      cursor: records.cursor,
+      results: results,
+    }
+  }
+
   #get_media_series_response(params: outputs.SeriesGet): MediaSeriesResponse {
     const media_reference = this.models.MediaReference.select_one_media_series({id: params.series_id, media_series_name: params.series_name})
     const tags = this.models.Tag.select_all({media_reference_id: media_reference.id})
@@ -120,6 +161,43 @@ class SeriesActions extends Actions {
       tags,
       thumbnails: this.models.MediaThumbnail.select_many({series_id: media_reference.id, limit: 0}),
     }
+  }
+
+  #map_series_records_to_responses(records: ReturnType<Actions['models']['MediaReference']['select_many_series']>, thumbnail_limit: number, keypoint_tag_id: number | undefined): SeriesSearchResponse[] {
+    const results: SeriesSearchResponse[] = records.results.map(row => {
+      const tags = this.models.Tag.select_all({media_reference_id: row.id})
+
+      if (row.media_series_reference) {
+        const thumbnails = this.models.MediaThumbnail.select_many({series_id: row.id, limit: thumbnail_limit})
+        return {
+          media_type: 'media_series',
+          media_reference: row,
+          tags,
+          thumbnails,
+          series_index: row.series_index,
+        }
+      } else {
+        const media_file = this.models.MediaFile.select_one({media_reference_id: row.id}, {or_raise: true})
+
+        let thumbnail_timestamp_threshold: number | undefined
+        if (keypoint_tag_id) {
+          thumbnail_timestamp_threshold = this.models.MediaKeypoint.select_one({tag_id: keypoint_tag_id, media_reference_id: row.id}, {or_raise: true}).media_timestamp
+        } else if (media_file.animated && thumbnail_limit === 1) {
+          thumbnail_timestamp_threshold = media_file.duration * (this.ctx.config.thumbnails.preview_duration_threshold / 100)
+        }
+
+        const thumbnails = this.models.MediaThumbnail.select_many({media_file_id: media_file.id, limit: thumbnail_limit, timestamp_threshold: thumbnail_timestamp_threshold})
+        return {
+          media_type: 'media_file',
+          media_reference: row,
+          media_file,
+          tags,
+          thumbnails,
+          series_index: row.series_index,
+        }
+      }
+    })
+    return results
   }
 }
 
