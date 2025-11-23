@@ -1,6 +1,6 @@
 import * as torm from '@torm/sqlite'
 import * as errors from '~/lib/errors.ts'
-import { Model, field, PaginationVars, GroupByVars, type PaginatedResult, SelectOneOptionsRaiseOnUndefined } from '~/models/lib/base.ts'
+import { Model, field, PaginationVars, GroupByVars, type PaginatedResult } from '~/models/lib/base.ts'
 import { SQLBuilder } from '~/models/lib/sql_builder.ts'
 import { type outputs } from '~/inputs/mod.ts'
 
