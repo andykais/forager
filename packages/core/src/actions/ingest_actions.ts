@@ -117,7 +117,7 @@ class IngestActions extends Actions {
     return { stats }
   }
 
-  async #add_media_file(ctx: plugin.FileSystemReceiverContext, filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.TagList, series?: inputs.MediaSeriesBulk): Promise<AddMediaFileAck> {
+  async #add_media_file(ctx: plugin.FileSystemReceiverContext, filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.TagList): Promise<AddMediaFileAck> {
     if (ctx.default_metadata?.media_info) {
       media_info = {...ctx.default_metadata.media_info as inputs.MediaInfo, ...media_info}
     }
@@ -185,7 +185,17 @@ class IngestActions extends Actions {
 
   }
 
-  async #add_media_series_item(ctx: plugin.FileSystemReceiverContext, filepath: string, media_reference_id: number, series: inputs.MediaSeriesBulk[0], media_info?: inputs.MediaInfo, tags?: inputs.TagList): Promise<AddMediaFileAck> {
+  async #add_media_series_item(
+    _ctx: plugin.FileSystemReceiverContext,
+    _filepath: string,
+    media_reference_id: number,
+    series: inputs.MediaSeriesBulk[0],
+    media_info?: inputs.MediaInfo,
+    tags?: inputs.TagList
+  ): Promise<AddMediaFileAck> {
+      if (media_info || tags) {
+        throw new Error('unimplemented')
+      }
       try {
         const media_series = this.ctx.forager.series.create(series?.series)
         this.ctx.forager.series.add({

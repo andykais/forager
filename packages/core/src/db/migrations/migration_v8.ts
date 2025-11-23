@@ -1,5 +1,5 @@
 import * as torm from '@torm/sqlite'
-import { migrations, TIMESTAMP_COLUMN_OPTIONAL } from './registry.ts'
+import { migrations } from './registry.ts'
 
 
 @migrations.register()
