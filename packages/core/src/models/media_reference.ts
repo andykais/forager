@@ -472,12 +472,12 @@ ${group_builder.generate_sql()}
     cursor: PaginatedResult<unknown>['cursor'],
     sort_by: string,
     sort_by_field: string,
-    order: 'asc' | 'desc',
+    order: 'asc' | 'desc' | undefined,
     sql_params: Record<string, any>
   ) {
     if (cursor === undefined) return
 
-    const cursor_sort_direction = order === 'desc' ? '<' : '>'
+    const cursor_sort_direction = (order ?? 'asc') === 'desc' ? '<' : '>'
     const sort_by_cursor = cursor[sort_by]
 
     if (sort_by_cursor === undefined) {
@@ -501,7 +501,7 @@ ${group_builder.generate_sql()}
           ]
       builder.add_where_clause(`(${where_clauses.join(' OR ')})`)
 
-      builder.add_param('sort_by_cursor', PaginationCursorVars.params[sort_by].as('sort_by_cursor'))
+      builder.add_param('sort_by_cursor', (PaginationCursorVars.params as any)[sort_by].as('sort_by_cursor'))
       builder.add_param('media_reference_id_cursor', PaginationVars.params.cursor_id.as('media_reference_id_cursor'))
       sql_params['sort_by_cursor'] = sort_by_cursor
       sql_params['media_reference_id_cursor'] = cursor.id
