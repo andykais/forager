@@ -33,11 +33,10 @@ jobs:
         with:
           deno-version: canary
 
-      - name: Setup FFMPEG
-        uses: FedericoCarboni/setup-ffmpeg@v3
-        id: setup-ffmpeg
+      - name: Setup FFmpeg
+        uses: AnimMouse/setup-ffmpeg@v1
         with:
-          ffmpeg-version: 7.0.1
+          version: 8.0
 
       # - name: Lint
       # run: deno task lint
