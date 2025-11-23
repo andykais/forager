@@ -38,7 +38,7 @@ jobs:
         uses: FedericoCarboni/setup-ffmpeg@v3
         id: setup-ffmpeg
         with:
-          ffmpeg-version: 7.0.1
+          ffmpeg-version: 8
 
       - name: Cache Deno dependencies 
         uses: actions/cache@v4
