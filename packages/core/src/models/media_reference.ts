@@ -191,7 +191,7 @@ class MediaReference extends Model {
 
     MediaReference.set_select_many_filters(records_builder, params)
     MediaReference.set_select_many_filters(count_builder, params)
-    MediaReference.#apply_cursor_filter(records_builder, params.cursor, params.sort_by, params.order, sql_params)
+    MediaReference.#apply_pagination_fragments(records_builder, params.cursor, params.sort_by, params.order, params.limit, sql_params)
 
     if (params.limit !== undefined) {
       records_builder.set_limit_clause(`LIMIT ${params.limit}`)
@@ -247,11 +247,7 @@ ${count_query.stmt.sql}
     }
     MediaReference.set_select_many_filters(records_builder, filter_params)
     MediaReference.set_select_many_filters(count_builder, filter_params)
-    MediaReference.#apply_cursor_filter(records_builder, params.cursor, params.sort_by, params.order, sql_params)
-
-    if (params.limit !== undefined) {
-      records_builder.set_limit_clause(`LIMIT ${params.limit}`)
-    }
+    MediaReference.#apply_pagination_fragments(records_builder, params.cursor, params.sort_by, params.order, params.limit, sql_params)
 
     const records_query = records_builder.build()
     type PaginatedRow = torm.InferSchemaTypes<typeof MediaReference.result> & {cursor_id: number, series_index: number}
@@ -459,11 +455,12 @@ ${group_builder.generate_sql()}
     }
   }
 
-  static #apply_cursor_filter(
+  static #apply_pagination_fragments(
     builder: SQLBuilder,
     cursor: PaginatedResult<unknown>['cursor'],
     sort_by: keyof typeof PaginationCursorVars.params,
     order: 'asc' | 'desc' | undefined,
+    limit: number | undefined,
     sql_params: Record<string, any>
   ) {
     const sort_by_field = SORT_BY_TO_DB_COLUMN[sort_by]
@@ -499,6 +496,11 @@ ${group_builder.generate_sql()}
       builder.add_param('media_reference_id_cursor', PaginationVars.params.cursor_id.as('media_reference_id_cursor'))
       sql_params['sort_by_cursor'] = sort_by_cursor
       sql_params['media_reference_id_cursor'] = cursor.id
+    }
+
+    if (limit !== undefined) {
+      builder.set_limit_clause(`LIMIT :limit`)
+      sql_params['limit'] = limit
     }
   }
 
