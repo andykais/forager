@@ -191,11 +191,7 @@ class MediaReference extends Model {
 
     MediaReference.set_select_many_filters(records_builder, params)
     MediaReference.set_select_many_filters(count_builder, params)
-
-    const sort_by_field = SORT_BY_TO_DB_COLUMN[params.sort_by]
-    records_builder.set_order_by_clause(`ORDER BY ${sort_by_field} ${params.order} NULLS LAST, media_reference.id ${params.order}`)
-
-    MediaReference.#apply_cursor_filter(records_builder, params.cursor, params.sort_by, sort_by_field, params.order, sql_params)
+    MediaReference.#apply_cursor_filter(records_builder, params.cursor, params.sort_by, params.order, sql_params)
 
     if (params.limit !== undefined) {
       records_builder.set_limit_clause(`LIMIT ${params.limit}`)
@@ -251,11 +247,7 @@ ${count_query.stmt.sql}
     }
     MediaReference.set_select_many_filters(records_builder, filter_params)
     MediaReference.set_select_many_filters(count_builder, filter_params)
-
-    const sort_by_field = SORT_BY_TO_DB_COLUMN[params.sort_by]
-    records_builder.set_order_by_clause(`ORDER BY ${sort_by_field} ${params.order} NULLS LAST, media_reference.id ${params.order}`)
-
-    MediaReference.#apply_cursor_filter(records_builder, params.cursor, params.sort_by, sort_by_field, params.order, sql_params)
+    MediaReference.#apply_cursor_filter(records_builder, params.cursor, params.sort_by, params.order, sql_params)
 
     if (params.limit !== undefined) {
       records_builder.set_limit_clause(`LIMIT ${params.limit}`)
@@ -471,10 +463,12 @@ ${group_builder.generate_sql()}
     builder: SQLBuilder,
     cursor: PaginatedResult<unknown>['cursor'],
     sort_by: keyof typeof PaginationCursorVars.params,
-    sort_by_field: string,
     order: 'asc' | 'desc' | undefined,
     sql_params: Record<string, any>
   ) {
+    const sort_by_field = SORT_BY_TO_DB_COLUMN[sort_by]
+    builder.set_order_by_clause(`ORDER BY ${sort_by_field} ${order} NULLS LAST, media_reference.id ${order}`)
+
     if (cursor === undefined) return
 
     const cursor_sort_direction = (order ?? 'asc') === 'desc' ? '<' : '>'
