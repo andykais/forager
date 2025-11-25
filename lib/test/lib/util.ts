@@ -45,9 +45,11 @@ type DeepPartial<T> = {
 type ForagerMediaSearchResult = ReturnType<Forager['media']['search']>
 type ForagerMediaGroupResult = ReturnType<Forager['media']['group']>
 type ForagerTagSearchResult = ReturnType<Forager['tag']['search']>
+type ForagerSeriesSearchResult = ReturnType<Forager['series']['search']>
 type SearchResultAssertions = DeepPartial<ForagerMediaSearchResult>
 type TagSearchResultAssertions = DeepPartial<ForagerTagSearchResult>
 type GroupResultAssertions = DeepPartial<ForagerMediaGroupResult>
+type SeriesSearchResultAssertions = DeepPartial<ForagerSeriesSearchResult>
 
 class Assertions {
   equals = asserts.assertEquals
@@ -101,6 +103,23 @@ class Assertions {
       this.equals(group_result.results.length, assertions.results.length, `Expected group results length to be ${assertions.results.length} but is actually ${group_result.results.length}`)
       this.object_match({
         results: group_result.results
+      }, {
+        results: assertions.results
+      })
+    }
+  }
+  series_search_result(search_result: ForagerSeriesSearchResult, assertions: SeriesSearchResultAssertions) {
+    if (assertions.total !== undefined) {
+      this.equals(search_result.total, assertions.total)
+    }
+    if ('cursor' in assertions) {
+      this.equals(search_result.cursor, assertions.cursor)
+    }
+
+    if (assertions.results) {
+      this.equals(search_result.results.length, assertions.results.length, `Expected search results length to be ${assertions.results.length} but is actually ${search_result.results.length}`)
+      this.object_match({
+        results: search_result.results
       }, {
         results: assertions.results
       })

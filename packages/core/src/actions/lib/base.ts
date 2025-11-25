@@ -36,6 +36,19 @@ export interface MediaFileResponse {
   */
 export type MediaResponse = MediaFileResponse | MediaSeriesResponse
 
+interface SeriesSearchMediaFileResponse extends MediaFileResponse {
+  series_index: number
+}
+
+interface SeriesSearchMediaSeriesResponse extends MediaSeriesResponse {
+  series_index: number
+}
+
+/**
+ * Structure returned from {@linkcode SeriesActions.prototype.search}. Similar to MediaResponse but includes series_index.
+  */
+export type SeriesSearchResponse = SeriesSearchMediaFileResponse | SeriesSearchMediaSeriesResponse
+
 /**
   * Return structure from {@linkcode MediaActions.prototype.group}. This contains a count of objects returned based on the grouping mechanic called (e.g. grouping by tag_group "animal" will show a value of "animal:cat", and a count of the number of media references that have the tag "media:cat")
   */
