@@ -23,7 +23,7 @@ jobs:
         os:
           - ubuntu-latest
 
-          - macos-15
+          - macos-15-intel
 
           ##################################################################################################################################################
           # Windows builds are currently disabled because path resolution doesn't seem to work                                                             #
