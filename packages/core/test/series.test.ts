@@ -158,6 +158,54 @@ test('media series', async (ctx) => {
     })
   })
 
+  await ctx.subtest('series.search with series_index sorting', () => {
+    ctx.assert.series_search_result(forager.series.search({
+      query: {series_id: cool_art_series.media_reference.id}
+    }), {
+      total: 3,
+      results: [
+        {media_reference: {id: media_generated_art.media_reference.id}, series_index: 0},
+        {media_reference: {id: doodle_series.media_reference.id}, series_index: 0},
+        {media_reference: {id: media_cartoon.media_reference.id}, series_index: 1},
+      ]
+    })
+
+    ctx.assert.series_search_result(forager.series.search({
+      query: {series_id: cool_art_series.media_reference.id},
+      order: 'desc'
+    }), {
+      total: 3,
+      results: [
+        {media_reference: {id: media_cartoon.media_reference.id}, series_index: 1},
+        {media_reference: {id: doodle_series.media_reference.id}, series_index: 0},
+        {media_reference: {id: media_generated_art.media_reference.id}, series_index: 0},
+      ]
+    })
+
+    ctx.assert.series_search_result(forager.series.search({
+      query: {series_id: cool_art_series.media_reference.id},
+      sort_by: 'created_at',
+      order: 'asc'
+    }), {
+      total: 3,
+      results: [
+        {media_reference: {id: media_generated_art.media_reference.id}, series_index: 0},
+        {media_reference: {id: media_cartoon.media_reference.id}, series_index: 1},
+        {media_reference: {id: doodle_series.media_reference.id}, series_index: 0},
+      ]
+    })
+
+    ctx.assert.series_search_result(forager.series.search({
+      query: {series_id: doodle_series.media_reference.id},
+    }), {
+      total: 2,
+      results: [
+        {media_reference: {id: media_doodle.media_reference.id}, series_index: 2},
+        {media_reference: {id: media_doodle.media_reference.id}, series_index: 3},
+      ]
+    })
+  })
+
   await ctx.subtest('search only series', () => {
     // try listing all the series
     ctx.assert.search_result(forager.media.search({query: {series: true}}), {

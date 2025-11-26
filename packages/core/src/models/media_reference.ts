@@ -26,6 +26,21 @@ export interface SelectManyFilters {
   filepath: string | undefined
 }
 
+export interface SelectManySeriesFilters {
+  series_id: number
+  tag_ids: number[] | undefined
+  keypoint_tag_id: number | undefined
+  limit: number | undefined
+  cursor: PaginatedResult<unknown>['cursor']
+  order: 'asc' | 'desc' | undefined
+  animated: boolean | undefined
+  stars: number | undefined
+  sort_by: outputs.SeriesSearchSortBy
+  stars_equality: 'gte' | 'eq' | undefined
+  unread: boolean | undefined
+  filepath: string | undefined
+}
+
 
 interface SelectManyParams extends SelectManyFilters {
   sort_by: outputs.MediaReferenceSearchSortBy
@@ -55,12 +70,22 @@ const PaginationCursorVars = torm.Vars({
   created_at: torm.field.string(),
   updated_at: torm.field.string(),
   view_count: torm.field.number(),
+  series_index: torm.field.number(),
 })
 
 const NULLABLE_SORT_BY_FIELDS = new Set([
   'source_created_at',
   'last_viewed_at'
 ])
+
+const SORT_BY_TO_DB_COLUMN: Record<string, string> = {
+  'series_index': 'media_series_item.series_index',
+  'created_at': 'media_reference.created_at',
+  'updated_at': 'media_reference.updated_at',
+  'source_created_at': 'media_reference.source_created_at',
+  'view_count': 'media_reference.view_count',
+  'last_viewed_at': 'media_reference.last_viewed_at',
+}
 
 
 class MediaReference extends Model {
@@ -166,40 +191,7 @@ class MediaReference extends Model {
 
     MediaReference.set_select_many_filters(records_builder, params)
     MediaReference.set_select_many_filters(count_builder, params)
-    records_builder.set_order_by_clause(`ORDER BY media_reference.${params.sort_by} ${params.order} NULLS LAST, media_reference.id ${params.order}`)
-
-    if (params.cursor !== undefined) {
-      const cursor_sort_direction = params.order === 'desc' ? '<' : '>'
-      const sort_by_field = `media_reference.${params.sort_by}`
-      const sort_by_cursor = params.cursor[params.sort_by]
-
-      if (sort_by_cursor === undefined) {
-        throw new errors.UnExpectedError(`A cursor was supplied (${JSON.stringify(params.cursor)} but did not have a corresponding key for ${params.sort_by}`)
-      }
-
-      if (sort_by_cursor === null) {
-        // null values are always last, so we can simplify the sort here
-        records_builder.add_where_clause(`${params.sort_by} IS NULL AND media_reference.id ${cursor_sort_direction} ${params.cursor.id}`)
-      } else {
-        const column_can_be_null = NULLABLE_SORT_BY_FIELDS.has(params.sort_by)
-        const where_clauses = column_can_be_null
-          ? [
-              `${sort_by_field} ${cursor_sort_direction} :sort_by_cursor`,
-              `${sort_by_field} IS NULL`,
-              `${sort_by_field} = :sort_by_cursor AND media_reference.id ${cursor_sort_direction} :media_reference_id_cursor`,
-            ]
-          : [
-              `${sort_by_field} ${cursor_sort_direction} :sort_by_cursor`,
-              `${sort_by_field} = :sort_by_cursor AND media_reference.id ${cursor_sort_direction} :media_reference_id_cursor`,
-            ]
-        records_builder.add_where_clause(`(${where_clauses.join(' OR ')})`)
-
-        records_builder.add_param('sort_by_cursor', PaginationCursorVars.params[params.sort_by].as('sort_by_cursor'))
-        records_builder.add_param('media_reference_id_cursor', PaginationVars.params.cursor_id.as('media_reference_id_cursor'))
-        sql_params['sort_by_cursor'] = sort_by_cursor
-        sql_params['media_reference_id_cursor'] = params.cursor.id
-      }
-    }
+    MediaReference.#apply_pagination_fragments(records_builder, params.cursor, params.sort_by, params.order, params.limit, sql_params)
 
     if (params.limit !== undefined) {
       records_builder.set_limit_clause(`LIMIT ${params.limit}`)
@@ -220,25 +212,61 @@ COUNT SQL:
 ${count_query.stmt.sql}
 `)
     }
-    let next_cursor: PaginatedResult<unknown>['cursor']
-    // if we return less results than the limit, theres no next page
-    if (params.limit && params.limit !== -1 && results.length === params.limit) {
-      const last_result = results.at(-1)
-      if (last_result) {
-        let sort_by_cursor_raw = last_result[params.sort_by]
-        let sort_by_cursor: string | number | null
-        // NOTE that if we properly serialized datetimes all throughout the system, we wouldnt need special casing here.
-        // The actual bottleneck is that ts-rpc cannot properly serialize dateimes,
-        // so by the time we got a string back from the api, weouldnt know it was meant to be a datetime
-        if (sort_by_cursor_raw instanceof Date) sort_by_cursor = sort_by_cursor_raw.toISOString()
-        else sort_by_cursor = sort_by_cursor_raw
-        next_cursor = {[params.sort_by]: sort_by_cursor, id: last_result.id}
-      }
+
+    const next_cursor = MediaReference.#generate_next_cursor(results, params.limit, params.sort_by)
+
+    return {
+      results,
+      cursor: next_cursor,
+      total,
     }
-    for (const row of results) {
-      // now that we grabbed the last cursor_id, we can pop these columns off (minor optimization, maybe we skip this step?)
-      delete (row as any).cursor_id
+  }
+
+  public select_many_series(params: SelectManySeriesFilters): PaginatedResult<torm.InferSchemaTypes<typeof MediaReference.result> & {series_index: number}> {
+    const records_builder = new SQLBuilder(this.driver)
+    const sql_params: Record<string, any> = {}
+
+    // Always select series_index for series searches
+    records_builder
+      .set_select_clause(`SELECT media_reference.*, media_series_item.series_index FROM media_reference`)
+      .add_result_fields(MediaReference.result['*'] as any)
+      .add_result_fields({series_index: PaginationCursorVars.result.series_index})
+
+    const count_builder = new SQLBuilder(this.driver)
+    count_builder
+      .add_select_wrapper(`SELECT COUNT(1) AS total FROM`)
+      .set_select_clause(`SELECT media_reference.id FROM media_reference`)
+      .add_result_fields({total: PaginationVars.result.total})
+
+    // Convert series filters to SelectManyFilters format for reuse
+    const filter_params: SelectManyFilters = {
+      ...params,
+      id: undefined,
+      series: undefined,
+      sort_by: params.sort_by as string,
     }
+    MediaReference.set_select_many_filters(records_builder, filter_params)
+    MediaReference.set_select_many_filters(count_builder, filter_params)
+    MediaReference.#apply_pagination_fragments(records_builder, params.cursor, params.sort_by, params.order, params.limit, sql_params)
+
+    const records_query = records_builder.build()
+    type PaginatedRow = torm.InferSchemaTypes<typeof MediaReference.result> & {cursor_id: number, series_index: number}
+    const results: PaginatedRow[] = records_query.stmt.all(sql_params)
+
+    const count_query = count_builder.build()
+    const { total } = count_query.stmt.one({})! as {total: number}
+
+    if (total < results.length) {
+      throw new errors.UnExpectedError(`Selected media references (${results.length}) exceeds total count (${total})
+SELECT SQL:
+${records_query.stmt.sql}
+COUNT SQL:
+${count_query.stmt.sql}
+`)
+    }
+
+    const next_cursor = MediaReference.#generate_next_cursor(results, params.limit, params.sort_by)
+
     return {
       results,
       cursor: next_cursor,
@@ -425,6 +453,91 @@ ${group_builder.generate_sql()}
         throw new Error(`Cannot find sql operator for '${operator}'`)
       }
     }
+  }
+
+  static #apply_pagination_fragments(
+    builder: SQLBuilder,
+    cursor: PaginatedResult<unknown>['cursor'],
+    sort_by: keyof typeof PaginationCursorVars.params,
+    order: 'asc' | 'desc' | undefined,
+    limit: number | undefined,
+    sql_params: Record<string, any>
+  ) {
+    const sort_by_field = SORT_BY_TO_DB_COLUMN[sort_by]
+    builder.set_order_by_clause(`ORDER BY ${sort_by_field} ${order} NULLS LAST, media_reference.id ${order}`)
+
+    if (cursor === undefined) return
+
+    const cursor_sort_direction = (order ?? 'asc') === 'desc' ? '<' : '>'
+    const sort_by_cursor = cursor[sort_by]
+
+    if (sort_by_cursor === undefined) {
+      throw new errors.UnExpectedError(`A cursor was supplied (${JSON.stringify(cursor)} but did not have a corresponding key for ${sort_by}`)
+    }
+
+    if (sort_by_cursor === null) {
+      // null values are always last, so we can simplify the sort here
+      builder.add_where_clause(`${sort_by} IS NULL AND media_reference.id ${cursor_sort_direction} ${cursor.id}`)
+    } else {
+      const column_can_be_null = NULLABLE_SORT_BY_FIELDS.has(sort_by)
+      const where_clauses = column_can_be_null
+        ? [
+            `${sort_by_field} ${cursor_sort_direction} :sort_by_cursor`,
+            `${sort_by_field} IS NULL`,
+            `${sort_by_field} = :sort_by_cursor AND media_reference.id ${cursor_sort_direction} :media_reference_id_cursor`,
+          ]
+        : [
+            `${sort_by_field} ${cursor_sort_direction} :sort_by_cursor`,
+            `${sort_by_field} = :sort_by_cursor AND media_reference.id ${cursor_sort_direction} :media_reference_id_cursor`,
+          ]
+      builder.add_where_clause(`(${where_clauses.join(' OR ')})`)
+
+      builder.add_param('sort_by_cursor', PaginationCursorVars.params[sort_by].as('sort_by_cursor'))
+      builder.add_param('media_reference_id_cursor', PaginationVars.params.cursor_id.as('media_reference_id_cursor'))
+      sql_params['sort_by_cursor'] = sort_by_cursor
+      sql_params['media_reference_id_cursor'] = cursor.id
+    }
+
+    if (limit !== undefined) {
+      builder.set_limit_clause(`LIMIT :limit`)
+      sql_params['limit'] = limit
+    }
+  }
+
+  static #generate_next_cursor<T extends Record<string, any>>(
+    results: T[],
+    limit: number | undefined,
+    sort_by: keyof typeof PaginationCursorVars.params
+  ): PaginatedResult<unknown>['cursor'] {
+    let next_cursor: PaginatedResult<unknown>['cursor']
+
+    if (limit && limit !== -1 && results.length === limit) {
+      const last_result = results.at(-1)
+      if (last_result) {
+        let sort_by_cursor_raw = last_result[sort_by]
+        let sort_by_cursor: string | number | null
+
+        // NOTE that if we properly serialized datetimes all throughout the system, we wouldnt need special casing here.
+        // The actual bottleneck is that ts-rpc cannot properly serialize dateimes,
+        // so by the time we got a string back from the api, weouldnt know it was meant to be a datetime
+        if (sort_by_cursor_raw instanceof Date) {
+          sort_by_cursor = sort_by_cursor_raw.toISOString()
+        } else if (sort_by_cursor_raw !== undefined) {
+          sort_by_cursor = sort_by_cursor_raw
+        } else {
+          sort_by_cursor = null
+        }
+
+        next_cursor = {[sort_by]: sort_by_cursor, id: last_result.id}
+      }
+    }
+
+    // Clean up cursor_id from results
+    for (const row of results) {
+      delete (row as any).cursor_id
+    }
+
+    return next_cursor
   }
 
   public select_one_media_series(params: SelectOneFilters) {
