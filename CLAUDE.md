@@ -225,19 +225,18 @@ Key patterns:
 All inputs validated with Zod schemas:
 
 ```typescript
-const media_reference_inputs = {
-  create: zod.object({
-    title: zod.string().optional(),
-    stars: zod.number().int().min(0).max(5).optional(),
-    tags: zod.array(tag_id_input).optional(),
-    // ...
-  }),
-  update: zod.object({
-    id: media_reference_id_input,
-    title: zod.string().optional(),
-    // ...
-  })
-}
+const MediaReferenceCreate = zod.object({
+  title: zod.string().optional(),
+  stars: zod.number().int().min(0).max(5).optional(),
+  tags: zod.array(tag_id_input).optional(),
+  // ...
+})
+
+const MediaReferenceUpdate = zod.object({
+  id: media_reference_id_input,
+  title: zod.string().optional(),
+  // ...
+})
 ```
 
 #### 4. Error Handling
@@ -301,32 +300,38 @@ $effect(() => {
 - `id`, `title`, `stars`, `view_count`, `source_url`, `source_created_at`, `unread`, `description`, `editors`
 
 **media_file** - Individual media files
-- References `media_reference_id`
+- References: `media_reference_id`
 - `filepath`, `checksum`, `media_type`, `codec`, `width`, `height`, `duration`, etc.
 
 **media_series_item** - Items in a series
-- `media_reference_id`, `series_id`, `series_index`
+- References: `media_reference_id`, `series_id`
+- `series_index`
 
 **media_thumbnail** - Generated thumbnails
-- `media_file_id`, `media_timestamp`, `kind`, `filepath`
+- References: `media_file_id`
+- `media_timestamp`, `kind`, `filepath`
 
 **media_keypoint** - Video keypoint markers
-- `media_reference_id`, `tag_id`, `media_timestamp`, `duration`
+- References: `media_reference_id`, `tag_id`
+- `media_timestamp`, `duration`
 
 **tag** - Tag definitions
-- `name`, `group`, `color`, `order`
+- References: `group` (tag_group.id)
+- `name`, `color`, `order`
 
 **tag_group** - Tag groupings
 - `name`, `order`
 
 **media_reference_tag** - Many-to-many relationship
-- `media_reference_id`, `tag_id`
+- References: `media_reference_id`, `tag_id`
 
 **view** - View tracking
-- `media_reference_id`, `viewed_at`
+- References: `media_reference_id`
+- `viewed_at`
 
 **edit_log** - Edit history
-- `media_reference_id`, `field`, `value_type`, `value_*`, `editor`
+- References: `media_reference_id`
+- `field`, `value_type`, `value_*`, `editor`
 
 **filesystem_path** - Discovered files
 - `filepath`, `checksum`, `ingested`, `ingest_priority`, `ingest_retriever`
@@ -700,6 +705,9 @@ core:
 5. **Update migrations** - Don't modify existing migrations, create new ones
 6. **Handle errors properly** - Use specific ForagerError subclasses
 7. **Maintain backwards compatibility** - Especially for config schema
+8. **Never git amend commits** - Always make new commits for ease of review
+9. **Use comments where applicable** - But not liberally; code should be self-documenting
+10. **Core actions interfaces should have docstrings** - Document public API methods
 
 ### Security Considerations
 
@@ -777,6 +785,64 @@ deno task --cwd packages/core docs:preview  # JSDoc preview
 # Publishing
 deno publish --allow-slow-types     # Publish to JSR
 ```
+
+## Claude Code Tips
+
+When working on this project in Claude Code (web-based) environments, be aware of the following:
+
+### Deno Availability
+
+**Deno is not available in Claude Code environments.** This means you cannot:
+- Run `deno task` commands
+- Execute tests directly via `deno test`
+- Use `deno fmt` or `deno lint`
+- Run development servers with `deno task develop`
+
+### Workarounds
+
+1. **Code Analysis Only**: Focus on code reading, understanding architecture, and making edits to files
+2. **Testing Strategy**:
+   - Read test files to understand expected behavior
+   - Verify logic by reviewing test assertions
+   - Suggest test cases but don't attempt to run them
+3. **Documentation**: You can still read and update documentation files
+4. **Code Review**: Perform static analysis and suggest improvements
+5. **Git Operations**: All git commands work normally (commit, push, etc.)
+
+### What You Can Do
+
+- ✅ Read and analyze all source files
+- ✅ Edit TypeScript/JavaScript code
+- ✅ Update configuration files (deno.json, tsconfig, etc.)
+- ✅ Modify database migrations
+- ✅ Write and update tests (but not run them)
+- ✅ Create and update documentation
+- ✅ Perform git operations (commit, push, pull)
+- ✅ Search codebase with grep/glob tools
+
+### What You Cannot Do
+
+- ❌ Run the test suite
+- ❌ Execute deno tasks
+- ❌ Start development servers
+- ❌ Compile binaries
+- ❌ Verify syntax with deno check
+- ❌ Auto-format with deno fmt
+
+### Certificate/TLS Issues
+
+If you encounter certificate or TLS-related errors in other environments:
+- Try running deno commands directly instead of via `deno task`
+- Use `--unsafely-ignore-certificate-errors` flag if absolutely necessary (not recommended for production)
+- Check if `DENO_CERT` environment variable needs to be set
+
+### Best Practices for Claude Code
+
+1. **Make smaller, focused commits** - Since you can't run tests, make changes that are easy to review
+2. **Read tests thoroughly** - Understand the test coverage before making changes
+3. **Document assumptions** - Note in commits what you couldn't verify
+4. **Suggest verification steps** - Tell users what they should test locally
+5. **Review existing patterns** - Follow established code patterns closely
 
 ## Getting Help
 
