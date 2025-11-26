@@ -363,6 +363,8 @@ brew install ffmpeg
 cd forager
 ```
 
+**Note for Claude Code (web) environments:** You'll need to install both Deno and FFmpeg before running tests or development tasks. Use the installation commands above within your Claude Code session.
+
 ### Common Tasks
 
 #### Run Tests
@@ -792,22 +794,13 @@ When working on this project in Claude Code (web-based) environments, be aware o
 
 ### Deno Availability
 
-**Deno is not available in Claude Code environments.** This means you cannot:
-- Run `deno task` commands
-- Execute tests directly via `deno test`
-- Use `deno fmt` or `deno lint`
-- Run development servers with `deno task develop`
+**Deno is available in Claude Code but must be installed first.** Before running tests or development tasks:
 
-### Workarounds
+1. Install Deno: `curl -fsSL https://deno.land/x/install/install.sh | sh`
+2. Install FFmpeg: `apt-get install ffmpeg` (Ubuntu/Debian)
+3. Add Deno to PATH if needed: `export PATH="$HOME/.deno/bin:$PATH"`
 
-1. **Code Analysis Only**: Focus on code reading, understanding architecture, and making edits to files
-2. **Testing Strategy**:
-   - Read test files to understand expected behavior
-   - Verify logic by reviewing test assertions
-   - Suggest test cases but don't attempt to run them
-3. **Documentation**: You can still read and update documentation files
-4. **Code Review**: Perform static analysis and suggest improvements
-5. **Git Operations**: All git commands work normally (commit, push, etc.)
+Once installed, you can run all deno commands normally.
 
 ### What You Can Do
 
@@ -815,19 +808,13 @@ When working on this project in Claude Code (web-based) environments, be aware o
 - ✅ Edit TypeScript/JavaScript code
 - ✅ Update configuration files (deno.json, tsconfig, etc.)
 - ✅ Modify database migrations
-- ✅ Write and update tests (but not run them)
+- ✅ Write and update tests
+- ✅ **Run tests** (after installing Deno & FFmpeg)
+- ✅ **Execute deno tasks** (after installation)
+- ✅ **Use deno fmt and deno lint** (after installation)
 - ✅ Create and update documentation
 - ✅ Perform git operations (commit, push, pull)
 - ✅ Search codebase with grep/glob tools
-
-### What You Cannot Do
-
-- ❌ Run the test suite
-- ❌ Execute deno tasks
-- ❌ Start development servers
-- ❌ Compile binaries
-- ❌ Verify syntax with deno check
-- ❌ Auto-format with deno fmt
 
 ### Certificate/TLS Issues
 
@@ -838,10 +825,10 @@ If you encounter certificate or TLS-related errors in other environments:
 
 ### Best Practices for Claude Code
 
-1. **Make smaller, focused commits** - Since you can't run tests, make changes that are easy to review
-2. **Read tests thoroughly** - Understand the test coverage before making changes
-3. **Document assumptions** - Note in commits what you couldn't verify
-4. **Suggest verification steps** - Tell users what they should test locally
+1. **Install dependencies first** - Set up Deno and FFmpeg at the start of your session
+2. **Run tests after changes** - Verify your modifications work correctly
+3. **Make smaller, focused commits** - Easier to review and less likely to introduce bugs
+4. **Read tests thoroughly** - Understand the test coverage before making changes
 5. **Review existing patterns** - Follow established code patterns closely
 
 ## Getting Help
