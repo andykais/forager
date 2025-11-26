@@ -75,7 +75,7 @@ This is a **Deno-based monorepo** with three main packages:
 ```
 actions/           # Business logic (CRUD operations, workflows)
 ├── media_actions.ts      # Media file operations
-├── series_actions.ts     # Media series management
+├── series_actions.ts     # Media series management & search
 ├── filesystem_actions.ts # File discovery
 ├── ingest_actions.ts     # Media ingestion pipeline
 ├── keypoint_actions.ts   # Video keypoint markers
@@ -484,6 +484,64 @@ await file_processor.generate_thumbnail({
 })
 ```
 
+### Working with Media Series
+
+Media series group multiple media files together in an ordered collection.
+
+#### Creating and Managing Series
+
+```typescript
+// Create a new series
+const series = await ctx.forager.series.create({
+  media_series_name: 'My Series',
+  tags: [{ name: 'tag1' }]
+})
+
+// Add items to series
+await ctx.forager.series.add({
+  series_id: series.id,
+  media_reference_id: media.id,
+  series_index: 0  // Optional, defaults to 0
+})
+
+// Get series details
+const series_data = ctx.forager.series.get({
+  series_id: series.id
+})
+```
+
+#### Searching Within a Series
+
+The `forager.series.search` method allows filtering and searching items within a specific series:
+
+```typescript
+const results = await ctx.forager.series.search({
+  query: {
+    series_id: series.id,
+    tags: [{ name: 'tag1', group: 'category' }],  // Optional
+    keypoint: { name: 'marker' },                  // Optional
+    stars: 3,                                      // Optional
+    stars_equality: 'gte',                         // 'gte' or 'eq'
+    unread: true,                                  // Optional
+    animated: true,                                // Optional
+    filepath: '/path/pattern',                     // Optional
+  },
+  cursor: 0,                     // Pagination cursor
+  limit: 50,                     // Results per page
+  sort_by: 'series_index',       // series_index, created_at, updated_at, etc.
+  order: 'asc',                  // 'asc' or 'desc'
+  thumbnail_limit: 1             // Number of thumbnails per item
+})
+```
+
+**Supported sort_by options**:
+- `series_index` - Order within the series (default)
+- `created_at` - When the item was created
+- `updated_at` - When the item was last updated
+- `source_created_at` - Original creation timestamp
+- `view_count` - Number of views
+- `last_viewed_at` - Most recent view timestamp
+
 ### Testing
 
 #### Test Structure
@@ -515,6 +573,7 @@ Deno.test('media operations', async (t) => {
 TestContext provides:
 - `ctx.assert.search_result()` - Assert media search result
 - `ctx.assert.tag_search_result()` - Assert tag result
+- `ctx.assert.series_search_result()` - Assert series search result
 - `ctx.assert.group_result()` - Assert group result
 - `ctx.assert.list_partial()` - Assert partial list match
 
@@ -582,12 +641,12 @@ web:
 
 **Core CI** (`.github/workflows/core.yml`)
 - Triggers: Push/PR to main
-- Matrix: Ubuntu, macOS, Windows
-- Jobs: Lint, Test, Publish to JSR
+- Matrix: Ubuntu (latest), macOS (15-intel), Windows (latest)
+- Jobs: Lint, Test, Publishing checks (dry-run), Publish to JSR
 
 **CLI CI** (`.github/workflows/cli.yml`)
 - Triggers: Push/PR to main, tags
-- Matrix: Ubuntu, macOS (Windows disabled)
+- Matrix: Ubuntu (latest), macOS (15-intel) - Windows disabled due to path resolution
 - Jobs: Test, Compile binaries, Create releases
 
 **Web CI** (`.github/workflows/web.yml`)
