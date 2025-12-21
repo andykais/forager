@@ -1,12 +1,12 @@
 <script lang="ts">
   import * as theme from '$lib/theme.ts'
   import SearchParams from './SearchParams.svelte'
-  import type { BrowseController } from '../controller.ts'
+  import type { MediaListPageController } from '$lib/pages/media_list/controller.ts'
   import Icon from '$lib/components/Icon.svelte'
   import { Filter, ChevronUp, ChevronDown } from '$lib/icons/mod.ts'
   import TagAutoCompleteInput from "$lib/components/TagAutoCompleteInput.svelte";
 
-  let {controller, height = $bindable()}: {controller: BrowseController; height: number} = $props()
+  let {controller, height = $bindable()}: {controller: MediaListPageController; height: number} = $props()
   let { dimensions, queryparams } = controller.runes
 
 </script>

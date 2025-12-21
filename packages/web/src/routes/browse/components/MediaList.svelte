@@ -1,9 +1,9 @@
 <script lang="ts">
   import Scroller from '$lib/components/Scroller.svelte'
   import SearchResults from './SearchResults.svelte'
-  import type { BrowseController } from '../controller.ts'
+  import type { MediaListPageController } from '$lib/pages/media_list/controller.ts'
 
-  let {controller}: {controller: BrowseController} = $props()
+  let {controller}: {controller: MediaListPageController} = $props()
   let media_list_element: HTMLElement
 
   controller.keybinds.component_listen({

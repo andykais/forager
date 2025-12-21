@@ -1,10 +1,10 @@
 <script lang="ts">
-  import type {BrowseController} from '../controller.ts'
+  import type { MediaListPageController } from '$lib/pages/media_list/controller.ts'
 
   interface Props {
-    controller: BrowseController
-    params: BrowseController['runes']['queryparams']['DEFAULT']
-    class: ClassValue
+    controller: MediaListPageController
+    params: Record<string, unknown>
+    class?: string
   }
   let {params, controller, children, ...props}: Props = $props()
   const {queryparams} = controller.runes

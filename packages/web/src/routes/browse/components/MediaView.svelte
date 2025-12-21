@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { BrowseController } from '../controller.ts'
+  import type { MediaListPageController } from '$lib/pages/media_list/controller.ts'
 
   interface Props {
-    controller: BrowseController
+    controller: MediaListPageController
   }
 
   // TODO wire this into settings
