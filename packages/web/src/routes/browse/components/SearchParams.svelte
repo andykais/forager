@@ -4,10 +4,10 @@
   import Icon from '$lib/components/Icon.svelte'
   import { Filter, ChevronUp, ChevronDown, ArrowDown, ArrowUp } from '$lib/icons/mod.ts'
   import TagAutoCompleteInput from "$lib/components/TagAutoCompleteInput.svelte";
-  import type { BrowseController } from "../controller.ts";
+  import type { MediaListPageController } from '$lib/pages/media_list/controller.ts'
   import StarInput from '$lib/components/StarInput.svelte'
 
-  let {controller}: {controller: BrowseController} = $props()
+  let {controller}: {controller: MediaListPageController} = $props()
 
   const {queryparams, media_selections, settings} = controller.runes
 
@@ -58,12 +58,15 @@
             name="sort_by"
             bind:value={params.sort}
             onchange={update_search}>
+            {#if controller.page_kind === 'series'}
+              <option value="series_index">Series Index</option>
+            {/if}
             <option value="source_created_at">Created At</option>
             <option value="created_at">Added On</option>
             <option value="updated_at">Updated At</option>
             <option value="view_count">View Count</option>
             <option value="last_viewed_at">Last Viewed</option>
-            {#if params.search_mode === 'group_by'}
+            {#if 'search_mode' in params && params.search_mode === 'group_by'}
             <option value="count">Count</option>
             {/if}
           </select>
@@ -88,9 +91,6 @@
           options={[
             {label: 'All', value: 'all'},
             {label: 'Animated', value: 'animated'},
-            {label: 'Image',    value: 'image'},
-            {label: 'Video',    value: 'video'},
-            {label: 'Audio',    value: 'audio'},
           ]}
           bind:value={params.media_type}
           onchange={update_search}
@@ -166,22 +166,23 @@
             bind:value={params.filepath}>
         </div>
 
-        <SelectInput
-          label="Search Mode"
-          options={[
-            {label: 'Media', value: 'media'},
-            {label: 'Grouped', value: 'group_by'},
-            {label: 'Filesystem', value: 'filesystem'},
-          ]}
-          onchange={() => {
-            if (params.search_mode !== 'group_by') {
-              params.group_by = undefined
-            }
-          }}
-          bind:value={params.search_mode}
-        />
+        {#if 'search_mode' in params}
+          <SelectInput
+            label="Search Mode"
+            options={[
+              {label: 'Media', value: 'media'},
+              {label: 'Grouped', value: 'group_by'},
+            ]}
+            onchange={() => {
+              if (params.search_mode !== 'group_by') {
+                ;(params as any).group_by = undefined
+              }
+            }}
+            bind:value={params.search_mode}
+          />
+        {/if}
 
-        {#if params.search_mode == "group_by"}
+        {#if 'search_mode' in params && params.search_mode == "group_by"}
           <div class="flex gap-2">
             <label class="" for="group_by">Group By:</label>
             <input

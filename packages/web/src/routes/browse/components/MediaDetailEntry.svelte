@@ -2,9 +2,9 @@
   import * as datetime from '@std/datetime'
   import type { Json } from '@andykais/ts-rpc/adapters/sveltekit.ts'
 
-  import { BrowseController } from '../controller.ts'
+  import type { MediaListPageController } from '$lib/pages/media_list/controller.ts'
   let {controller, ...props}: {
-    controller: BrowseController
+    controller: MediaListPageController
     label: string
     content: string | number | Date | null | Json
     type?: "text" | "datetime-local"

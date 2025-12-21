@@ -10,8 +10,8 @@
   import {XCircle} from '$lib/icons/mod.ts'
   import * as parsers from '$lib/parsers.ts'
 
-  import { BrowseController } from '../controller.ts'
-  let {controller}: {controller: BrowseController} = $props()
+  import type { MediaListPageController } from '$lib/pages/media_list/controller.ts'
+  let {controller}: {controller: MediaListPageController} = $props()
   let {dimensions, media_selections, settings, queryparams} = controller.runes
 
   let new_tag_str = $state<string>('')

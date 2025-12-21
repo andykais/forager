@@ -1,8 +1,8 @@
 <script lang="ts">
   import * as theme from '$lib/theme.ts'
-  import type { BrowseController } from '../controller.ts'
+  import type { MediaListPageController } from '$lib/pages/media_list/controller.ts'
 
-  let {controller, height = $bindable()}: {controller: BrowseController, height: number} = $props()
+  let {controller, height = $bindable()}: {controller: MediaListPageController, height: number} = $props()
   const runes = controller.runes
 
 
