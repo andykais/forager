@@ -140,6 +140,11 @@ class ForagerHelpers {
   }
 
   #get_config_filepath() {
+    const FORAGER_CONFIG_ENV_VAR = Deno.env.get('FORAGER_CONFIG')
+    if (FORAGER_CONFIG_ENV_VAR) {
+      return FORAGER_CONFIG_ENV_VAR
+    }
+
     const config_dir = this.#get_config_dir()
     return path.join(config_dir, 'forager', 'forager.yml')
   }

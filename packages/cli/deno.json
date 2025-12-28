@@ -8,7 +8,7 @@
     "compile:os:macos":   "deno compile          -P      --check --output=$INIT_CWD/releases/binaries/forager-aarch64-apple-darwin --target=aarch64-apple-darwin src/cli.ts",
     "compile:os:windows": "deno compile          -P      --check --output=$INIT_CWD/releases/binaries/forager-x86_64-pc-windows-msvc --target=x86_64-pc-windows-msvc src/cli.ts",
     "install":            "deno install --global -P      --check --name forager-cli --force src/cli.ts",
-    "develop":            "deno run              -P      --check src/cli.ts",
+    "develop":            "deno run              -P      --check --env-file=../../.env src/cli.ts",
     "develop:watch":      "deno run      --watch -P      --check src/cli.ts",
     "test":               "deno test             -P=test --check --trace-leaks test",
     "test:watch":         "deno test     --watch -P=test --check --trace-leaks src"
@@ -25,7 +25,7 @@
       "run": ["ffmpeg", "ffprobe"],
       "write": true,
       "read": true,
-      "env": ["HOME", "NODE_ENV"],
+      "env": ["HOME", "NODE_ENV", "FORAGER_CONFIG"],
       "net": ["127.0.0.1:8000"]
     },
     "test": {

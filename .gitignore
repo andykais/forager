@@ -3,3 +3,4 @@ node_modules
 
 # release output (binaries, changelog.md)
 releases
+.env
