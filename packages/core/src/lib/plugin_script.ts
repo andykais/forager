@@ -45,7 +45,7 @@ export abstract class FileSystemReceiver {
       }
     }
     if (this.extensions) {
-      if ((!this.extensions.includes(path.extname(entry.path).substring(1)))) {
+      if ((!this.extensions.includes(path.extname(entry.path).substring(1).toLowerCase()))) {
         return false
       }
     }

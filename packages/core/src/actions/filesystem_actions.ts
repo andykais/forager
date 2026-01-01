@@ -49,7 +49,7 @@ class FileSystemActions extends Actions {
         }
       }
       if (extensions.size) {
-        walk_options.exts = [...extensions]
+        walk_options.exts = [...extensions].flatMap(extension => [extension, extension.toUpperCase()]) // note that this is to handle .mp4 and .MP4 extensions
       }
     }
 
