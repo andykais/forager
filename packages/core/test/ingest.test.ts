@@ -2,7 +2,6 @@ import { test } from 'forager-test'
 import * as path from '@std/path'
 import { Forager, type MediaFileResponse } from '~/mod.ts'
 
-
 test('ingest actions', async ctx => {
   using forager = new Forager(ctx.get_test_config())
   forager.init()
@@ -12,10 +11,23 @@ test('ingest actions', async ctx => {
   ctx.assert.equals(discover.stats.existing.files, 0)
   ctx.assert.equals(discover.stats.ignored.files, 0) // ignored represents files that matched the glob but had no receiver
 
+  const ingest_events = ctx.assert.capture_events(forager.ingest, ['progress', 'complete', 'error'])
+
   const ingest = await forager.ingest.start()
   ctx.assert.equals(ingest.stats.created, 2)
   ctx.assert.equals(ingest.stats.existing, 0)
   ctx.assert.equals(ingest.stats.errored, 0)
+  ctx.assert.events(ingest_events, [
+    {event: 'progress'},
+    {event: 'progress'},
+    {event: 'complete'},
+  ])
+
+  ctx.assert.events(ingest_events, [
+    {event: 'progress'},
+    {event: 'progress'},
+    {event: 'complete'},
+  ])
 
   const filepaths = forager.media.search().results.map(result => (result as MediaFileResponse).media_file.filepath)
   ctx.assert.equals(filepaths.length, 2)

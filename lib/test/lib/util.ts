@@ -3,6 +3,7 @@ export { expectType as expect_type } from "npm:ts-expect"
 import * as path from '@std/path'
 import { Debugger } from './debugger.ts'
 import { Forager, ForagerConfig } from '../../../packages/core/src/mod.ts'
+import { Emitter } from "../../../packages/core/src/actions/lib/emitter.ts";
 
 type ValueOf<T> = T extends Array<infer V>
   ? V
@@ -50,6 +51,14 @@ type SearchResultAssertions = DeepPartial<ForagerMediaSearchResult>
 type TagSearchResultAssertions = DeepPartial<ForagerTagSearchResult>
 type GroupResultAssertions = DeepPartial<ForagerMediaGroupResult>
 type SeriesSearchResultAssertions = DeepPartial<ForagerSeriesSearchResult>
+
+
+
+interface CapturedEvent {
+  event: string
+  data: Object
+  captured_at: Date
+}
 
 class Assertions {
   equals = asserts.assertEquals
@@ -136,6 +145,27 @@ class Assertions {
     })
     if (sort_fn) massaged_actual_list = massaged_actual_list.sort(sort_fn as any)
     this.equals(massaged_actual_list as any, expected_list as any)
+  }
+
+  capture_events(action_emitter: Emitter<any>, events: string[]): CapturedEvent[] {
+    const captured_events: CapturedEvent[] = []
+    for (const event_name of events) {
+      action_emitter.on(event_name, (data: any) => {
+        captured_events.push({
+          event: event_name,
+          data,
+          captured_at: new Date()
+        })
+      })
+    }
+    return captured_events
+  }
+
+  events(captured_events: CapturedEvent[], asserts: (Partial<CapturedEvent> & {event: string})[]) {
+    const events_to_assert = new Set(asserts.map(assert => assert.event))
+    const captured_events_filtered: CapturedEvent[] = captured_events.filter(event => events_to_assert.has(event.event))
+    this.equals(captured_events_filtered.length, asserts.length, `Expected event count to be ${asserts.length} but is actually ${captured_events_filtered.length}`)
+    this.list_partial(captured_events_filtered, asserts)
   }
 }
 

@@ -8,6 +8,7 @@ import { FileProcessor } from '~/lib/file_processor.ts'
 import * as errors from '~/lib/errors.ts'
 import { get_hash_color } from "~/lib/text_processor.ts";
 import { TagJoin } from "../../models/tag.ts";
+import { Emitter, EmitterEvents } from "./emitter.ts";
 
 /**
  * A common return type from {@linkcode Forager.prototype.media} and {@linkcode Forager.prototype.series} actions. Contains a media reference for a series of media and its associated metadata.
@@ -84,9 +85,10 @@ export interface UpdateEditor extends EditInfo {
   overwrite?: boolean
 }
 
-class Actions {
+abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events> {
   protected ctx: Context
   public constructor(ctx: Context) {
+    super()
     this.ctx = ctx
   }
 

@@ -5,6 +5,20 @@ import { inputs, parsers } from '~/inputs/mod.ts'
 import * as plugin from '~/lib/plugin_script.ts'
 
 
+type IngestEvents = {
+  progress: {
+    stats: plugin.FileSystemReceiverContext['stats']
+  }
+  complete: {
+    stats: plugin.FileSystemReceiverContext['stats']
+  }
+  error: {
+    name: string
+    message: string
+    stacktrace: string
+  }
+}
+
 interface AddMediaFileAck {
   media_reference_id: number | null
   checksum?: string
@@ -13,15 +27,11 @@ interface AddMediaFileAck {
 /**
   * Actions for ingesting new files into Forager
   */
-class IngestActions extends Actions {
+class IngestActions extends Actions<IngestEvents> {
 
   // NOTE this part of the design is somewhat "brittle" because we are protecting against multiple runners within a single process
   // if for some reason, someone ran multiple forager instances pointed at the same database, we would not be able to enforce this constraint
-  #singleton_data: {
-    status: 'running' | 'stopped'
-  } = {
-    status: 'stopped',
-  }
+  #singleton_status: 'running' | 'stopped' = 'stopped'
 
   /**
     * Ingest files stored in forager from {@link FileSystem.discover}
@@ -32,10 +42,10 @@ class IngestActions extends Actions {
       params: parsers.IngestStart.parse(params)
     }
 
-    if (this.#singleton_data.status === 'running') {
+    if (this.#singleton_status === 'running') {
       throw new Error(`Ingest is already active. Forager does not support running multiple ingestions at the same time.`)
     }
-    this.#singleton_data.status = 'running'
+    this.#singleton_status = 'running'
 
     // this.ctx.logger.info(`Starting ingest with ${queued_entries.length} files`)
 
@@ -113,7 +123,10 @@ class IngestActions extends Actions {
 
     const duration = performance.now() - start_time
     this.ctx.logger.info(`Created ${stats.created} media files, updated ${stats.updated} and ignored ${stats.existing} existing and ${stats.duplicate} duplicate files in ${this.format_duration(duration)}.`)
-    this.#singleton_data.status = 'stopped'
+    this.#singleton_status = 'stopped'
+    this.emit('complete', {
+      stats
+    })
     return { stats }
   }
 
@@ -172,7 +185,6 @@ class IngestActions extends Actions {
         } else {
           throw new Error(`unexpected code path for error ${e.constructor.name}: ${e}`)
         }
-        ctx.stats.updated += 1
       } else if (e instanceof errors.InvalidFileError) {
         ctx.logger.warn(`${filepath} was an invalid file, skipping`)
         return {media_reference_id: null, status: 'errored'}
@@ -233,9 +245,12 @@ class IngestActions extends Actions {
 
     if (series && media_file_ack.media_reference_id) {
       for (const series_input of series) {
-        await this.#add_media_series_item(ctx, filepath, media_file_ack.media_reference_id, series_input)
+        const media_series_ack = await this.#add_media_series_item(ctx, filepath, media_file_ack.media_reference_id, series_input)
+        ctx.stats[media_series_ack.status] += 1
       }
     }
+
+    this.emit('progress', { stats: ctx.stats })
   }
 
   /**
