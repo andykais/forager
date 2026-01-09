@@ -20,7 +20,7 @@ if (!building) {
       forager = new Forager(config.core)
     } else {
       config = PackagesConfig.parse({
-        core: {database: {folder: 'database'}, thumbnail_folder: 'thumbnails', logger: {level: 'INFO'}},
+        core: {database: {folder: 'database'}, thumbnails: {folder: 'thumbnails'}, logger: {level: 'INFO'}},
         web: {asset_folder: 'static_assets', logger: {level: 'INFO'}}
       })
       forager = new Forager(config.core)

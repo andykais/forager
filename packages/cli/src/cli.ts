@@ -8,7 +8,11 @@ const LOG_LEVEL_TYPE = new cliffy.EnumType(["DEBUG", "INFO", "ERROR", 'SILENT'])
 
 const cli = new cliffy.Command()
   .name("forager")
-  .description("A command line interface to @forager/core")
+  .action(async function() {
+    // show the help message by default
+    this.showHelp()
+  })
+  .description("A command line interface to Forager")
   .version(deno_json.version)
   .option('--config=<config>', 'The path to a config file. If not specified, forager will look in the default config directory', {global: true})
   .type("log-level", LOG_LEVEL_TYPE)
