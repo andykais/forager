@@ -168,7 +168,6 @@ export class QueryParamsManager extends Rune {
    */
   #write_url(params: SearchParams): void {
     const serialized = this.serialize(params)
-    console.log({serialized})
 
     if (this.current_serialized !== serialized) {
       this.current_serialized = serialized
