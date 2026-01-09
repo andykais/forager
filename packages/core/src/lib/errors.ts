@@ -45,6 +45,19 @@ export class SeriesAlreadyExistsError extends AlreadyExistsError {
     super(media_reference_id, `series '${media_series_name}' already exists`)
   }
 }
+
+export class SeriesItemAlreadyExistsError extends AlreadyExistsError {
+  override name = 'SeriesItemAlreadyExistsError'
+
+  override get identifier() {
+    return `series '${this.media_series_name}'`
+  }
+
+  constructor(public media_series_name: string, media_series_index: number, media_reference_id: number) {
+    super(media_reference_id, `series '${media_series_name}' item #${media_series_index} already exists`)
+  }
+}
+
 export class MediaAlreadyExistsError extends AlreadyExistsError {
   override name = 'MediaAlreadyExistsError'
 

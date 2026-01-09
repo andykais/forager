@@ -2,6 +2,7 @@ import { Actions, type MediaSeriesResponse, type SeriesSearchResponse, type Upda
 import { inputs, outputs, parsers } from '~/inputs/mod.ts'
 import type * as result_types from '~/models/lib/result_types.ts'
 import * as errors from '~/lib/errors.ts'
+import * as torm from '@torm/sqlite'
 
 
 /**
@@ -99,12 +100,21 @@ class SeriesActions extends Actions {
     // making it default to the back of the list is more complicated (either storing that data on MediaReference or doing MAX() sql call) so for now we just default to putting it on the front of the list
     const series_index = parsed.series_index ?? 0
 
-    const series_item = this.models.MediaSeriesItem.create({
-      series_id: parsed.series_id,
-      media_reference_id: parsed.media_reference_id,
-      series_index: series_index,
-    })!
-    return this.models.MediaSeriesItem.select_one({id: series_item.id})
+    try {
+      const series_item = this.models.MediaSeriesItem.create({
+        series_id: parsed.series_id,
+        media_reference_id: parsed.media_reference_id,
+        series_index: series_index,
+      })!
+      return this.models.MediaSeriesItem.select_one({id: series_item.id})
+    } catch (e) {
+      if (e instanceof torm.errors.UniqueConstraintError) {
+        const series = this.models.MediaReference.select_one_media_series({id: parsed.series_id})
+        throw new errors.SeriesItemAlreadyExistsError(series.media_series_name!, parsed.series_index!, parsed.media_reference_id)
+      } else {
+        throw e
+      }
+    }
   }
 
   public get = (params: inputs.SeriesGet): MediaSeriesResponse => {

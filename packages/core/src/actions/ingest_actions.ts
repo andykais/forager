@@ -209,21 +209,29 @@ class IngestActions extends Actions<IngestEvents> {
         throw new Error('unimplemented')
       }
       try {
-        const media_series = this.ctx.forager.series.create(series?.series)
-        this.ctx.forager.series.add({
-          series_id: media_series.media_reference.id,
-          media_reference_id: media_reference_id,
-          series_index: series.series_index
-        })
-        return { media_reference_id: media_series.media_reference.id, status: 'created' }
-      } catch (e) {
-        if (e instanceof errors.SeriesAlreadyExistsError) {
+        try {
+          const media_series = this.ctx.forager.series.create(series?.series)
           this.ctx.forager.series.add({
-            series_id: e.media_reference_id,
+            series_id: media_series.media_reference.id,
             media_reference_id: media_reference_id,
             series_index: series.series_index
           })
-          return { media_reference_id: e.media_reference_id, status: 'updated' }
+          return { media_reference_id: media_series.media_reference.id, status: 'created' }
+        } catch (e) {
+          if (e instanceof errors.SeriesAlreadyExistsError) {
+            this.ctx.forager.series.add({
+              series_id: e.media_reference_id,
+              media_reference_id: media_reference_id,
+              series_index: series.series_index
+            })
+            return { media_reference_id: e.media_reference_id, status: 'updated' }
+          } else {
+            throw e
+          }
+        }
+      } catch (e) {
+        if (e instanceof errors.SeriesItemAlreadyExistsError) {
+          return { media_reference_id: e.media_reference_id, status: 'duplicate' }
         } else {
           throw e
         }
