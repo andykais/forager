@@ -1,6 +1,16 @@
 import type { RequestHandler } from '@sveltejs/kit'
 import { error } from '@sveltejs/kit'
+import { NotFoundError } from '@forager/core'
+import { z } from 'zod'
 import path from 'node:path'
+
+const ParamsSchema = z.object({
+  id: z.string().transform((val) => {
+    const num = parseInt(val)
+    if (isNaN(num)) throw new Error('Invalid media ID')
+    return num
+  }),
+})
 
 /**
  * Serves media files with proper HTTP range request support for video seeking.
@@ -9,31 +19,32 @@ import path from 'node:path'
  * Performance: Supports byte-range requests for efficient video streaming.
  */
 export const GET: RequestHandler = async ({ params, request, locals }) => {
-  const media_id = parseInt(params.id)
-  if (isNaN(media_id)) {
-    throw error(400, 'Invalid media ID')
-  }
+  // Validate params with Zod
+  const { id: media_reference_id } = ParamsSchema.parse(params)
 
-  // Fetch media record from database
-  const media = await locals.forager.media.get({ id: media_id })
-  if (!media) {
-    throw error(404, 'Media not found')
+  // Fetch media record from database (throws NotFoundError if not found)
+  let media
+  try {
+    media = await locals.forager.media.get({ media_reference_id })
+  } catch (err) {
+    if (err instanceof NotFoundError) {
+      throw error(404, 'Media not found')
+    }
+    throw err
   }
 
   const filepath = media.media_file.filepath
 
   // Security: Validate file path is within allowed directories
   const absolute_path = path.resolve(filepath)
-  const allowed_dirs = [
-    // Add your configured media directories here
-    // locals.config.core.media_paths, etc.
-  ]
-
-  // For now, just check the file exists and is readable
   // TODO: Add proper directory validation against config
-  let file: Deno.FsFile
-  let stat: Deno.FileInfo
+  // const allowed_dirs = [locals.config.core.media_paths]
+  // if (!allowed_dirs.some(dir => absolute_path.startsWith(path.resolve(dir)))) {
+  //   throw error(403, 'Forbidden')
+  // }
 
+  // Check file exists and is readable
+  let stat: Deno.FileInfo
   try {
     stat = await Deno.stat(absolute_path)
     if (!stat.isFile) {
@@ -54,7 +65,7 @@ export const GET: RequestHandler = async ({ params, request, locals }) => {
   }
 
   // Standard request - send entire file
-  file = await Deno.open(absolute_path, { read: true })
+  const file = await Deno.open(absolute_path, { read: true })
 
   return new Response(file.readable, {
     status: 200,
@@ -145,12 +156,10 @@ async function handle_range_request(
 function get_mime_type(media_file: { media_type: string; codec: string }): string {
   const { media_type, codec } = media_file
 
-  if (media_type === 'video') {
+  if (media_type === 'VIDEO') {
     switch (codec) {
       case 'h264':
-        return 'video/mp4'
       case 'hevc':
-        return 'video/mp4'
       case 'av1':
         return 'video/mp4'
       case 'vp8':
@@ -161,7 +170,7 @@ function get_mime_type(media_file: { media_type: string; codec: string }): strin
     }
   }
 
-  if (media_type === 'image') {
+  if (media_type === 'IMAGE') {
     switch (codec) {
       case 'png':
       case 'apng':
@@ -179,7 +188,7 @@ function get_mime_type(media_file: { media_type: string; codec: string }): strin
     }
   }
 
-  if (media_type === 'audio') {
+  if (media_type === 'AUDIO') {
     switch (codec) {
       case 'aac':
         return 'audio/aac'

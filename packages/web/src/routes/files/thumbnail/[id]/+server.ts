@@ -1,6 +1,25 @@
 import type { RequestHandler } from '@sveltejs/kit'
 import { error } from '@sveltejs/kit'
+import { NotFoundError } from '@forager/core'
+import { z } from 'zod'
 import path from 'node:path'
+
+const ParamsSchema = z.object({
+  id: z.string().transform((val) => {
+    const num = parseInt(val)
+    if (isNaN(num)) throw new Error('Invalid media ID')
+    return num
+  }),
+})
+
+const QuerySchema = z.object({
+  index: z.string().optional().transform((val) => {
+    if (!val) return 0
+    const num = parseInt(val)
+    if (isNaN(num)) throw new Error('Invalid thumbnail index')
+    return num
+  }),
+})
 
 /**
  * Serves thumbnail images with aggressive caching.
@@ -9,22 +28,25 @@ import path from 'node:path'
  * Performance: Immutable cache headers since thumbnails never change.
  */
 export const GET: RequestHandler = async ({ params, url, locals }) => {
-  const media_id = parseInt(params.id)
-  if (isNaN(media_id)) {
-    throw error(400, 'Invalid media ID')
-  }
+  // Validate params with Zod
+  const { id: media_reference_id } = ParamsSchema.parse(params)
+  const { index: thumbnail_index } = QuerySchema.parse({
+    index: url.searchParams.get('index'),
+  })
 
-  // Get thumbnail index from query param (default to first thumbnail)
-  const thumbnail_index = parseInt(url.searchParams.get('index') ?? '0')
-
-  // Fetch media record
-  const media = await locals.forager.media.get({ id: media_id })
-  if (!media) {
-    throw error(404, 'Media not found')
+  // Fetch media record (throws NotFoundError if not found)
+  let media
+  try {
+    media = await locals.forager.media.get({ media_reference_id })
+  } catch (err) {
+    if (err instanceof NotFoundError) {
+      throw error(404, 'Media not found')
+    }
+    throw err
   }
 
   // Get the requested thumbnail
-  const thumbnail = media.thumbnails[thumbnail_index]
+  const thumbnail = media.thumbnails.results[thumbnail_index]
   if (!thumbnail) {
     throw error(404, 'Thumbnail not found')
   }
