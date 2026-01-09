@@ -162,7 +162,7 @@ function get_mime_type(media_file: { media_type: string; codec: string }): strin
       case 'vp9':
         return 'video/webm'
       default:
-        return 'video/mp4'
+        throw new Error(`Unexpected code path. Unknown ${media_type} codec '${codec}'`)
     }
   }
 
@@ -180,7 +180,7 @@ function get_mime_type(media_file: { media_type: string; codec: string }): strin
       case 'mjpeg':
         return 'image/jpeg'
       default:
-        return 'image/jpeg'
+        throw new Error(`Unexpected code path. Unknown ${media_type} codec '${codec}'`)
     }
   }
 
@@ -195,7 +195,7 @@ function get_mime_type(media_file: { media_type: string; codec: string }): strin
       case 'vorbis':
         return 'audio/ogg'
       default:
-        return 'audio/mpeg'
+        throw new Error(`Unexpected code path. Unknown ${media_type} codec '${codec}'`)
     }
   }
 
