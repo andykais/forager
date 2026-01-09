@@ -261,6 +261,8 @@ if (!media_file) {
 }
 ```
 
+In general, when hitting an unknown state, do not try to "heal" with a best effort approach. Error loudly instead
+
 #### 5. Pattern Matching (ts-pattern)
 
 Use `match` from ts-pattern for complex conditionals:
