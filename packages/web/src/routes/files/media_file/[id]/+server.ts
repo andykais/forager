@@ -1,15 +1,11 @@
 import type { RequestHandler } from '@sveltejs/kit'
 import { error } from '@sveltejs/kit'
-import { NotFoundError } from '@forager/core'
+import { errors } from '@forager/core'
 import { z } from 'zod'
 import path from 'node:path'
 
 const ParamsSchema = z.object({
-  id: z.string().transform((val) => {
-    const num = parseInt(val)
-    if (isNaN(num)) throw new Error('Invalid media ID')
-    return num
-  }),
+  id: z.coerce.number()
 })
 
 /**
@@ -27,7 +23,7 @@ export const GET: RequestHandler = async ({ params, request, locals }) => {
   try {
     media = await locals.forager.media.get({ media_reference_id })
   } catch (err) {
-    if (err instanceof NotFoundError) {
+    if (err instanceof errors.NotFoundError) {
       throw error(404, 'Media not found')
     }
     throw err
