@@ -33,17 +33,18 @@ const DEFAULTS: SearchParams = {
 }
 
 // Map internal names to URL param names
-const URL_PARAM_MAP: Partial<Record<keyof SearchParams, string>> = {
+const URL_PARAM_MAP = {
   search_string: 'tags',
   unread_only: 'unread',
   search_mode: 'mode',
   media_type: 'type',
-}
+} as const satisfies Partial<Record<keyof SearchParams, string>>
+type UrlParamMap = typeof URL_PARAM_MAP
 
-type SearchParamsReversed = {[K in keyof SearchParams]: SearchParams[K]}
+type SearchParamsReversed = { [K in keyof UrlParamMap as UrlParamMap[K]]: K}
 const URL_PARAM_MAP_REVERSED = Object.fromEntries(
   Object.entries(URL_PARAM_MAP).map(([key, val]) => [val, key])
-) as any as SearchParamsReversed
+) as SearchParamsReversed
 
 /**
  * Manages browser URL query parameters and syncs them with search state.
@@ -55,7 +56,7 @@ export class QueryParamsManager extends Rune {
   public current_serialized: string = '?'
 
   #media_list: MediaListRune
-  #popstate_listener_fn: (params: SearchParams) => void
+  #popstate_listener_fn?: (params: SearchParams) => void
 
   constructor(client: BaseController['client'], media_list: MediaListRune) {
     super(client)
