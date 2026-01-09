@@ -3,7 +3,7 @@ import {BaseController} from '$lib/base_controller.ts'
 import {create_focuser, SettingsRune, MediaListRune } from '$lib/runes/index.ts'
 import { create_dimensional_rune } from './runes/dimensions.svelte.ts'
 import { MediaSelectionsRune } from './runes/media_selections.svelte.ts'
-import { QueryParamsRune } from './runes/queryparams.svelte.ts'
+import { QueryParamsManager } from './lib/queryparams.svelte.ts'
 
 
 class BrowseController extends BaseController {
@@ -13,7 +13,7 @@ class BrowseController extends BaseController {
     dimensions: ReturnType<typeof create_dimensional_rune>
     settings: SettingsRune
     media_selections: MediaSelectionsRune
-    queryparams: QueryParams
+    queryparams: QueryParamsManager
   }
 
   public constructor(config: Config) {
@@ -26,7 +26,7 @@ class BrowseController extends BaseController {
       dimensions: create_dimensional_rune(),
       settings: new SettingsRune(this.client, this.config),
       media_selections: new MediaSelectionsRune(this.client, media_list_rune),
-      queryparams: new QueryParamsRune(this.client, media_list_rune),
+      queryparams: new QueryParamsManager(this.client, media_list_rune),
     }
   }
 }
