@@ -6,22 +6,32 @@
   import TagAutoCompleteInput from "$lib/components/TagAutoCompleteInput.svelte";
   import type { BrowseController } from "../controller.ts";
   import StarInput from '$lib/components/StarInput.svelte'
-  import { onMount } from 'svelte'
+  import { page } from '$app/stores'
 
   let {controller}: {controller: BrowseController} = $props()
 
   const {queryparams, media_selections, settings} = controller.runes
 
   let params = $state<typeof queryparams.DEFAULTS>({...queryparams.DEFAULTS})
+  let initialized = false
 
-  // Watch current_url reactively (updated by QueryParamsManager via $page store)
+  // Watch $page.url for changes (handles back/forward automatically)
   $effect(() => {
-    params = {...queryparams.current_url}
+    const current_url = $page.url
+
+    if (!initialized) {
+      // First run - initialize
+      initialized = true
+      queryparams.sync_from_url(current_url)
+    } else {
+      // URL changed (back/forward or link) - sync and search
+      queryparams.sync_from_url(current_url)
+    }
   })
 
-  // Initialize search on mount
-  onMount(() => {
-    queryparams.initialize()
+  // Watch queryparams.current_url to update local state
+  $effect(() => {
+    params = {...queryparams.current_url}
   })
 
   async function update_search() {

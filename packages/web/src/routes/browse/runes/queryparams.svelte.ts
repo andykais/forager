@@ -2,7 +2,6 @@ import type { inputs } from '@forager/core'
 import type { MediaListRune } from '$lib/runes/index.ts'
 import type { BaseController } from '$lib/base_controller.ts'
 import * as parsers from '$lib/parsers.ts'
-import { page } from '$app/stores'
 import { pushState } from '$app/navigation'
 import { Rune } from '$lib/runes/rune.ts'
 
@@ -50,8 +49,7 @@ const URL_PARAM_MAP_REVERSED = Object.fromEntries(
  * Manages browser URL query parameters and syncs them with search state.
  * Extracted from page component to keep script tags clean.
  *
- * Uses SvelteKit's reactive $page store to automatically handle
- * browser back/forward navigation.
+ * Component watches $page.url and calls sync_from_url() on changes.
  */
 export class QueryParamsManager extends Rune {
   public DEFAULTS = DEFAULTS
@@ -59,39 +57,17 @@ export class QueryParamsManager extends Rune {
   public current_serialized: string = '?'
 
   #media_list: MediaListRune
-  #initialized = false
 
   constructor(client: BaseController['client'], media_list: MediaListRune) {
     super(client)
     this.#media_list = media_list
-
-    // Watch $page.url reactively (handles back/forward automatically)
-    $effect(() => {
-      // Access $page.url to make this effect reactive
-      const current_page = $page
-      if (!current_page?.url) return
-
-      const params = this.#parse_url(current_page.url)
-
-      // Skip first run (will be handled by explicit initialize() call)
-      if (!this.#initialized) {
-        this.#initialized = true
-        return
-      }
-
-      // URL changed (via back/forward or link navigation)
-      this.#execute_search(params)
-    })
   }
 
   /**
-   * Initialize from current URL (call once on mount from component)
+   * Sync from URL and execute search (called by component when $page.url changes)
    */
-  public async initialize(): Promise<void> {
-    const current_page = $page
-    if (!current_page?.url) return
-
-    const params = this.#parse_url(current_page.url)
+  public async sync_from_url(url: URL): Promise<void> {
+    const params = this.#parse_url(url)
     await this.#execute_search(params)
   }
 
