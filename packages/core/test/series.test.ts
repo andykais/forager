@@ -32,6 +32,11 @@ test('media series', async (ctx) => {
 
   cool_art_series = forager.series.get({series_id: cool_art_series.media_reference.id})
   ctx.assert.equals(cool_art_series.media_reference.media_series_length, 2)
+  // this will contain the merged tags from cool_art_series and media_cartoon
+  ctx.assert.list_partial(cool_art_series.tags, [
+    {name: 'cartoon'},
+    {name: 'wallpaper'},
+  ])
 
   ctx.assert.search_result(forager.media.search({query: {series_id: cool_art_series.media_reference.id}}), {
     total: 2,
@@ -46,9 +51,14 @@ test('media series', async (ctx) => {
     ctx.assert.equals(cool_art_series.media_reference.title, 'cool art collection')
     cool_art_series = forager.series.update(cool_art_series.media_reference.id, {}, ['art'])
     ctx.assert.equals(cool_art_series.media_reference.title, 'cool art collection')
-    ctx.assert.object_match(cool_art_series, {
-      tags: [{name: 'art'}]
-    })
+    ctx.assert.list_partial(cool_art_series.tags, [
+      {name: 'cartoon'},
+      {name: 'wallpaper'},
+      {name: 'art'},
+    ])
+    // ctx.assert.object_match(cool_art_series, {
+    //   tags: [{name: 'art'}]
+    // })
 
     // ensure it appears in search
     ctx.assert.search_result(forager.media.search({query: {tags: ['art']}}), {
@@ -114,8 +124,9 @@ test('media series', async (ctx) => {
   await ctx.subtest('thumbnails', () => {
     // first we need to grab the doodle series id
     const doodle_series_search = forager.media.search({query: {series: true, tags: ['doodle_list']}})
-    ctx.assert.equals(doodle_series_search.total, 1)
+    ctx.assert.equals(doodle_series_search.total, 2)
     ctx.assert.equals(doodle_series_search.results[0].media_reference.title, 'doodles')
+    ctx.assert.equals(doodle_series_search.results[1].media_reference.title, 'cool art collection')
     const doodle_series = doodle_series_search.results[0]
 
     ctx.assert.search_result(forager.media.search({sort_by: 'created_at', order: 'asc', query: {series_id: cool_art_series.media_reference.id}, thumbnail_limit: -1}), {
@@ -230,6 +241,5 @@ test('media series', async (ctx) => {
     ctx.assert.equals(series_foobar.media_reference.media_series_name, 'foobar')
     ctx.assert.throws(() => forager.series.create({media_series_name: 'foobar'}), errors.SeriesAlreadyExistsError)
   })
+
 })
-
-

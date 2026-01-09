@@ -142,7 +142,7 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
       })!
 
       // NOTE that on create calls, we ignore tags.remove. This is mostly an implementation detail, since tags.remove is not exposed to the forager.media.create action
-      const tag_edits = this.#manage_media_tags(media_reference.id, {...parsed.tags, remove: []}, parsed.editing)
+      const tag_edits = this.manage_media_tags(media_reference.id, {...parsed.tags, remove: []}, parsed.editing)
 
       if (parsed.editing?.editor) {
         this.models.EditLog.create({
@@ -211,7 +211,7 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
         ...media_info_updates,
       })
 
-      const tag_changes = this.#manage_media_tags(media_reference_id, parsed.tags, parsed.editing)
+      const tag_changes = this.manage_media_tags(media_reference_id, parsed.tags, parsed.editing)
 
       if (parsed.editing?.editor) {
         this.models.EditLog.create({
@@ -300,7 +300,7 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
     }
   }
 
-  #manage_media_tags(media_reference_id: number, tags: outputs.MediaReferenceUpdateTags, editing?: CreateEditor | UpdateEditor): result_types.EditLog['changes']['tags'] {
+  protected manage_media_tags(media_reference_id: number, tags: outputs.MediaReferenceUpdateTags, editing?: CreateEditor | UpdateEditor): result_types.EditLog['changes']['tags'] {
     const tags_added = new Set<string>()
     const tags_removed = new Set<string>()
     const tags_existing = new Map<string, TagJoin>()

@@ -106,6 +106,13 @@ class SeriesActions extends Actions {
         media_reference_id: parsed.media_reference_id,
         series_index: series_index,
       })!
+      const series_item_tags = this.models.Tag.select_all({media_reference_id: parsed.media_reference_id }).map(tag => ({
+        slug: this.models.Tag.format_slug(tag),
+        group: tag.group,
+        name: tag.name,
+      }))
+      // merge the series item tags into the series reference
+      this.manage_media_tags(parsed.series_id, {add: series_item_tags, remove: []})
       return this.models.MediaSeriesItem.select_one({id: series_item.id})
     } catch (e) {
       if (e instanceof torm.errors.UniqueConstraintError) {
@@ -115,6 +122,7 @@ class SeriesActions extends Actions {
         throw e
       }
     }
+
   }
 
   public get = (params: inputs.SeriesGet): MediaSeriesResponse => {
