@@ -40,9 +40,10 @@ const URL_PARAM_MAP: Partial<Record<keyof SearchParams, string>> = {
   media_type: 'type',
 }
 
+type SearchParamsReversed = {[K in keyof SearchParams]: SearchParams[K]}
 const URL_PARAM_MAP_REVERSED = Object.fromEntries(
   Object.entries(URL_PARAM_MAP).map(([key, val]) => [val, key])
-)
+) as any as SearchParamsReversed
 
 /**
  * Manages browser URL query parameters and syncs them with search state.
@@ -54,7 +55,7 @@ export class QueryParamsManager extends Rune {
   public current_serialized: string = '?'
 
   #media_list: MediaListRune
-  #popstate_listener_fn!: (params: SearchParams) => void
+  #popstate_listener_fn: (params: SearchParams) => void
 
   constructor(client: BaseController['client'], media_list: MediaListRune) {
     super(client)
@@ -62,7 +63,7 @@ export class QueryParamsManager extends Rune {
 
     // Initialize from URL on mount
     onMount(async () => {
-      const params = this.#parse_url(window.location)
+      const params = this.#parse_url(new URL(window.location.toString()))
       if (this.#popstate_listener_fn) {
         this.#popstate_listener_fn(params)
       }
@@ -70,7 +71,7 @@ export class QueryParamsManager extends Rune {
 
       // Listen for browser back/forward
       window.addEventListener('popstate', async () => {
-        const params = this.#parse_url(window.location)
+        const params = this.#parse_url(new URL(window.location.toString()))
         if (this.#popstate_listener_fn) {
           this.#popstate_listener_fn(params)
         }
