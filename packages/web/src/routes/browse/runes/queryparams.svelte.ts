@@ -142,7 +142,9 @@ export class QueryParamsManager extends Rune {
             .replaceAll('%2C', ',')
           url_params.set(param_name, encoded)
         } else if (key === 'filepath') {
-          url_params.set(param_name, encodeURIComponent(value))
+          if (value) {
+            url_params.set(param_name, encodeURIComponent(value))
+          }
         } else {
           url_params.set(param_name, String(value))
         }
@@ -158,7 +160,7 @@ export class QueryParamsManager extends Rune {
       .map(([key, val]) => `${key}=${val}`)
       .join('&')
 
-    return query_string ? '?' + query_string : '?'
+    return query_string ? '?' + query_string : null
   }
 
   /**
@@ -166,11 +168,17 @@ export class QueryParamsManager extends Rune {
    */
   #write_url(params: SearchParams): void {
     const serialized = this.serialize(params)
+    console.log({serialized})
 
     if (this.current_serialized !== serialized) {
       this.current_serialized = serialized
       this.current = { ...params }
-      pushState(serialized, {})
+      if (serialized) {
+        pushState(serialized, {})
+      } else {
+        // when we have empty query params, we do this to drop the "?" at the end of the url
+        pushState(window.location.pathname, {})
+      }
     }
   }
 
