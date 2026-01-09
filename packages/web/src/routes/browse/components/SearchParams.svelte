@@ -6,21 +6,29 @@
   import TagAutoCompleteInput from "$lib/components/TagAutoCompleteInput.svelte";
   import type { BrowseController } from "../controller.ts";
   import StarInput from '$lib/components/StarInput.svelte'
+  import { onMount } from 'svelte'
 
   let {controller}: {controller: BrowseController} = $props()
 
   const {queryparams, media_selections, settings} = controller.runes
 
   let params = $state<typeof queryparams.DEFAULTS>({...queryparams.DEFAULTS})
-  queryparams.popstate_listener(url_params => {
-    params = {...url_params}
+
+  // Watch current_url reactively (updated by QueryParamsManager via $page store)
+  $effect(() => {
+    params = {...queryparams.current_url}
+  })
+
+  // Initialize search on mount
+  onMount(() => {
+    queryparams.initialize()
   })
 
   async function update_search() {
     await queryparams.submit(params)
     media_selections.clear_current_selection()
-
   }
+
   const icon_color = theme.colors.gray[800]
   const icon_size = "22px"
 </script>

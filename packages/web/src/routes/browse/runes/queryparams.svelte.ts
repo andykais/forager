@@ -2,7 +2,7 @@ import type { inputs } from '@forager/core'
 import type { MediaListRune } from '$lib/runes/index.ts'
 import type { BaseController } from '$lib/base_controller.ts'
 import * as parsers from '$lib/parsers.ts'
-import { onMount } from 'svelte'
+import { page } from '$app/stores'
 import { pushState } from '$app/navigation'
 import { Rune } from '$lib/runes/rune.ts'
 
@@ -49,6 +49,9 @@ const URL_PARAM_MAP_REVERSED = Object.fromEntries(
 /**
  * Manages browser URL query parameters and syncs them with search state.
  * Extracted from page component to keep script tags clean.
+ *
+ * Uses SvelteKit's reactive $page store to automatically handle
+ * browser back/forward navigation.
  */
 export class QueryParamsManager extends Rune {
   public DEFAULTS = DEFAULTS
@@ -56,29 +59,40 @@ export class QueryParamsManager extends Rune {
   public current_serialized: string = '?'
 
   #media_list: MediaListRune
-  #popstate_listener_fn?: (params: SearchParams) => void
+  #initialized = false
 
   constructor(client: BaseController['client'], media_list: MediaListRune) {
     super(client)
     this.#media_list = media_list
 
-    // Initialize from URL on mount
-    onMount(async () => {
-      const params = this.#parse_url(new URL(window.location.toString()))
-      if (this.#popstate_listener_fn) {
-        this.#popstate_listener_fn(params)
-      }
-      await this.#execute_search(params)
+    // Watch $page.url reactively (handles back/forward automatically)
+    $effect(() => {
+      // Access $page.url to make this effect reactive
+      const current_page = $page
+      if (!current_page?.url) return
 
-      // Listen for browser back/forward
-      window.addEventListener('popstate', async () => {
-        const params = this.#parse_url(new URL(window.location.toString()))
-        if (this.#popstate_listener_fn) {
-          this.#popstate_listener_fn(params)
-        }
-        await this.#execute_search(params)
-      })
+      const params = this.#parse_url(current_page.url)
+
+      // Skip first run (will be handled by explicit initialize() call)
+      if (!this.#initialized) {
+        this.#initialized = true
+        return
+      }
+
+      // URL changed (via back/forward or link navigation)
+      this.#execute_search(params)
     })
+  }
+
+  /**
+   * Initialize from current URL (call once on mount from component)
+   */
+  public async initialize(): Promise<void> {
+    const current_page = $page
+    if (!current_page?.url) return
+
+    const params = this.#parse_url(current_page.url)
+    await this.#execute_search(params)
   }
 
   /**
@@ -230,12 +244,9 @@ export class QueryParamsManager extends Rune {
   }
 
   /**
-   * Navigate to new params (calls popstate listener + executes search)
+   * Navigate to new params (executes search)
    */
   public async goto(params: SearchParams): Promise<void> {
-    if (this.#popstate_listener_fn) {
-      this.#popstate_listener_fn(params)
-    }
     await this.submit(params)
   }
 
@@ -295,13 +306,6 @@ export class QueryParamsManager extends Rune {
     } else {
       throw new Error('unimplemented')
     }
-  }
-
-  /**
-   * Register callback for URL changes (browser back/forward)
-   */
-  public popstate_listener(fn: (params: SearchParams) => void): void {
-    this.#popstate_listener_fn = fn
   }
 
   /**
