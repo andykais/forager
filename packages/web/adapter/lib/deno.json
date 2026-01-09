@@ -5,7 +5,6 @@
 
   "tasks": {
     "preview": "deno run -A --check --unstable-raw-imports --env-file=../../../../.env mod.ts",
-    "preview:watch": "deno run -A --check --unstable-raw-imports --watch mod.ts"
   },
 
   "imports": {
