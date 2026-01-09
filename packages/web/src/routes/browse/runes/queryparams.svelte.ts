@@ -2,6 +2,7 @@ import type { inputs } from '@forager/core'
 import type { MediaListRune } from '$lib/runes/index.ts'
 import type { BaseController } from '$lib/base_controller.ts'
 import * as parsers from '$lib/parsers.ts'
+import { onMount } from 'svelte'
 import { pushState } from '$app/navigation'
 import { Rune } from '$lib/runes/rune.ts'
 
@@ -47,13 +48,22 @@ const URL_PARAM_MAP_REVERSED = Object.fromEntries(
 
 /**
  * Manages browser URL query parameters and syncs them with search state.
- * Extracted from page component to keep script tags clean.
  *
- * Component watches $page.url and calls sync_from_url() on changes.
+ * Two-state model:
+ * - `current`: Committed params (matches URL, used for pagination)
+ * - `draft`: Staging area for form edits (before submission)
+ *
+ * When URL changes externally (back/forward), draft resets to match current.
  */
 export class QueryParamsManager extends Rune {
   public DEFAULTS = DEFAULTS
-  public current_url: SearchParams = $state({ ...DEFAULTS })
+
+  /** Committed params (matches URL, used for pagination/search) */
+  public current: SearchParams = $state({ ...DEFAULTS })
+
+  /** Draft params (form staging, can differ from current) */
+  public draft: SearchParams = $state({ ...DEFAULTS })
+
   public current_serialized: string = '?'
 
   #media_list: MediaListRune
@@ -61,14 +71,22 @@ export class QueryParamsManager extends Rune {
   constructor(client: BaseController['client'], media_list: MediaListRune) {
     super(client)
     this.#media_list = media_list
-  }
 
-  /**
-   * Sync from URL and execute search (called by component when $page.url changes)
-   */
-  public async sync_from_url(url: URL): Promise<void> {
-    const params = this.#parse_url(url)
-    await this.#execute_search(params)
+    // Initialize from URL on mount
+    onMount(async () => {
+      const params = this.#parse_url(new URL(window.location.toString()))
+      this.current = params
+      this.draft = { ...params }  // Initialize draft
+      await this.#execute_search(params)
+
+      // Listen for browser back/forward
+      window.addEventListener('popstate', async () => {
+        const params = this.#parse_url(new URL(window.location.toString()))
+        this.current = params
+        this.draft = { ...params }  // Reset draft to match URL
+        await this.#execute_search(params)
+      })
+    })
   }
 
   /**
@@ -103,7 +121,6 @@ export class QueryParamsManager extends Rune {
       }
     }
 
-    this.current_url = { ...params }
     return params
   }
 
@@ -152,7 +169,7 @@ export class QueryParamsManager extends Rune {
 
     if (this.current_serialized !== serialized) {
       this.current_serialized = serialized
-      this.current_url = { ...params }
+      this.current = { ...params }
       pushState(serialized, {})
     }
   }
@@ -212,18 +229,19 @@ export class QueryParamsManager extends Rune {
   }
 
   /**
-   * Submit search with URL update
+   * Submit draft params: update URL and execute search
    */
-  public async submit(params: SearchParams): Promise<void> {
-    this.#write_url(params)
-    await this.#execute_search(params)
+  public async submit(): Promise<void> {
+    this.#write_url(this.draft)
+    await this.#execute_search(this.draft)
   }
 
   /**
-   * Navigate to new params (executes search)
+   * Navigate to new params (updates draft, then submits)
    */
   public async goto(params: SearchParams): Promise<void> {
-    await this.submit(params)
+    this.draft = { ...params }
+    await this.submit()
   }
 
   /**
@@ -231,7 +249,7 @@ export class QueryParamsManager extends Rune {
    * Supports URL param names (e.g., 'tags') or internal names (e.g., 'search_string')
    */
   public merge(partial_params: Partial<Record<string, any>>): SearchParams {
-    const params = { ...this.current_url }
+    const params = { ...this.current }
 
     for (const [key, val] of Object.entries(partial_params)) {
       const params_key: keyof SearchParams = URL_PARAM_MAP_REVERSED[key] ?? key
@@ -261,7 +279,7 @@ export class QueryParamsManager extends Rune {
    * Supports special 'group_by_tag' key for group-by searches
    */
   public extend(key: 'tag' | 'group_by_tag', value: string): SearchParams {
-    const params = { ...this.current_url }
+    const params = { ...this.current }
 
     // group_by_tag means we want to do a normal search including the group by tag
     if (key === 'group_by_tag') {
@@ -288,12 +306,12 @@ export class QueryParamsManager extends Rune {
    * Get contextual query for other components (e.g., tag autocomplete)
    */
   public get contextual_query(): inputs.PaginatedSearch['query'] {
-    const tags = this.current_url.search_string.split(' ').filter((t) => t.length > 0)
+    const tags = this.current.search_string.split(' ').filter((t) => t.length > 0)
     return {
       tags,
-      filepath: this.current_url.filepath,
-      unread: this.current_url.unread_only || undefined,
-      animated: this.current_url.media_type === 'animated' ? true : undefined,
+      filepath: this.current.filepath,
+      unread: this.current.unread_only || undefined,
+      animated: this.current.media_type === 'animated' ? true : undefined,
     }
   }
 
@@ -301,6 +319,6 @@ export class QueryParamsManager extends Rune {
    * Human-readable summary of current search
    */
   public get human_readable_summary(): string {
-    return this.current_url.search_string || 'All media'
+    return this.current.search_string || 'All media'
   }
 }
