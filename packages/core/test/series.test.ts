@@ -52,10 +52,10 @@ test('media series', async (ctx) => {
     cool_art_series = forager.series.update(cool_art_series.media_reference.id, {}, ['art'])
     ctx.assert.equals(cool_art_series.media_reference.title, 'cool art collection')
     ctx.assert.list_partial(cool_art_series.tags, [
+      {name: 'art'},
       {name: 'cartoon'},
       {name: 'wallpaper'},
-      {name: 'art'},
-    ])
+    ], (tag_a, tag_b) => tag_a.name.localeCompare(tag_b.name))
     // ctx.assert.object_match(cool_art_series, {
     //   tags: [{name: 'art'}]
     // })
