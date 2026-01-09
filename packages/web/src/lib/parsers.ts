@@ -10,8 +10,16 @@ class Tag {
     }
   }
 
-  static decode(tag_str: string) {
-    throw new Error('unimplemented')
+  static decode(tag_str: string): {name: string, group?: string} {
+    const colon_index = tag_str.indexOf(':')
+    if (colon_index === -1) {
+      return { name: tag_str }
+    } else {
+      return {
+        group: tag_str.substring(0, colon_index),
+        name: tag_str.substring(colon_index + 1)
+      }
+    }
   }
 }
 
