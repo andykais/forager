@@ -17,7 +17,16 @@
       "assumeIsSvelteProject": true
     }],
 
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+
+    "paths": {
+      "@forager/core": ["../core/src/mod.ts"],
+      "@forager/core/*": ["../core/src/*"],
+      "~/": ["../core/src/"],
+      "~/*": ["../core/src/*"]
+    },
+
+    "types": ["@deno/types"]
 	}
 	// Path aliases are handled by https://svelte.dev/docs/kit/configuration#alias
 	// except $lib which is handled by https://svelte.dev/docs/kit/configuration#files

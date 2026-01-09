@@ -15,9 +15,17 @@
 	"dependencies": {
     "@andykais/ts-rpc": "npm:@jsr/andykais__ts-rpc@^0.2.4",
     "@torm/sqlite": "npm:@jsr/torm__sqlite@^1.9.7",
-    "@opentelemetry/api": "1.9.0"
+    "@opentelemetry/api": "1.9.0",
+    "@std/yaml": "npm:@jsr/std__yaml@^1.0.5",
+    "@std/path": "npm:@jsr/std__path@^1.0.3",
+    "@std/datetime": "npm:@jsr/std__datetime@^0.225.3",
+    "@std/log": "npm:@jsr/std__log@^0.224.6",
+    "@std/fs": "npm:@jsr/std__fs@^0.229.3",
+    "@std/media-types": "npm:@jsr/std__media-types@^0.224.0",
+    "@std/fmt": "npm:@jsr/std__fmt@^0.225.6"
 	},
 	"devDependencies": {
+    "@deno/types": "^0.0.1",
     "@deno/vite-plugin": "1.0.5",
 		"@sveltejs/kit": "2.43.7",
 		"@sveltejs/vite-plugin-svelte": "6.2.1",
