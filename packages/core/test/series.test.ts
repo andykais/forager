@@ -36,7 +36,7 @@ test('media series', async (ctx) => {
   ctx.assert.list_partial(cool_art_series.tags, [
     {name: 'cartoon'},
     {name: 'wallpaper'},
-  ])
+  ], (tag_a, tag_b) => tag_a.name.localeCompare(tag_b.name))
 
   ctx.assert.search_result(forager.media.search({query: {series_id: cool_art_series.media_reference.id}}), {
     total: 2,
