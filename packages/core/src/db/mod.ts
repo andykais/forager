@@ -58,6 +58,7 @@ class Database {
       throw new Error(`Version mismatch: Forager app version is ${this.#torm.migrations.application_version()}, while the database version is currently ${init_info.current_version}. Consider turning on automatic migrations, or manually migrating the database`)
     }
     this.#torm.driver.exec(`PRAGMA journal_mode=WAL`)
+    this.#torm.driver.exec(`PRAGMA busy_timeout=1000`)
     return init_info
   }
 
