@@ -6,6 +6,7 @@ import { MediaViewRune } from '.'
 type Result =
   | ReturnType<Forager['media']['search']>
   | ReturnType<Forager['media']['group']>
+  | ReturnType<Forager['series']['search']>
 
 interface SearchInput {
   type: 'media'
@@ -15,6 +16,10 @@ interface GroupByInput {
   type: 'group_by'
   params: Parameters<Forager['media']['group']>[0]
 }
+interface SeriesSearchInput {
+  type: 'series'
+  params: Parameters<Forager['series']['search']>[0]
+}
 interface FilesystemInput {
   type: 'filesystem'
   params: {}
@@ -22,6 +27,7 @@ interface FilesystemInput {
 export type Input =
   | SearchInput
   | GroupByInput
+  | SeriesSearchInput
   | FilesystemInput
 
 interface MediaListState {
@@ -31,7 +37,7 @@ interface MediaListState {
 }
 
 export class MediaListRune extends Rune {
-  #saved_params_type: 'media' | 'group_by' = 'media'
+  #saved_params_type: 'media' | 'group_by' | 'series' = 'media'
   #saved_params: {} | undefined
   #prev_query_hash: string = ''
   #fetch_count = 0
@@ -87,6 +93,8 @@ export class MediaListRune extends Rune {
     else if (params_type === 'group_by') {
       fetch_params.limit = fetch_params.limit ?? 30
       content = await this.client.forager.media.group(fetch_params)
+    } else if (params_type === 'series') {
+      content = await this.client.forager.series.search(fetch_params)
     } else {
       throw new Error('unimplemented')
     }
@@ -112,16 +120,16 @@ export class MediaListRune extends Rune {
     }
   }
 
-  async fetch_tag_summary(params: Input) {
+  async fetch_tag_summary(_params?: Input) {
     // NOTE this currently just does a "union". We want an "intersection" for this view. Otherwise our default view returns all tags!
     /*
 
-    if (params.type !== 'media') {
+    if (_params.type !== 'media') {
       return
     }
 
     const content = await this.client.forager.tag.search({
-      contextual_query: params.params?.query
+      contextual_query: _params.params?.query
     })
     console.log(content)
     */

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { BrowseController } from '../controller.ts'
+  import type { MediaListPageController } from '$lib/pages/media_list/controller.ts'
   import * as theme from '$lib/theme.ts'
   import { focusable, scrollable } from '$lib/actions/mod.ts'
   import Icon from '$lib/components/Icon.svelte'
@@ -7,7 +7,7 @@
   import * as icons from '$lib/icons/mod.ts'
 
   interface Props {
-    controller: BrowseController
+    controller: MediaListPageController
   }
 
   let {controller}: Props = $props()
@@ -104,7 +104,7 @@
           </div>
 
           <!-- info chips -->
-          <div class="flex text-xs text-gray-400 justify-between  p-0.5">
+          <div class="flex text-xs text-gray-400 justify-between p-0.5">
             {#if result.media_type === 'media_file'}
               {#if result.media_file.media_type === 'VIDEO'}
                 <span class="flex">
@@ -130,13 +130,29 @@
               <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
               <SearchLink
                 class="hover:text-green-500 hover:bg-gray-700 px-2 rounded-sm"
-                {controller} params={queryparams.merge({mode: 'media', tags: `${queryparams.current_url.group_by ?? ''}:${result.group_metadata.value}`})}> {result.group_metadata.value} 
+                {controller} params={queryparams.merge({mode: 'media', tags: `${(queryparams.current_url as any).group_by ?? ''}:${result.group_metadata.value}`})}> {result.group_metadata.value} 
               </SearchLink>
               <span>{result.group_metadata.count}</span>
           {:else}
             UNEXPECTED MEDIA TYPE {result.media_type}
           {/if}
         </div>
+
+        {#if controller.page_kind === 'series' && result.series_index !== undefined}
+          <div class="text-xs text-gray-300 text-center select-none">
+            #{result.series_index}
+          </div>
+        {/if}
+
+        {#if controller.page_kind === 'browse' && result.media_type === 'media_series'}
+          <a
+            class="text-xs text-green-200 hover:text-green-300 text-center hover:underline"
+            href="/series/{result.media_reference.id}"
+            onclick={e => e.stopPropagation()}
+          >
+            Open series
+          </a>
+        {/if}
         </div>
       </div>
     </div>

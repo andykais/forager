@@ -1,10 +1,10 @@
 import {Rune} from '$lib/runes/rune.ts'
 import type { BaseController } from '$lib/base_controller.ts'
-import type { MediaResponse, inputs, type model_types } from '@forager/core'
+import type { MediaResponse, SeriesSearchResponse, inputs, type model_types } from '@forager/core'
 
 
 interface State {
-  media: MediaResponse
+  media: MediaResponse | SeriesSearchResponse
   full_thumbnails: MediaResponse['thumbnails'] | undefined
 }
 
@@ -12,11 +12,11 @@ interface State {
 interface SearchParams {}
 
 export class MediaViewRune extends Rune {
-  media_type!: MediaResponse['media_type'] | 'grouped'
+  media_type!: (MediaResponse | SeriesSearchResponse)['media_type'] | 'grouped'
   state = $state<State>()
   current_view: model_types.View
 
-  protected constructor(client: BaseController['client'], media_response: MediaResponse) {
+  protected constructor(client: BaseController['client'], media_response: MediaResponse | SeriesSearchResponse) {
     super(client)
     this.state = {
       media: media_response,
@@ -28,8 +28,13 @@ export class MediaViewRune extends Rune {
     return this.state!.media
   }
 
-  set media(media: MediaResponse) {
+  set media(media: MediaResponse | SeriesSearchResponse) {
     return this.state!.media = media
+  }
+
+  get series_index(): number | undefined {
+    // Present for results returned from forager.series.search
+    return (this.media as SeriesSearchResponse).series_index
   }
 
   get tags() {
@@ -75,7 +80,7 @@ export class MediaViewRune extends Rune {
     this.state.media.media_reference.view_count = view_response.media_reference.view_count
   }
 
-  static create(client: BaseController['client'], media_response: MediaResponse, search_params: SearchParams) {
+  static create(client: BaseController['client'], media_response: MediaResponse | SeriesSearchResponse, search_params: SearchParams) {
     if (media_response.media_type === 'media_file') {
       return new MediaFileRune(client, media_response)
     } else if (media_response.media_type === 'media_series') {
@@ -129,10 +134,8 @@ export class MediaSeriesRune extends MediaViewRune {
 
   public override async load_detailed_view() {
     if (this.state!.full_thumbnails) return
-    const series = await forager.series.get({series_id: media_response.media_reference.id })
+    const series = await this.client.forager.series.get({series_id: this.media_reference.id })
     this.state!.full_thumbnails = series.thumbnails
-    const series_items = await forager.media.search({query: {series_id: media_response.media_reference.id }})
-    // TODO attach series items
   }
 
   public img_fit_classes() {
