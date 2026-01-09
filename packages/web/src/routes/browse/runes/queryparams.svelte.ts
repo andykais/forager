@@ -62,19 +62,19 @@ export class QueryParamsManager extends Rune {
 
     // Initialize from URL on mount
     onMount(async () => {
-      const params = this.read(window.location)
+      const params = this.#parse_url(window.location)
       if (this.#popstate_listener_fn) {
         this.#popstate_listener_fn(params)
       }
-      await this.#submit_internal(params)
+      await this.#execute_search(params)
 
       // Listen for browser back/forward
       window.addEventListener('popstate', async () => {
-        const params = this.read(window.location)
+        const params = this.#parse_url(window.location)
         if (this.#popstate_listener_fn) {
           this.#popstate_listener_fn(params)
         }
-        await this.#submit_internal(params)
+        await this.#execute_search(params)
       })
     })
   }
@@ -82,31 +82,33 @@ export class QueryParamsManager extends Rune {
   /**
    * Parse URL into SearchParams
    */
-  public read(url: URL): SearchParams {
+  #parse_url(url: URL): SearchParams {
     const params: SearchParams = { ...DEFAULTS }
     const search = url.searchParams
 
     this.current_serialized = url.search
 
     // Parse each param with type coercion
-    for (const [key, val] of search.entries()) {
-      const params_key: keyof SearchParams = URL_PARAM_MAP_REVERSED[key] ?? key
+    if (search) {
+      for (const [key, val] of search.entries()) {
+        const params_key: keyof SearchParams = URL_PARAM_MAP_REVERSED[key] ?? key
 
-      if (params_key === 'search_string') {
-        params.search_string = val.replaceAll(',', ' ')
-      } else if (params_key === 'stars') {
-        params.stars = parseInt(val)
-      } else if (params_key === 'filepath') {
-        params.filepath = decodeURIComponent(val)
-      } else {
-        // @ts-ignore - dynamic assignment
-        params[params_key] = val
+        if (params_key === 'search_string') {
+          params.search_string = val.replaceAll(',', ' ')
+        } else if (params_key === 'stars') {
+          params.stars = parseInt(val)
+        } else if (params_key === 'filepath') {
+          params.filepath = decodeURIComponent(val)
+        } else {
+          // @ts-ignore - dynamic assignment
+          params[params_key] = val
+        }
       }
-    }
 
-    // Infer search_mode from group_by presence
-    if (search.has('group_by')) {
-      params.search_mode = 'group_by'
+      // Infer search_mode from group_by presence
+      if (search.has('group_by')) {
+        params.search_mode = 'group_by'
+      }
     }
 
     this.current_url = { ...params }
@@ -114,7 +116,7 @@ export class QueryParamsManager extends Rune {
   }
 
   /**
-   * Serialize SearchParams to URL string
+   * Serialize SearchParams to URL string (for SearchLink components)
    */
   public serialize(params: SearchParams): string {
     const url_params = new Map<string, string>()
@@ -151,9 +153,9 @@ export class QueryParamsManager extends Rune {
   }
 
   /**
-   * Update URL without executing search (for serialization only)
+   * Update URL without executing search
    */
-  public write_url(params: SearchParams): void {
+  #write_url(params: SearchParams): void {
     const serialized = this.serialize(params)
 
     if (this.current_serialized !== serialized) {
@@ -166,7 +168,7 @@ export class QueryParamsManager extends Rune {
   /**
    * Execute search based on params
    */
-  async #submit_internal(params: SearchParams): Promise<void> {
+  async #execute_search(params: SearchParams): Promise<void> {
     this.#media_list.clear()
 
     const tags = params.search_string.split(' ').filter((t) => t.length > 0)
@@ -188,15 +190,8 @@ export class QueryParamsManager extends Rune {
     }
 
     // Handle media type filtering
-    switch (params.media_type) {
-      case 'all':
-        // No filter
-        break
-      case 'animated':
-        query.animated = true
-        break
-      default:
-        throw new Error(`Unimplemented media type ${params.media_type}`)
+    if (params.media_type === 'animated') {
+      query.animated = true
     }
 
     // Execute appropriate search
@@ -221,8 +216,6 @@ export class QueryParamsManager extends Rune {
           order: params.order,
         },
       })
-    } else {
-      throw new Error('unimplemented search mode')
     }
   }
 
@@ -230,8 +223,8 @@ export class QueryParamsManager extends Rune {
    * Submit search with URL update
    */
   public async submit(params: SearchParams): Promise<void> {
-    this.write_url(params)
-    await this.#submit_internal(params)
+    this.#write_url(params)
+    await this.#execute_search(params)
   }
 
   /**

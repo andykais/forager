@@ -3,7 +3,7 @@ import {BaseController} from '$lib/base_controller.ts'
 import {create_focuser, SettingsRune, MediaListRune } from '$lib/runes/index.ts'
 import { create_dimensional_rune } from './runes/dimensions.svelte.ts'
 import { MediaSelectionsRune } from './runes/media_selections.svelte.ts'
-import { QueryParamsManager } from './lib/queryparams.svelte.ts'
+import { QueryParamsManager } from './runes/queryparams.svelte.ts'
 
 
 class BrowseController extends BaseController {
