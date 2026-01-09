@@ -1,13 +1,12 @@
 import type { inputs } from '@forager/core'
-import type { BrowseController } from '../controller.ts'
 import type { MediaListRune } from '$lib/runes/index.ts'
+import type { BaseController } from '$lib/base_controller.ts'
 import * as parsers from '$lib/parsers.ts'
-import {onMount} from 'svelte'
-import { pushState } from '$app/navigation';
-import { page } from '$app/state';
-import {Rune} from '$lib/runes/rune.ts'
+import { onMount } from 'svelte'
+import { pushState } from '$app/navigation'
+import { Rune } from '$lib/runes/rune.ts'
 
-interface State {
+interface SearchParams {
   search_string: string
   filepath: string | undefined
   sort: inputs.PaginatedSearch['sort_by']
@@ -15,16 +14,16 @@ interface State {
   search_mode: 'media' | 'group_by' | 'filesystem'
   group_by: string | undefined
   stars: number | undefined
-  stars_equality: 'lte' | 'gte' | 'eq' | undefined
+  stars_equality: 'gte' | 'eq' | undefined
   order: 'desc' | 'asc'
   media_type: string
 }
 
-const DEFAULTS: State = {
+const DEFAULTS: SearchParams = {
   search_string: '',
-  filepath: undefined as string | undefined,
-  sort: 'source_created_at' as const,
-  order: 'desc' as const,
+  filepath: undefined,
+  sort: 'source_created_at',
+  order: 'desc',
   unread_only: false,
   search_mode: 'media',
   group_by: undefined,
@@ -33,147 +32,275 @@ const DEFAULTS: State = {
   media_type: 'all',
 }
 
-const NAME_MAP: Partial<Record<keyof State, string>> = {
+// Map internal names to URL param names
+const URL_PARAM_MAP = {
   search_string: 'tags',
   unread_only: 'unread',
   search_mode: 'mode',
   media_type: 'type',
-}
-const NAME_MAP_REVERSED = Object.fromEntries(Object.entries(NAME_MAP).map(([key, val]) => [val, key]))
-export class QueryParamsRune extends Rune {
+} as const satisfies Partial<Record<keyof SearchParams, string>>
+type UrlParamMap = typeof URL_PARAM_MAP
+
+type SearchParamsReversed = { [K in keyof UrlParamMap as UrlParamMap[K]]: K}
+const URL_PARAM_MAP_REVERSED = Object.fromEntries(
+  Object.entries(URL_PARAM_MAP).map(([key, val]) => [val, key])
+) as SearchParamsReversed
+
+/**
+ * Manages browser URL query parameters and syncs them with search state.
+ *
+ * Two-state model:
+ * - `current`: Committed params (matches URL, used for pagination)
+ * - `draft`: Staging area for form edits (before submission)
+ *
+ * When URL changes externally (back/forward), draft resets to match current.
+ */
+export class QueryParamsManager extends Rune {
   public DEFAULTS = DEFAULTS
-  public current_url: State = $state({...DEFAULTS})
+
+  /** Committed params (matches URL, used for pagination/search) */
+  public current: SearchParams = $state({ ...DEFAULTS })
+
+  /** Draft params (form staging, can differ from current) */
+  public draft: SearchParams = $state({ ...DEFAULTS })
+
   public current_serialized: string = '?'
 
-  private search_rune: MediaListRune
-  private popstate_listener_fn!: (params: State) => void
+  #media_list: MediaListRune
 
-  public constructor(client: BrowseController['client'], search_rune: MediaListRune) {
+  constructor(client: BaseController['client'], media_list: MediaListRune) {
     super(client)
-    this.search_rune = search_rune
+    this.#media_list = media_list
 
+    // Initialize from URL on mount
     onMount(async () => {
-      const params = this.read(window.location)
-      this.popstate_listener_fn(params)
-      await this.submit_internal(params)
+      const params = this.#parse_url(new URL(window.location.toString()))
+      this.current = params
+      this.draft = { ...params }  // Initialize draft
+      await this.#execute_search(params)
 
-      window.addEventListener('popstate', async e => {
-        const params = this.read(window.location)
-        this.popstate_listener_fn(params)
-        await this.submit_internal(params)
+      // Listen for browser back/forward
+      window.addEventListener('popstate', async () => {
+        const params = this.#parse_url(new URL(window.location.toString()))
+        this.current = params
+        this.draft = { ...params }  // Reset draft to match URL
+        await this.#execute_search(params)
       })
     })
   }
 
-  public read(url: URL) {
-    const params: State = {...DEFAULTS}
+  /**
+   * Parse URL into SearchParams
+   */
+  #parse_url(url: URL): SearchParams {
+    const params: SearchParams = { ...DEFAULTS }
+    const search = url.searchParams
 
     this.current_serialized = url.search
-    const queryparams = new URLSearchParams(url.search)
-    for (const [key, val] of queryparams.entries()) {
-      const params_key = NAME_MAP_REVERSED[key] ?? key
-      let deserialized_value = val
-      if (params_key === 'search_string') {
-        deserialized_value = val.replaceAll(',', ' ')
-      } else if (params_key === 'stars') {
-        deserialized_value = parseInt(val)
-      } else if (params_key === 'filepath') {
-        deserialized_value = decodeURIComponent(val)
+
+    // Parse each param with type coercion
+    if (search) {
+      for (const [key, val] of search.entries()) {
+        const params_key: keyof SearchParams = URL_PARAM_MAP_REVERSED[key] ?? key
+
+        if (params_key === 'search_string') {
+          params.search_string = val.replaceAll(',', ' ')
+        } else if (params_key === 'stars') {
+          params.stars = parseInt(val)
+        } else if (params_key === 'filepath') {
+          params.filepath = decodeURIComponent(val)
+        } else {
+          // @ts-ignore - dynamic assignment
+          params[params_key] = val
+        }
       }
-      params[params_key] = deserialized_value
+
+      // Infer search_mode from group_by presence
+      if (search.has('group_by')) {
+        params.search_mode = 'group_by'
+      }
     }
 
-    // if (params.stars === undefined && params.stars_equality !== undefined) {
-    //   delete params.stars_equality
-    // }
-    // re-add inferred keys
-    if (queryparams.has('group_by')) {
-      console.log('re-adding group by params', params)
-      params['search_mode'] = 'group_by'
-    }
-    this.current_url = {...params}
     return params
   }
 
-  public write_url(params: State) {
-    const serialized_params = this.serialize(params)
+  /**
+   * Serialize SearchParams to URL string (for SearchLink components)
+   */
+  public serialize(params: SearchParams): string {
+    const url_params = new Map<string, string>()
 
-    if (this.current_serialized !== serialized_params) {
-      this.current_serialized = serialized_params
-      this.current_url = {...params}
-      pushState(serialized_params, {})
-    }
-  }
-
-  public serialize(params: State) {
-    // NOTE we do not use URLSearchParams because it will (correctly) serialize ":" into "%3A", which is used all the time in our tags
-    const queryparams = new Map()
+    // Only include non-default values
     for (const [key, value] of Object.entries(params)) {
-      if (value !== DEFAULTS[key]) {
-        const queryparam_key = NAME_MAP[key] ?? key
-        let serialized_value = value
+      if (value !== DEFAULTS[key as keyof SearchParams] && value !== undefined) {
+        const param_name = URL_PARAM_MAP[key as keyof SearchParams] ?? key
+
+        // Special encoding for tags (preserve : and ,)
         if (key === 'search_string') {
-          serialized_value = encodeURIComponent(value.replaceAll(/\s/g, ','))
+          const encoded = encodeURIComponent(value.replaceAll(/\s/g, ','))
             .replaceAll('%3A', ':')
             .replaceAll('%2C', ',')
+          url_params.set(param_name, encoded)
         } else if (key === 'filepath') {
-          serialized_value = encodeURIComponent(value)
+          if (value) {
+            url_params.set(param_name, encodeURIComponent(value))
+          }
+        } else {
+          url_params.set(param_name, String(value))
         }
-        queryparams.set(queryparam_key, serialized_value)
       }
     }
-    // strip out inferred keys
-    if (['group_by', 'media'].includes(queryparams.get('mode'))) {
-      queryparams.delete('mode')
+
+    // Omit redundant 'mode' param when it can be inferred
+    if (['group_by', 'media'].includes(url_params.get('mode') ?? '')) {
+      url_params.delete('mode')
     }
 
-    const serialized_params = '?' + Array.from(queryparams.entries())
+    const query_string = Array.from(url_params.entries())
       .map(([key, val]) => `${key}=${val}`)
       .join('&')
 
-    return serialized_params
+    return query_string ? '?' + query_string : null
   }
 
-  public async goto(params: State) {
-    this.popstate_listener_fn(params)
-    await this.submit(params)
+  /**
+   * Update URL without executing search
+   */
+  #write_url(params: SearchParams): void {
+    const serialized = this.serialize(params)
+
+    if (this.current_serialized !== serialized) {
+      this.current_serialized = serialized
+      this.current = { ...params }
+      if (serialized) {
+        pushState(serialized, {})
+      } else {
+        // when we have empty query params, we do this to drop the "?" at the end of the url
+        pushState(window.location.pathname, {})
+      }
+    }
   }
 
-  public merge(partial_params: Partial<typeof NAME_MAP_REVERSED>) {
-    const params = {...this.current_url}
+  /**
+   * Execute search based on params
+   */
+  async #execute_search(params: SearchParams): Promise<void> {
+    this.#media_list.clear()
+
+    const tags = params.search_string.split(' ').filter((t) => t.length > 0)
+    const query: inputs.PaginatedSearch['query'] = {
+      tags,
+      filepath: params.filepath,
+    }
+
+    // Handle boolean and numeric filters
+    if (params.unread_only) {
+      if (params.unread_only === 'true' || params.unread_only === true) {
+        query.unread = true
+      }
+    }
+
+    if (params.stars !== undefined) {
+      query.stars = parseInt(String(params.stars))
+      query.stars_equality = params.stars_equality ?? 'gte'
+    }
+
+    // Handle media type filtering
+    if (params.media_type === 'animated') {
+      query.animated = true
+    }
+
+    // Execute appropriate search
+    if (params.search_mode === 'media') {
+      await this.#media_list.paginate({
+        type: 'media',
+        params: {
+          query,
+          sort_by: params.sort,
+          order: params.order,
+        },
+      })
+    } else if (params.search_mode === 'group_by') {
+      await this.#media_list.paginate({
+        type: 'group_by',
+        params: {
+          group_by: {
+            tag_group: params.group_by ?? '',
+          },
+          query,
+          sort_by: params.sort,
+          order: params.order,
+        },
+      })
+    }
+  }
+
+  /**
+   * Submit draft params: update URL and execute search
+   */
+  public async submit(): Promise<void> {
+    this.#write_url(this.draft)
+    await this.#execute_search(this.draft)
+  }
+
+  /**
+   * Navigate to new params (updates draft, then submits)
+   */
+  public async goto(params: SearchParams): Promise<void> {
+    this.draft = { ...params }
+    await this.submit()
+  }
+
+  /**
+   * Merge partial params with current params
+   * Supports URL param names (e.g., 'tags') or internal names (e.g., 'search_string')
+   */
+  public merge(partial_params: Partial<Record<string, any>>): SearchParams {
+    const params = { ...this.current }
+
     for (const [key, val] of Object.entries(partial_params)) {
-      const params_key: keyof State = NAME_MAP_REVERSED[key] ?? key
+      const params_key: keyof SearchParams = URL_PARAM_MAP_REVERSED[key] ?? key
 
       if (params_key === 'search_string') {
-        const search_strings = new Set(params['search_string'].split(/\s+/))
+        // Merge tags instead of replacing
+        const search_strings = new Set(params.search_string.split(/\s+/))
         search_strings.add(val)
         params.search_string = [...search_strings].join(' ').trim()
       } else if (params_key === 'search_mode') {
-        params[params_key] = val
+        params.search_mode = val
+        // Clear group_by if switching away from group_by mode
         if (val !== 'group_by') {
           params.group_by = undefined
         }
-      }else {
+      } else {
+        // @ts-ignore - dynamic assignment
         params[params_key] = val
       }
     }
+
     return params
   }
 
-  public extend(key: 'tag' | 'group_by_tag', value: string): State {
-    const params = {...this.current_url}
+  /**
+   * Extend current params with a tag
+   * Supports special 'group_by_tag' key for group-by searches
+   */
+  public extend(key: 'tag' | 'group_by_tag', value: string): SearchParams {
+    const params = { ...this.current }
 
     // group_by_tag means we want to do a normal search including the group by tag
     if (key === 'group_by_tag') {
       if (params.search_mode !== 'group_by') {
-        throw new Error('unexpected code path. "group_by_tag" should only be used with search_mode "group_by"')
+        throw new Error(
+          'unexpected code path. "group_by_tag" should only be used with search_mode "group_by"'
+        )
       }
-      value = parsers.Tag.encode({group: params.group_by, name: value})
+      value = parsers.Tag.encode({ group: params.group_by, name: value })
       key = 'tag'
     }
 
     if (key === 'tag') {
-      const search_strings = new Set(params['search_string'].split(/\s+/))
+      const search_strings = new Set(params.search_string.split(/\s+/))
       search_strings.add(value)
       params.search_string = [...search_strings].join(' ').trim()
       return params
@@ -182,147 +309,23 @@ export class QueryParamsRune extends Rune {
     }
   }
 
-  public async submit(params: State) {
-    this.write_url(params)
-    await this.submit_internal(params)
-  }
-
-  private async submit_internal(params: State) {
-
-    const stars = params.stars
-    const stars_equality = params.stars_equality
-    const tags = params.search_string.split(' ').filter(t => t.length > 0)
-    const sort_by = params.sort
-    const order = params.order
-    const filepath = params.filepath
-
-    this.search_rune.clear()
-    const query: inputs.PaginatedSearch['query'] = {
+  /**
+   * Get contextual query for other components (e.g., tag autocomplete)
+   */
+  public get contextual_query(): inputs.PaginatedSearch['query'] {
+    const tags = this.current.search_string.split(' ').filter((t) => t.length > 0)
+    return {
       tags,
-      filepath,
-    }
-
-    if (params.unread_only) {
-      if (params.unread_only === 'true' || params.unread_only === true) {
-        query.unread = true
-      }
-    }
-
-    if (stars !== undefined) {
-      query.stars = parseInt(stars)
-      query.stars_equality = stars_equality ?? 'gte'
-    }
-
-    switch(params.media_type) {
-      case 'all': {
-        // do nothing
-        break
-      }
-      case 'animated': {
-        query.animated = true
-        break
-      }
-      default: {
-        throw new Error(`Unimplemented media type ${params.media_type}`)
-      }
-    }
-
-    if (params.search_mode === 'media') {
-      await this.search_rune.paginate({
-        type: params.search_mode,
-        params: {
-          query: query,
-          sort_by,
-          order
-        }
-      })
-    } else if (params.search_mode === 'group_by') {
-      let group_by = params.group_by ?? ''
-      await this.search_rune.paginate({
-        type: params.search_mode,
-        params: {
-          group_by: {
-            tag_group: group_by,
-          },
-          query: query,
-          sort_by,
-          order
-        }
-      })
-    } else {
-      throw new Error('unimplemented')
+      filepath: this.current.filepath,
+      unread: this.current.unread_only || undefined,
+      animated: this.current.media_type === 'animated' ? true : undefined,
     }
   }
 
-  public search_input(params: State) {
-    const tags = params.search_string.split(' ').filter(t => t.length > 0)
-    const sort_by = params.sort
-    const order = params.order
-    const filepath = params.filepath
-
-    const query: inputs.PaginatedSearch['query'] = {
-      tags,
-      filepath,
-      unread: params.unread_only,
-    }
-    switch(params.media_type) {
-      case 'all': {
-        // do nothing
-        break
-      }
-      case 'animated': {
-        query.animated = true
-        break
-      }
-      default: {
-        throw new Error(`Unimplemented media type ${params.media_type}`)
-      }
-    }
-
-    if (params.search_mode === 'media') {
-      return {
-        type: params.search_mode,
-        params: {
-          query: query,
-          sort_by,
-          order
-        }
-      }
-    } else if (params.search_mode === 'group_by') {
-      if (params.group_by === undefined) {
-        throw new Error(`params must be defined!`)
-      }
-      return {
-        type: params.search_mode,
-        params: {
-          group_by: {
-            tag_group: params.group_by,
-          },
-          query: query,
-          sort_by: 'count', // TODO we want to support created_at as well. Sorting is a bit janky with group by for now
-          order
-        }
-      }
-    } else {
-      throw new Error('unimplemented')
-    }
-  }
-
-  public get contextual_query() {
-    const params = this.search_input(this.current_url)
-    return params.params.query
-  }
-
-  public popstate_listener(fn: (params: State) => void) {
-    this.popstate_listener_fn = fn
-  }
-
-  public get human_readable_summary() {
-    let summary = ''
-    if (this.current_url.search_string) {
-      summary += this.current_url.search_string
-    }
-
-    return summary
+  /**
+   * Human-readable summary of current search
+   */
+  public get human_readable_summary(): string {
+    return this.current.search_string || 'All media'
   }
 }

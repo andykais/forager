@@ -60,11 +60,7 @@
     if (media_selections.current_selection.media_response?.media_type !== 'media_file') {
       return
     }
-    const escaped_path = media_selections.current_selection.media_response.media_file.filepath
-      // .replace(/$\//, '')
-      //.replaceAll('?', '%3F')
-    const escaped_url = `/files/media_file/${encodeURIComponent(escaped_path)}`
-    return escaped_url
+    return `/files/media_file/${media_selections.current_selection.media_response.media_reference.id}`
   })
   $effect(() => {
     if (media_url) {
@@ -113,16 +109,16 @@
             max={media_selections.current_selection.media_response.media_file.duration} value={animation_progress}></progress>
           {#if controller.runes.settings.ui.media_view.filmstrip.enabled}
             <div class="w-full flex flex-row justify-center gap-1 overflow-x-scroll" style="height: {controller.runes.settings.ui.media_view.filmstrip.thumbnail_size}px;">
-              {#each media_selections.current_selection.thumbnails.results as thumbnail}
+              {#each media_selections.current_selection.thumbnails.results as thumbnail, index}
                 <div class="h-full">
-                  <img class="h-full" src="/files/thumbnail{thumbnail.filepath}" alt=""></div>
+                  <img class="h-full" src="/files/thumbnail/{media_selections.current_selection.media_response.media_reference.id}?index={index}" alt="Thumbnail {index}"></div>
               {/each}
             </div>
           {/if}
         {:else if media_selections.current_selection.media_response.media_file.media_type === 'AUDIO'}
           <img
             class="object-contain max-h-full"
-            src="/files/thumbnail{media_selections.current_selection.media_response.thumbnails.results[0].filepath}" alt="">
+            src="/files/thumbnail/{media_selections.current_selection.media_response.media_reference.id}" alt="Audio thumbnail">
           <audio
             autoplay
             loop

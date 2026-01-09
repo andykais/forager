@@ -11,16 +11,11 @@
 
   const {queryparams, media_selections, settings} = controller.runes
 
-  let params = $state<typeof queryparams.DEFAULTS>({...queryparams.DEFAULTS})
-  queryparams.popstate_listener(url_params => {
-    params = {...url_params}
-  })
-
   async function update_search() {
-    await queryparams.submit(params)
+    await queryparams.submit()
     media_selections.clear_current_selection()
-
   }
+
   const icon_color = theme.colors.gray[800]
   const icon_size = "22px"
 </script>
@@ -34,8 +29,8 @@
     <div class="w-full grid grid-cols-[1fr_auto] gap-2">
       <TagAutoCompleteInput
         {controller}
-        bind:search_string={params.search_string}
-        contextual_query={/* TODO re-add queryparams.contextual_query */ null}
+        bind:search_string={queryparams.draft.search_string}
+        contextual_query={queryparams.contextual_query}
         kind="search"
         allow_multiple_tags />
       <button
@@ -56,14 +51,14 @@
           <select
             id="sort_by"
             name="sort_by"
-            bind:value={params.sort}
+            bind:value={queryparams.draft.sort}
             onchange={update_search}>
             <option value="source_created_at">Created At</option>
             <option value="created_at">Added On</option>
             <option value="updated_at">Updated At</option>
             <option value="view_count">View Count</option>
             <option value="last_viewed_at">Last Viewed</option>
-            {#if params.search_mode === 'group_by'}
+            {#if queryparams.draft.search_mode === 'group_by'}
             <option value="count">Count</option>
             {/if}
           </select>
@@ -72,11 +67,11 @@
             title="order by ascending"
             type="button"
             onclick={e => {
-              if (params.order === 'asc') params.order = 'desc'
-              else params.order = 'asc'
+              if (queryparams.draft.order === 'asc') queryparams.draft.order = 'desc'
+              else queryparams.draft.order = 'asc'
               update_search()
             }}>
-            {#if params.order === 'asc'}
+            {#if queryparams.draft.order === 'asc'}
               <Icon class="fill-gray-800 hover:fill-gray-600" data={ArrowUp} size={icon_size} fill={icon_color} stroke={"none"} />
             {:else}
               <Icon class="fill-gray-800 hover:fill-gray-600" data={ArrowDown} size={icon_size} fill={icon_color} stroke={"none"} />
@@ -92,20 +87,20 @@
             {label: 'Video',    value: 'video'},
             {label: 'Audio',    value: 'audio'},
           ]}
-          bind:value={params.media_type}
+          bind:value={queryparams.draft.media_type}
           onchange={update_search}
         />
 
         <button
           class={[
             'rounded-lg px-2 border border-2 border-gray-800 hover:border-gray-400',
-            params.unread_only
+            queryparams.draft.unread_only
               ? 'bg-gray-800 text-gray-400'
               : ''
           ]}
           type="button"
           onclick={e => {
-            params.unread_only = !params.unread_only
+            queryparams.draft.unread_only = !queryparams.draft.unread_only
             update_search()
         }}
           title="Show unread results only"
@@ -114,42 +109,35 @@
         </button>
 
         <div class="flex gap-2 text-gray-400">
-          <StarInput bind:value={params.stars} star={1} onclick={update_search} />
-          <StarInput bind:value={params.stars} star={2} onclick={update_search} />
-          <StarInput bind:value={params.stars} star={3} onclick={update_search} />
-          <StarInput bind:value={params.stars} star={4} onclick={update_search} />
-          <StarInput bind:value={params.stars} star={5} onclick={update_search} />
+          <StarInput bind:value={queryparams.draft.stars} star={1} onclick={update_search} />
+          <StarInput bind:value={queryparams.draft.stars} star={2} onclick={update_search} />
+          <StarInput bind:value={queryparams.draft.stars} star={3} onclick={update_search} />
+          <StarInput bind:value={queryparams.draft.stars} star={4} onclick={update_search} />
+          <StarInput bind:value={queryparams.draft.stars} star={5} onclick={update_search} />
           <button
             type="button"
             class="px-2 bg-gray-800 rounded-lg"
             onclick={() => {
-              switch(params.stars_equality) {
-                /*
-                case 'lte': {
-                  params.stars_equality = 'eq'
+              switch(queryparams.draft.stars_equality) {
+                case 'eq': {
+                  queryparams.draft.stars_equality = 'gte'
                   break
                 }
-                */
-                case '=': {
-                  params.stars_equality = '>='
-                  break
-                }
-                case '>=': {
-                  params.stars_equality = '='
+                case 'gte': {
+                  queryparams.draft.stars_equality = 'eq'
                   break
                 }
                 case undefined: {
-                  params.stars_equality = '='
+                  queryparams.draft.stars_equality = 'eq'
                   break
                 }
                 default: {
-                  throw new Error(`Unexpected params.stars_equality ${params.stars_equality}`)
+                  throw new Error(`Unexpected stars_equality ${queryparams.draft.stars_equality}`)
                 }
-
               }
               update_search()
             }}>
-            {params.stars_equality ?? '>='}
+            {queryparams.draft.stars_equality === 'eq' ? '=' : '>='}
           </button>
         </div>
 
@@ -163,7 +151,7 @@
             name="filepath"
             type="text"
             placeholder="*.jpg..."
-            bind:value={params.filepath}>
+            bind:value={queryparams.draft.filepath}>
         </div>
 
         <SelectInput
@@ -174,21 +162,21 @@
             {label: 'Filesystem', value: 'filesystem'},
           ]}
           onchange={() => {
-            if (params.search_mode !== 'group_by') {
-              params.group_by = undefined
+            if (queryparams.draft.search_mode !== 'group_by') {
+              queryparams.draft.group_by = undefined
             }
           }}
-          bind:value={params.search_mode}
+          bind:value={queryparams.draft.search_mode}
         />
 
-        {#if params.search_mode == "group_by"}
+        {#if queryparams.draft.search_mode == "group_by"}
           <div class="flex gap-2">
             <label class="" for="group_by">Group By:</label>
             <input
               class="rounded-lg py-1 px-3 text-slate-100 bg-gray-800 text-sm"
               name="group_by"
               type="text"
-              bind:value={params.group_by}>
+              bind:value={queryparams.draft.group_by}>
           </div>
         {/if}
       </div>
