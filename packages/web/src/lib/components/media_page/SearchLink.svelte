@@ -1,14 +1,15 @@
 <script lang="ts">
-  import type {BrowseController} from '../controller.ts'
+  import type {MediaPageController} from '$lib/media_page_controller.ts'
+  import type { Snippet } from 'svelte'
 
   interface Props {
-    controller: BrowseController
-    params: BrowseController['runes']['queryparams']['DEFAULT']
-    class: ClassValue
+    controller: MediaPageController
+    params: Record<string, any>
+    class?: string
+    children?: Snippet
   }
   let {params, controller, children, ...props}: Props = $props()
   const {queryparams} = controller.runes
-
 </script>
 
 <a

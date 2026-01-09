@@ -1,9 +1,13 @@
 <script lang="ts">
   import Scroller from '$lib/components/Scroller.svelte'
   import SearchResults from './SearchResults.svelte'
-  import type { SeriesController } from '../controller.ts'
+  import type { MediaPageController } from '$lib/media_page_controller.ts'
 
-  let {controller}: {controller: SeriesController} = $props()
+  interface Props {
+    controller: MediaPageController
+  }
+
+  let {controller}: Props = $props()
   let media_list_element: HTMLElement
 
   controller.keybinds.component_listen({
@@ -43,8 +47,7 @@
   })
 </script>
 
-<div
-  bind:this={media_list_element}>
+<div bind:this={media_list_element}>
   <Scroller
     loading={controller.runes.media_list.loading}
     more={() => controller.runes.media_list.paginate()}

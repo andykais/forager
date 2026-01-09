@@ -1,9 +1,17 @@
 <script lang="ts">
   import * as theme from '$lib/theme.ts'
-  import type { BrowseController } from '../controller.ts'
+  import type { MediaPageController } from '$lib/media_page_controller.ts'
 
-  let {controller, height = $bindable()}: {controller: BrowseController, height: number} = $props()
+  interface Props {
+    controller: MediaPageController
+    height?: number
+  }
+
+  let {controller, height = $bindable()}: Props = $props()
   const runes = controller.runes
+
+  // Derive total label from controller mode
+  const total_label = $derived(controller.is_series ? 'Series items' : 'Total results')
 
 
   function human_readable_number(n: number) {
@@ -85,7 +93,7 @@
     </div>
 
     <span class="">
-      Total results {human_readable_number(runes.media_list.total)}
+      {total_label} {human_readable_number(runes.media_list.total)}
     </span>
   </div>
 </footer>

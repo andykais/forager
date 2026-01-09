@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { SeriesController } from '../controller.ts'
+  import type { MediaPageController } from '$lib/media_page_controller.ts'
 
   interface Props {
-    controller: SeriesController
+    controller: MediaPageController
   }
 
   let show_controls = $state<boolean>(false);
@@ -33,7 +33,6 @@
   const {media_selections} = controller.runes
   let paused = $state(false)
 
-  let filmstrip_thumbnails
   let filmstrip_height = 50
 
   $effect(() => {

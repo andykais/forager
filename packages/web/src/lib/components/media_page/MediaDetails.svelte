@@ -2,17 +2,21 @@
   import * as path from '@std/path'
   import type { Forager } from '@forager/core'
   import Sidebar from '$lib/components/Sidebar.svelte'
-  import MediaDetailEntry from './MediaDetailEntry.svelte'
+  import MediaDetailEntry from '$lib/components/MediaDetailEntry.svelte'
   import TagAutoCompleteInput from '$lib/components/TagAutoCompleteInput.svelte'
-  import SearchLink from './SearchLink.svelte'
   import Tag from '$lib/components/Tag.svelte'
   import Icon from '$lib/components/Icon.svelte'
   import {XCircle} from '$lib/icons/mod.ts'
   import * as parsers from '$lib/parsers.ts'
 
-  import { BrowseController } from '../controller.ts'
-  let {controller}: {controller: BrowseController} = $props()
-  let {dimensions, media_selections, settings, queryparams} = controller.runes
+  import type { MediaPageController } from '$lib/media_page_controller.ts'
+
+  interface Props {
+    controller: MediaPageController
+  }
+
+  let {controller}: Props = $props()
+  let {dimensions, media_selections, settings} = controller.runes
 
   let new_tag_str = $state<string>('')
 
@@ -74,6 +78,14 @@
     }}
     >
     {#if media_selections.current_selection.media_response}
+      <!-- Series Index (only shown for series pages) -->
+      {#if controller.is_series && media_selections.current_selection.media_response.series_index !== undefined}
+        <MediaDetailEntry
+          {controller}
+          label="Page"
+          content={'#' + media_selections.current_selection.media_response.series_index}/>
+      {/if}
+
       <MediaDetailEntry
         {controller}
         label="Views"
@@ -88,9 +100,9 @@
       {#each sorted_tags as tag_group_entry, tag_entry_index (tag_group_entry[0])}
         {#each tag_group_entry[1] as tag, tag_index (tag.id)}
           <div class="grid grid-cols-[1fr_auto] items-center gap-1 pb-1">
-            <SearchLink {controller} params={queryparams.merge({tags: parsers.Tag.encode(tag)})}>
+            <a href="/browse?tags={parsers.Tag.encode(tag)}">
               <Tag show_group={false} {tag} />
-            </SearchLink>
+            </a>
             <button
               class="hover:cursor-pointer"
               title="Remove"
@@ -135,7 +147,6 @@
         type="datetime-local"
         content={media_selections.current_selection.media_response.media_reference.source_created_at}/>
 
-      <!-- TODO we should support datetimes in @andykais/ts-rpc -->
       <MediaDetailEntry
         {controller}
         editable
@@ -168,7 +179,9 @@
       {/if}
 
     {:else}
-      TODO: show tag summary
+      <div class="text-gray-400 p-2">
+        <p class="text-sm">Select an item to view details</p>
+      </div>
     {/if}
   </form>
 </Sidebar>

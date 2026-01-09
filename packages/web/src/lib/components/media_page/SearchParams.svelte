@@ -2,12 +2,16 @@
   import SelectInput from '$lib/components/SelectInput.svelte'
   import * as theme from '$lib/theme.ts'
   import Icon from '$lib/components/Icon.svelte'
-  import { Filter, ChevronUp, ChevronDown, ArrowDown, ArrowUp } from '$lib/icons/mod.ts'
-  import TagAutoCompleteInput from "$lib/components/TagAutoCompleteInput.svelte";
-  import type { BrowseController } from "../controller.ts";
+  import { Filter, ArrowDown, ArrowUp } from '$lib/icons/mod.ts'
+  import TagAutoCompleteInput from "$lib/components/TagAutoCompleteInput.svelte"
+  import type { MediaPageController } from '$lib/media_page_controller.ts'
   import StarInput from '$lib/components/StarInput.svelte'
 
-  let {controller}: {controller: BrowseController} = $props()
+  interface Props {
+    controller: MediaPageController
+  }
+
+  let {controller}: Props = $props()
 
   const {queryparams, media_selections, settings} = controller.runes
 
@@ -19,10 +23,18 @@
   async function update_search() {
     await queryparams.submit(params)
     media_selections.clear_current_selection()
-
   }
+
   const icon_color = theme.colors.gray[800]
   const icon_size = "22px"
+
+  // Type guard for browse-specific params
+  function get_browse_params() {
+    if (controller.is_browse) {
+      return params as { search_mode: string; group_by?: string }
+    }
+    return null
+  }
 </script>
 
 <form class="grid grid-rows-1 w-screen"
@@ -31,13 +43,26 @@
     await update_search()
   }}>
   <div class="flex flex-col gap-y-2 p-3 justify-center items-center w-screen">
-    <div class="w-full grid grid-cols-[1fr_auto] gap-2">
+    <!-- Search bar row -->
+    <div class="w-full grid gap-2 items-center"
+      class:grid-cols-[1fr_auto]={controller.is_browse}
+      class:grid-cols-[auto_1fr_auto]={controller.is_series}>
+
+      {#if controller.is_series}
+        <a
+          href="/browse"
+          class="text-green-300 hover:text-green-400 px-2"
+          title="Back to browse"
+        >&larr; Browse</a>
+      {/if}
+
       <TagAutoCompleteInput
         {controller}
         bind:search_string={params.search_string}
-        contextual_query={/* TODO re-add queryparams.contextual_query */ null}
+        contextual_query={null}
         kind="search"
         allow_multiple_tags />
+
       <button
         class="hover:cursor-pointer"
         title="click to {settings.ui.search.advanced_filters.hide ? 'show' : 'hide'} advanced filters"
@@ -49,8 +74,11 @@
       </button>
     </div>
 
+    <!-- Advanced filters -->
     <div class="w-full grid grid-rows-2 justify-space-between items-center text-slate-950 gap-y-2"
       style="display: {settings.ui.search.advanced_filters.hide ? 'none' : 'grid'}">
+
+      <!-- First row: sort, media type, unread, stars -->
       <div class="flex flex-row justify-between gap-8">
         <div class="flex gap-1">
           <select
@@ -58,13 +86,16 @@
             name="sort_by"
             bind:value={params.sort}
             onchange={update_search}>
+            {#if controller.is_series}
+              <option value="series_index">Series Index</option>
+            {/if}
             <option value="source_created_at">Created At</option>
             <option value="created_at">Added On</option>
             <option value="updated_at">Updated At</option>
             <option value="view_count">View Count</option>
             <option value="last_viewed_at">Last Viewed</option>
-            {#if params.search_mode === 'group_by'}
-            <option value="count">Count</option>
+            {#if controller.is_browse && get_browse_params()?.search_mode === 'group_by'}
+              <option value="count">Count</option>
             {/if}
           </select>
           <button
@@ -85,13 +116,19 @@
         </div>
 
         <SelectInput
-          options={[
-            {label: 'All', value: 'all'},
-            {label: 'Animated', value: 'animated'},
-            {label: 'Image',    value: 'image'},
-            {label: 'Video',    value: 'video'},
-            {label: 'Audio',    value: 'audio'},
-          ]}
+          options={controller.is_browse
+            ? [
+                {label: 'All', value: 'all'},
+                {label: 'Animated', value: 'animated'},
+                {label: 'Image',    value: 'image'},
+                {label: 'Video',    value: 'video'},
+                {label: 'Audio',    value: 'audio'},
+              ]
+            : [
+                {label: 'All', value: 'all'},
+                {label: 'Animated', value: 'animated'},
+              ]
+          }
           bind:value={params.media_type}
           onchange={update_search}
         />
@@ -124,12 +161,6 @@
             class="px-2 bg-gray-800 rounded-lg"
             onclick={() => {
               switch(params.stars_equality) {
-                /*
-                case 'lte': {
-                  params.stars_equality = 'eq'
-                  break
-                }
-                */
                 case '=': {
                   params.stars_equality = '>='
                   break
@@ -145,16 +176,15 @@
                 default: {
                   throw new Error(`Unexpected params.stars_equality ${params.stars_equality}`)
                 }
-
               }
               update_search()
             }}>
             {params.stars_equality ?? '>='}
           </button>
         </div>
-
       </div>
 
+      <!-- Second row: filepath, search mode (browse only) or series info -->
       <div class="flex flex-row gap-8 justify-between">
         <div class="flex gap-2">
           <label class="" for="filepath">Filepath:</label>
@@ -166,30 +196,37 @@
             bind:value={params.filepath}>
         </div>
 
-        <SelectInput
-          label="Search Mode"
-          options={[
-            {label: 'Media', value: 'media'},
-            {label: 'Grouped', value: 'group_by'},
-            {label: 'Filesystem', value: 'filesystem'},
-          ]}
-          onchange={() => {
-            if (params.search_mode !== 'group_by') {
-              params.group_by = undefined
-            }
-          }}
-          bind:value={params.search_mode}
-        />
+        {#if controller.is_browse}
+          {@const browse_params = get_browse_params()}
+          <SelectInput
+            label="Search Mode"
+            options={[
+              {label: 'Media', value: 'media'},
+              {label: 'Grouped', value: 'group_by'},
+              {label: 'Filesystem', value: 'filesystem'},
+            ]}
+            onchange={() => {
+              if (browse_params && browse_params.search_mode !== 'group_by') {
+                browse_params.group_by = undefined
+              }
+            }}
+            bind:value={browse_params.search_mode}
+          />
 
-        {#if params.search_mode == "group_by"}
-          <div class="flex gap-2">
-            <label class="" for="group_by">Group By:</label>
-            <input
-              class="rounded-lg py-1 px-3 text-slate-100 bg-gray-800 text-sm"
-              name="group_by"
-              type="text"
-              bind:value={params.group_by}>
-          </div>
+          {#if browse_params?.search_mode === "group_by"}
+            <div class="flex gap-2">
+              <label class="" for="group_by">Group By:</label>
+              <input
+                class="rounded-lg py-1 px-3 text-slate-100 bg-gray-800 text-sm"
+                name="group_by"
+                type="text"
+                bind:value={browse_params.group_by}>
+            </div>
+          {/if}
+        {:else if controller.is_series}
+          <span class="text-gray-400">
+            Series ID: {controller.series_id}
+          </span>
         {/if}
       </div>
     </div>

@@ -1,11 +1,15 @@
 import {Rune} from '$lib/runes/rune.ts'
-import type { Forager, MediaResponse, outputs } from '@forager/core'
-import { MediaViewRune } from '.'
+import type { Forager, MediaResponse, SeriesSearchResponse } from '@forager/core'
+import { MediaViewRune, type MediaResponseWithOptionalSeriesIndex } from '.'
 
 
-type Result =
+type BrowseResult =
   | ReturnType<Forager['media']['search']>
   | ReturnType<Forager['media']['group']>
+
+type SeriesResult = ReturnType<Forager['series']['search']>
+
+type Result = BrowseResult | SeriesResult
 
 interface SearchInput {
   type: 'media'
@@ -15,6 +19,10 @@ interface GroupByInput {
   type: 'group_by'
   params: Parameters<Forager['media']['group']>[0]
 }
+interface SeriesInput {
+  type: 'series'
+  params: Parameters<Forager['series']['search']>[0]
+}
 interface FilesystemInput {
   type: 'filesystem'
   params: {}
@@ -22,6 +30,7 @@ interface FilesystemInput {
 export type Input =
   | SearchInput
   | GroupByInput
+  | SeriesInput
   | FilesystemInput
 
 interface MediaListState {
@@ -31,7 +40,7 @@ interface MediaListState {
 }
 
 export class MediaListRune extends Rune {
-  #saved_params_type: 'media' | 'group_by' = 'media'
+  #saved_params_type: Input['type'] = 'media'
   #saved_params: {} | undefined
   #prev_query_hash: string = ''
   #fetch_count = 0
@@ -47,7 +56,7 @@ export class MediaListRune extends Rune {
 
   get content(): Result | null { return this.#state.content }
 
-  get results(): Result['results'] { return this.#state.results }
+  get results(): MediaViewRune[] { return this.#state.results }
 
   get total() { return this.#state.content?.total ?? 0 }
 
@@ -64,7 +73,6 @@ export class MediaListRune extends Rune {
   }
 
   async paginate(params?: Input) {
-    // params = {type: 'group_by', params: {group_by: {tag_group: 'artist'}, limit: 10}}
     this.#saved_params = {...this.#saved_params, ...params?.params}
     if (this.#fetch_count > 0 && this.#state.loading) return
 
@@ -87,11 +95,15 @@ export class MediaListRune extends Rune {
     else if (params_type === 'group_by') {
       fetch_params.limit = fetch_params.limit ?? 30
       content = await this.client.forager.media.group(fetch_params)
-    } else {
+    }
+    else if (params_type === 'series') {
+      content = await this.client.forager.series.search(fetch_params)
+    }
+    else {
       throw new Error('unimplemented')
     }
 
-    const results = content.results.map(result => {
+    const results = content.results.map((result: MediaResponseWithOptionalSeriesIndex) => {
       return MediaViewRune.create(this.client, result, fetch_params)
     })
 

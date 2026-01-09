@@ -1,21 +1,20 @@
 <script lang="ts">
-  import type { SeriesController } from '../controller.ts'
+  import type { MediaPageController } from '$lib/media_page_controller.ts'
   import * as theme from '$lib/theme.ts'
   import { focusable, scrollable } from '$lib/actions/mod.ts'
   import Icon from '$lib/components/Icon.svelte'
+  import SearchLink from './SearchLink.svelte'
   import * as icons from '$lib/icons/mod.ts'
 
   interface Props {
-    controller: SeriesController
+    controller: MediaPageController
   }
 
   let {controller}: Props = $props()
-  const {queryparams, settings, media_selections, media_list} = controller.runes
+  const {settings, media_selections, media_list, queryparams} = controller.runes
 
-  let tile_size = settings.ui.media_list.thumbnail_size
   const icon_size = 14
   const icon_color = theme.colors.green[200]
-  let dialog: HTMLDialogElement
 
   function human_readable_duration(seconds: number) {
     if (seconds < 100) {
@@ -27,6 +26,14 @@
     }
     const hours = minutes / 60
     return `${hours.toFixed(2)}h`
+  }
+
+  // Get browse-specific state for group_by mode
+  function get_browse_state() {
+    if (controller.is_browse) {
+      return queryparams.browse_state
+    }
+    return null
   }
 </script>
 
@@ -45,8 +52,11 @@
     width: 100%;
     align-items: center;
   }
-</style>
 
+  .container-media-tile.no-series-index {
+    grid-template-rows: 1fr max-content;
+  }
+</style>
 
 
 <div class="container-masonry p-4" style="--thumbnail-size: {settings.ui.media_list.thumbnail_size}px">
@@ -59,7 +69,7 @@
         use:scrollable={media_selections.current_selection.result_index === result_index}
       >
         <div
-          class="container-media-tile"
+          class={["container-media-tile", !controller.is_series && "no-series-index"]}
           style="width:{settings.ui.media_list.thumbnail_size}px"
         >
           <div
@@ -102,10 +112,12 @@
             {/if}
           </div>
 
-          <!-- series index display -->
-          <div class="text-center text-sm text-green-300 font-mono">
-            #{result.series_index}
-          </div>
+          <!-- series index display (only shown for series pages) -->
+          {#if controller.is_series && result.series_index !== undefined}
+            <div class="text-center text-sm text-green-300 font-mono">
+              #{result.series_index}
+            </div>
+          {/if}
 
           <!-- info chips -->
           <div class="flex text-xs text-gray-400 justify-between p-0.5">
@@ -132,9 +144,23 @@
               <a
                 href="/series/{result.media_reference.id}"
                 class="hover:text-green-500 hover:bg-gray-700 px-2 rounded-sm"
-              >
-                ({result.media_reference.media_series_length})
-              </a>
+                title="View series"
+              >({result.media_reference.media_series_length})</a>
+            {:else if result.media_type === 'grouped'}
+              {@const browse_state = get_browse_state()}
+              <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
+              {#if browse_state}
+                <SearchLink
+                  class="hover:text-green-500 hover:bg-gray-700 px-2 rounded-sm"
+                  {controller}
+                  params={queryparams.merge({mode: 'media', tags: `${browse_state.group_by ?? ''}:${result.group_metadata.value}`})}
+                >
+                  {result.group_metadata.value}
+                </SearchLink>
+              {:else}
+                <span>{result.group_metadata.value}</span>
+              {/if}
+              <span>{result.group_metadata.count}</span>
             {:else}
               UNEXPECTED MEDIA TYPE {result.media_type}
             {/if}

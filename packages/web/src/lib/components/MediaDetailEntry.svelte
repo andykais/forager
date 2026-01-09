@@ -1,10 +1,10 @@
 <script lang="ts">
   import * as datetime from '@std/datetime'
   import type { Json } from '@andykais/ts-rpc/adapters/sveltekit.ts'
+  import type { MediaPageController } from '$lib/media_page_controller.ts'
 
-  import { BrowseController } from '../controller.ts'
   let {controller, ...props}: {
-    controller: BrowseController
+    controller: MediaPageController
     label: string
     content: string | number | Date | null | Json
     type?: "text" | "datetime-local"
