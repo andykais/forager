@@ -122,6 +122,9 @@ class Actions {
       file_processor.create_thumbnails(media_file_info, checksum)
     ])
 
+    // copy the thumbnails into the configured folder before the transaction so they are available when the database records are created
+    await fs.copy(thumbnails.source_folder, thumbnails.destination_folder)
+
     const transaction = this.ctx.db.transaction_sync(() => {
       const media_reference = this.models.MediaReference.create({
         media_series_reference: false,
@@ -168,9 +171,7 @@ class Actions {
 
     const transaction_result = transaction()
 
-    // copy the thumbnails into the configured folder (we wait until the database writes to do this to keep the generated thumbnail folder clean)
-    // add the storage folder checksum here to merge the new files into whatever files already exist in that directory
-    await fs.copy(thumbnails.source_folder, thumbnails.destination_folder)
+    // clean up the temp thumbnail folder after the transaction completes
     await Deno.remove(thumbnails.source_folder, {recursive: true})
     const output_result = this.get_media_file_result({
       media_reference_id: transaction_result.media_reference.id,
