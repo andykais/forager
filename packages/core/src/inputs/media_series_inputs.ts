@@ -3,6 +3,24 @@ import { PaginatedQuery } from '~/lib/inputs_base.ts'
 import { Tag } from './tag_inputs.ts'
 import {MediaInfo} from './media_reference_inputs.ts'
 
+const Duration = z.object({
+  seconds: z.number().optional(),
+  minutes: z.number().optional(),
+  hours: z.number().optional(),
+}).strict().transform(input => {
+  // Only return undefined if no fields were provided
+  if (input.seconds === undefined && input.minutes === undefined && input.hours === undefined) {
+    return undefined
+  }
+
+  const total_seconds = (input.seconds ?? 0) + (input.minutes ?? 0) * 60 + (input.hours ?? 0) * 3600
+  return {
+    hours: total_seconds / 3600,
+    minutes: total_seconds / 60,
+    seconds: total_seconds,
+  }
+})
+
 
 export const SeriesItem = z.object({
   series_id: z.number(),
@@ -23,6 +41,10 @@ export const SeriesSearchQuery = z.object({
   keypoint: Tag.optional(),
   stars: z.number().gte(0).lte(5).optional(),
   stars_equality: z.enum(['gte', 'eq']).default('gte'),
+  duration: z.object({
+    min: Duration.optional(),
+    max: Duration.optional(),
+  }).strict().optional(),
   unread: z.boolean().optional(),
 }).strict()
 

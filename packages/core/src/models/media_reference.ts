@@ -22,6 +22,8 @@ export interface SelectManyFilters {
   stars: number | undefined
   sort_by: string
   stars_equality: 'gte' | 'eq' | undefined
+  duration_min: number | undefined
+  duration_max: number | undefined
   unread: boolean | undefined
   filepath: string | undefined
 }
@@ -37,6 +39,8 @@ export interface SelectManySeriesFilters {
   stars: number | undefined
   sort_by: outputs.SeriesSearchSortBy
   stars_equality: 'gte' | 'eq' | undefined
+  duration_min: number | undefined
+  duration_max: number | undefined
   unread: boolean | undefined
   filepath: string | undefined
 }
@@ -394,7 +398,7 @@ ${group_builder.generate_sql()}
       builder.add_where_clause('media_series_reference = true')
     }
 
-    if (params.animated || params.filepath) {
+    if (params.animated || params.filepath || params.duration_min !== undefined || params.duration_max !== undefined) {
       builder.add_join_clause('INNER JOIN', 'media_file', 'media_file.media_reference_id = media_reference.id')
 
       if (params.animated) {
@@ -403,6 +407,14 @@ ${group_builder.generate_sql()}
 
       if (params.filepath) {
         builder.add_where_clause(`media_file.filepath GLOB '${params.filepath}'`)
+      }
+
+      if (params.duration_min !== undefined) {
+        builder.add_where_clause(`media_file.duration >= ${params.duration_min}`)
+      }
+
+      if (params.duration_max !== undefined) {
+        builder.add_where_clause(`media_file.duration <= ${params.duration_max}`)
       }
     }
 

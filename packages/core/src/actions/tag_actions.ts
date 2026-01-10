@@ -17,19 +17,21 @@ class TagActions extends Actions {
         .filter((tag): tag is number => tag !== undefined)
 
       contextual_query = {
-        animated: undefined,
+        animated: parsed.contextual_query.animated,
         cursor: undefined,
-        filepath: undefined,
+        filepath: parsed.contextual_query.filepath,
         id: undefined,
         keypoint_tag_id: undefined,
         limit: undefined,
         order: undefined,
-        series: undefined,
-        series_id: undefined,
+        series: parsed.contextual_query.series,
+        series_id: parsed.contextual_query.series_id,
         sort_by: 'created_at',
-        stars: undefined,
-        unread: undefined,
-        ...parsed.contextual_query,
+        stars: parsed.contextual_query.stars,
+        stars_equality: parsed.contextual_query.stars_equality,
+        duration_min: parsed.contextual_query.duration?.min?.seconds,
+        duration_max: parsed.contextual_query.duration?.max?.seconds,
+        unread: parsed.contextual_query.unread,
         tag_ids: tag_ids,
       }
     }

@@ -157,6 +157,8 @@ class SeriesActions extends Actions {
       order: parsed.order,
       stars: query.stars,
       stars_equality: query.stars_equality,
+      duration_min: query.duration?.min?.seconds,
+      duration_max: query.duration?.max?.seconds,
       unread: query.unread,
       filepath: query.filepath,
     })
