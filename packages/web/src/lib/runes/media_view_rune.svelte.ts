@@ -15,6 +15,7 @@ export class MediaViewRune extends Rune {
   media_type!: MediaResponse['media_type'] | 'grouped'
   state = $state<State>()
   current_view: model_types.View
+  series_index?: number
 
   protected constructor(client: BaseController['client'], media_response: MediaResponse) {
     super(client)
@@ -22,6 +23,8 @@ export class MediaViewRune extends Rune {
       media: media_response,
       full_thumbnails: undefined
     }
+    // @ts-ignore - series_index is only present in SeriesSearchResponse
+    this.series_index = media_response.series_index
   }
 
   get media() {
