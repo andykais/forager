@@ -96,6 +96,13 @@ export class MediaViewRune extends Rune {
 
 export class MediaFileRune extends MediaViewRune {
   media_type  = 'media_file' as const satisfies MediaResponse['media_type']
+  series_index?: number
+
+  constructor(client: BaseController['client'], media_response: MediaResponse) {
+    super(client, media_response)
+    // @ts-ignore - series_index is only present in SeriesSearchResponse
+    this.series_index = media_response.series_index
+  }
 
   public override async update(media_info: inputs.MediaInfo, tags: inputs.MediaReferenceUpdateTags) {
     const updated = await this.client.forager.media.update(
@@ -126,6 +133,13 @@ export class MediaFileRune extends MediaViewRune {
 
 export class MediaSeriesRune extends MediaViewRune {
   media_type  = 'media_series' as const satisfies MediaResponse['media_type']
+  series_index?: number
+
+  constructor(client: BaseController['client'], media_response: MediaResponse) {
+    super(client, media_response)
+    // @ts-ignore - series_index is only present in SeriesSearchResponse
+    this.series_index = media_response.series_index
+  }
 
   public override async load_detailed_view() {
     if (this.state!.full_thumbnails) return
