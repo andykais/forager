@@ -1,13 +1,12 @@
 <script lang="ts">
-  import type { BrowseController } from '../controller.ts'
+  import type { SeriesController } from '../controller.ts'
   import * as theme from '$lib/theme.ts'
   import { focusable, scrollable } from '$lib/actions/mod.ts'
   import Icon from '$lib/components/Icon.svelte'
-  import SearchLink from './SearchLink.svelte'
   import * as icons from '$lib/icons/mod.ts'
 
   interface Props {
-    controller: BrowseController
+    controller: SeriesController
   }
 
   let {controller}: Props = $props()
@@ -16,7 +15,6 @@
   let tile_size = settings.ui.media_list.thumbnail_size
   const icon_size = 14
   const icon_color = theme.colors.green[200]
-  let dialog: HTMLDialogElement
 
   function human_readable_duration(seconds: number) {
     if (seconds < 100) {
@@ -53,7 +51,7 @@
 <div class="container-masonry p-4" style="--thumbnail-size: {settings.ui.media_list.thumbnail_size}px">
   {#each media_list.results as result, result_index}
     <div>
-      <div 
+      <div
         type="button"
         class="inline-flex items-center justify-center p-1
                outline-none"
@@ -104,7 +102,7 @@
           </div>
 
           <!-- info chips -->
-          <div class="flex text-xs text-gray-400 justify-between  p-0.5">
+          <div class="flex text-xs text-gray-400 justify-between p-0.5">
             {#if result.media_type === 'media_file'}
               {#if result.media_file.media_type === 'VIDEO'}
                 <span class="flex">
@@ -123,26 +121,20 @@
               {:else}
                 unknown media type {result.media_file.media_type}
               {/if}
-          {:else if result.media_type === 'media_series'}
+            {:else if result.media_type === 'media_series'}
               <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
-              <a
-                href="/series/{result.media_reference.id}"
-                class="hover:text-green-500 hover:bg-gray-700 px-1 rounded-sm"
-                title="View series detail"
-              >
-                ({result.media_reference.media_series_length})
-              </a>
-          {:else if result.media_type === 'grouped'}
-              <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
-              <SearchLink
-                class="hover:text-green-500 hover:bg-gray-700 px-2 rounded-sm"
-                {controller} params={queryparams.merge({mode: 'media', tags: `${queryparams.current_url.group_by ?? ''}:${result.group_metadata.value}`})}> {result.group_metadata.value} 
-              </SearchLink>
-              <span>{result.group_metadata.count}</span>
-          {:else}
-            UNEXPECTED MEDIA TYPE {result.media_type}
+              <span>({result.media_reference.media_series_length})</span>
+            {:else}
+              UNEXPECTED MEDIA TYPE {result.media_type}
+            {/if}
+          </div>
+
+          <!-- series index display -->
+          {#if result.series_index !== undefined}
+            <div class="text-xs text-center text-gray-500">
+              #{result.series_index}
+            </div>
           {/if}
-        </div>
         </div>
       </div>
     </div>
