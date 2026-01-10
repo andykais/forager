@@ -30,16 +30,15 @@ const Duration = z.object({
   seconds: z.number().optional(),
   minutes: z.number().optional(),
   hours: z.number().optional(),
-}).strict()
-
-export function duration_to_seconds(duration: z.infer<typeof Duration> | undefined): number | undefined {
-  if (!duration) return undefined
-  const seconds = duration.seconds ?? 0
-  const minutes = (duration.minutes ?? 0) * 60
-  const hours = (duration.hours ?? 0) * 3600
-  const total = seconds + minutes + hours
-  return total > 0 ? total : undefined
-}
+}).strict().transform(input => {
+  const total_seconds = (input.seconds ?? 0) + (input.minutes ?? 0) * 60 + (input.hours ?? 0) * 3600
+  if (total_seconds === 0) return undefined
+  return {
+    hours: total_seconds / 3600,
+    minutes: total_seconds / 60,
+    seconds: total_seconds,
+  }
+})
 
 export const MediaReferenceQuery = z.object({
   series_id: z.number().optional(),

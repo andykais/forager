@@ -1,6 +1,5 @@
 import { Actions, type MediaFileResponse, type MediaSeriesResponse, type MediaResponse, type MediaGroupResponse, type CreateEditor, type UpdateEditor } from '~/actions/lib/base.ts'
 import { type inputs, parsers } from '~/inputs/mod.ts'
-import { duration_to_seconds } from '~/inputs/media_reference_inputs.ts'
 import type * as result_types from '~/models/lib/result_types.ts'
 import { errors } from "~/mod.ts";
 
@@ -91,8 +90,8 @@ class MediaActions extends Actions {
       order: parsed.order,
       stars: query.stars,
       stars_equality: query.stars_equality,
-      duration_min: duration_to_seconds(query.duration?.min),
-      duration_max: duration_to_seconds(query.duration?.max),
+      duration_min: query.duration?.min?.seconds,
+      duration_max: query.duration?.max?.seconds,
       unread: query.unread,
       filepath: query.filepath,
     })
@@ -177,8 +176,8 @@ class MediaActions extends Actions {
       order: parsed.order,
       stars: query.stars,
       stars_equality: query.stars_equality,
-      duration_min: duration_to_seconds(query.duration?.min),
-      duration_max: duration_to_seconds(query.duration?.max),
+      duration_min: query.duration?.min?.seconds,
+      duration_max: query.duration?.max?.seconds,
       unread: query.unread,
       filepath: query.filepath,
     })
@@ -206,8 +205,8 @@ class MediaActions extends Actions {
           order: parsed.order,
           stars: query.stars,
           stars_equality: query.stars_equality,
-          duration_min: duration_to_seconds(query.duration?.min),
-          duration_max: duration_to_seconds(query.duration?.max),
+          duration_min: query.duration?.min?.seconds,
+          duration_max: query.duration?.max?.seconds,
           unread: query.unread,
           filepath: query.filepath,
         })

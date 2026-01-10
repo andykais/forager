@@ -7,7 +7,15 @@ const Duration = z.object({
   seconds: z.number().optional(),
   minutes: z.number().optional(),
   hours: z.number().optional(),
-}).strict()
+}).strict().transform(input => {
+  const total_seconds = (input.seconds ?? 0) + (input.minutes ?? 0) * 60 + (input.hours ?? 0) * 3600
+  if (total_seconds === 0) return undefined
+  return {
+    hours: total_seconds / 3600,
+    minutes: total_seconds / 60,
+    seconds: total_seconds,
+  }
+})
 
 
 export const SeriesItem = z.object({

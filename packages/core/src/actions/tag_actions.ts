@@ -1,6 +1,5 @@
 import { Actions } from '~/actions/lib/base.ts'
 import { type inputs, parsers } from '~/inputs/mod.ts'
-import { duration_to_seconds } from '~/inputs/media_reference_inputs.ts'
 import type { SelectManyFilters } from '~/models/media_reference.ts'
 
 
@@ -30,8 +29,8 @@ class TagActions extends Actions {
         sort_by: 'created_at',
         stars: parsed.contextual_query.stars,
         stars_equality: parsed.contextual_query.stars_equality,
-        duration_min: duration_to_seconds(parsed.contextual_query.duration?.min),
-        duration_max: duration_to_seconds(parsed.contextual_query.duration?.max),
+        duration_min: parsed.contextual_query.duration?.min?.seconds,
+        duration_max: parsed.contextual_query.duration?.max?.seconds,
         unread: parsed.contextual_query.unread,
         tag_ids: tag_ids,
       }
