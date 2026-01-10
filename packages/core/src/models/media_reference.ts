@@ -23,9 +23,7 @@ export interface SelectManyFilters {
   sort_by: string
   stars_equality: 'gte' | 'eq' | undefined
   duration_min: number | undefined
-  duration_min_equality: 'gte' | 'gt' | undefined
   duration_max: number | undefined
-  duration_max_equality: 'lte' | 'lt' | undefined
   unread: boolean | undefined
   filepath: string | undefined
 }
@@ -42,9 +40,7 @@ export interface SelectManySeriesFilters {
   sort_by: outputs.SeriesSearchSortBy
   stars_equality: 'gte' | 'eq' | undefined
   duration_min: number | undefined
-  duration_min_equality: 'gte' | 'gt' | undefined
   duration_max: number | undefined
-  duration_max_equality: 'lte' | 'lt' | undefined
   unread: boolean | undefined
   filepath: string | undefined
 }
@@ -414,13 +410,11 @@ ${group_builder.generate_sql()}
       }
 
       if (params.duration_min !== undefined) {
-        const operator = this.#get_operator(params.duration_min_equality)
-        builder.add_where_clause(`media_file.duration ${operator} ${params.duration_min}`)
+        builder.add_where_clause(`media_file.duration >= ${params.duration_min}`)
       }
 
       if (params.duration_max !== undefined) {
-        const operator = this.#get_operator(params.duration_max_equality)
-        builder.add_where_clause(`media_file.duration ${operator} ${params.duration_max}`)
+        builder.add_where_clause(`media_file.duration <= ${params.duration_max}`)
       }
     }
 
@@ -458,20 +452,11 @@ ${group_builder.generate_sql()}
     }
   }
 
-  static #get_operator(operator: 'gte' | 'gt' | 'lte' | 'lt' | 'eq' | undefined) {
+  static #get_operator(operator: 'gte' | 'eq' | undefined) {
     const operator_internal = operator ?? 'eq'
     switch(operator_internal) {
       case 'gte': {
         return '>='
-      }
-      case 'gt': {
-        return '>'
-      }
-      case 'lte': {
-        return '<='
-      }
-      case 'lt': {
-        return '<'
       }
       case 'eq': {
         return '='

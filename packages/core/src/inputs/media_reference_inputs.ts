@@ -26,6 +26,21 @@ export const MediaInfo = z.object({
 })
 
 
+const Duration = z.object({
+  seconds: z.number().optional(),
+  minutes: z.number().optional(),
+  hours: z.number().optional(),
+}).strict()
+
+export function duration_to_seconds(duration: z.infer<typeof Duration> | undefined): number | undefined {
+  if (!duration) return undefined
+  const seconds = duration.seconds ?? 0
+  const minutes = (duration.minutes ?? 0) * 60
+  const hours = (duration.hours ?? 0) * 3600
+  const total = seconds + minutes + hours
+  return total > 0 ? total : undefined
+}
+
 export const MediaReferenceQuery = z.object({
   series_id: z.number().optional(),
   series: z.boolean().optional(),
@@ -37,10 +52,10 @@ export const MediaReferenceQuery = z.object({
   keypoint: Tag.optional(),
   stars: z.number().gte(0).lte(5).optional(),
   stars_equality: z.enum(['gte', 'eq']).default(('gte')),
-  duration_min: z.number().optional(),
-  duration_min_equality: z.enum(['gte', 'gt']).default('gte'),
-  duration_max: z.number().optional(),
-  duration_max_equality: z.enum(['lte', 'lt']).default('lte'),
+  duration: z.object({
+    min: Duration.optional(),
+    max: Duration.optional(),
+  }).strict().optional(),
   unread: z.boolean().optional(),
 }).strict()
   .optional()

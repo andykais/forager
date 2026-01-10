@@ -1,5 +1,6 @@
 import { Actions } from '~/actions/lib/base.ts'
 import { type inputs, parsers } from '~/inputs/mod.ts'
+import { duration_to_seconds } from '~/inputs/media_reference_inputs.ts'
 import type { SelectManyFilters } from '~/models/media_reference.ts'
 
 
@@ -17,21 +18,21 @@ class TagActions extends Actions {
         .filter((tag): tag is number => tag !== undefined)
 
       contextual_query = {
-        animated: undefined,
+        animated: parsed.contextual_query.animated,
         cursor: undefined,
-        filepath: undefined,
+        filepath: parsed.contextual_query.filepath,
         id: undefined,
         keypoint_tag_id: undefined,
         limit: undefined,
         order: undefined,
-        series: undefined,
-        series_id: undefined,
+        series: parsed.contextual_query.series,
+        series_id: parsed.contextual_query.series_id,
         sort_by: 'created_at',
-        stars: undefined,
-        duration_min: undefined,
-        duration_max: undefined,
-        unread: undefined,
-        ...parsed.contextual_query,
+        stars: parsed.contextual_query.stars,
+        stars_equality: parsed.contextual_query.stars_equality,
+        duration_min: duration_to_seconds(parsed.contextual_query.duration?.min),
+        duration_max: duration_to_seconds(parsed.contextual_query.duration?.max),
+        unread: parsed.contextual_query.unread,
         tag_ids: tag_ids,
       }
     }

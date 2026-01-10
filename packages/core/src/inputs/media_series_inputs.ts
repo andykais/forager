@@ -3,6 +3,12 @@ import { PaginatedQuery } from '~/lib/inputs_base.ts'
 import { Tag } from './tag_inputs.ts'
 import {MediaInfo} from './media_reference_inputs.ts'
 
+const Duration = z.object({
+  seconds: z.number().optional(),
+  minutes: z.number().optional(),
+  hours: z.number().optional(),
+}).strict()
+
 
 export const SeriesItem = z.object({
   series_id: z.number(),
@@ -23,10 +29,10 @@ export const SeriesSearchQuery = z.object({
   keypoint: Tag.optional(),
   stars: z.number().gte(0).lte(5).optional(),
   stars_equality: z.enum(['gte', 'eq']).default('gte'),
-  duration_min: z.number().optional(),
-  duration_min_equality: z.enum(['gte', 'gt']).default('gte'),
-  duration_max: z.number().optional(),
-  duration_max_equality: z.enum(['lte', 'lt']).default('lte'),
+  duration: z.object({
+    min: Duration.optional(),
+    max: Duration.optional(),
+  }).strict().optional(),
   unread: z.boolean().optional(),
 }).strict()
 
