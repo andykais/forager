@@ -28,6 +28,8 @@ class TagActions extends Actions {
         series_id: undefined,
         sort_by: 'created_at',
         stars: undefined,
+        duration_min: undefined,
+        duration_max: undefined,
         unread: undefined,
         ...parsed.contextual_query,
         tag_ids: tag_ids,

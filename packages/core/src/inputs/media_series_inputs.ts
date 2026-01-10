@@ -23,6 +23,10 @@ export const SeriesSearchQuery = z.object({
   keypoint: Tag.optional(),
   stars: z.number().gte(0).lte(5).optional(),
   stars_equality: z.enum(['gte', 'eq']).default('gte'),
+  duration_min: z.number().optional(),
+  duration_min_equality: z.enum(['gte', 'gt']).default('gte'),
+  duration_max: z.number().optional(),
+  duration_max_equality: z.enum(['lte', 'lt']).default('lte'),
   unread: z.boolean().optional(),
 }).strict()
 

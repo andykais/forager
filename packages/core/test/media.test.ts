@@ -488,6 +488,96 @@ test('media search stars', async ctx => {
   })
 })
 
+test('media search duration filter', async ctx => {
+  using forager = new Forager(ctx.get_test_config())
+  forager.init()
+
+  // Create media with different durations
+  // blink.gif - duration: 3.18
+  const media_gif = await forager.media.create(ctx.resources.media_files['blink.gif'])
+  // cat_cronch.mp4 - duration: 6.763
+  const media_video = await forager.media.create(ctx.resources.media_files['cat_cronch.mp4'])
+  // music_snippet.mp3 - duration: 6.92
+  const media_audio = await forager.media.create(ctx.resources.media_files['music_snippet.mp3'])
+
+  await ctx.subtest('filter with minimum duration (gte)', () => {
+    // Filter for duration >= 6 (should return video and audio)
+    ctx.assert.search_result(forager.media.search({query: {duration_min: 6, duration_min_equality: 'gte'}}), {
+      total: 2,
+      results: [
+        {media_reference: {id: media_audio.media_reference.id}},
+        {media_reference: {id: media_video.media_reference.id}},
+      ]
+    })
+
+    // Filter for duration >= 7 (should return nothing)
+    ctx.assert.search_result(forager.media.search({query: {duration_min: 7, duration_min_equality: 'gte'}}), {
+      total: 0
+    })
+  })
+
+  await ctx.subtest('filter with minimum duration (gt)', () => {
+    // Filter for duration > 6.763 (should return only audio)
+    ctx.assert.search_result(forager.media.search({query: {duration_min: 6.763, duration_min_equality: 'gt'}}), {
+      total: 1,
+      results: [
+        {media_reference: {id: media_audio.media_reference.id}},
+      ]
+    })
+  })
+
+  await ctx.subtest('filter with maximum duration (lte)', () => {
+    // Filter for duration <= 6.763 (should return gif and video)
+    ctx.assert.search_result(forager.media.search({query: {duration_max: 6.763, duration_max_equality: 'lte'}}), {
+      total: 2,
+      results: [
+        {media_reference: {id: media_video.media_reference.id}},
+        {media_reference: {id: media_gif.media_reference.id}},
+      ]
+    })
+
+    // Filter for duration <= 3 (should return nothing)
+    ctx.assert.search_result(forager.media.search({query: {duration_max: 3, duration_max_equality: 'lte'}}), {
+      total: 0
+    })
+  })
+
+  await ctx.subtest('filter with maximum duration (lt)', () => {
+    // Filter for duration < 6.763 (should return only gif)
+    ctx.assert.search_result(forager.media.search({query: {duration_max: 6.763, duration_max_equality: 'lt'}}), {
+      total: 1,
+      results: [
+        {media_reference: {id: media_gif.media_reference.id}},
+      ]
+    })
+  })
+
+  await ctx.subtest('filter with both min and max duration', () => {
+    // Filter for 3 <= duration <= 7 (should return all three)
+    ctx.assert.search_result(forager.media.search({query: {duration_min: 3, duration_min_equality: 'gte', duration_max: 7, duration_max_equality: 'lte'}}), {
+      total: 3,
+      results: [
+        {media_reference: {id: media_audio.media_reference.id}},
+        {media_reference: {id: media_video.media_reference.id}},
+        {media_reference: {id: media_gif.media_reference.id}},
+      ]
+    })
+
+    // Filter for 4 < duration < 6.8 (should return only video at 6.763)
+    ctx.assert.search_result(forager.media.search({query: {duration_min: 4, duration_min_equality: 'gt', duration_max: 6.8, duration_max_equality: 'lt'}}), {
+      total: 1,
+      results: [
+        {media_reference: {id: media_video.media_reference.id}},
+      ]
+    })
+
+    // Filter for 3.5 <= duration <= 6.5 (should return nothing - no media in this range)
+    ctx.assert.search_result(forager.media.search({query: {duration_min: 3.5, duration_min_equality: 'gte', duration_max: 6.5, duration_max_equality: 'lte'}}), {
+      total: 0
+    })
+  })
+})
+
 
 test('search group by', async ctx => {
   using forager = new Forager(ctx.get_test_config())

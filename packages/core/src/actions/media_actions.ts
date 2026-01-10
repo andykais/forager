@@ -90,6 +90,10 @@ class MediaActions extends Actions {
       order: parsed.order,
       stars: query.stars,
       stars_equality: query.stars_equality,
+      duration_min: query.duration_min,
+      duration_min_equality: query.duration_min_equality,
+      duration_max: query.duration_max,
+      duration_max_equality: query.duration_max_equality,
       unread: query.unread,
       filepath: query.filepath,
     })
@@ -174,6 +178,10 @@ class MediaActions extends Actions {
       order: parsed.order,
       stars: query.stars,
       stars_equality: query.stars_equality,
+      duration_min: query.duration_min,
+      duration_min_equality: query.duration_min_equality,
+      duration_max: query.duration_max,
+      duration_max_equality: query.duration_max_equality,
       unread: query.unread,
       filepath: query.filepath,
     })
@@ -201,6 +209,10 @@ class MediaActions extends Actions {
           order: parsed.order,
           stars: query.stars,
           stars_equality: query.stars_equality,
+          duration_min: query.duration_min,
+          duration_min_equality: query.duration_min_equality,
+          duration_max: query.duration_max,
+          duration_max_equality: query.duration_max_equality,
           unread: query.unread,
           filepath: query.filepath,
         })
