@@ -5,32 +5,22 @@ import { pushState } from '$app/navigation'
 import { Rune } from '$lib/runes/rune.ts'
 
 /**
- * Base params interface - common fields shared by all search types
- */
-export interface BaseSearchParams {
-  search_string: string
-  filepath: string | undefined
-  sort: string
-  unread_only: boolean
-  stars: number | undefined
-  stars_equality: 'gte' | 'eq' | undefined
-  order: 'desc' | 'asc'
-  media_type: string
-}
-
-/**
- * Base QueryParamsManager with common URL handling and state management.
+ * Base QueryParamsManager - handles URL state synchronization without opinions on param structure.
  *
- * Two-state model:
- * - `current`: Committed params (matches URL, used for pagination)
- * - `draft`: Staging area for form edits (before submission)
+ * Responsibilities:
+ * - Two-state model (current/draft params)
+ * - URL parsing and serialization
+ * - Browser history integration (back/forward)
+ * - Generic merge/goto operations
  *
- * Subclasses must implement:
- * - DEFAULTS getter
- * - URL_PARAM_MAP getter
- * - execute_search method
+ * Subclasses define:
+ * - Param structure (TParams type)
+ * - Default values (DEFAULTS)
+ * - URL param mapping (URL_PARAM_MAP)
+ * - Search execution logic (execute_search)
+ * - Parse/serialize customization (hooks)
  */
-export abstract class BaseQueryParamsManager<TParams extends BaseSearchParams> extends Rune {
+export abstract class BaseQueryParamsManager<TParams extends Record<string, any>> extends Rune {
   /** Committed params (matches URL, used for pagination/search) */
   public current: TParams = $state() as TParams
 
@@ -80,7 +70,7 @@ export abstract class BaseQueryParamsManager<TParams extends BaseSearchParams> e
   }
 
   /**
-   * Parse URL into params - can be overridden for custom parsing
+   * Parse URL into params - subclasses should override to implement specific parsing logic
    */
   protected parse_url(url: URL): TParams {
     const params: TParams = { ...this.DEFAULTS }
@@ -91,38 +81,17 @@ export abstract class BaseQueryParamsManager<TParams extends BaseSearchParams> e
     if (search) {
       for (const [key, val] of search.entries()) {
         const params_key: keyof TParams = this.URL_PARAM_MAP_REVERSED[key] ?? key
-
-        if (params_key === 'search_string') {
-          // @ts-ignore
-          params.search_string = val.replaceAll(',', ' ')
-        } else if (params_key === 'stars') {
-          // @ts-ignore
-          params.stars = parseInt(val)
-        } else if (params_key === 'filepath') {
-          // @ts-ignore
-          params.filepath = decodeURIComponent(val)
-        } else {
-          // @ts-ignore - dynamic assignment
-          params[params_key] = val
-        }
+        // Generic assignment - subclass should override for type-specific parsing
+        // @ts-ignore - dynamic assignment
+        params[params_key] = val
       }
-
-      // Allow subclasses to add custom URL parsing
-      this.parse_url_custom(params, search)
     }
 
     return params
   }
 
   /**
-   * Hook for subclasses to add custom URL parsing logic
-   */
-  protected parse_url_custom(params: TParams, search: URLSearchParams): void {
-    // Default: no-op
-  }
-
-  /**
-   * Serialize params to URL string
+   * Serialize params to URL string - subclasses should override for custom serialization logic
    */
   public serialize(params: TParams): string {
     const url_params = new Map<string, string>()
@@ -131,38 +100,16 @@ export abstract class BaseQueryParamsManager<TParams extends BaseSearchParams> e
     for (const [key, value] of Object.entries(params)) {
       if (value !== this.DEFAULTS[key as keyof TParams] && value !== undefined) {
         const param_name = this.URL_PARAM_MAP[key as keyof TParams] ?? key
-
-        // Special encoding for tags (preserve : and ,)
-        if (key === 'search_string') {
-          const encoded = encodeURIComponent((value as string).replaceAll(/\s/g, ','))
-            .replaceAll('%3A', ':')
-            .replaceAll('%2C', ',')
-          url_params.set(param_name as string, encoded)
-        } else if (key === 'filepath') {
-          if (value) {
-            url_params.set(param_name as string, encodeURIComponent(value as string))
-          }
-        } else {
-          url_params.set(param_name as string, String(value))
-        }
+        // Generic string conversion - subclass should override for custom encoding
+        url_params.set(param_name as string, String(value))
       }
     }
-
-    // Allow subclasses to customize serialization
-    this.serialize_custom(url_params, params)
 
     const query_string = Array.from(url_params.entries())
       .map(([key, val]) => `${key}=${val}`)
       .join('&')
 
     return query_string ? '?' + query_string : null
-  }
-
-  /**
-   * Hook for subclasses to customize serialization
-   */
-  protected serialize_custom(url_params: Map<string, string>, params: TParams): void {
-    // Default: no-op
   }
 
   /**
@@ -204,44 +151,19 @@ export abstract class BaseQueryParamsManager<TParams extends BaseSearchParams> e
   }
 
   /**
-   * Merge partial params with current params
+   * Merge partial params with current params - simple replacement by default
+   * Subclasses can override for more sophisticated merging (e.g., tag accumulation)
    */
   public merge(partial_params: Partial<Record<string, any>>): TParams {
     const params = { ...this.current }
 
     for (const [key, val] of Object.entries(partial_params)) {
       const params_key: keyof TParams = this.URL_PARAM_MAP_REVERSED[key] ?? key
-
-      if (params_key === 'search_string') {
-        // Merge tags instead of replacing
-        const search_strings = new Set((params.search_string as string).split(/\s+/))
-        search_strings.add(val)
-        // @ts-ignore
-        params.search_string = [...search_strings].join(' ').trim()
-      } else {
-        // @ts-ignore - dynamic assignment
-        params[params_key] = val
-      }
+      // @ts-ignore - dynamic assignment
+      params[params_key] = val
     }
 
     return params
-  }
-
-  /**
-   * Extend current params with a tag
-   */
-  public extend(key: 'tag', value: string): TParams {
-    const params = { ...this.current }
-
-    if (key === 'tag') {
-      const search_strings = new Set((params.search_string as string).split(/\s+/))
-      search_strings.add(value)
-      // @ts-ignore
-      params.search_string = [...search_strings].join(' ').trim()
-      return params
-    } else {
-      throw new Error('unimplemented')
-    }
   }
 
   /**
@@ -250,9 +172,9 @@ export abstract class BaseQueryParamsManager<TParams extends BaseSearchParams> e
   public abstract get contextual_query(): any
 
   /**
-   * Human-readable summary of current search
+   * Human-readable summary of current search - subclasses should override
    */
   public get human_readable_summary(): string {
-    return (this.current.search_string as string) || 'All media'
+    return 'Search results'
   }
 }
