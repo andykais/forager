@@ -31,8 +31,12 @@ const Duration = z.object({
   minutes: z.number().optional(),
   hours: z.number().optional(),
 }).strict().transform(input => {
+  // Only return undefined if no fields were provided
+  if (input.seconds === undefined && input.minutes === undefined && input.hours === undefined) {
+    return undefined
+  }
+
   const total_seconds = (input.seconds ?? 0) + (input.minutes ?? 0) * 60 + (input.hours ?? 0) * 3600
-  if (total_seconds === 0) return undefined
   return {
     hours: total_seconds / 3600,
     minutes: total_seconds / 60,
