@@ -536,6 +536,30 @@ test('search sort duration', async ctx => {
       ]
     })
   })
+
+  await ctx.subtest('validate series and duration are mutually exclusive', () => {
+    // Should throw error when using series filter with duration sort
+    ctx.assert.throws(
+      () => forager.media.search({query: {series: true}, sort_by: 'duration'}),
+      errors.BadInputError,
+      'Cannot use series filter with duration filter or duration sort'
+    )
+
+    // Should throw error when using series filter with duration filter
+    ctx.assert.throws(
+      () => forager.media.search({query: {series: true, duration: {min: {seconds: 1}}}}),
+      errors.BadInputError,
+      'Cannot use series filter with duration filter or duration sort'
+    )
+
+    // Should work fine with just series filter
+    ctx.assert.search_result(forager.media.search({query: {series: true}}), {
+      total: 1,
+      results: [
+        {media_reference: {id: test_series.media_reference.id}},
+      ]
+    })
+  })
 })
 
 test('media search stars', async ctx => {
