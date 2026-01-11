@@ -459,6 +459,57 @@ test('search sort', async ctx => {
   })
 })
 
+test('search sort duration', async ctx => {
+  using forager = new Forager(ctx.get_test_config())
+  forager.init()
+
+  // Create media with different durations
+  // blink.gif - duration: 3.18
+  const media_gif = await forager.media.create(ctx.resources.media_files['blink.gif'])
+  // cat_cronch.mp4 - duration: 6.763
+  const media_video = await forager.media.create(ctx.resources.media_files['cat_cronch.mp4'])
+  // music_snippet.mp3 - duration: 6.96 (actual value from FFmpeg)
+  const media_audio = await forager.media.create(ctx.resources.media_files['music_snippet.mp3'])
+
+  await ctx.subtest('duration sort order ascending', () => {
+    ctx.assert.search_result(forager.media.search({sort_by: 'duration', order: 'asc'}), {
+      results: [
+        {media_reference: {id: media_gif.media_reference.id}, media_file: {duration: 3.18}},
+        {media_reference: {id: media_video.media_reference.id}, media_file: {duration: 6.763}},
+        {media_reference: {id: media_audio.media_reference.id}, media_file: {duration: 6.96}},
+      ]
+    })
+  })
+
+  await ctx.subtest('duration sort order descending', () => {
+    ctx.assert.search_result(forager.media.search({sort_by: 'duration', order: 'desc'}), {
+      results: [
+        {media_reference: {id: media_audio.media_reference.id}, media_file: {duration: 6.96}},
+        {media_reference: {id: media_video.media_reference.id}, media_file: {duration: 6.763}},
+        {media_reference: {id: media_gif.media_reference.id}, media_file: {duration: 3.18}},
+      ]
+    })
+  })
+
+  await ctx.subtest('duration sort with pagination', () => {
+    const page_1 = forager.media.search({sort_by: 'duration', order: 'asc', limit: 2})
+    ctx.assert.search_result(page_1, {
+      results: [
+        {media_reference: {id: media_gif.media_reference.id}},
+        {media_reference: {id: media_video.media_reference.id}},
+      ],
+      total: 3
+    })
+    const page_2 = forager.media.search({sort_by: 'duration', order: 'asc', limit: 2, cursor: page_1.cursor})
+    ctx.assert.search_result(page_2, {
+      results: [
+        {media_reference: {id: media_audio.media_reference.id}},
+      ],
+      total: 3
+    })
+  })
+})
+
 test('media search stars', async ctx => {
   using forager = new Forager(ctx.get_test_config())
   forager.init()

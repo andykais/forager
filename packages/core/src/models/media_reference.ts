@@ -75,6 +75,7 @@ const PaginationCursorVars = torm.Vars({
   updated_at: torm.field.string(),
   view_count: torm.field.number(),
   series_index: torm.field.number(),
+  duration: torm.field.number(),
 })
 
 const NULLABLE_SORT_BY_FIELDS = new Set([
@@ -89,6 +90,7 @@ const SORT_BY_TO_DB_COLUMN: Record<string, string> = {
   'source_created_at': 'media_reference.source_created_at',
   'view_count': 'media_reference.view_count',
   'last_viewed_at': 'media_reference.last_viewed_at',
+  'duration': 'media_file.duration',
 }
 
 
@@ -183,10 +185,19 @@ class MediaReference extends Model {
     const sql_params: Record<string, any> = {}
     // this nested select clause exists so that we can create a reliable cursor_id for pagination
     // it uses ROW_NUMBER with an explicit order clause to ensure that we can reliably paginate
-    records_builder
-      .set_select_clause(`SELECT media_reference.* FROM media_reference`)
-      .add_result_fields(MediaReference.result['*'] as any)
-      // .add_result_fields({cursor_id: PaginationVars.result.cursor_id})
+
+    // When sorting by duration, we need to select the duration field for cursor pagination
+    if (params.sort_by === 'duration') {
+      records_builder
+        .set_select_clause(`SELECT media_reference.*, media_file.duration FROM media_reference`)
+        .add_result_fields(MediaReference.result['*'] as any)
+        .add_result_fields({duration: PaginationCursorVars.result.duration})
+    } else {
+      records_builder
+        .set_select_clause(`SELECT media_reference.* FROM media_reference`)
+        .add_result_fields(MediaReference.result['*'] as any)
+    }
+    // .add_result_fields({cursor_id: PaginationVars.result.cursor_id})
     const count_builder = new SQLBuilder(this.driver)
     count_builder
       .add_select_wrapper(`SELECT COUNT(1) AS total FROM`)
@@ -231,10 +242,19 @@ ${count_query.stmt.sql}
     const sql_params: Record<string, any> = {}
 
     // Always select series_index for series searches
-    records_builder
-      .set_select_clause(`SELECT media_reference.*, media_series_item.series_index FROM media_reference`)
-      .add_result_fields(MediaReference.result['*'] as any)
-      .add_result_fields({series_index: PaginationCursorVars.result.series_index})
+    // When sorting by duration, also select the duration field for cursor pagination
+    if (params.sort_by === 'duration') {
+      records_builder
+        .set_select_clause(`SELECT media_reference.*, media_series_item.series_index, media_file.duration FROM media_reference`)
+        .add_result_fields(MediaReference.result['*'] as any)
+        .add_result_fields({series_index: PaginationCursorVars.result.series_index})
+        .add_result_fields({duration: PaginationCursorVars.result.duration})
+    } else {
+      records_builder
+        .set_select_clause(`SELECT media_reference.*, media_series_item.series_index FROM media_reference`)
+        .add_result_fields(MediaReference.result['*'] as any)
+        .add_result_fields({series_index: PaginationCursorVars.result.series_index})
+    }
 
     const count_builder = new SQLBuilder(this.driver)
     count_builder
@@ -398,7 +418,7 @@ ${group_builder.generate_sql()}
       builder.add_where_clause('media_series_reference = true')
     }
 
-    if (params.animated || params.filepath || params.duration_min !== undefined || params.duration_max !== undefined) {
+    if (params.animated || params.filepath || params.duration_min !== undefined || params.duration_max !== undefined || params.sort_by === 'duration') {
       builder.add_join_clause('INNER JOIN', 'media_file', 'media_file.media_reference_id = media_reference.id')
 
       if (params.animated) {

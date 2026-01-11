@@ -51,7 +51,7 @@ export const SeriesSearchQuery = z.object({
 export const SeriesSearch = PaginatedQuery.extend({
   query: SeriesSearchQuery,
   thumbnail_limit: z.number().default(1),
-  sort_by: z.enum(['series_index', 'created_at', 'updated_at', 'source_created_at', 'view_count', 'last_viewed_at']).default('series_index'),
+  sort_by: z.enum(['series_index', 'created_at', 'updated_at', 'source_created_at', 'view_count', 'last_viewed_at', 'duration']).default('series_index'),
   order: z.enum(['desc', 'asc']).default('asc'),
 }).strict()
 
