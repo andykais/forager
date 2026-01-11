@@ -139,7 +139,7 @@ test('cli basics', async ctx => {
     // Test duration filter
     await ctx.subtest('duration filter', async () => {
       // cat_cronch.mp4 has duration ~7 seconds
-      const result_min = await forager_cli`--json --config ${config_path} search --duration-min-seconds 5`.json()
+      const result_min = await forager_cli`--json --config ${config_path} search --duration-min 5`.json()
       ctx.assert.search_result(result_min, {
         total: 1,
         results: [
@@ -147,7 +147,7 @@ test('cli basics', async ctx => {
         ]
       })
 
-      const result_max = await forager_cli`--json --config ${config_path} search --duration-max-seconds 10`.json()
+      const result_max = await forager_cli`--json --config ${config_path} search --duration-max 10`.json()
       ctx.assert.search_result(result_max, {
         total: 1,
         results: [
@@ -155,7 +155,7 @@ test('cli basics', async ctx => {
         ]
       })
 
-      const result_range = await forager_cli`--json --config ${config_path} search --duration-min-seconds 5 --duration-max-seconds 10`.json()
+      const result_range = await forager_cli`--json --config ${config_path} search --duration-min 5 --duration-max 10`.json()
       ctx.assert.search_result(result_range, {
         total: 1,
         results: [

@@ -49,12 +49,8 @@ const cli = new cliffy.Command()
     .option('--animated', 'Filter for animated media only')
     .option('--stars=<stars:number>', 'Filter by star rating (0-5)')
     .option('--stars-equality=<equality>', 'Stars comparison mode: "gte" (greater than or equal) or "eq" (equal)')
-    .option('--duration-min-seconds=<seconds:number>', 'Minimum duration in seconds')
-    .option('--duration-min-minutes=<minutes:number>', 'Minimum duration in minutes')
-    .option('--duration-min-hours=<hours:number>', 'Minimum duration in hours')
-    .option('--duration-max-seconds=<seconds:number>', 'Maximum duration in seconds')
-    .option('--duration-max-minutes=<minutes:number>', 'Maximum duration in minutes')
-    .option('--duration-max-hours=<hours:number>', 'Maximum duration in hours')
+    .option('--duration-min=<seconds:number>', 'Minimum duration in seconds')
+    .option('--duration-max=<seconds:number>', 'Maximum duration in seconds')
     .option('--unread', 'Filter for unread media only')
     .option('--limit=<limit:number>', 'Maximum number of results')
     .option('--sort-by=<sort_by>', 'Sort field: created_at, updated_at, source_created_at, view_count, last_viewed_at')
@@ -65,20 +61,12 @@ const cli = new cliffy.Command()
       const forager = await forager_helpers.launch_forager()
 
       // Parse duration filters
-      const duration_min = (opts.durationMinSeconds || opts.durationMinMinutes || opts.durationMinHours)
-        ? {
-            seconds: opts.durationMinSeconds,
-            minutes: opts.durationMinMinutes,
-            hours: opts.durationMinHours,
-          }
+      const duration_min = opts.durationMin !== undefined
+        ? { seconds: opts.durationMin }
         : undefined
 
-      const duration_max = (opts.durationMaxSeconds || opts.durationMaxMinutes || opts.durationMaxHours)
-        ? {
-            seconds: opts.durationMaxSeconds,
-            minutes: opts.durationMaxMinutes,
-            hours: opts.durationMaxHours,
-          }
+      const duration_max = opts.durationMax !== undefined
+        ? { seconds: opts.durationMax }
         : undefined
 
       const duration = (duration_min || duration_max)
