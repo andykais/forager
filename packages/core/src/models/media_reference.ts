@@ -273,6 +273,10 @@ ${count_query.stmt.sql}
     MediaReference.set_select_many_filters(count_builder, filter_params)
     MediaReference.#apply_pagination_fragments(records_builder, params.cursor, params.sort_by, params.order, params.limit, sql_params)
 
+    if (params.limit !== undefined) {
+      records_builder.set_limit_clause(`LIMIT ${params.limit}`)
+    }
+
     const records_query = records_builder.build()
     type PaginatedRow = torm.InferSchemaTypes<typeof MediaReference.result> & {cursor_id: number, series_index: number}
     const results: PaginatedRow[] = records_query.stmt.all(sql_params)

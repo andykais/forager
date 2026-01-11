@@ -241,5 +241,97 @@ test('media series', async (ctx) => {
     ctx.assert.equals(series_foobar.media_reference.media_series_name, 'foobar')
     ctx.assert.throws(() => forager.series.create({media_series_name: 'foobar'}), errors.SeriesAlreadyExistsError)
   })
+})
 
+test('series search duration sort', async ctx => {
+  using forager = new Forager(ctx.get_test_config())
+  forager.init()
+
+  // Create media files with different durations
+  // blink.gif - duration: 3.18
+  const media_gif = await forager.media.create(ctx.resources.media_files['blink.gif'])
+  // cat_cronch.mp4 - duration: 6.763
+  const media_video = await forager.media.create(ctx.resources.media_files['cat_cronch.mp4'])
+  // music_snippet.mp3 - duration: 6.96
+  const media_audio = await forager.media.create(ctx.resources.media_files['music_snippet.mp3'])
+
+  // Create a series with these media files
+  const media_series = forager.series.create({title: 'mixed media series'})
+  forager.series.add({
+    series_id: media_series.media_reference.id,
+    media_reference_id: media_audio.media_reference.id,
+    series_index: 0
+  })
+  forager.series.add({
+    series_id: media_series.media_reference.id,
+    media_reference_id: media_gif.media_reference.id,
+    series_index: 1
+  })
+  forager.series.add({
+    series_id: media_series.media_reference.id,
+    media_reference_id: media_video.media_reference.id,
+    series_index: 2
+  })
+
+  await ctx.subtest('duration sort order ascending', () => {
+    ctx.assert.series_search_result(forager.series.search({
+      query: {series_id: media_series.media_reference.id},
+      sort_by: 'duration',
+      order: 'asc'
+    }), {
+      total: 3,
+      results: [
+        {media_reference: {id: media_gif.media_reference.id}, series_index: 1},
+        {media_reference: {id: media_video.media_reference.id}, series_index: 2},
+        {media_reference: {id: media_audio.media_reference.id}, series_index: 0},
+      ]
+    })
+  })
+
+  await ctx.subtest('duration sort order descending', () => {
+    ctx.assert.series_search_result(forager.series.search({
+      query: {series_id: media_series.media_reference.id},
+      sort_by: 'duration',
+      order: 'desc'
+    }), {
+      total: 3,
+      results: [
+        {media_reference: {id: media_audio.media_reference.id}, series_index: 0},
+        {media_reference: {id: media_video.media_reference.id}, series_index: 2},
+        {media_reference: {id: media_gif.media_reference.id}, series_index: 1},
+      ]
+    })
+  })
+
+  await ctx.subtest('duration sort with pagination', () => {
+    const page_1 = forager.series.search({
+      query: {series_id: media_series.media_reference.id},
+      sort_by: 'duration',
+      order: 'asc',
+      limit: 2
+    })
+    ctx.assert.series_search_result(page_1, {
+      total: 3,
+      results: [
+        {media_reference: {id: media_gif.media_reference.id}, series_index: 1},
+        {media_reference: {id: media_video.media_reference.id}, series_index: 2},
+      ]
+    })
+    // Verify cursor exists before trying to use it
+    ctx.assert.not_equals(page_1.cursor, undefined)
+
+    const page_2 = forager.series.search({
+      query: {series_id: media_series.media_reference.id},
+      sort_by: 'duration',
+      order: 'asc',
+      limit: 2,
+      cursor: page_1.cursor
+    })
+    ctx.assert.series_search_result(page_2, {
+      total: 3,
+      results: [
+        {media_reference: {id: media_audio.media_reference.id}, series_index: 0},
+      ]
+    })
+  })
 })

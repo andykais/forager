@@ -471,6 +471,10 @@ test('search sort duration', async ctx => {
   // music_snippet.mp3 - duration: 6.96 (actual value from FFmpeg)
   const media_audio = await forager.media.create(ctx.resources.media_files['music_snippet.mp3'])
 
+  // Create a media series to ensure it's properly excluded when sorting by duration
+  // Series don't have media files, so they shouldn't appear in duration-sorted results
+  const test_series = forager.series.create({title: 'test series'})
+
   await ctx.subtest('duration sort order ascending', () => {
     ctx.assert.search_result(forager.media.search({sort_by: 'duration', order: 'asc'}), {
       results: [
@@ -506,6 +510,30 @@ test('search sort duration', async ctx => {
         {media_reference: {id: media_audio.media_reference.id}},
       ],
       total: 3
+    })
+  })
+
+  await ctx.subtest('series excluded from duration sort', () => {
+    // Verify the series exists in regular search but not in duration-sorted search
+    // Regular search returns results in default order (by source_created_at desc)
+    ctx.assert.search_result(forager.media.search(), {
+      total: 4,
+      results: [
+        {media_reference: {id: test_series.media_reference.id}},
+        {media_reference: {id: media_audio.media_reference.id}},
+        {media_reference: {id: media_video.media_reference.id}},
+        {media_reference: {id: media_gif.media_reference.id}},
+      ]
+    })
+
+    // When sorting by duration, only media files should appear (series excluded)
+    ctx.assert.search_result(forager.media.search({sort_by: 'duration', order: 'asc'}), {
+      total: 3,
+      results: [
+        {media_reference: {id: media_gif.media_reference.id}},
+        {media_reference: {id: media_video.media_reference.id}},
+        {media_reference: {id: media_audio.media_reference.id}},
+      ]
     })
   })
 })
