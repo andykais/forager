@@ -924,8 +924,61 @@ test('search group by', async ctx => {
     ctx.assert.object_match(group_sorted_by_last_viewed_at_asc.results[1].group, { value: 'andrew', last_viewed_at: generated_art.media_reference.last_viewed_at })
     ctx.assert.object_match(group_sorted_by_last_viewed_at_asc.results[2].group, { value: 'bob', last_viewed_at: null })
   })
-})
 
+  await ctx.subtest('with grouped_media duration sort', async () => {
+    // Test sorting grouped media by duration using already created videos
+    // Succulentsaur.mp4 and cat_cronch.mp4 both have durations and artist tags
+    // Succulentsaur.mp4 - has artist:andrew tag
+    // cat_cronch.mp4 - duration: 6.763, has artist:alice tag
+
+    // Create music_snippet.mp3 with duration 6.96
+    const music_snippet = await forager.media.create(
+      ctx.resources.media_files['music_snippet.mp3'],
+      {title: 'Music Snippet'},
+      ['artist:alice']
+    )
+
+    // Test sorting grouped media by duration (ascending)
+    // All groups are returned, but we check Alice's group which has:
+    // cat_cronch (6.763) and music_snippet (6.96) sorted by duration
+    const group_with_duration_sort_asc = forager.media.group({
+      group_by: {tag_group: 'artist'},
+      grouped_media: {limit: 10, sort_by: 'duration'},
+      order: 'asc'
+    })
+
+    // Find alice's group in the results
+    const alice_group_asc = group_with_duration_sort_asc.results.find(r => r.group.value === 'alice')
+    ctx.assert.not_equals(alice_group_asc, undefined)
+    ctx.assert.equals(alice_group_asc!.group.count, 2)
+    ctx.assert.equals(alice_group_asc!.group.media!.length, 2)
+    const alice_media_asc_0 = alice_group_asc!.group.media![0] as MediaFileResponse
+    const alice_media_asc_1 = alice_group_asc!.group.media![1] as MediaFileResponse
+    ctx.assert.equals(alice_media_asc_0.media_reference.id, cat_cronch.media_reference.id)
+    ctx.assert.equals(alice_media_asc_0.media_file.duration, 6.763)
+    ctx.assert.equals(alice_media_asc_1.media_reference.id, music_snippet.media_reference.id)
+    ctx.assert.equals(alice_media_asc_1.media_file.duration, 6.96)
+
+    // Test sorting grouped media by duration (descending)
+    const group_with_duration_sort_desc = forager.media.group({
+      group_by: {tag_group: 'artist'},
+      grouped_media: {limit: 10, sort_by: 'duration'},
+      order: 'desc'
+    })
+
+    // Find alice's group in the results
+    const alice_group_desc = group_with_duration_sort_desc.results.find(r => r.group.value === 'alice')
+    ctx.assert.not_equals(alice_group_desc, undefined)
+    ctx.assert.equals(alice_group_desc!.group.count, 2)
+    ctx.assert.equals(alice_group_desc!.group.media!.length, 2)
+    const alice_media_desc_0 = alice_group_desc!.group.media![0] as MediaFileResponse
+    const alice_media_desc_1 = alice_group_desc!.group.media![1] as MediaFileResponse
+    ctx.assert.equals(alice_media_desc_0.media_reference.id, music_snippet.media_reference.id)
+    ctx.assert.equals(alice_media_desc_0.media_file.duration, 6.96)
+    ctx.assert.equals(alice_media_desc_1.media_reference.id, cat_cronch.media_reference.id)
+    ctx.assert.equals(alice_media_desc_1.media_file.duration, 6.763)
+  })
+})
 
 test('video media', async ctx => {
   using forager = new Forager(ctx.get_test_config())
