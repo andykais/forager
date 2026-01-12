@@ -82,6 +82,7 @@ export const PaginatedSearchGroupBy = PaginatedSearch.extend({
   grouped_media: z.object({
     limit: z.number().optional(),
     sort_by: PaginatedSearch.shape.sort_by,
+    order: PaginatedSearch.shape.order,
   }).prefault({}),
   sort_by: z.enum(['count', 'created_at', 'updated_at', 'source_created_at', 'view_count', 'last_viewed_at']).default('count'),
 })

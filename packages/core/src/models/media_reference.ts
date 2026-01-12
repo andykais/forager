@@ -83,7 +83,7 @@ const NULLABLE_SORT_BY_FIELDS = new Set([
   'last_viewed_at'
 ])
 
-const SORT_BY_TO_DB_COLUMN: Record<string, string> = {
+const SORT_BY_TO_DB_COLUMN = {
   'series_index': 'media_series_item.series_index',
   'created_at': 'media_reference.created_at',
   'updated_at': 'media_reference.updated_at',
@@ -91,7 +91,8 @@ const SORT_BY_TO_DB_COLUMN: Record<string, string> = {
   'view_count': 'media_reference.view_count',
   'last_viewed_at': 'media_reference.last_viewed_at',
   'duration': 'media_file.duration',
-}
+  'count': 'count_value',
+} satisfies Record<string, string>
 
 
 class MediaReference extends Model {
@@ -498,7 +499,7 @@ ${group_builder.generate_sql()}
   static #apply_pagination_fragments(
     builder: SQLBuilder,
     cursor: PaginatedResult<unknown>['cursor'],
-    sort_by: keyof typeof PaginationCursorVars.params,
+    sort_by: Exclude<keyof typeof PaginationCursorVars.params, "*">,
     order: 'asc' | 'desc' | undefined,
     limit: number | undefined,
     sql_params: Record<string, any>

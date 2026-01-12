@@ -940,26 +940,26 @@ test('search group by', async ctx => {
     // cat_cronch (6.763) and music_snippet (6.92) sorted by duration
     const group_with_duration_sort_asc = forager.media.group({
       group_by: {tag_group: 'artist'},
-      grouped_media: {limit: 10, sort_by: 'duration'},
-      order: 'asc'
+      grouped_media: {limit: 10, sort_by: 'duration', order: 'asc'},
+      order: 'desc'
     })
     ctx.assert.list_deep_partial(group_with_duration_sort_asc.results, [
-      { group: { value: 'bob', count: 1 } },
-      { group: { value: 'alice', count: 2 } },
       { group: { value: 'andrew', count: 3 } },
-    ])
-    ctx.assert.list_deep_partial(group_with_duration_sort_asc.results[0].group.media!, [
-      { media_reference: { id: ed_edd_eddy.media_reference.id }, media_file: { duration: 0 } },
+      { group: { value: 'alice', count: 2 } },
+      { group: { value: 'bob', count: 1 } },
     ])
     ctx.assert.list_deep_partial(group_with_duration_sort_asc.results[1].group.media!, [
       { media_reference: { id: cat_cronch.media_reference.id }, media_file: { duration: 6.763 } },
       { media_reference: { id: music_snippet.media_reference.id }, media_file: { duration: 6.92 } },
     ])
+    ctx.assert.list_deep_partial(group_with_duration_sort_asc.results[2].group.media!, [
+      { media_reference: { id: ed_edd_eddy.media_reference.id }, media_file: { duration: 0 } },
+    ])
 
     // Test sorting grouped media by duration (descending)
     const group_with_duration_sort_desc = forager.media.group({
       group_by: {tag_group: 'artist'},
-      grouped_media: {limit: 10, sort_by: 'duration'},
+      grouped_media: {limit: 10, sort_by: 'duration', order: 'desc'},
       order: 'desc'
     })
     ctx.assert.list_deep_partial(group_with_duration_sort_desc.results, [
