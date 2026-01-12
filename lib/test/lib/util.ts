@@ -134,7 +134,8 @@ class Assertions {
       })
     }
   }
-  list_partial<T extends object>(actual_list: T[], expected_list: Partial<T>[], sort_fn?: (a: T, b: T) => number) {
+
+  private assert_partial_internal<T extends object>(actual_list: T[], expected_list: DeepPartial<T>[], sort_fn?: (a: T, b: T) => number, equality_check?: (a: any, b: any) => void) {
     this.equals(actual_list.length, expected_list.length, `Expected list length to be ${expected_list.length} but is actually ${actual_list.length}`)
     const expected_list_keys = expected_list.map(item => Object.keys(item))
     for (const expected_keys of expected_list_keys) this.equals(expected_keys, expected_list_keys[0], 'list_partial must supply the same keys for each element')
@@ -144,20 +145,16 @@ class Assertions {
       return Object.fromEntries(partial_entries)
     })
     if (sort_fn) massaged_actual_list = massaged_actual_list.sort(sort_fn as any)
-    this.equals(massaged_actual_list as any, expected_list as any)
+    equality_check = equality_check ?? this.equals
+    equality_check(massaged_actual_list, expected_list)
+  }
+
+  list_partial<T extends object>(actual_list: T[], expected_list: Partial<T>[], sort_fn?: (a: T, b: T) => number) {
+    this.assert_partial_internal(actual_list, expected_list, sort_fn, this.equals)
   }
 
   list_deep_partial<T extends object>(actual_list: T[], expected_list: DeepPartial<T>[], sort_fn?: (a: T, b: T) => number) {
-    this.equals(actual_list.length, expected_list.length, `Expected list length to be ${expected_list.length} but is actually ${actual_list.length}`)
-    const expected_list_keys = expected_list.map(item => Object.keys(item))
-    for (const expected_keys of expected_list_keys) this.equals(expected_keys, expected_list_keys[0], 'list_partial must supply the same keys for each element')
-    const expected_keys = expected_list_keys[0]
-    let massaged_actual_list = actual_list.map(item => {
-      const partial_entries = Object.entries(item).filter(entry => expected_keys.includes(entry[0]))
-      return Object.fromEntries(partial_entries)
-    })
-    if (sort_fn) massaged_actual_list = massaged_actual_list.sort(sort_fn as any)
-    this.object_match(massaged_actual_list as any, expected_list as any)
+    this.assert_partial_internal(actual_list, expected_list, sort_fn, this.object_match)
   }
 
   capture_events(action_emitter: Emitter<any>, events: string[]): CapturedEvent[] {
