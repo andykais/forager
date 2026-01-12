@@ -197,7 +197,7 @@ class MediaReference extends Model {
         .set_select_clause(`SELECT media_reference.* FROM media_reference`)
         .add_result_fields(MediaReference.result['*'] as any)
     }
-    // .add_result_fields({cursor_id: PaginationVars.result.cursor_id})
+
     const count_builder = new SQLBuilder(this.driver)
     count_builder
       .add_select_wrapper(`SELECT COUNT(1) AS total FROM`)
@@ -424,6 +424,10 @@ ${group_builder.generate_sql()}
 
     if (params.animated || params.filepath || params.duration_min !== undefined || params.duration_max !== undefined || params.sort_by === 'duration') {
       builder.add_join_clause('INNER JOIN', 'media_file', 'media_file.media_reference_id = media_reference.id')
+
+      if (params.series) {
+        throw new errors.BadInputError(`Cannot use series filter with duration filter or duration sort - series do not have media files`)
+      }
 
       if (params.animated) {
         builder.add_where_clause(`media_file.animated = true`)

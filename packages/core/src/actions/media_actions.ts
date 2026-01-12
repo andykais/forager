@@ -61,11 +61,6 @@ class MediaActions extends Actions {
     const parsed = parsers.PaginatedSearch.parse(params ?? {})
     const { query } = parsed
 
-    // Validate mutually exclusive filters
-    if (query.series && (query.duration !== undefined || parsed.sort_by === 'duration')) {
-      throw new errors.BadInputError('Cannot use series filter with duration filter or duration sort - series do not have media files')
-    }
-
     const tag_ids: number[] | undefined = query.tags
       ?.map(tag => this.models.Tag.select_one({name: tag.name, group: tag.group }, {or_raise: true}).id)
       .filter((tag): tag is number => tag !== undefined)
