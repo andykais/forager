@@ -143,9 +143,9 @@ export class MediaSeriesRune extends MediaViewRune {
 
   public override async load_detailed_view() {
     if (this.state!.full_thumbnails) return
-    const series = await forager.series.get({series_id: media_response.media_reference.id })
+    const series = await this.client.forager.series.get({series_id: this.state!.media.media_reference.id })
     this.state!.full_thumbnails = series.thumbnails
-    const series_items = await forager.media.search({query: {series_id: media_response.media_reference.id }})
+    const series_items = await this.client.forager.media.search({query: {series_id: this.state!.media.media_reference.id }})
     // TODO attach series items
   }
 
