@@ -65,6 +65,7 @@ interface SelectManyGroupByResult {
     source_created_at: Date | null
     created_at: Date
     updated_at: Date
+    duration?: number
 }
 
 
@@ -306,18 +307,35 @@ ${count_query.stmt.sql}
   public select_many_group_by_tags(params: SelectManyGroupByParams): PaginatedResult<SelectManyGroupByResult>  {
     const records_builder = new SQLBuilder(this.driver)
 
-    MediaReference.set_select_many_filters(records_builder, {...params, sort_by: 'media_reference.created_at'})
+    // Pass duration sort_by to ensure media_file join happens
+    const filter_sort_by = params.sort_by === 'duration' ? 'duration' : 'media_reference.created_at'
+    MediaReference.set_select_many_filters(records_builder, {...params, sort_by: filter_sort_by})
 
-    records_builder.set_select_clause(`
-      SELECT
-        media_reference.id,
-        media_reference.view_count,
-        media_reference.last_viewed_at,
-        media_reference.source_created_at,
-        media_reference.created_at,
-        media_reference.updated_at
-      FROM media_reference
-    `)
+    // When sorting by duration, we need to join with media_file and select duration
+    if (params.sort_by === 'duration') {
+      records_builder.set_select_clause(`
+        SELECT
+          media_reference.id,
+          media_reference.view_count,
+          media_reference.last_viewed_at,
+          media_reference.source_created_at,
+          media_reference.created_at,
+          media_reference.updated_at,
+          media_file.duration
+        FROM media_reference
+      `)
+    } else {
+      records_builder.set_select_clause(`
+        SELECT
+          media_reference.id,
+          media_reference.view_count,
+          media_reference.last_viewed_at,
+          media_reference.source_created_at,
+          media_reference.created_at,
+          media_reference.updated_at
+        FROM media_reference
+      `)
+    }
 
     // some tiny special logic because 'count' is a reserved word in sqlite. We can likely just use a better word here like 'total'
     const sort_by = params.sort_by === 'count' ? 'count_value' : params.sort_by
@@ -328,6 +346,12 @@ ${count_query.stmt.sql}
     const min_date = `'0000-01-01:00:00.000Z'`
     const nullish_date_value = params.order === 'desc' ? min_date : max_date
     const group_builder = new SQLBuilder(this.driver)
+
+    // Build SELECT clause with duration if sorting by duration
+    const duration_select = params.sort_by === 'duration'
+      ? `,\n        ${value_aggregator}(inner_media_reference.duration) AS duration`
+      : ''
+
     group_builder
     .set_select_clause(`
       SELECT
@@ -337,7 +361,7 @@ ${count_query.stmt.sql}
         NULLIF(${value_aggregator}(IFNULL(inner_media_reference.last_viewed_at, ${nullish_date_value})), ${nullish_date_value}) AS last_viewed_at,
         NULLIF(${value_aggregator}(IFNULL(inner_media_reference.source_created_at, ${nullish_date_value})), ${nullish_date_value}) AS source_created_at,
         ${value_aggregator}(inner_media_reference.created_at) AS created_at,
-        ${value_aggregator}(inner_media_reference.updated_at) AS updated_at
+        ${value_aggregator}(inner_media_reference.updated_at) AS updated_at${duration_select}
       FROM (
         ${records_builder.generate_sql()}
       ) as inner_media_reference`
@@ -359,7 +383,7 @@ SELECT * FROM (
   )
 )
 `)
-    pagination_builder.add_result_fields({
+    const result_fields: Record<string, any> = {
       cursor_id: PaginationVars.result.cursor_id,
       group_value: GroupByVars.result.group_value,
       count_value: GroupByVars.result.count_value,
@@ -368,7 +392,14 @@ SELECT * FROM (
       source_created_at: MediaReference.result.source_created_at,
       created_at: MediaReference.result.created_at,
       updated_at: MediaReference.result.updated_at,
-    })
+    }
+
+    // Add duration field if sorting by duration
+    if (params.sort_by === 'duration') {
+      result_fields.duration = PaginationCursorVars.result.duration
+    }
+
+    pagination_builder.add_result_fields(result_fields)
 
     if (params.cursor !== undefined) {
       pagination_builder.add_where_clause(`cursor_id > ${params.cursor.cursor_id}`)

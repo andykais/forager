@@ -70,6 +70,8 @@ export interface MediaGroupResponse {
     created_at: Date
     /** The min/max updated_at, depending on if order is asc/desc */
     updated_at: Date
+    /** The min/max duration, depending on if order is asc/desc. Only present when sorting by duration. */
+    duration?: number
     /** a list of media optionally retrieved with grouped_media_limit under this group */
     media?: MediaResponse[]
   }
