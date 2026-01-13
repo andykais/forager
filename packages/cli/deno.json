@@ -15,7 +15,7 @@
   },
 
   "imports": {
-    "@cliffy/command": "jsr:@cliffy/command@1.0.0-rc.4"
+    "@cliffy/command": "jsr:@cliffy/command@1.0.0-rc.8"
   },
 
   "exports": "./src/cli.ts",
