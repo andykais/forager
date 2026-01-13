@@ -249,7 +249,8 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
     }
 
     if (media_reference.media_series_reference) {
-      throw new Error('unimplemented')
+      const result = this.get_media_series_response({ series_id: media_reference.id }, thumbnail_limit)
+      return result
     } else {
       if (media_file === undefined) {
         media_file = this.models.MediaFile.select_one({media_reference_id: media_reference.id}, {or_raise: true})
@@ -264,6 +265,18 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
       }
     }
   }
+
+  protected get_media_series_response(params: outputs.SeriesGet, thumbnail_limit?: number): MediaSeriesResponse {
+    const media_reference = this.models.MediaReference.select_one_media_series({id: params.series_id, media_series_name: params.series_name})
+    const tags = this.models.Tag.select_all({media_reference_id: media_reference.id})
+    return {
+      media_type: 'media_series',
+      media_reference,
+      tags,
+      thumbnails: this.models.MediaThumbnail.select_many({series_id: media_reference.id, limit: thumbnail_limit ?? 0}),
+    }
+  }
+
 
   protected tag_create(tag: z.output<typeof parsers.Tag>) {
     const group = tag.group ?? ''

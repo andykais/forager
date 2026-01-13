@@ -55,7 +55,7 @@ class SeriesActions extends Actions {
 
     const transaction_result = transaction()
     // no thumbnails should exist yet, so we give it limit: 0
-    return this.#get_media_series_response({series_id: transaction_result.media_reference.id })
+    return this.get_media_series_response({series_id: transaction_result.media_reference.id })
   }
 
   public update = (series_id: number, media_info?: inputs.MediaInfo, tags?: inputs.Tag[], editing?: UpdateEditor): MediaSeriesResponse => {
@@ -88,7 +88,7 @@ class SeriesActions extends Actions {
     })
 
     transaction()
-    return this.#get_media_series_response({series_id: parsed.series_id})
+    return this.get_media_series_response({series_id: parsed.series_id})
   }
 
   public upsert = (media_info?: inputs.MediaSeriesInfo, tags?: inputs.Tag[]): MediaSeriesResponse => {
@@ -149,7 +149,7 @@ class SeriesActions extends Actions {
 
   public get = (params: inputs.SeriesGet): MediaSeriesResponse => {
     const parsed = parsers.SeriesGet.parse(params)
-    return this.#get_media_series_response(parsed)
+    return this.get_media_series_response(parsed)
   }
 
   public search = (params: inputs.SeriesSearch): result_types.PaginatedResult<SeriesSearchResponse> => {
@@ -191,17 +191,6 @@ class SeriesActions extends Actions {
       total: records.total,
       cursor: records.cursor,
       results: results,
-    }
-  }
-
-  #get_media_series_response(params: outputs.SeriesGet): MediaSeriesResponse {
-    const media_reference = this.models.MediaReference.select_one_media_series({id: params.series_id, media_series_name: params.series_name})
-    const tags = this.models.Tag.select_all({media_reference_id: media_reference.id})
-    return {
-      media_type: 'media_series',
-      media_reference,
-      tags,
-      thumbnails: this.models.MediaThumbnail.select_many({series_id: media_reference.id, limit: 0}),
     }
   }
 
