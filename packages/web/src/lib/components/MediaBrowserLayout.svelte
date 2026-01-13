@@ -1,4 +1,4 @@
-<script lang="ts" context="module">
+<script lang="ts" module>
   import type { BrowseController } from '../../routes/browse/controller.ts'
   import type { SeriesController } from '../../routes/series/[series_id]/controller.ts'
 
