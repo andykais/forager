@@ -1,5 +1,5 @@
 import { Actions, type MediaSeriesResponse, type SeriesSearchResponse, type UpdateEditor } from '~/actions/lib/base.ts'
-import { inputs, outputs, parsers } from '~/inputs/mod.ts'
+import { inputs, parsers } from '~/inputs/mod.ts'
 import type * as result_types from '~/models/lib/result_types.ts'
 import * as errors from '~/lib/errors.ts'
 import * as torm from '@torm/sqlite'
