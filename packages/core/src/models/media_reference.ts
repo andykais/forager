@@ -185,19 +185,15 @@ class MediaReference extends Model {
   public select_many(params: SelectManyParams): PaginatedResult<torm.InferSchemaTypes<typeof MediaReference.result>> {
     const records_builder = new SQLBuilder(this.driver)
     const sql_params: Record<string, any> = {}
-    // this nested select clause exists so that we can create a reliable cursor_id for pagination
-    // it uses ROW_NUMBER with an explicit order clause to ensure that we can reliably paginate
 
-    // When sorting by duration, we need to select the duration field for cursor pagination
+    records_builder
+      .set_select_from('media_reference')
+      .add_select_column('media_reference.*')
+      .add_result_fields(MediaReference.result['*'] as any)
+      .add_result_fields({duration: PaginationCursorVars.result.duration})
     if (params.sort_by === 'duration') {
-      records_builder
-        .set_select_clause(`SELECT media_reference.*, media_file.duration FROM media_reference`)
-        .add_result_fields(MediaReference.result['*'] as any)
-        .add_result_fields({duration: PaginationCursorVars.result.duration})
-    } else {
-      records_builder
-        .set_select_clause(`SELECT media_reference.* FROM media_reference`)
-        .add_result_fields(MediaReference.result['*'] as any)
+      // When sorting by duration, we need to select the duration field for cursor pagination
+      records_builder.add_select_column('media_file.duration')
     }
 
     const count_builder = new SQLBuilder(this.driver)
@@ -244,18 +240,18 @@ ${count_query.stmt.sql}
     const sql_params: Record<string, any> = {}
 
     // Always select series_index for series searches
-    // When sorting by duration, also select the duration field for cursor pagination
+    records_builder
+      .set_select_from('media_reference')
+      .add_select_column('media_reference.*')
+      .add_select_column('media_series_item.series_index')
+      .add_result_fields(MediaReference.result['*'] as any)
+      .add_result_fields({series_index: PaginationCursorVars.result.series_index})
+      .add_result_fields({duration: PaginationCursorVars.result.duration})
     if (params.sort_by === 'duration') {
+      // When sorting by duration, we also need the duration field for cursor pagination
       records_builder
-        .set_select_clause(`SELECT media_reference.*, media_series_item.series_index, media_file.duration FROM media_reference`)
-        .add_result_fields(MediaReference.result['*'] as any)
-        .add_result_fields({series_index: PaginationCursorVars.result.series_index})
+        .add_select_column('media_file.duration')
         .add_result_fields({duration: PaginationCursorVars.result.duration})
-    } else {
-      records_builder
-        .set_select_clause(`SELECT media_reference.*, media_series_item.series_index FROM media_reference`)
-        .add_result_fields(MediaReference.result['*'] as any)
-        .add_result_fields({series_index: PaginationCursorVars.result.series_index})
     }
 
     const count_builder = new SQLBuilder(this.driver)
@@ -312,29 +308,17 @@ ${count_query.stmt.sql}
     MediaReference.set_select_many_filters(records_builder, {...params, sort_by: filter_sort_by})
 
     // When sorting by duration, we need to join with media_file and select duration
+    records_builder
+      .set_select_from('media_reference')
+      .add_select_column('media_reference.id')
+      .add_select_column('media_reference.view_count')
+      .add_select_column('media_reference.last_viewed_at')
+      .add_select_column('media_reference.source_created_at')
+      .add_select_column('media_reference.created_at')
+      .add_select_column('media_reference.updated_at')
     if (params.sort_by === 'duration') {
-      records_builder.set_select_clause(`
-        SELECT
-          media_reference.id,
-          media_reference.view_count,
-          media_reference.last_viewed_at,
-          media_reference.source_created_at,
-          media_reference.created_at,
-          media_reference.updated_at,
-          media_file.duration
-        FROM media_reference
-      `)
-    } else {
-      records_builder.set_select_clause(`
-        SELECT
-          media_reference.id,
-          media_reference.view_count,
-          media_reference.last_viewed_at,
-          media_reference.source_created_at,
-          media_reference.created_at,
-          media_reference.updated_at
-        FROM media_reference
-      `)
+      records_builder
+        .add_select_column('media_file.duration')
     }
 
     // some tiny special logic because 'count' is a reserved word in sqlite. We can likely just use a better word here like 'total'

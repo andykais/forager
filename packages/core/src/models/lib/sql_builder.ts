@@ -8,6 +8,8 @@ class SQLBuilder {
   fragments: {
     select_wrappers: string[]
     select_clause: string
+    select_from: string
+    select_columns: string[]
     where_clauses: string[]
     group_clauses: string[]
     having_clauses: string[]
@@ -21,6 +23,8 @@ class SQLBuilder {
     this.fragments = {
       select_wrappers: [],
       select_clause: '',
+      select_from: '',
+      select_columns: [],
       where_clauses: [],
       join_clauses: {},
       group_clauses: [],
@@ -34,8 +38,19 @@ class SQLBuilder {
     this.fragments.select_wrappers.push(sql)
     return this
   }
+
+  set_select_from(table: string) {
+    this.fragments.select_from = table
+    return this
+  }
+
   set_select_clause(sql: string) {
     this.fragments.select_clause = sql
+    return this
+  }
+
+  add_select_column(sql: string) {
+    this.fragments.select_columns.push(sql)
     return this
   }
 
@@ -125,8 +140,22 @@ class SQLBuilder {
       having_clause = `HAVING ${this.fragments.having_clauses.join(' AND ')}`
     }
 
+    let select_clause: string
+    if (this.fragments.select_clause && (this.fragments.select_from || this.fragments.select_columns.length)) {
+      throw new Error(`Invalid sql statement. Cannot use select_clause '${this.fragments.select_clause}' alongside select_from '${this.fragments.select_from}' or select_columns [${this.fragments.select_columns}]`)
+    } else if (this.fragments.select_from) {
+      if (this.fragments.select_columns.length === 0) {
+        throw new Error('Invalid sql statement. No select columns present')
+      }
+      select_clause = `SELECT ${this.fragments.select_columns.join(', ')} FROM ${this.fragments.select_from}`
+    } else if (this.fragments.select_clause) {
+      select_clause = this.fragments.select_clause
+    } else {
+      throw new Error(`Invalid sql statement. No select clause present`)
+    }
+
     let sql = `
-${this.fragments.select_clause}
+${select_clause}
 ${join_clause}
 ${where_clause}
 ${group_clause}
