@@ -44,8 +44,8 @@ export class MediaViewRune extends Rune {
     return this.media.media_file
   }
 
-  get preview_thumbnail() {
-    return this.media.thumbnails.results[0]
+  get preview_media_reference(): MediaResponse {
+    return this.media
   }
 
   get thumbnails() {
@@ -182,8 +182,8 @@ export class MediaGroupRune extends MediaViewRune {
     return this.media.group
   }
 
-  get preview_thumbnail() {
-    return this.grouped_state.media_list.at(0)?.thumbnails.results[0] ?? {filepath: null}
+  override get preview_media_reference(): MediaResponse | undefined {
+    return this.grouped_state.media_list.at(0)
   }
 
   public img_fit_classes() {

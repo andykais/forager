@@ -76,30 +76,32 @@
             use:focusable={!media_selections.current_selection.show && media_selections.current_selection.result_index === result_index}
             onclick={e => media_selections.set_current_selection(result, result_index)}
           >
-            {#if settings.ui.media_list.thumbnail_shape === 'original'}
-              <img
-                class={[
-                  "shadow shadow-gray-700 rounded-md hover:shadow-slate-400 hover:border-slate-400 hover:border hover:border-2",
-                  result.img_fit_classes(),
-                  result_index !== media_selections.current_selection.result_index
-                    && "shadow-slate-900 shadow-green-300",
-                  result_index === media_selections.current_selection.result_index
-                    && "hover:border-slate-400 border-green-300 border border-2 hover:shadow-slate-400 shadow-green-300",
-                ]}
-                src="/files/thumbnail/{result.media_reference.id}"
-                alt="Thumbnail for {result.media_reference.title ?? 'media'}"/>
-            {:else}
-              <img
-                class={[
-                  "w-full h-full object-cover shadow shadow-gray-700 rounded-md hover:shadow-slate-400 hover:border-slate-400 hover:border hover:border-2",
-                  result.img_fit_classes(),
-                  result_index !== media_selections.current_selection.result_index
-                    && "hover:shadow-slate-400 shadow-slate-900 shadow-green-300",
-                  result_index === media_selections.current_selection.result_index
-                    && "hover:border-slate-400 border-green-300 border border-2 hover:shadow-slate-400 shadow-green-300",
-                ]}
-                src="/files/thumbnail/{result.media_reference.id}"
-                alt="Thumbnail for {result.media_reference.title ?? 'media'}"/>
+            {#if result.preview_media_reference}
+              {#if settings.ui.media_list.thumbnail_shape === 'original'}
+                <img
+                  class={[
+                    "shadow shadow-gray-700 rounded-md hover:shadow-slate-400 hover:border-slate-400 hover:border hover:border-2",
+                    result.img_fit_classes(),
+                    result_index !== media_selections.current_selection.result_index
+                      && "shadow-slate-900 shadow-green-300",
+                    result_index === media_selections.current_selection.result_index
+                      && "hover:border-slate-400 border-green-300 border border-2 hover:shadow-slate-400 shadow-green-300",
+                  ]}
+                  src="/files/thumbnail/{result.preview_media_reference.media_reference.id}"
+                  alt="Thumbnail for {result.preview_media_reference.media_reference.title ?? 'media'}"/>
+              {:else}
+                <img
+                  class={[
+                    "w-full h-full object-cover shadow shadow-gray-700 rounded-md hover:shadow-slate-400 hover:border-slate-400 hover:border hover:border-2",
+                    result.img_fit_classes(),
+                    result_index !== media_selections.current_selection.result_index
+                      && "hover:shadow-slate-400 shadow-slate-900 shadow-green-300",
+                    result_index === media_selections.current_selection.result_index
+                      && "hover:border-slate-400 border-green-300 border border-2 hover:shadow-slate-400 shadow-green-300",
+                  ]}
+                  src="/files/thumbnail/{result.preview_media_reference.media_reference.id}"
+                  alt="Thumbnail for {result.preview_media_reference.media_reference.title ?? 'media'}"/>
+              {/if}
             {/if}
           </div>
 
