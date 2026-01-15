@@ -160,12 +160,20 @@ class Tag extends Model {
 
     let results: TagJoin[]
     let total = -1
-    if (params.contextual_query && Object.keys(params.contextual_query)) {
+    let has_contextual_query = false
+    if (params.contextual_query) {
+      if (Object.keys(params.contextual_query)) {
+        if (params.contextual_query.tag_ids?.length !== 0) {
+          has_contextual_query = true
+        }
+      }
+    }
+    if (has_contextual_query) {
 
       const media_reference_tag_builder = new SQLBuilder(this.driver)
       media_reference_tag_builder.set_select_clause(`SELECT media_reference_tag.media_reference_id FROM media_reference`)
       media_reference_tag_builder.add_join_clause(`INNER JOIN`, 'media_reference_tag', 'media_reference_tag.media_reference_id = media_reference.id')
-      MediaReference.set_select_many_filters(media_reference_tag_builder, params.contextual_query)
+      MediaReference.set_select_many_filters(media_reference_tag_builder, params.contextual_query!)
 
       tags_sql_builder
         .add_join_clause('INNER JOIN', 'media_reference_tag', 'media_reference_tag.tag_id = tag.id')
