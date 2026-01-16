@@ -187,6 +187,20 @@ test('cli basics', async ctx => {
       )
     })
 
+    // Test sort-by duration
+    await ctx.subtest('sort by duration', async () => {
+      // cat_cronch.mp4 has duration, images have no duration
+      const result_desc = await forager_cli`--json --config ${config_path} search --sort-by duration --order desc`.json()
+      ctx.assert.equals(result_desc.results.length, 4)
+      // Video with duration should be first when sorted desc
+      ctx.assert.equals(result_desc.results[0].media_file.filepath, ctx.resources.media_files['cat_cronch.mp4'])
+
+      const result_asc = await forager_cli`--json --config ${config_path} search --sort-by duration --order asc`.json()
+      ctx.assert.equals(result_asc.results.length, 4)
+      // Video with duration should be last when sorted asc
+      ctx.assert.equals(result_asc.results[result_asc.results.length - 1].media_file.filepath, ctx.resources.media_files['cat_cronch.mp4'])
+    })
+
     // Test thumbnail-limit
     await ctx.subtest('thumbnail limit', async () => {
       const result_no_thumbs = await forager_cli`--json --config ${config_path} search --thumbnail-limit 0`.json()
