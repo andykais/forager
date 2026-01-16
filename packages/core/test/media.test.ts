@@ -404,7 +404,6 @@ test('media actions', async (ctx) => {
   forager.close()
 })
 
-
 test('search sort', async ctx => {
   using forager = new Forager(ctx.get_test_config())
   forager.init()
@@ -456,6 +455,109 @@ test('search sort', async ctx => {
     })
 
     // TODO add more variable sorting tests with view_count once we can update media references
+  })
+})
+
+test('search sort duration', async ctx => {
+  using forager = new Forager(ctx.get_test_config())
+  forager.init()
+
+  // Create media with different durations
+  // blink.gif - duration: 3.18
+  const media_gif = await forager.media.create(ctx.resources.media_files['blink.gif'])
+  // cat_cronch.mp4 - duration: 6.763
+  const media_video = await forager.media.create(ctx.resources.media_files['cat_cronch.mp4'])
+  // music_snippet.mp3 - duration: 6.92 (actual value from FFmpeg)
+  const media_audio = await forager.media.create(ctx.resources.media_files['music_snippet.mp3'])
+
+  // Create a media series to ensure it's properly excluded when sorting by duration
+  // Series don't have media files, so they shouldn't appear in duration-sorted results
+  const test_series = forager.series.create({title: 'test series'})
+
+  await ctx.subtest('duration sort order ascending', () => {
+    ctx.assert.search_result(forager.media.search({sort_by: 'duration', order: 'asc'}), {
+      results: [
+        {media_reference: {id: media_gif.media_reference.id}, media_file: {duration: 3.18}},
+        {media_reference: {id: media_video.media_reference.id}, media_file: {duration: 6.763}},
+        {media_reference: {id: media_audio.media_reference.id}, media_file: {duration: 6.92}},
+      ]
+    })
+  })
+
+  await ctx.subtest('duration sort order descending', () => {
+    ctx.assert.search_result(forager.media.search({sort_by: 'duration', order: 'desc'}), {
+      results: [
+        {media_reference: {id: media_audio.media_reference.id}, media_file: {duration: 6.92}},
+        {media_reference: {id: media_video.media_reference.id}, media_file: {duration: 6.763}},
+        {media_reference: {id: media_gif.media_reference.id}, media_file: {duration: 3.18}},
+      ]
+    })
+  })
+
+  await ctx.subtest('duration sort with pagination', () => {
+    const page_1 = forager.media.search({sort_by: 'duration', order: 'asc', limit: 2})
+    ctx.assert.search_result(page_1, {
+      results: [
+        {media_reference: {id: media_gif.media_reference.id}},
+        {media_reference: {id: media_video.media_reference.id}},
+      ],
+      total: 3
+    })
+    const page_2 = forager.media.search({sort_by: 'duration', order: 'asc', limit: 2, cursor: page_1.cursor})
+    ctx.assert.search_result(page_2, {
+      results: [
+        {media_reference: {id: media_audio.media_reference.id}},
+      ],
+      total: 3
+    })
+  })
+
+  await ctx.subtest('series excluded from duration sort', () => {
+    // Verify the series exists in regular search but not in duration-sorted search
+    // Regular search returns results in default order (by source_created_at desc)
+    ctx.assert.search_result(forager.media.search(), {
+      total: 4,
+      results: [
+        {media_reference: {id: test_series.media_reference.id}},
+        {media_reference: {id: media_audio.media_reference.id}},
+        {media_reference: {id: media_video.media_reference.id}},
+        {media_reference: {id: media_gif.media_reference.id}},
+      ]
+    })
+
+    // When sorting by duration, only media files should appear (series excluded)
+    ctx.assert.search_result(forager.media.search({sort_by: 'duration', order: 'asc'}), {
+      total: 3,
+      results: [
+        {media_reference: {id: media_gif.media_reference.id}},
+        {media_reference: {id: media_video.media_reference.id}},
+        {media_reference: {id: media_audio.media_reference.id}},
+      ]
+    })
+  })
+
+  await ctx.subtest('validate series and duration are mutually exclusive', () => {
+    // Should throw error when using series filter with duration sort
+    ctx.assert.throws(
+      () => forager.media.search({query: {series: true}, sort_by: 'duration'}),
+      errors.BadInputError,
+      'Cannot use series filter with duration filter or duration sort'
+    )
+
+    // Should throw error when using series filter with duration filter
+    ctx.assert.throws(
+      () => forager.media.search({query: {series: true, duration: {min: {seconds: 1}}}}),
+      errors.BadInputError,
+      'Cannot use series filter with duration filter or duration sort'
+    )
+
+    // Should work fine with just series filter
+    ctx.assert.search_result(forager.media.search({query: {series: true}}), {
+      total: 1,
+      results: [
+        {media_reference: {id: test_series.media_reference.id}},
+      ]
+    })
   })
 })
 
@@ -579,7 +681,6 @@ test('media search duration filter', async ctx => {
   })
 })
 
-
 test('search group by', async ctx => {
   using forager = new Forager(ctx.get_test_config())
   forager.init()
@@ -622,7 +723,6 @@ test('search group by', async ctx => {
     {},
     ['meme']
   )
-
 
   ctx.assert.group_result(
     forager.media.group({
@@ -801,7 +901,7 @@ test('search group by', async ctx => {
     ctx.assert.not_equals(cat_cronch.media_reference.last_viewed_at, null)
     await ctx.timeout(10)
     forager.views.start({media_reference_id: generated_art.media_reference.id})
-    generated_art = forager.media.get({media_reference_id: cat_cronch.media_reference.id}) as MediaFileResponse
+    generated_art = forager.media.get({media_reference_id: generated_art.media_reference.id}) as MediaFileResponse
     ctx.assert.not_equals(generated_art.media_reference.last_viewed_at, null)
     const group_sorted_by_last_viewed_at_desc_2 = forager.media.group({
       group_by: {tag_group: 'artist'},
@@ -821,8 +921,105 @@ test('search group by', async ctx => {
     ctx.assert.object_match(group_sorted_by_last_viewed_at_asc.results[1].group, { value: 'andrew', last_viewed_at: generated_art.media_reference.last_viewed_at })
     ctx.assert.object_match(group_sorted_by_last_viewed_at_asc.results[2].group, { value: 'bob', last_viewed_at: null })
   })
-})
 
+  await ctx.subtest('with grouped_media duration sort', async () => {
+    // Test sorting grouped media by duration using already created videos
+    // Succulentsaur.mp4 and cat_cronch.mp4 both have durations and artist tags
+    // Succulentsaur.mp4 - has artist:andrew tag
+    // cat_cronch.mp4 - duration: 6.763, has artist:alice tag
+
+    // Create music_snippet.mp3 with duration 6.92
+    const music_snippet = await forager.media.create(
+      ctx.resources.media_files['music_snippet.mp3'],
+      {title: 'Music Snippet'},
+      ['artist:alice']
+    )
+
+    // Test sorting grouped media by duration (ascending)
+    // All groups are returned, but we check Alice's group which has:
+    // cat_cronch (6.763) and music_snippet (6.92) sorted by duration
+    const group_with_duration_sort_asc = forager.media.group({
+      group_by: {tag_group: 'artist'},
+      grouped_media: {limit: 10, sort_by: 'duration', order: 'asc'},
+      order: 'desc'
+    })
+    ctx.assert.list_deep_partial(group_with_duration_sort_asc.results, [
+      { group: { value: 'andrew', count: 3 } },
+      { group: { value: 'alice', count: 2 } },
+      { group: { value: 'bob', count: 1 } },
+    ])
+    ctx.assert.list_deep_partial(group_with_duration_sort_asc.results[1].group.media!, [
+      { media_reference: { id: cat_cronch.media_reference.id }, media_file: { duration: 6.763 } },
+      { media_reference: { id: music_snippet.media_reference.id }, media_file: { duration: 6.92 } },
+    ])
+    ctx.assert.list_deep_partial(group_with_duration_sort_asc.results[2].group.media!, [
+      { media_reference: { id: ed_edd_eddy.media_reference.id }, media_file: { duration: 0 } },
+    ])
+
+    // Test sorting grouped media by duration (descending)
+    const group_with_duration_sort_desc = forager.media.group({
+      group_by: {tag_group: 'artist'},
+      grouped_media: {limit: 10, sort_by: 'duration', order: 'desc'},
+      order: 'desc'
+    })
+    ctx.assert.list_deep_partial(group_with_duration_sort_desc.results, [
+      { group: { value: 'andrew', count: 3 } },
+      { group: { value: 'alice', count: 2 } },
+      { group: { value: 'bob', count: 1 } },
+    ])
+    ctx.assert.list_deep_partial(group_with_duration_sort_desc.results[0].group.media!, [
+      { media_reference: { id: succulentsaur.media_reference.id }, media_file: { duration: 16.733333 } },
+      { media_reference: { id: cat_doodle.media_reference.id }, media_file: { duration: 0 } },
+      { media_reference: { id: generated_art.media_reference.id }, media_file: { duration: 0 } },
+    ])
+    // same 'artist:alice' tag group as above, media is now sorted by descending duration
+    ctx.assert.list_deep_partial(group_with_duration_sort_desc.results[1].group.media!, [
+      { media_reference: { id: music_snippet.media_reference.id }, media_file: { duration: 6.92 } },
+      { media_reference: { id: cat_cronch.media_reference.id }, media_file: { duration: 6.763 } },
+    ])
+  })
+
+  await ctx.subtest('with group sort_by duration', async () => {
+    // Test sorting the groups themselves by duration
+    // This is different from grouped_media duration sort - here we sort the groups by their min/max duration
+
+    // Group by artist and sort groups by duration (ascending = MIN duration)
+    const groups_sorted_by_duration_asc = forager.media.group({
+      group_by: {tag_group: 'artist'},
+      sort_by: 'duration',
+      order: 'asc'
+    })
+
+    // alice group has cat_cronch (6.763) and music_snippet (6.92) - MIN: 6.763
+    // andrew group has succulentsaur (16.733333), cat_doodle (0), generated_art (0) - MIN: 0
+    // bob group has ed_edd_eddy (0) - MIN: 0
+    // When sorting by MIN duration ascending, andrew and bob should come before alice
+
+    const alice_group = groups_sorted_by_duration_asc.results.find(r => r.group.value === 'alice')
+    ctx.assert.not_equals(alice_group, undefined)
+    ctx.assert.equals(alice_group!.group.count, 2)
+    // Alice's min duration is 6.763 from cat_cronch
+    ctx.assert.equals(alice_group!.group.duration, 6.763)
+
+    // Group by artist and sort groups by duration (descending = MAX duration)
+    const groups_sorted_by_duration_desc = forager.media.group({
+      group_by: {tag_group: 'artist'},
+      sort_by: 'duration',
+      order: 'desc'
+    })
+
+    // alice group MAX: 6.92
+    // andrew group MAX: 16.733333
+    // bob group MAX: 0
+    // When sorting by MAX duration descending, andrew should come first, then alice, then bob
+
+    ctx.assert.list_deep_partial(groups_sorted_by_duration_desc.results, [
+      { group: { value: 'andrew', count: 3, duration: 16.733333 } },
+      { group: { value: 'alice', count: 2, duration: 6.92 } },
+      { group: { value: 'bob', count: 1, duration: 0 } },
+    ])
+  })
+})
 
 test('video media', async ctx => {
   using forager = new Forager(ctx.get_test_config())
@@ -1015,7 +1212,6 @@ test('video media', async ctx => {
   })
 })
 
-
 test('search query.animated', async ctx => {
   using forager = new Forager(ctx.get_test_config())
   forager.init()
@@ -1071,7 +1267,6 @@ test('audio media', async ctx => {
   ctx.assert.equals(results.results[0].thumbnails.results.length, 1)
 })
 
-
 test('gif', async ctx => {
   using forager = new Forager(ctx.get_test_config())
   forager.init()
@@ -1104,7 +1299,6 @@ test('gif', async ctx => {
     { kind: "standard", media_timestamp: 2.92 }
   ], (a, b) => a.media_timestamp - b.media_timestamp)
 })
-
 
 test('forager class', async ctx => {
   // assert that we error out when passing bad data to the forager class

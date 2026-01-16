@@ -70,7 +70,7 @@ export const MediaReferenceQuery = z.object({
 export const PaginatedSearch = PaginatedQuery.extend({
   query: MediaReferenceQuery.prefault({}),
   thumbnail_limit: z.number().default(1),
-  sort_by: z.enum(['created_at', 'updated_at', 'source_created_at', 'view_count', 'last_viewed_at']).default('source_created_at'),
+  sort_by: z.enum(['created_at', 'updated_at', 'source_created_at', 'view_count', 'last_viewed_at', 'duration']).default('source_created_at'),
   order: z.enum(['desc', 'asc']).default('desc'),
 }).strict()
 
@@ -81,9 +81,10 @@ export const PaginatedSearchGroupBy = PaginatedSearch.extend({
   }),
   grouped_media: z.object({
     limit: z.number().optional(),
-    sort_by: z.enum(['created_at', 'updated_at', 'source_created_at', 'view_count']).default('source_created_at'),
+    sort_by: PaginatedSearch.shape.sort_by,
+    order: PaginatedSearch.shape.order,
   }).prefault({}),
-  sort_by: z.enum(['count', 'created_at', 'updated_at', 'source_created_at', 'view_count', 'last_viewed_at']).default('count'),
+  sort_by: z.enum(['count', 'created_at', 'updated_at', 'source_created_at', 'view_count', 'last_viewed_at', 'duration']).default('count'),
 })
 
 

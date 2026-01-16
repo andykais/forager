@@ -202,7 +202,7 @@ class MediaActions extends Actions {
           limit: parsed.grouped_media.limit,
           sort_by: parsed.grouped_media.sort_by,
           animated: parsed.query.animated,
-          order: parsed.order,
+          order: parsed.grouped_media.order,
           stars: query.stars,
           stars_equality: query.stars_equality,
           duration_min: query.duration?.min?.seconds,

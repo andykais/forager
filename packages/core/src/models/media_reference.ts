@@ -65,6 +65,7 @@ interface SelectManyGroupByResult {
     source_created_at: Date | null
     created_at: Date
     updated_at: Date
+    duration?: number
 }
 
 
@@ -75,6 +76,7 @@ const PaginationCursorVars = torm.Vars({
   updated_at: torm.field.string(),
   view_count: torm.field.number(),
   series_index: torm.field.number(),
+  duration: torm.field.number(),
 })
 
 const NULLABLE_SORT_BY_FIELDS = new Set([
@@ -82,14 +84,16 @@ const NULLABLE_SORT_BY_FIELDS = new Set([
   'last_viewed_at'
 ])
 
-const SORT_BY_TO_DB_COLUMN: Record<string, string> = {
+const SORT_BY_TO_DB_COLUMN = {
   'series_index': 'media_series_item.series_index',
   'created_at': 'media_reference.created_at',
   'updated_at': 'media_reference.updated_at',
   'source_created_at': 'media_reference.source_created_at',
   'view_count': 'media_reference.view_count',
   'last_viewed_at': 'media_reference.last_viewed_at',
-}
+  'duration': 'media_file.duration',
+  'count': 'count_value',
+} satisfies Record<string, string>
 
 
 class MediaReference extends Model {
@@ -181,12 +185,19 @@ class MediaReference extends Model {
   public select_many(params: SelectManyParams): PaginatedResult<torm.InferSchemaTypes<typeof MediaReference.result>> {
     const records_builder = new SQLBuilder(this.driver)
     const sql_params: Record<string, any> = {}
-    // this nested select clause exists so that we can create a reliable cursor_id for pagination
-    // it uses ROW_NUMBER with an explicit order clause to ensure that we can reliably paginate
+
     records_builder
-      .set_select_clause(`SELECT media_reference.* FROM media_reference`)
+      .set_select_from('media_reference')
+      .add_select_column('media_reference.*')
       .add_result_fields(MediaReference.result['*'] as any)
-      // .add_result_fields({cursor_id: PaginationVars.result.cursor_id})
+
+    if (params.sort_by === 'duration') {
+      // When sorting by duration, we need to select the duration field for cursor pagination
+      records_builder
+        .add_select_column('media_file.duration')
+        .add_result_fields({duration: PaginationCursorVars.result.duration})
+    }
+
     const count_builder = new SQLBuilder(this.driver)
     count_builder
       .add_select_wrapper(`SELECT COUNT(1) AS total FROM`)
@@ -232,9 +243,19 @@ ${count_query.stmt.sql}
 
     // Always select series_index for series searches
     records_builder
-      .set_select_clause(`SELECT media_reference.*, media_series_item.series_index FROM media_reference`)
+      .set_select_from('media_reference')
+      .add_select_column('media_reference.*')
+      .add_select_column('media_series_item.series_index')
       .add_result_fields(MediaReference.result['*'] as any)
       .add_result_fields({series_index: PaginationCursorVars.result.series_index})
+      .add_result_fields({duration: PaginationCursorVars.result.duration})
+
+    if (params.sort_by === 'duration') {
+      // When sorting by duration, we also need the duration field for cursor pagination
+      records_builder
+        .add_select_column('media_file.duration')
+        .add_result_fields({duration: PaginationCursorVars.result.duration})
+    }
 
     const count_builder = new SQLBuilder(this.driver)
     count_builder
@@ -252,6 +273,10 @@ ${count_query.stmt.sql}
     MediaReference.set_select_many_filters(records_builder, filter_params)
     MediaReference.set_select_many_filters(count_builder, filter_params)
     MediaReference.#apply_pagination_fragments(records_builder, params.cursor, params.sort_by, params.order, params.limit, sql_params)
+
+    if (params.limit !== undefined) {
+      records_builder.set_limit_clause(`LIMIT ${params.limit}`)
+    }
 
     const records_query = records_builder.build()
     type PaginatedRow = torm.InferSchemaTypes<typeof MediaReference.result> & {cursor_id: number, series_index: number}
@@ -280,19 +305,35 @@ ${count_query.stmt.sql}
 
   public select_many_group_by_tags(params: SelectManyGroupByParams): PaginatedResult<SelectManyGroupByResult>  {
     const records_builder = new SQLBuilder(this.driver)
+    const result_fields: Record<string, any> = {
+      cursor_id: PaginationVars.result.cursor_id,
+      group_value: GroupByVars.result.group_value,
+      count_value: GroupByVars.result.count_value,
+      view_count: MediaReference.result.view_count,
+      last_viewed_at: MediaReference.result.last_viewed_at,
+      source_created_at: MediaReference.result.source_created_at,
+      created_at: MediaReference.result.created_at,
+      updated_at: MediaReference.result.updated_at,
+    }
 
-    MediaReference.set_select_many_filters(records_builder, {...params, sort_by: 'media_reference.created_at'})
 
-    records_builder.set_select_clause(`
-      SELECT
-        media_reference.id,
-        media_reference.view_count,
-        media_reference.last_viewed_at,
-        media_reference.source_created_at,
-        media_reference.created_at,
-        media_reference.updated_at
-      FROM media_reference
-    `)
+    MediaReference.set_select_many_filters(records_builder, params)
+
+    // When sorting by duration, we need to join with media_file and select duration
+    records_builder
+      .set_select_from('media_reference')
+      .add_select_column('media_reference.id')
+      .add_select_column('media_reference.view_count')
+      .add_select_column('media_reference.last_viewed_at')
+      .add_select_column('media_reference.source_created_at')
+      .add_select_column('media_reference.created_at')
+      .add_select_column('media_reference.updated_at')
+
+    if (params.sort_by === 'duration') {
+      records_builder
+        .add_select_column('media_file.duration')
+      result_fields.duration = PaginationCursorVars.result.duration
+    }
 
     // some tiny special logic because 'count' is a reserved word in sqlite. We can likely just use a better word here like 'total'
     const sort_by = params.sort_by === 'count' ? 'count_value' : params.sort_by
@@ -303,25 +344,29 @@ ${count_query.stmt.sql}
     const min_date = `'0000-01-01:00:00.000Z'`
     const nullish_date_value = params.order === 'desc' ? min_date : max_date
     const group_builder = new SQLBuilder(this.driver)
+
     group_builder
-    .set_select_clause(`
-      SELECT
-        tag.name AS group_value,
-        COUNT(0) AS count_value,
-        ${value_aggregator}(inner_media_reference.view_count) AS view_count,
-        NULLIF(${value_aggregator}(IFNULL(inner_media_reference.last_viewed_at, ${nullish_date_value})), ${nullish_date_value}) AS last_viewed_at,
-        NULLIF(${value_aggregator}(IFNULL(inner_media_reference.source_created_at, ${nullish_date_value})), ${nullish_date_value}) AS source_created_at,
-        ${value_aggregator}(inner_media_reference.created_at) AS created_at,
-        ${value_aggregator}(inner_media_reference.updated_at) AS updated_at
-      FROM (
+      .add_select_column('tag.name AS group_value')
+      .add_select_column('COUNT(0) AS count_value')
+      .add_select_column(`${value_aggregator}(inner_media_reference.view_count) AS view_count`)
+      .add_select_column(`NULLIF(${value_aggregator}(IFNULL(inner_media_reference.last_viewed_at, ${nullish_date_value})), ${nullish_date_value}) AS last_viewed_at`)
+      .add_select_column(`NULLIF(${value_aggregator}(IFNULL(inner_media_reference.source_created_at, ${nullish_date_value})), ${nullish_date_value}) AS source_created_at`)
+      .add_select_column(`${value_aggregator}(inner_media_reference.created_at) AS created_at`)
+      .add_select_column(`${value_aggregator}(inner_media_reference.updated_at) AS updated_at`)
+      .set_select_from(`(
         ${records_builder.generate_sql()}
-      ) as inner_media_reference`
-    )
-    .add_join_clause(`INNER JOIN`, `media_reference_tag`, `inner_media_reference.id = media_reference_tag.media_reference_id`)
-    .add_join_clause(`INNER JOIN`, `tag`, `tag.id = media_reference_tag.tag_id`)
-    .add_where_clause(`tag.tag_group_id = ${params.group_by.tag_group_id}`)
-    .add_group_clause(`GROUP BY group_value`)
-    .set_order_by_clause(`ORDER BY ${sort_by} ${order} NULLS LAST`)
+      ) as inner_media_reference`)
+
+    if (params.sort_by === 'duration') {
+      group_builder.add_select_column(`${value_aggregator}(inner_media_reference.duration) AS duration`)
+    }
+
+    group_builder
+      .add_join_clause(`INNER JOIN`, `media_reference_tag`, `inner_media_reference.id = media_reference_tag.media_reference_id`)
+      .add_join_clause(`INNER JOIN`, `tag`, `tag.id = media_reference_tag.tag_id`)
+      .add_where_clause(`tag.tag_group_id = ${params.group_by.tag_group_id}`)
+      .add_group_clause(`GROUP BY group_value`)
+      .set_order_by_clause(`ORDER BY ${sort_by} ${order} NULLS LAST`)
 
     const pagination_builder = new SQLBuilder(this.driver)
     pagination_builder.set_select_clause(`
@@ -334,16 +379,8 @@ SELECT * FROM (
   )
 )
 `)
-    pagination_builder.add_result_fields({
-      cursor_id: PaginationVars.result.cursor_id,
-      group_value: GroupByVars.result.group_value,
-      count_value: GroupByVars.result.count_value,
-      view_count: MediaReference.result.view_count,
-      last_viewed_at: MediaReference.result.last_viewed_at,
-      source_created_at: MediaReference.result.source_created_at,
-      created_at: MediaReference.result.created_at,
-      updated_at: MediaReference.result.updated_at,
-    })
+
+    pagination_builder.add_result_fields(result_fields)
 
     if (params.cursor !== undefined) {
       pagination_builder.add_where_clause(`cursor_id > ${params.cursor.cursor_id}`)
@@ -398,8 +435,12 @@ ${group_builder.generate_sql()}
       builder.add_where_clause('media_series_reference = true')
     }
 
-    if (params.animated || params.filepath || params.duration_min !== undefined || params.duration_max !== undefined) {
+    if (params.animated || params.filepath || params.duration_min !== undefined || params.duration_max !== undefined || params.sort_by === 'duration') {
       builder.add_join_clause('INNER JOIN', 'media_file', 'media_file.media_reference_id = media_reference.id')
+
+      if (params.series) {
+        throw new errors.BadInputError(`Cannot use series filter with duration filter or duration sort - series do not have media files`)
+      }
 
       if (params.animated) {
         builder.add_where_clause(`media_file.animated = true`)
@@ -470,7 +511,7 @@ ${group_builder.generate_sql()}
   static #apply_pagination_fragments(
     builder: SQLBuilder,
     cursor: PaginatedResult<unknown>['cursor'],
-    sort_by: keyof typeof PaginationCursorVars.params,
+    sort_by: Exclude<keyof typeof PaginationCursorVars.params, "*">,
     order: 'asc' | 'desc' | undefined,
     limit: number | undefined,
     sql_params: Record<string, any>
