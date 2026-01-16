@@ -31,8 +31,30 @@ function resolve_workspace_imports(workspace_package: string) {
   return resolved_imports
 }
 
+// Patch the deno plugin(s) to skip virtual modules (which start with \0)
+function patchedDeno() {
+	const denoPlugins = deno()
+	const plugins = Array.isArray(denoPlugins) ? denoPlugins : [denoPlugins]
+
+	// Patch each plugin that has a resolveId hook
+	for (const plugin of plugins) {
+		if (plugin.resolveId) {
+			const originalResolveId = plugin.resolveId
+			plugin.resolveId = function(source, importer, options) {
+				// Skip virtual modules - they should be handled by Vite itself
+				if (source.startsWith('\0')) {
+					return null
+				}
+				return originalResolveId.call(this, source, importer, options)
+			}
+		}
+	}
+
+	return denoPlugins
+}
+
 export default defineConfig({
-	plugins: [tailwindcss(), sveltekit(), deno()],
+	plugins: [tailwindcss(), sveltekit(), patchedDeno()],
   resolve: {
     alias: {
       ...resolve_workspace_imports('core'),
