@@ -53,7 +53,7 @@ const cli = new cliffy.Command()
     .option('--duration-max=<seconds:number>', 'Maximum duration in seconds')
     .option('--unread', 'Filter for unread media only')
     .option('--limit=<limit:number>', 'Maximum number of results')
-    .option('--sort-by=<sort_by>', 'Sort field: created_at, updated_at, source_created_at, view_count, last_viewed_at')
+    .option('--sort-by=<sort_by>', 'Sort field: created_at, updated_at, source_created_at, view_count, last_viewed_at, duration')
     .option('--order=<order>', 'Sort order: asc or desc')
     .option('--thumbnail-limit=<thumbnail_limit:number>', 'Number of thumbnails per result')
     .action(async opts => {
@@ -88,7 +88,7 @@ const cli = new cliffy.Command()
           unread: opts.unread,
         },
         limit: opts.limit,
-        sort_by: opts.sortBy as 'created_at' | 'updated_at' | 'source_created_at' | 'view_count' | 'last_viewed_at' | undefined,
+        sort_by: opts.sortBy as 'created_at' | 'updated_at' | 'source_created_at' | 'view_count' | 'last_viewed_at' | 'duration' | undefined,
         order: opts.order as 'asc' | 'desc' | undefined,
         thumbnail_limit: opts.thumbnailLimit,
       })
