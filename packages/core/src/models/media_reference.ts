@@ -190,10 +190,12 @@ class MediaReference extends Model {
       .set_select_from('media_reference')
       .add_select_column('media_reference.*')
       .add_result_fields(MediaReference.result['*'] as any)
-      .add_result_fields({duration: PaginationCursorVars.result.duration})
+
     if (params.sort_by === 'duration') {
       // When sorting by duration, we need to select the duration field for cursor pagination
-      records_builder.add_select_column('media_file.duration')
+      records_builder
+        .add_select_column('media_file.duration')
+        .add_result_fields({duration: PaginationCursorVars.result.duration})
     }
 
     const count_builder = new SQLBuilder(this.driver)
@@ -247,6 +249,7 @@ ${count_query.stmt.sql}
       .add_result_fields(MediaReference.result['*'] as any)
       .add_result_fields({series_index: PaginationCursorVars.result.series_index})
       .add_result_fields({duration: PaginationCursorVars.result.duration})
+
     if (params.sort_by === 'duration') {
       // When sorting by duration, we also need the duration field for cursor pagination
       records_builder
@@ -302,6 +305,17 @@ ${count_query.stmt.sql}
 
   public select_many_group_by_tags(params: SelectManyGroupByParams): PaginatedResult<SelectManyGroupByResult>  {
     const records_builder = new SQLBuilder(this.driver)
+    const result_fields: Record<string, any> = {
+      cursor_id: PaginationVars.result.cursor_id,
+      group_value: GroupByVars.result.group_value,
+      count_value: GroupByVars.result.count_value,
+      view_count: MediaReference.result.view_count,
+      last_viewed_at: MediaReference.result.last_viewed_at,
+      source_created_at: MediaReference.result.source_created_at,
+      created_at: MediaReference.result.created_at,
+      updated_at: MediaReference.result.updated_at,
+    }
+
 
     MediaReference.set_select_many_filters(records_builder, params)
 
@@ -314,9 +328,11 @@ ${count_query.stmt.sql}
       .add_select_column('media_reference.source_created_at')
       .add_select_column('media_reference.created_at')
       .add_select_column('media_reference.updated_at')
+
     if (params.sort_by === 'duration') {
       records_builder
         .add_select_column('media_file.duration')
+      result_fields.duration = PaginationCursorVars.result.duration
     }
 
     // some tiny special logic because 'count' is a reserved word in sqlite. We can likely just use a better word here like 'total'
@@ -363,21 +379,6 @@ SELECT * FROM (
   )
 )
 `)
-    const result_fields: Record<string, any> = {
-      cursor_id: PaginationVars.result.cursor_id,
-      group_value: GroupByVars.result.group_value,
-      count_value: GroupByVars.result.count_value,
-      view_count: MediaReference.result.view_count,
-      last_viewed_at: MediaReference.result.last_viewed_at,
-      source_created_at: MediaReference.result.source_created_at,
-      created_at: MediaReference.result.created_at,
-      updated_at: MediaReference.result.updated_at,
-    }
-
-    // Add duration field if sorting by duration
-    if (params.sort_by === 'duration') {
-      result_fields.duration = PaginationCursorVars.result.duration
-    }
 
     pagination_builder.add_result_fields(result_fields)
 
