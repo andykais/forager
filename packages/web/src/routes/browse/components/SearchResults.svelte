@@ -77,7 +77,6 @@
             onclick={e => media_selections.set_current_selection(result, result_index)}
           >
             {#if settings.ui.media_list.thumbnail_shape === 'original'}
-              <!--- NOTE we broke this for forager.media.group results, which do not contain a media reference at their root :/ -->
               <img
                 class={[
                   "shadow shadow-gray-700 rounded-md hover:shadow-slate-400 hover:border-slate-400 hover:border hover:border-2",

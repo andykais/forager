@@ -136,7 +136,7 @@ export class MediaSeriesRune extends MediaViewRune {
   }
 
   public img_fit_classes() {
-    // console.warn(`media series img fit functions are not implemented`)
+    console.warn(`media series img fit functions are not implemented`)
     return "w-full"
   }
 }
