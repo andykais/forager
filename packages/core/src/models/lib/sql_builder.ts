@@ -147,7 +147,7 @@ class SQLBuilder {
       if (this.fragments.select_columns.length === 0) {
         throw new Error('Invalid sql statement. No select columns present')
       }
-      select_clause = `SELECT ${this.fragments.select_columns.join(', ')} FROM ${this.fragments.select_from}`
+      select_clause = `SELECT ${this.fragments.select_columns.join(',\n')} FROM ${this.fragments.select_from}`
     } else if (this.fragments.select_clause) {
       select_clause = this.fragments.select_clause
     } else {

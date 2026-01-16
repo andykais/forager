@@ -303,9 +303,7 @@ ${count_query.stmt.sql}
   public select_many_group_by_tags(params: SelectManyGroupByParams): PaginatedResult<SelectManyGroupByResult>  {
     const records_builder = new SQLBuilder(this.driver)
 
-    // Pass duration sort_by to ensure media_file join happens
-    const filter_sort_by = params.sort_by === 'duration' ? 'duration' : 'media_reference.created_at'
-    MediaReference.set_select_many_filters(records_builder, {...params, sort_by: filter_sort_by})
+    MediaReference.set_select_many_filters(records_builder, params)
 
     // When sorting by duration, we need to join with media_file and select duration
     records_builder
@@ -331,30 +329,28 @@ ${count_query.stmt.sql}
     const nullish_date_value = params.order === 'desc' ? min_date : max_date
     const group_builder = new SQLBuilder(this.driver)
 
-    // Build SELECT clause with duration if sorting by duration
-    const duration_select = params.sort_by === 'duration'
-      ? `,\n        ${value_aggregator}(inner_media_reference.duration) AS duration`
-      : ''
+    group_builder
+      .add_select_column('tag.name AS group_value')
+      .add_select_column('COUNT(0) AS count_value')
+      .add_select_column(`${value_aggregator}(inner_media_reference.view_count) AS view_count`)
+      .add_select_column(`NULLIF(${value_aggregator}(IFNULL(inner_media_reference.last_viewed_at, ${nullish_date_value})), ${nullish_date_value}) AS last_viewed_at`)
+      .add_select_column(`NULLIF(${value_aggregator}(IFNULL(inner_media_reference.source_created_at, ${nullish_date_value})), ${nullish_date_value}) AS source_created_at`)
+      .add_select_column(`${value_aggregator}(inner_media_reference.created_at) AS created_at`)
+      .add_select_column(`${value_aggregator}(inner_media_reference.updated_at) AS updated_at`)
+      .set_select_from(`(
+        ${records_builder.generate_sql()}
+      ) as inner_media_reference`)
+
+    if (params.sort_by === 'duration') {
+      group_builder.add_select_column(`${value_aggregator}(inner_media_reference.duration) AS duration`)
+    }
 
     group_builder
-    .set_select_clause(`
-      SELECT
-        tag.name AS group_value,
-        COUNT(0) AS count_value,
-        ${value_aggregator}(inner_media_reference.view_count) AS view_count,
-        NULLIF(${value_aggregator}(IFNULL(inner_media_reference.last_viewed_at, ${nullish_date_value})), ${nullish_date_value}) AS last_viewed_at,
-        NULLIF(${value_aggregator}(IFNULL(inner_media_reference.source_created_at, ${nullish_date_value})), ${nullish_date_value}) AS source_created_at,
-        ${value_aggregator}(inner_media_reference.created_at) AS created_at,
-        ${value_aggregator}(inner_media_reference.updated_at) AS updated_at${duration_select}
-      FROM (
-        ${records_builder.generate_sql()}
-      ) as inner_media_reference`
-    )
-    .add_join_clause(`INNER JOIN`, `media_reference_tag`, `inner_media_reference.id = media_reference_tag.media_reference_id`)
-    .add_join_clause(`INNER JOIN`, `tag`, `tag.id = media_reference_tag.tag_id`)
-    .add_where_clause(`tag.tag_group_id = ${params.group_by.tag_group_id}`)
-    .add_group_clause(`GROUP BY group_value`)
-    .set_order_by_clause(`ORDER BY ${sort_by} ${order} NULLS LAST`)
+      .add_join_clause(`INNER JOIN`, `media_reference_tag`, `inner_media_reference.id = media_reference_tag.media_reference_id`)
+      .add_join_clause(`INNER JOIN`, `tag`, `tag.id = media_reference_tag.tag_id`)
+      .add_where_clause(`tag.tag_group_id = ${params.group_by.tag_group_id}`)
+      .add_group_clause(`GROUP BY group_value`)
+      .set_order_by_clause(`ORDER BY ${sort_by} ${order} NULLS LAST`)
 
     const pagination_builder = new SQLBuilder(this.driver)
     pagination_builder.set_select_clause(`
