@@ -40,6 +40,10 @@ class MediaThumbnail extends Model {
     SELECT COUNT(1) AS ${PaginationVars.result.total} FROM media_thumbnail
     WHERE media_file_id = ${MediaThumbnail.params.media_file_id}`
 
+  #select_by_thumbnail_id = this.query`
+    SELECT ${MediaThumbnail.result['*']} FROM media_thumbnail
+    WHERE id = ${MediaThumbnail.params.id}`
+
   #select_by_media_file_id = this.query`
     SELECT ${MediaThumbnail.result['*']} FROM media_thumbnail
     WHERE media_file_id = ${MediaThumbnail.params.media_file_id}
@@ -71,13 +75,19 @@ class MediaThumbnail extends Model {
 
   public delete = this.delete_fn(this.#delete_by_media_file_id)
 
-  #select_one_impl(params: {
-    media_file_id: number
-  }) {
-    return this.#select_by_media_file_id.one({
-      media_file_id: params.media_file_id,
-      limit: 1,
-    })
+  #select_one_impl(params: { media_file_id: number } | { thumbnail_id: number }) {
+    if ('thumbnail_id' in params) {
+      return this.#select_by_thumbnail_id.one({
+        id: params.thumbnail_id,
+      })
+    } else if ('media_file_id' in params){
+      return this.#select_by_media_file_id.one({
+        media_file_id: params.media_file_id,
+        limit: 1,
+      })
+    } else {
+      throw new Error(`unexpected code path`)
+    }
   }
   public select_one = this.select_one_fn(this.#select_one_impl.bind(this))
 

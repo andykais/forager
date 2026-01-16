@@ -151,6 +151,10 @@ export class QueryParamsManager extends Rune {
       }
     }
 
+    if (url_params.get('mode') === 'group_by' && !url_params.has('group_by')) {
+      url_params.set('group_by', '')
+    }
+
     // Omit redundant 'mode' param when it can be inferred
     if (['group_by', 'media'].includes(url_params.get('mode') ?? '')) {
       url_params.delete('mode')

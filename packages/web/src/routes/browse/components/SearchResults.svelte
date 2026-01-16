@@ -86,8 +86,8 @@
                   result_index === media_selections.current_selection.result_index
                     && "hover:border-slate-400 border-green-300 border border-2 hover:shadow-slate-400 shadow-green-300",
                 ]}
-                src="/files/thumbnail/{result.media_reference.id}"
-                alt="Thumbnail for {result.media_reference.title ?? 'media'}"/>
+                src={result.preview_thumbnail}
+                alt="Thumbnail for {result.media_reference?.title ?? 'media'}"/>
             {:else}
               <img
                 class={[
@@ -98,8 +98,8 @@
                   result_index === media_selections.current_selection.result_index
                     && "hover:border-slate-400 border-green-300 border border-2 hover:shadow-slate-400 shadow-green-300",
                 ]}
-                src="/files/thumbnail/{result.media_reference.id}"
-                alt="Thumbnail for {result.media_reference.title ?? 'media'}"/>
+                src={result.preview_thumbnail}
+                alt="Thumbnail for {result.media_reference?.title ?? 'media'}"/>
             {/if}
           </div>
 
@@ -130,7 +130,7 @@
               <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
               <SearchLink
                 class="hover:text-green-500 hover:bg-gray-700 px-2 rounded-sm"
-                {controller} params={queryparams.merge({mode: 'media', tags: `${queryparams.current_url.group_by ?? ''}:${result.group_metadata.value}`})}> {result.group_metadata.value} 
+                {controller} params={queryparams.merge({mode: 'media', tags: `${queryparams.current.group_by ?? ''}:${result.group_metadata.value}`})}> {result.group_metadata.value} 
               </SearchLink>
               <span>{result.group_metadata.count}</span>
           {:else}
