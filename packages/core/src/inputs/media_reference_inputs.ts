@@ -14,6 +14,10 @@ export const MediaReferenceGet = z.object({
   filepath: Filepath.optional(),
 })
 
+export const MediaThumbnailGet = z.object({
+  thumbnail_id: z.number()
+})
+
 
 export const MediaInfo = z.object({
   title: z.string().optional(),

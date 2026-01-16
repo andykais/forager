@@ -20,26 +20,20 @@ const QuerySchema = z.object({
  */
 export const GET: RequestHandler = async ({ params, url, locals }) => {
   // Validate params with Zod
-  const { id: media_reference_id } = ParamsSchema.parse(params)
+  const { id: thumbnail_id } = ParamsSchema.parse(params)
   const { index: thumbnail_index } = QuerySchema.parse({
     index: url.searchParams.get('index'),
   })
 
   // Fetch media record (throws NotFoundError if not found)
-  let media
+  let thumbnail
   try {
-    media = await locals.forager.media.get({ media_reference_id })
+    thumbnail = await locals.forager.media.thumbnail({ thumbnail_id })
   } catch (err) {
     if (err instanceof errors.NotFoundError) {
-      throw error(404, 'Media not found')
+      throw error(404, 'Thumbnail not found')
     }
     throw err
-  }
-
-  // Get the requested thumbnail
-  const thumbnail = media.thumbnails.results[thumbnail_index]
-  if (!thumbnail) {
-    throw error(404, 'Thumbnail not found')
   }
 
   const thumbnail_path = thumbnail.filepath

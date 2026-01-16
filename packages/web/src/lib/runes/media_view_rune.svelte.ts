@@ -44,8 +44,8 @@ export class MediaViewRune extends Rune {
     return this.media.media_file
   }
 
-  get preview_thumbnail() {
-    return this.media.thumbnails.results[0]
+  get preview_thumbnail(): string | undefined {
+    return `/files/thumbnail/${this.media.thumbnails.results[0].id}`
   }
 
   get thumbnails() {
@@ -136,7 +136,7 @@ export class MediaSeriesRune extends MediaViewRune {
   }
 
   public img_fit_classes() {
-    console.warn(`media series img fit functions are not implemented`)
+    // console.warn(`media series img fit functions are not implemented`)
     return "w-full"
   }
 }
@@ -182,8 +182,12 @@ export class MediaGroupRune extends MediaViewRune {
     return this.media.group
   }
 
-  get preview_thumbnail() {
-    return this.grouped_state.media_list.at(0)?.thumbnails.results[0] ?? {filepath: null}
+  get preview_thumbnail(): string | undefined {
+    const media_entry = this.grouped_state.media_list.at(0)
+    if (media_entry) {
+      return `/files/thumbnail/${media_entry.thumbnails.results[0].id}`
+    }
+    return undefined
   }
 
   public img_fit_classes() {

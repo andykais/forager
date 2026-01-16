@@ -160,6 +160,7 @@ export class QueryParamsManager extends Rune {
       .map(([key, val]) => `${key}=${val}`)
       .join('&')
 
+    console.log('serialize', {query_string})
     return query_string ? '?' + query_string : null
   }
 
@@ -167,6 +168,7 @@ export class QueryParamsManager extends Rune {
    * Update URL without executing search
    */
   #write_url(params: SearchParams): void {
+    console.log('write_url', $state.snapshot(params))
     const serialized = this.serialize(params)
 
     if (this.current_serialized !== serialized) {
@@ -256,6 +258,7 @@ export class QueryParamsManager extends Rune {
    * Supports URL param names (e.g., 'tags') or internal names (e.g., 'search_string')
    */
   public merge(partial_params: Partial<Record<string, any>>): SearchParams {
+    console.log('merge', {partial_params, current: $state.snapshot(this.current)})
     const params = { ...this.current }
 
     for (const [key, val] of Object.entries(partial_params)) {

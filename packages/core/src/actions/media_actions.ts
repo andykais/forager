@@ -243,6 +243,15 @@ class MediaActions extends Actions {
       thumbnail_limit: -1,
     })
   }
+
+  thumbnail = (params: inputs.MediaThumbnailGet): result_types.MediaThumbnail => {
+    const parsed = parsers.MediaThumbnailGet.parse(params)
+    const thumbnail = this.models.MediaThumbnail.select_one({
+      thumbnail_id: parsed.thumbnail_id
+    }, { or_raise: true })
+
+    return thumbnail
+  }
 }
 
 
