@@ -740,6 +740,7 @@ test('search group by', async ctx => {
 
   await ctx.subtest('pagination', () => {
     const results_1_2 = forager.media.group({ group_by: {tag_group: 'artist'}, limit: 2})
+    ctx.assert.not_equals(results_1_2.cursor, undefined)
     const results_3 = forager.media.group({ group_by: {tag_group: 'artist'}, limit: 2, cursor: results_1_2.cursor})
     ctx.assert.group_result(results_1_2, {
       total: 3,
