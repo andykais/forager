@@ -820,24 +820,23 @@ Once installed, you can run all deno commands normally.
 
 ### Running Tests in Claude Code
 
-When running tests, you'll likely encounter certificate/TLS errors:
+When running tests, you may encounter certificate/TLS errors:
 
 ```bash
 error: invalid peer certificate: UnknownIssuer
 ```
 
-**Workaround**: Run `deno test` directly with the `--unsafely-ignore-certificate-errors` flag instead of using `deno task`:
+**Workaround options**:
 
 ```bash
-# Core tests - use direct deno test command
-export PATH="/root/.deno/bin:$PATH"
-cd packages/core
-deno test --unsafely-ignore-certificate-errors -P=test --check --trace-leaks test
+# Option 1: Use system certificate store (preferred)
+DENO_TLS_CA_STORE=system deno test -P=test --check --trace-leaks test
 
-# Note: You'll see "DANGER: TLS certificate validation is disabled" warning - this is expected
+# Option 2: Disable certificate validation (if option 1 doesn't work)
+deno test --unsafely-ignore-certificate-errors -P=test --check --trace-leaks test
 ```
 
-**Important**: The `--unsafely-ignore-certificate-errors` flag does NOT work with `deno task`. You must run `deno test` directly.
+**Note**: These flags do NOT work with `deno task`. Run `deno test` directly from `packages/core` or `packages/cli`.
 
 ### Test Results
 
