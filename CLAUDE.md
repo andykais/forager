@@ -830,13 +830,13 @@ error: invalid peer certificate: UnknownIssuer
 
 ```bash
 # Option 1: Use system certificate store (preferred)
-DENO_TLS_CA_STORE=system deno test -P=test --check --trace-leaks test
+DENO_TLS_CA_STORE=system deno task --cwd packages/core test
 
 # Option 2: Disable certificate validation (if option 1 doesn't work)
 deno test --unsafely-ignore-certificate-errors -P=test --check --trace-leaks test
 ```
 
-**Note**: These flags do NOT work with `deno task`. Run `deno test` directly from `packages/core` or `packages/cli`.
+**Note**: Option 2's flag does NOT work with `deno task`. Run `deno test` directly from `packages/core` or `packages/cli`.
 
 ### Test Results
 
