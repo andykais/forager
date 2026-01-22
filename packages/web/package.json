@@ -14,7 +14,8 @@
 	"dependencies": {
     "@andykais/ts-rpc": "npm:@jsr/andykais__ts-rpc@^0.2.4",
     "@torm/sqlite": "npm:@jsr/torm__sqlite@^1.9.7",
-    "@opentelemetry/api": "1.9.0"
+    "@opentelemetry/api": "1.9.0",
+		"@types/deno": "^2.5.0"
 	},
 	"devDependencies": {
     "@deno/vite-plugin": "1.0.6",
