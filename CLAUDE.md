@@ -820,24 +820,23 @@ Once installed, you can run all deno commands normally.
 
 ### Running Tests in Claude Code
 
-When running tests, you'll likely encounter certificate/TLS errors:
+When running tests, you may encounter certificate/TLS errors:
 
 ```bash
 error: invalid peer certificate: UnknownIssuer
 ```
 
-**Workaround**: Run `deno test` directly with the `--unsafely-ignore-certificate-errors` flag instead of using `deno task`:
+**Workaround options**:
 
 ```bash
-# Core tests - use direct deno test command
-export PATH="/root/.deno/bin:$PATH"
-cd packages/core
-deno test --unsafely-ignore-certificate-errors -P=test --check --trace-leaks test
+# Option 1: Use system certificate store (preferred)
+DENO_TLS_CA_STORE=system deno task --cwd packages/core test
 
-# Note: You'll see "DANGER: TLS certificate validation is disabled" warning - this is expected
+# Option 2: Disable certificate validation (if option 1 doesn't work)
+deno test --unsafely-ignore-certificate-errors -P=test --check --trace-leaks test
 ```
 
-**Important**: The `--unsafely-ignore-certificate-errors` flag does NOT work with `deno task`. You must run `deno test` directly.
+**Note**: Option 2's flag does NOT work with `deno task`. Run `deno test` directly from `packages/core` or `packages/cli`.
 
 ### Test Results
 
@@ -853,9 +852,24 @@ CLI tests require the web package to be built first (`deno task --cwd packages/w
 
 1. **Install dependencies first** - Set up Deno and FFmpeg at the start of your session
 2. **Run tests after changes** - Verify your modifications work correctly
-3. **Use direct deno commands for tests** - Bypass certificate issues with direct commands
-4. **Make smaller, focused commits** - Easier to review and less likely to introduce bugs
-5. **Review existing patterns** - Follow established code patterns closely
+3. **Make smaller, focused commits** - Easier to review and less likely to introduce bugs
+4. **Review existing patterns** - Follow established code patterns closely
+
+### Editing Files
+
+Files must be read before editing. To avoid wasted tool calls:
+
+1. **Read before edit** - Always read a file before attempting to edit it
+2. **Edit immediately after reading** - Proceed to edit in the same sequence while file content is cached
+3. **Use paths from the repo root** - e.g., `packages/core/src/models/media_reference.ts`
+
+Example workflow:
+```
+1. Read packages/core/src/actions/media_actions.ts
+2. Edit packages/core/src/actions/media_actions.ts  (immediately after reading)
+3. Read packages/core/test/media.test.ts
+4. Edit packages/core/test/media.test.ts
+```
 
 ## Getting Help
 

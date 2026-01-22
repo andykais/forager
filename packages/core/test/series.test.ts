@@ -243,6 +243,124 @@ test('media series', async (ctx) => {
   })
 })
 
+test('media search cursor with series', async ctx => {
+  using forager = new Forager(ctx.get_test_config())
+  forager.init()
+
+  const series_1 = forager.series.create({title: 'series 1'})
+  const series_2 = forager.series.create({title: 'series 2'})
+  const series_3 = forager.series.create({title: 'series 3'})
+
+  await ctx.subtest('cursor defined when more series exist', () => {
+    const page_1 = forager.media.search({query: {series: true}, limit: 2})
+    ctx.assert.search_result(page_1, {
+      total: 3,
+      results: [
+        {media_reference: {id: series_3.media_reference.id}},
+        {media_reference: {id: series_2.media_reference.id}},
+      ]
+    })
+    ctx.assert.not_equals(page_1.cursor, undefined)
+
+    const page_2 = forager.media.search({query: {series: true}, limit: 2, cursor: page_1.cursor})
+    ctx.assert.search_result(page_2, {
+      total: 3,
+      results: [
+        {media_reference: {id: series_1.media_reference.id}},
+      ]
+    })
+  })
+
+  await ctx.subtest('cursor undefined when fewer results than limit', () => {
+    const all_results = forager.media.search({query: {series: true}, limit: 10})
+    ctx.assert.search_result(all_results, {total: 3})
+    ctx.assert.equals(all_results.cursor, undefined)
+  })
+
+  await ctx.subtest('full pagination through all series', () => {
+    const page_1 = forager.media.search({query: {series: true}, limit: 1})
+    ctx.assert.equals(page_1.results.length, 1)
+    ctx.assert.equals(page_1.results[0].media_reference.id, series_3.media_reference.id)
+    ctx.assert.not_equals(page_1.cursor, undefined)
+
+    const page_2 = forager.media.search({query: {series: true}, limit: 1, cursor: page_1.cursor})
+    ctx.assert.equals(page_2.results.length, 1)
+    ctx.assert.equals(page_2.results[0].media_reference.id, series_2.media_reference.id)
+    ctx.assert.not_equals(page_2.cursor, undefined)
+
+    const page_3 = forager.media.search({query: {series: true}, limit: 1, cursor: page_2.cursor})
+    ctx.assert.equals(page_3.results.length, 1)
+    ctx.assert.equals(page_3.results[0].media_reference.id, series_1.media_reference.id)
+    ctx.assert.not_equals(page_3.cursor, undefined)
+
+    const page_4 = forager.media.search({query: {series: true}, limit: 1, cursor: page_3.cursor})
+    ctx.assert.equals(page_4.results.length, 0)
+    ctx.assert.equals(page_4.cursor, undefined)
+  })
+
+  await ctx.subtest('series pagination with different sort orders', () => {
+    const page_1_created = forager.media.search({query: {series: true}, limit: 1, sort_by: 'created_at', order: 'desc'})
+    ctx.assert.equals(page_1_created.results.length, 1)
+    ctx.assert.not_equals(page_1_created.cursor, undefined)
+
+    const page_1_updated = forager.media.search({query: {series: true}, limit: 1, sort_by: 'updated_at', order: 'desc'})
+    ctx.assert.equals(page_1_updated.results.length, 1)
+    ctx.assert.not_equals(page_1_updated.cursor, undefined)
+
+    const page_1_views = forager.media.search({query: {series: true}, limit: 1, sort_by: 'view_count', order: 'desc'})
+    ctx.assert.equals(page_1_views.results.length, 1)
+    ctx.assert.not_equals(page_1_views.cursor, undefined)
+  })
+})
+
+test('media search cursor mixed media and series', async ctx => {
+  using forager = new Forager(ctx.get_test_config())
+  forager.init()
+
+  const media_1 = await forager.media.create(ctx.resources.media_files['koch.tif'], {
+    source_created_at: new Date('2024-01-01')
+  })
+  const media_2 = await forager.media.create(ctx.resources.media_files['ed-edd-eddy.png'], {
+    source_created_at: new Date('2024-01-02')
+  })
+  const media_3 = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {
+    source_created_at: new Date('2024-01-03')
+  })
+  const series_1 = forager.series.create({title: 'series 1'})
+  const series_2 = forager.series.create({title: 'series 2'})
+
+  await ctx.subtest('cursor defined when last item is series', () => {
+    const page_1 = forager.media.search({limit: 2})
+    ctx.assert.search_result(page_1, {
+      total: 5,
+      results: [
+        {media_reference: {id: media_3.media_reference.id}},
+        {media_reference: {id: media_2.media_reference.id}},
+      ]
+    })
+    ctx.assert.not_equals(page_1.cursor, undefined)
+
+    const page_2 = forager.media.search({limit: 2, cursor: page_1.cursor})
+    ctx.assert.search_result(page_2, {
+      total: 5,
+      results: [
+        {media_reference: {id: media_1.media_reference.id}},
+        {media_reference: {id: series_2.media_reference.id}},
+      ]
+    })
+    ctx.assert.not_equals(page_2.cursor, undefined)
+
+    const page_3 = forager.media.search({limit: 2, cursor: page_2.cursor})
+    ctx.assert.search_result(page_3, {
+      total: 5,
+      results: [
+        {media_reference: {id: series_1.media_reference.id}},
+      ]
+    })
+    ctx.assert.equals(page_3.cursor, undefined)
+  })
+})
+
 test('series search duration sort', async ctx => {
   using forager = new Forager(ctx.get_test_config())
   forager.init()

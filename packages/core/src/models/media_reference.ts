@@ -530,7 +530,9 @@ ${group_builder.generate_sql()}
 
     if (sort_by_cursor === null) {
       // null values are always last, so we can simplify the sort here
-      builder.add_where_clause(`${sort_by} IS NULL AND media_reference.id ${cursor_sort_direction} ${cursor.id}`)
+      builder.add_where_clause(`${sort_by_field} IS NULL AND media_reference.id ${cursor_sort_direction} :media_reference_id_cursor`)
+      builder.add_param('media_reference_id_cursor', PaginationVars.params.cursor_id.as('media_reference_id_cursor'))
+      sql_params['media_reference_id_cursor'] = cursor.id
     } else {
       const column_can_be_null = NULLABLE_SORT_BY_FIELDS.has(sort_by)
       const where_clauses = column_can_be_null
