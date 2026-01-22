@@ -26,16 +26,16 @@
         {#if result.media_type === 'media_series'}
           <a
             href="/series/{result.media_reference.id}"
-            class="text-xs text-center text-gray-500 hover:text-green-500 hover:bg-gray-700 px-1 rounded-sm"
-            title="View series detail"
+            class="text-xs text-center text-gray-500 hover:text-green-500 hover:bg-gray-700 px-1 rounded-sm text-nowrap truncate"
+            title={result.media_reference.title}
           >
-            View series →
+            {result.media_reference.title}
           </a>
         {:else if result.media_type === 'grouped'}
           <SearchLink
             class="text-xs text-center text-gray-500 hover:text-green-500 hover:bg-gray-700 px-2 rounded-sm"
             {controller}
-            params={queryparams.merge({mode: 'media', tags: `${queryparams.current_url.group_by ?? ''}:${result.group_metadata.value}`})}
+            params={queryparams.merge({mode: 'media', tags: `${queryparams.current.group_by ?? ''}:${result.group_metadata.value}`})}
           >
             {result.group_metadata.value}
           </SearchLink>
