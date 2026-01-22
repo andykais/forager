@@ -8,8 +8,8 @@
 		"build": "vite build",
 		"build:local": "LOCAL_BUILD=true vite build",
 		"prepare": "svelte-kit sync || echo ''",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.svelte.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.svelte.json --watch"
 	},
 	"dependencies": {
     "@andykais/ts-rpc": "npm:@jsr/andykais__ts-rpc@^0.2.4",

@@ -1,0 +1,32 @@
+{
+	"extends": "./.svelte-kit/tsconfig.json",
+	"compilerOptions": {
+		"allowJs": true,
+		"checkJs": true,
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
+		"sourceMap": true,
+		"strict": true,
+		"moduleResolution": "bundler",
+
+    "plugins": [{
+      "name": "typescript-svelte-plugin",
+      "enabled": true,
+      "assumeIsSvelteProject": true
+    }],
+
+    "allowImportingTsExtensions": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "~/*": ["../core/src/*"],
+      "@forager/core": ["../core/src/mod.ts"]
+    }
+	},
+  "exclude": [
+    "../node_modules/**",
+    "../../node_modules/**"
+  ]
+}
