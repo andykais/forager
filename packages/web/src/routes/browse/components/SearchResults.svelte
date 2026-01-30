@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { BrowseController } from '../controller.ts'
-  import MediaTile from '$lib/components/MediaTile.svelte'
+  import MediaTile from '$lib/components/browse_media/MediaTile.svelte'
   import SearchLink from './SearchLink.svelte'
 
   interface Props {

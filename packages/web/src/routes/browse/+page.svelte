@@ -1,5 +1,5 @@
 <script lang="ts">
-  import MediaBrowserLayout from '$lib/components/MediaBrowserLayout.svelte'
+  import MediaBrowserLayout from '$lib/components/browse_media/MediaBrowserLayout.svelte'
   import Header from './components/Header.svelte'
   import MediaList from './components/MediaList.svelte'
   import { BrowseController } from './controller.ts'
