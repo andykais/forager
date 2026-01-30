@@ -1,14 +1,24 @@
 <script lang="ts" module>
-  import type { BrowseController } from '../../routes/browse/controller.ts'
-  import type { SeriesController } from '../../routes/series/[series_id]/controller.ts'
+  import type { BaseController } from '$lib/base_controller.ts'
+  import type { MediaListRune, SettingsRune, MediaSelectionsRune, create_focuser, create_dimensional_rune } from '$lib/runes/index.ts'
 
-  export type MediaBrowserController = BrowseController | SeriesController
+  // Define the shape of a media browser controller without importing concrete implementations
+  export interface MediaBrowserController extends BaseController {
+    runes: {
+      media_list: MediaListRune
+      focus: ReturnType<typeof create_focuser>
+      dimensions: ReturnType<typeof create_dimensional_rune>
+      settings: SettingsRune
+      media_selections: MediaSelectionsRune
+      queryparams: any // Different queryparams types for browse vs series
+    }
+  }
 </script>
 
 <script lang="ts">
-  import MediaDetails from '../../routes/browse/components/MediaDetails.svelte'
-  import MediaView from '../../routes/browse/components/MediaView.svelte'
-  import Footer from '../../routes/browse/components/Footer.svelte'
+  import MediaDetails from './MediaDetails.svelte'
+  import MediaView from './MediaView.svelte'
+  import Footer from './Footer.svelte'
   import type { Snippet } from 'svelte'
 
   interface Props {

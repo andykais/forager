@@ -1,8 +1,6 @@
 import type { Config } from '$lib/server/config.ts'
 import {BaseController} from '$lib/base_controller.ts'
-import {create_focuser, SettingsRune, MediaListRune } from '$lib/runes/index.ts'
-import { create_dimensional_rune } from './runes/dimensions.svelte.ts'
-import { MediaSelectionsRune } from './runes/media_selections.svelte.ts'
+import {create_focuser, SettingsRune, MediaListRune, create_dimensional_rune, MediaSelectionsRune } from '$lib/runes/index.ts'
 import { QueryParamsManager } from './runes/queryparams.svelte.ts'
 
 

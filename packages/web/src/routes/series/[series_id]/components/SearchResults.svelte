@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { SeriesController } from '../controller.ts'
-  import MediaTile from '$lib/components/MediaTile.svelte'
+  import MediaTile from '$lib/components/browse_media/MediaTile.svelte'
 
   interface Props {
     controller: SeriesController

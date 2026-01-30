@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { MediaBrowserController } from '$lib/components/MediaBrowserLayout.svelte'
+  import type { MediaBrowserController } from './MediaBrowserLayout.svelte'
   import * as theme from '$lib/theme.ts'
   import { focusable, scrollable } from '$lib/actions/mod.ts'
   import Icon from '$lib/components/Icon.svelte'
