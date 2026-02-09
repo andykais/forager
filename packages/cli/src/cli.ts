@@ -43,15 +43,54 @@ const cli = new cliffy.Command()
     .option('--tags=<tags>', 'A comma separated list of tags to search with')
     .option('--filepath=<filepath>', 'A globpath to search for media files in the file system')
     .option('--media-reference-id=<media_reference_id:number>', 'A forager database media reference id')
+    .option('--series', 'Filter for media series only')
+    .option('--series-id=<series_id:number>', 'Filter by series ID')
+    .option('--keypoint=<keypoint>', 'Filter by keypoint tag (format: name or group:name)')
+    .option('--animated', 'Filter for animated media only')
+    .option('--stars=<stars:number>', 'Filter by star rating (0-5)')
+    .option('--stars-equality=<equality>', 'Stars comparison mode: "gte" (greater than or equal) or "eq" (equal)')
+    .option('--duration-min=<seconds:number>', 'Minimum duration in seconds')
+    .option('--duration-max=<seconds:number>', 'Maximum duration in seconds')
+    .option('--unread', 'Filter for unread media only')
+    .option('--limit=<limit:number>', 'Maximum number of results')
+    .option('--sort-by=<sort_by>', 'Sort field: created_at, updated_at, source_created_at, view_count, last_viewed_at, duration')
+    .option('--order=<order>', 'Sort order: asc or desc')
+    .option('--thumbnail-limit=<thumbnail_limit:number>', 'Number of thumbnails per result')
     .action(async opts => {
       const forager_helpers = new ForagerHelpers(opts)
       const forager = await forager_helpers.launch_forager()
+
+      // Parse duration filters
+      const duration_min = opts.durationMin !== undefined
+        ? { seconds: opts.durationMin }
+        : undefined
+
+      const duration_max = opts.durationMax !== undefined
+        ? { seconds: opts.durationMax }
+        : undefined
+
+      const duration = (duration_min || duration_max)
+        ? { min: duration_min, max: duration_max }
+        : undefined
+
       const result = forager.media.search({
         query: {
           media_reference_id: opts.mediaReferenceId,
           filepath: opts.filepath,
           tags: opts.tags?.split(','),
-        }
+          series: opts.series,
+          series_id: opts.seriesId,
+          keypoint: opts.keypoint,
+          animated: opts.animated,
+          stars: opts.stars,
+          stars_equality: opts.starsEquality as 'gte' | 'eq' | undefined,
+          duration,
+          unread: opts.unread,
+        },
+        limit: opts.limit,
+        sort_by: opts.sortBy as 'created_at' | 'updated_at' | 'source_created_at' | 'view_count' | 'last_viewed_at' | 'duration' | undefined,
+        order: opts.order as 'asc' | 'desc' | undefined,
+        thumbnail_limit: opts.thumbnailLimit,
       })
       forager_helpers.print_output(result)
     })

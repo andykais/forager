@@ -10,7 +10,7 @@ import '../src/cli.ts'
 
 function forager_cli(strings: TemplateStringsArray, ...params: string[]) {
   const cli_entrypoint = path.join(path.resolve(import.meta.dirname!, '..'), 'src/cli.ts')
-  const forager_bin = `deno run --check -A --unstable-raw-imports ${$.escapeArg(cli_entrypoint)}`
+  const forager_bin = `deno run --no-check -A --unstable-raw-imports ${$.escapeArg(cli_entrypoint)}`
   let command_string = ''
   for (let index = 0; index < strings.length - 1; index++) {
     const string_part = strings[index]
@@ -76,6 +76,146 @@ test('cli basics', async ctx => {
 
     })
   })
+
+  // Set up additional test data for filter tests
+  // Update existing cat_doodle.jpg with stars and view_count
+  forager.media.update(
+    forager.media.get({filepath: ctx.resources.media_files['cat_doodle.jpg']}).media_reference.id,
+    {stars: 5, view_count: 0, title: 'cat drawing'}
+  )
+
+  // Update cat_cronch.mp4 to mark it as read (view_count > 0)
+  forager.media.update(
+    forager.media.get({filepath: ctx.resources.media_files['cat_cronch.mp4']}).media_reference.id,
+    {view_count: 1}
+  )
+
+  // Create koch.tif with different attributes
+  await forager_cli`--config ${config_path} create ${ctx.resources.media_files['koch.tif']} --title "koch fractal" --tags=math`
+  forager.media.update(
+    forager.media.get({filepath: ctx.resources.media_files['koch.tif']}).media_reference.id,
+    {stars: 3, view_count: 1}
+  )
+
+  // Test stars filter with gte (default)
+  await ctx.subtest('stars filter gte', async () => {
+    const result = await forager_cli`--json --config ${config_path} search --stars 3`.json()
+    ctx.assert.search_result(result, {
+      total: 2,
+      results: [
+        {media_reference: {title: 'koch fractal', stars: 3}},
+        {media_reference: {title: 'cat drawing', stars: 5}},
+      ]
+    })
+  })
+
+  // Test stars filter with eq
+  await ctx.subtest('stars filter eq', async () => {
+    const result = await forager_cli`--json --config ${config_path} search --stars 5 --stars-equality eq`.json()
+    ctx.assert.search_result(result, {
+      total: 1,
+      results: [
+        {media_reference: {title: 'cat drawing', stars: 5}},
+      ]
+    })
+  })
+
+  // Test unread filter
+  await ctx.subtest('unread filter', async () => {
+    const result = await forager_cli`--json --config ${config_path} search --unread`.json()
+    ctx.assert.search_result(result, {
+      total: 1,
+      results: [
+        {media_reference: {title: 'cat drawing', view_count: 0}},
+      ]
+    })
+  })
+
+  // Test animated filter (cat_cronch.mp4 is animated)
+  await ctx.subtest('animated filter', async () => {
+    const result = await forager_cli`--json --config ${config_path} search --animated`.json()
+    ctx.assert.search_result(result, {
+      total: 1,
+      results: [
+        {media_file: {filepath: ctx.resources.media_files['cat_cronch.mp4']}},
+      ]
+    })
+  })
+
+  // Test duration filter
+  await ctx.subtest('duration filter', async () => {
+    // cat_cronch.mp4 has duration ~7 seconds
+    const result_min = await forager_cli`--json --config ${config_path} search --duration-min 5`.json()
+    ctx.assert.search_result(result_min, {
+      total: 1,
+      results: [
+        {media_file: {filepath: ctx.resources.media_files['cat_cronch.mp4']}},
+      ]
+    })
+
+    const result_max = await forager_cli`--json --config ${config_path} search --duration-max 10`.json()
+    ctx.assert.search_result(result_max, {
+      total: 1,
+      results: [
+        {media_file: {filepath: ctx.resources.media_files['cat_cronch.mp4']}},
+      ]
+    })
+
+    const result_range = await forager_cli`--json --config ${config_path} search --duration-min 5 --duration-max 10`.json()
+    ctx.assert.search_result(result_range, {
+      total: 1,
+      results: [
+        {media_file: {filepath: ctx.resources.media_files['cat_cronch.mp4']}},
+      ]
+    })
+  })
+
+  // Test limit
+  await ctx.subtest('limit filter', async () => {
+    const result = await forager_cli`--json --config ${config_path} search --limit 2`.json()
+    ctx.assert.object_match(result, {
+      total: 3,
+    })
+    ctx.assert.equals(result.results.length, 2)
+  })
+
+  // Test sort-by and order
+  await ctx.subtest('sort and order', async () => {
+    const result_desc = await forager_cli`--json --config ${config_path} search --sort-by created_at --order desc`.json()
+    ctx.assert.equals(result_desc.results.length, 3)
+
+    const result_asc = await forager_cli`--json --config ${config_path} search --sort-by created_at --order asc`.json()
+    ctx.assert.equals(result_asc.results.length, 3)
+    // First result in asc should be last in desc
+    ctx.assert.equals(
+      result_asc.results[0].media_reference.id,
+      result_desc.results[result_desc.results.length - 1].media_reference.id
+    )
+  })
+
+  // Test sort-by duration
+  await ctx.subtest('sort by duration', async () => {
+    // cat_cronch.mp4 has duration, images have no duration
+    const result_desc = await forager_cli`--json --config ${config_path} search --sort-by duration --order desc`.json()
+    ctx.assert.equals(result_desc.results.length, 3)
+    // Video with duration should be first when sorted desc
+    ctx.assert.equals(result_desc.results[0].media_file.filepath, ctx.resources.media_files['cat_cronch.mp4'])
+
+    const result_asc = await forager_cli`--json --config ${config_path} search --sort-by duration --order asc`.json()
+    ctx.assert.equals(result_asc.results.length, 3)
+    // Video with duration should be last when sorted asc
+    ctx.assert.equals(result_asc.results[result_asc.results.length - 1].media_file.filepath, ctx.resources.media_files['cat_cronch.mp4'])
+  })
+
+  // Test thumbnail-limit
+  await ctx.subtest('thumbnail limit', async () => {
+    const result_no_thumbs = await forager_cli`--json --config ${config_path} search --thumbnail-limit 0`.json()
+    ctx.assert.equals(result_no_thumbs.results[0].thumbnails.results.length, 0)
+
+    const result_one_thumb = await forager_cli`--json --config ${config_path} search --thumbnail-limit 1`.json()
+    ctx.assert.equals(result_one_thumb.results[0].thumbnails.results.length, 1)
+  })
+
 
   await ctx.subtest('delete subcommand', async () => {
     await forager_cli`--config ${config_path} delete --filepath ${ctx.resources.media_files["cat_cronch.mp4"]}`
