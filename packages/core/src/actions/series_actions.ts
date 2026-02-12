@@ -91,6 +91,18 @@ class SeriesActions extends Actions {
     return this.#get_media_series_response({series_id: parsed.series_id})
   }
 
+  public upsert = (media_info?: inputs.MediaSeriesInfo, tags?: inputs.Tag[]): MediaSeriesResponse => {
+    try {
+      return this.create(media_info, tags)
+    } catch (e) {
+      if (e instanceof errors.SeriesAlreadyExistsError) {
+        return this.update(e.media_reference_id, media_info, tags)
+      } else {
+        throw e
+      }
+    }
+  }
+
   public add = (params: inputs.SeriesItem) => {
     const parsed = parsers.SeriesItem.parse(params)
 
@@ -106,23 +118,33 @@ class SeriesActions extends Actions {
         media_reference_id: parsed.media_reference_id,
         series_index: series_index,
       })!
-      const series_item_tags = this.models.Tag.select_all({media_reference_id: parsed.media_reference_id }).map(tag => ({
-        slug: this.models.Tag.format_slug(tag),
-        group: tag.group,
-        name: tag.name,
-      }))
-      // merge the series item tags into the series reference
-      this.manage_media_tags(parsed.series_id, {add: series_item_tags, remove: []})
+      this.#merge_media_item_tags_into_series(parsed.series_id, parsed.media_reference_id)
       return this.models.MediaSeriesItem.select_one({id: series_item.id})
     } catch (e) {
       if (e instanceof torm.errors.UniqueConstraintError) {
         const series = this.models.MediaReference.select_one_media_series({id: parsed.series_id})
+
+        const existing_media_series_item = this.models.MediaSeriesItem.select_one({media_reference_id: parsed.media_reference_id})
+        if (existing_media_series_item?.series_index === series_index) {
+          // if this is an existing media series item, then we can assume that the point of this was an "upsert" of the existing data
+          this.#merge_media_item_tags_into_series(parsed.series_id, parsed.media_reference_id)
+        }
+
         throw new errors.SeriesItemAlreadyExistsError(series.media_series_name!, parsed.series_index!, parsed.media_reference_id)
       } else {
         throw e
       }
     }
+  }
 
+  #merge_media_item_tags_into_series(series_id: number, media_reference_id: number) {
+      const series_item_tags = this.models.Tag.select_all({media_reference_id: media_reference_id }).map(tag => ({
+        slug: this.models.Tag.format_slug(tag),
+        group: tag.group,
+        name: tag.name,
+      }))
+      // merge the series item tags into the series reference
+      this.manage_media_tags(series_id, {add: series_item_tags, remove: []})
   }
 
   public get = (params: inputs.SeriesGet): MediaSeriesResponse => {
