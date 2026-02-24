@@ -6,6 +6,7 @@ import z from 'zod'
 import { Context } from '~/context.ts'
 import { CODECS } from './codecs.ts'
 import * as errors from './errors.ts'
+import { parse_webp_file } from './webp_parser.ts'
 
 
 interface FileInfoBase {
@@ -243,6 +244,9 @@ class FileProcessor {
     const output = await cmd.output()
 
     if (!output.success) {
+      if (path.extname(this.#filepath) === '.webp') {
+        return this.#get_info_webp_fallback()
+      }
       const command = ffprobe_command.join(' ')
       const stdout = this.#decoder.decode(output.stdout)
       const stderr = this.#decoder.decode(output.stderr)
@@ -341,7 +345,7 @@ class FileProcessor {
 
     if (media_type !== 'AUDIO' && width === 0 || height === 0) {
       if (path.extname(this.#filepath) === '.webp') {
-        throw new errors.InvalidFileError(`webp decoding is not yet supported by ffmpeg. See here https://trac.ffmpeg.org/ticket/4907`, new Error(`width: ${width} and height: ${height} values cannot be zero`))
+        return this.#get_info_webp_fallback()
       }
       throw new errors.InvalidFileError(`Invalid file`, new Error(`width: ${width} and height: ${height} values cannot be zero`))
     }
@@ -359,6 +363,37 @@ class FileProcessor {
       framerate,
       audio,
     } as FileInfo // we use "as" here because typescript gets confused about unions
+    this.#error_context.file_info = file_info
+    return file_info
+  }
+
+  /**
+   * Fallback for WebP files when ffprobe cannot decode them properly.
+   * Uses a pure TypeScript RIFF/WebP parser to extract metadata.
+   * See https://trac.ffmpeg.org/ticket/4907
+   */
+  async #get_info_webp_fallback(): Promise<FileInfo> {
+    const webp_info = await parse_webp_file(this.#filepath)
+    const filename = path.basename(this.#filepath)
+    const codec_info = CODECS.get_codec('webp')
+
+    const duration = webp_info.animated ? webp_info.total_duration_ms / 1000 : 0
+    const framecount = webp_info.animated ? webp_info.framecount : 0
+    const framerate = webp_info.animated && duration > 0 ? framecount / duration : 0
+
+    const file_info = {
+      filepath: this.#filepath,
+      filename,
+      ...codec_info,
+      width: webp_info.canvas_width,
+      height: webp_info.canvas_height,
+      animated: webp_info.animated,
+      duration,
+      framerate,
+      framecount,
+      audio: false,
+    } as FileInfo
+
     this.#error_context.file_info = file_info
     return file_info
   }
