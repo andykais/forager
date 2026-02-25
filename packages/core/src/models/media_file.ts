@@ -74,21 +74,6 @@ class MediaFile extends Model {
     MediaFile.params.media_reference_id,
   ]}) RETURNING ${MediaFile.result.id}`
 
-  #update_by_id = this.query`UPDATE media_file SET
-    thumbnail_directory_path = ${MediaFile.params.thumbnail_directory_path},
-    file_size_bytes = ${MediaFile.params.file_size_bytes},
-    media_type = ${MediaFile.params.media_type},
-    content_type = ${MediaFile.params.content_type},
-    codec = ${MediaFile.params.codec},
-    width = ${MediaFile.params.width},
-    height = ${MediaFile.params.height},
-    animated = ${MediaFile.params.animated},
-    audio = ${MediaFile.params.audio},
-    duration = ${MediaFile.params.duration},
-    framerate = ${MediaFile.params.framerate},
-    framecount = ${MediaFile.params.framecount}
-    WHERE id = ${MediaFile.params.id}`
-
   #delete_by_id = this.query.exec`
     DELETE FROM media_file
     WHERE id = ${MediaFile.params.id}`
@@ -116,8 +101,6 @@ class MediaFile extends Model {
   public select_one = this.select_one_fn(this.#select_one_impl.bind(this))
 
   public create = this.create_fn(this.#create)
-
-  public update = this.#update_by_id.exec
 
   public delete = this.delete_fn(this.#delete_by_id)
 }

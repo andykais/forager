@@ -1,5 +1,3 @@
-import * as fs from '@std/fs'
-import * as fmt_bytes from '@std/fmt/bytes'
 import { Actions, type MediaFileResponse, type MediaSeriesResponse, type MediaResponse, type MediaGroupResponse, type CreateEditor, type UpdateEditor } from '~/actions/lib/base.ts'
 import { type inputs, parsers } from '~/inputs/mod.ts'
 import type * as result_types from '~/models/lib/result_types.ts'
@@ -257,13 +255,12 @@ class MediaActions extends Actions {
   }
 
   /**
-   * Re-parse media files and regenerate thumbnails for media matching the given search query.
+   * Regenerate thumbnails for media files matching the given search query.
    * If a file's checksum has changed since it was originally ingested, an error is thrown.
    * Media series in the search results are skipped with a warning log.
    */
-  reload = async (params?: inputs.PaginatedSearch): Promise<MediaFileResponse[]> => {
+  reload = async (params?: inputs.PaginatedSearch): Promise<void> => {
     const search_results = this.search(params)
-    const reloaded: MediaFileResponse[] = []
 
     for (const result of search_results.results) {
       if (result.media_type === 'media_series') {
@@ -271,52 +268,20 @@ class MediaActions extends Actions {
         continue
       }
 
-      const { media_file, media_reference } = result
+      const { media_file } = result
       const file_processor = new FileProcessor(this.ctx, media_file.filepath)
-      const [media_file_info, checksum, file_size] = await Promise.all([
-        file_processor.get_info(),
-        file_processor.get_checksum(),
-        file_processor.get_size(),
-      ])
+      const checksum = await file_processor.get_checksum()
 
       if (checksum !== media_file.checksum) {
         throw new errors.ChecksumMismatchError(media_file.filepath, media_file.checksum, checksum)
       }
 
+      const media_file_info = await file_processor.get_info()
       const thumbnails = await file_processor.create_thumbnails(media_file_info, checksum)
 
       const transaction = this.ctx.db.transaction_async(async () => {
-        // delete old thumbnail records
         this.models.MediaThumbnail.delete({media_file_id: media_file.id})
 
-        // update media file metadata
-        this.models.MediaFile.update({
-          id: media_file.id,
-          thumbnail_directory_path: thumbnails.destination_folder,
-          file_size_bytes: file_size,
-          media_type: media_file_info.media_type,
-          content_type: media_file_info.content_type,
-          codec: media_file_info.codec,
-          width: media_file_info.width,
-          height: media_file_info.height,
-          animated: media_file_info.animated,
-          audio: media_file_info.audio,
-          duration: media_file_info.duration,
-          framerate: media_file_info.framerate,
-          framecount: media_file_info.framecount,
-        })
-
-        // create new thumbnail records
-        for (const thumbnail of thumbnails.thumbnails) {
-          this.models.MediaThumbnail.create({
-            media_file_id: media_file.id,
-            filepath: thumbnail.destination_filepath,
-            kind: 'standard',
-            media_timestamp: thumbnail.timestamp,
-          })
-        }
-
-        // remove old thumbnail directory and copy new thumbnails
         try {
           await Deno.remove(media_file.thumbnail_directory_path, {recursive: true})
         } catch (e) {
@@ -324,22 +289,14 @@ class MediaActions extends Actions {
             throw e
           }
         }
-        await fs.copy(thumbnails.source_folder, thumbnails.destination_folder)
-        await Deno.remove(thumbnails.source_folder, {recursive: true})
+
+        await this.deploy_thumbnails(thumbnails, media_file.id)
       })
 
       await transaction()
 
-      const output_result = this.get_media_file_result({
-        media_reference_id: media_reference.id,
-        media_file_id: media_file.id,
-        thumbnail_limit: 1,
-      })
-      this.ctx.logger.info(`Reloaded ${media_file.filepath} (type: ${output_result.media_file.media_type} size: ${fmt_bytes.format(output_result.media_file.file_size_bytes)})`)
-      reloaded.push(output_result)
+      this.ctx.logger.info(`Reloaded ${media_file.filepath}`)
     }
-
-    return reloaded
   }
 }
 

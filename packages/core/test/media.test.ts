@@ -1308,29 +1308,33 @@ test('media reload', async (ctx) => {
   const media_image = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {title: 'Cat Doodle'}, ['doodle'])
   const media_video = await forager.media.create(ctx.resources.media_files['cat_cronch.mp4'], {title: 'Cat Cronch'}, ['video'])
 
-  const original_image_thumbnails = forager.media.get({media_reference_id: media_image.media_reference.id}).thumbnails
-  const original_video_thumbnails = forager.media.get({media_reference_id: media_video.media_reference.id}).thumbnails
+  await ctx.subtest('reload regenerates deleted thumbnails', async () => {
+    // grab a thumbnail filepath for the image media
+    const image_result = forager.media.get({media_reference_id: media_image.media_reference.id})
+    const thumbnail_path = image_result.thumbnails.results[0].filepath
+    ctx.assert.equals(await fs.exists(thumbnail_path), true)
 
-  await ctx.subtest('reload all media', async () => {
-    const reloaded = await forager.media.reload()
-    ctx.assert.equals(reloaded.length, 2)
+    // delete the thumbnail file on disk
+    await Deno.remove(thumbnail_path)
+    ctx.assert.equals(await fs.exists(thumbnail_path), false)
 
-    // verify thumbnails were regenerated - reload returns MediaFileResponse directly
-    const reloaded_image = reloaded.find(r => r.media_reference.id === media_image.media_reference.id)!
-    ctx.assert.equals(reloaded_image.thumbnails.total, original_image_thumbnails.total)
-    ctx.assert.equals(reloaded_image.media_file.filepath, media_image.media_file.filepath)
-    ctx.assert.equals(reloaded_image.media_file.checksum, media_image.media_file.checksum)
+    // reload should regenerate it
+    await forager.media.reload({query: {tags: ['doodle']}})
 
-    const reloaded_video = reloaded.find(r => r.media_reference.id === media_video.media_reference.id)!
-    ctx.assert.equals(reloaded_video.thumbnails.total, original_video_thumbnails.total)
-    ctx.assert.equals(reloaded_video.media_file.filepath, media_video.media_file.filepath)
-    ctx.assert.equals(reloaded_video.media_file.checksum, media_video.media_file.checksum)
+    ctx.assert.equals(await fs.exists(thumbnail_path), true)
   })
 
-  await ctx.subtest('reload with search filter', async () => {
-    const reloaded = await forager.media.reload({query: {tags: ['doodle']}})
-    ctx.assert.equals(reloaded.length, 1)
-    ctx.assert.equals(reloaded[0].media_file.filepath, media_image.media_file.filepath)
+  await ctx.subtest('reload regenerates video thumbnails', async () => {
+    const video_result = forager.media.get({media_reference_id: media_video.media_reference.id})
+    const thumbnail_path = video_result.thumbnails.results[0].filepath
+    ctx.assert.equals(await fs.exists(thumbnail_path), true)
+
+    await Deno.remove(thumbnail_path)
+    ctx.assert.equals(await fs.exists(thumbnail_path), false)
+
+    await forager.media.reload({query: {tags: ['video']}})
+
+    ctx.assert.equals(await fs.exists(thumbnail_path), true)
   })
 
   await ctx.subtest('reload skips media series', async () => {
@@ -1341,10 +1345,8 @@ test('media reload', async (ctx) => {
       series_index: 0,
     })
 
-    // search that includes series
-    const reloaded = await forager.media.reload({query: {series: true}})
-    // series should be skipped, so no results
-    ctx.assert.equals(reloaded.length, 0)
+    // search that includes only series - reload should skip them without error
+    await forager.media.reload({query: {series: true}})
   })
 })
 
