@@ -71,6 +71,14 @@ export class MediaAlreadyExistsError extends AlreadyExistsError {
   }
 }
 
+export class ChecksumMismatchError extends ForagerError {
+  override name = 'ChecksumMismatchError'
+
+  constructor(public filepath: string, public expected_checksum: string, public actual_checksum: string) {
+    super(`file '${filepath}' checksum changed: expected ${expected_checksum} but found ${actual_checksum}`)
+  }
+}
+
 export class SubprocessError extends ForagerError {
   override name = 'SubprocessError'
   public output: Deno.CommandOutput
