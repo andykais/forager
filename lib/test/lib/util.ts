@@ -29,6 +29,7 @@ const media_files = resource_file_mapper([
   'cat_cronch.mp4',
   'blink.gif',
   'music_snippet.mp3',
+  'nyan_cat.webp',
 ] as const)
 
 if (!import.meta.dirname) throw new Error(`unexpected value in import.meta.dirname`)
