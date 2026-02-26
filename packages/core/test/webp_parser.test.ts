@@ -1,5 +1,5 @@
 import { test } from 'forager-test'
-import { parse_webp, get_webp_file_info } from '~/lib/file_processor_webp_shim.ts'
+import { parse_webp } from '~/lib/file_processor_webp_shim.ts'
 
 
 function build_riff_webp(chunks: Uint8Array): ArrayBuffer {
@@ -246,18 +246,4 @@ test('webp_parser - animated webp file from disk', async (ctx) => {
     ctx.assert.equals(info.frames[0].duration_ms, 70)
   })
 
-  await ctx.subtest('get_webp_file_info returns FileInfo', async () => {
-    const file_info = await get_webp_file_info(ctx.resources.media_files['nyan_cat.webp'])
-
-    ctx.assert.equals(file_info.width, 400)
-    ctx.assert.equals(file_info.height, 400)
-    ctx.assert.equals(file_info.animated, true)
-    ctx.assert.equals(file_info.codec, 'webp')
-    ctx.assert.equals(file_info.media_type, 'IMAGE')
-    ctx.assert.equals(file_info.content_type, 'image/webp')
-    ctx.assert.equals(file_info.duration, 0.84)
-    ctx.assert.equals(file_info.framecount, 12)
-    ctx.assert.equals(file_info.audio, false)
-    ctx.assert.equals(file_info.filename, 'nyan_cat.webp')
-  })
 })

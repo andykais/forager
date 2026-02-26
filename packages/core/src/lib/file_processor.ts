@@ -344,6 +344,9 @@ class FileProcessor {
     }
 
     if (media_type !== 'AUDIO' && width === 0 || height === 0) {
+      if (path.extname(this.#filepath) === '.webp') {
+        return get_webp_file_info(this.#filepath)
+      }
       throw new errors.InvalidFileError(`Invalid file`, new Error(`width: ${width} and height: ${height} values cannot be zero`))
     }
 
@@ -392,6 +395,18 @@ class FileProcessor {
   public async create_thumbnails(file_info: FileInfo, checksum: string): Promise<Thumbnails> {
     // TODO make previews a supported field
     // assuming that 1/4 of the way into a video is a good preview position
+
+    // FFmpeg cannot decode animated WebP files, so we skip thumbnail generation.
+    // See https://trac.ffmpeg.org/ticket/4907
+    if (file_info.codec === 'webp' && file_info.animated) {
+      const tmp_folder = await Deno.makeTempDir({prefix: 'forager-thumbnails-'})
+      const thumbnail_destination_folder = path.join(this.#ctx.config.thumbnails.folder, this.get_storage_folder(checksum))
+      return {
+        source_folder: tmp_folder,
+        destination_folder: thumbnail_destination_folder,
+        thumbnails: [],
+      }
+    }
 
     const tmp_folder = await Deno.makeTempDir({prefix: 'forager-thumbnails-'})
     const thumbnail_timestamps: number[] = []
