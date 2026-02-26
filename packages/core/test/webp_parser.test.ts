@@ -1,5 +1,5 @@
 import { test } from 'forager-test'
-import { parse_webp } from '~/lib/webp_parser.ts'
+import { parse_webp } from '~/lib/file_processor_webp_shim.ts'
 
 
 function build_riff_webp(chunks: Uint8Array): ArrayBuffer {
