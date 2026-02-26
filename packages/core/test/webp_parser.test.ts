@@ -1,5 +1,5 @@
 import { test } from 'forager-test'
-import { parse_webp } from '~/lib/file_processor_webp_shim.ts'
+import { parse_webp, get_webp_file_info } from '~/lib/file_processor_webp_shim.ts'
 
 
 function build_riff_webp(chunks: Uint8Array): ArrayBuffer {
@@ -229,26 +229,35 @@ test('webp_parser - VP8L lossless still image', async (ctx) => {
 })
 
 
-// TODO: Add tests with real WebP files once sample animated and non-animated webp resources are provided.
-// These tests will exercise the full parse_webp_file() path and validate against known file properties.
-//
-// test('webp_parser - real animated webp file', async (ctx) => {
-//   await ctx.subtest('parse animated webp from disk', async () => {
-//     const info = await parse_webp_file(ctx.resources.media_files['animated_sample.webp'])
-//     ctx.assert.equals(info.animated, true)
-//     if (!info.animated) throw new Error('unreachable')
-//     ctx.assert.equals(info.canvas_width, EXPECTED_WIDTH)
-//     ctx.assert.equals(info.canvas_height, EXPECTED_HEIGHT)
-//     // ctx.assert.equals(info.total_duration_ms, EXPECTED_DURATION_MS)
-//     // ctx.assert.equals(info.framecount, EXPECTED_FRAME_COUNT)
-//   })
-// })
-//
-// test('webp_parser - real non-animated webp file', async (ctx) => {
-//   await ctx.subtest('parse still webp from disk', async () => {
-//     const info = await parse_webp_file(ctx.resources.media_files['still_sample.webp'])
-//     ctx.assert.equals(info.animated, false)
-//     ctx.assert.equals(info.canvas_width, EXPECTED_WIDTH)
-//     ctx.assert.equals(info.canvas_height, EXPECTED_HEIGHT)
-//   })
-// })
+test('webp_parser - animated webp file from disk', async (ctx) => {
+  await ctx.subtest('parse_webp extracts correct metadata', async () => {
+    const buffer = await Deno.readFile(ctx.resources.media_files['nyan_cat.webp'])
+    const info = parse_webp(buffer.buffer as ArrayBuffer)
+
+    ctx.assert.equals(info.animated, true)
+    if (!info.animated) throw new Error('unreachable')
+    ctx.assert.equals(info.canvas_width, 400)
+    ctx.assert.equals(info.canvas_height, 400)
+    ctx.assert.equals(info.has_alpha, true)
+    ctx.assert.equals(info.framecount, 12)
+    ctx.assert.equals(info.total_duration_ms, 840)
+    ctx.assert.equals(info.loop_count, 0)
+    ctx.assert.equals(info.frames.length, 12)
+    ctx.assert.equals(info.frames[0].duration_ms, 70)
+  })
+
+  await ctx.subtest('get_webp_file_info returns FileInfo', async () => {
+    const file_info = await get_webp_file_info(ctx.resources.media_files['nyan_cat.webp'])
+
+    ctx.assert.equals(file_info.width, 400)
+    ctx.assert.equals(file_info.height, 400)
+    ctx.assert.equals(file_info.animated, true)
+    ctx.assert.equals(file_info.codec, 'webp')
+    ctx.assert.equals(file_info.media_type, 'IMAGE')
+    ctx.assert.equals(file_info.content_type, 'image/webp')
+    ctx.assert.equals(file_info.duration, 0.84)
+    ctx.assert.equals(file_info.framecount, 12)
+    ctx.assert.equals(file_info.audio, false)
+    ctx.assert.equals(file_info.filename, 'nyan_cat.webp')
+  })
+})
