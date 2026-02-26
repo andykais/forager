@@ -1,3 +1,5 @@
+import * as path from '@std/path'
+import * as fs from '@std/fs'
 import { Actions, type MediaFileResponse, type MediaSeriesResponse, type MediaResponse, type MediaGroupResponse, type CreateEditor, type UpdateEditor } from '~/actions/lib/base.ts'
 import { type inputs, parsers } from '~/inputs/mod.ts'
 import type * as result_types from '~/models/lib/result_types.ts'
@@ -279,18 +281,29 @@ class MediaActions extends Actions {
       const media_file_info = await file_processor.get_info()
       const thumbnails = await file_processor.create_thumbnails(media_file_info, checksum)
 
+      // stage new thumbnails into a .tmp/ folder inside the destination so old files remain servable
+      const staging_folder = path.join(thumbnails.destination_folder, '.tmp')
+      await fs.copy(thumbnails.source_folder, staging_folder)
+      await Deno.remove(thumbnails.source_folder, {recursive: true})
+
       const transaction = this.ctx.db.transaction_async(async () => {
         this.models.MediaThumbnail.delete({media_file_id: media_file.id})
 
-        try {
-          await Deno.remove(media_file.thumbnail_directory_path, {recursive: true})
-        } catch (e) {
-          if (!(e instanceof Deno.errors.NotFound)) {
-            throw e
-          }
+        for (const thumbnail of thumbnails.thumbnails) {
+          this.models.MediaThumbnail.create({
+            media_file_id: media_file.id,
+            filepath: thumbnail.destination_filepath,
+            kind: 'standard',
+            media_timestamp: thumbnail.timestamp,
+          })
         }
 
-        await this.attach_thumbnails(thumbnails, media_file.id)
+        // atomically replace each old thumbnail with the new one
+        for (const thumbnail of thumbnails.thumbnails) {
+          const staged_filepath = path.join(staging_folder, path.basename(thumbnail.destination_filepath))
+          await Deno.rename(staged_filepath, thumbnail.destination_filepath)
+        }
+        await Deno.remove(staging_folder, {recursive: true})
       })
 
       await transaction()
