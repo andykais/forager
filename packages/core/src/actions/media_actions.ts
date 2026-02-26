@@ -2,6 +2,7 @@ import { Actions, type MediaFileResponse, type MediaSeriesResponse, type MediaRe
 import { type inputs, parsers } from '~/inputs/mod.ts'
 import type * as result_types from '~/models/lib/result_types.ts'
 import { errors } from "~/mod.ts";
+import { FileProcessor } from '~/lib/file_processor.ts'
 
 
 /**
@@ -251,6 +252,51 @@ class MediaActions extends Actions {
     }, { or_raise: true })
 
     return thumbnail
+  }
+
+  /**
+   * Regenerate thumbnails for media files matching the given search query.
+   * If a file's checksum has changed since it was originally ingested, an error is thrown.
+   * Media series in the search results are skipped with a warning log.
+   */
+  reload = async (params?: inputs.PaginatedSearch): Promise<void> => {
+    const search_results = this.search(params)
+
+    for (const result of search_results.results) {
+      if (result.media_type === 'media_series') {
+        this.ctx.logger.warn(`Skipping media series '${result.media_reference.media_series_name}' (id: ${result.media_reference.id}) during reload`)
+        continue
+      }
+
+      const { media_file } = result
+      const file_processor = new FileProcessor(this.ctx, media_file.filepath)
+      const checksum = await file_processor.get_checksum()
+
+      if (checksum !== media_file.checksum) {
+        throw new errors.ChecksumMismatchError(media_file.filepath, media_file.checksum, checksum)
+      }
+
+      const media_file_info = await file_processor.get_info()
+      const thumbnails = await file_processor.create_thumbnails(media_file_info, checksum)
+
+      const transaction = this.ctx.db.transaction_async(async () => {
+        this.models.MediaThumbnail.delete({media_file_id: media_file.id})
+
+        try {
+          await Deno.remove(media_file.thumbnail_directory_path, {recursive: true})
+        } catch (e) {
+          if (!(e instanceof Deno.errors.NotFound)) {
+            throw e
+          }
+        }
+
+        await this.attach_thumbnails(thumbnails, media_file.id)
+      })
+
+      await transaction()
+
+      this.ctx.logger.info(`Reloaded ${media_file.filepath}`)
+    }
   }
 }
 

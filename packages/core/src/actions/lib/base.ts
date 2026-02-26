@@ -158,19 +158,7 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
         })
       }
 
-      for (const thumbnail of thumbnails.thumbnails) {
-        this.models.MediaThumbnail.create({
-          media_file_id: media_file.id,
-          filepath: thumbnail.destination_filepath,
-          kind: 'standard',
-          media_timestamp: thumbnail.timestamp,
-        })
-      }
-
-      // copy the thumbnails into the configured folder (we wait until the database writes to do this to keep the generated thumbnail folder clean)
-      // add the storage folder checksum here to merge the new files into whatever files already exist in that directory
-      await fs.copy(thumbnails.source_folder, thumbnails.destination_folder)
-      await Deno.remove(thumbnails.source_folder, {recursive: true})
+      await this.attach_thumbnails(thumbnails, media_file.id)
       return { media_reference, tags, media_file }
     })
 
@@ -357,6 +345,20 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
       added: [...tags_added],
       removed: [...tags_removed],
     }
+  }
+
+  protected async attach_thumbnails(thumbnails: { source_folder: string, destination_folder: string, thumbnails: { destination_filepath: string, timestamp: number }[] }, media_file_id: number) {
+    for (const thumbnail of thumbnails.thumbnails) {
+      this.models.MediaThumbnail.create({
+        media_file_id,
+        filepath: thumbnail.destination_filepath,
+        kind: 'standard',
+        media_timestamp: thumbnail.timestamp,
+      })
+    }
+
+    await fs.copy(thumbnails.source_folder, thumbnails.destination_folder)
+    await Deno.remove(thumbnails.source_folder, {recursive: true})
   }
 
   protected format_duration(milliseconds: number) {

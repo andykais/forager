@@ -1301,6 +1301,55 @@ test('gif', async ctx => {
   ], (a, b) => a.media_timestamp - b.media_timestamp)
 })
 
+test('media reload', async (ctx) => {
+  using forager = new Forager(ctx.get_test_config())
+  forager.init()
+
+  const media_image = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {title: 'Cat Doodle'}, ['doodle'])
+  const media_video = await forager.media.create(ctx.resources.media_files['cat_cronch.mp4'], {title: 'Cat Cronch'}, ['video'])
+
+  await ctx.subtest('reload regenerates deleted thumbnails', async () => {
+    // grab a thumbnail filepath for the image media
+    const image_result = forager.media.get({media_reference_id: media_image.media_reference.id})
+    const thumbnail_path = image_result.thumbnails.results[0].filepath
+    ctx.assert.equals(await fs.exists(thumbnail_path), true)
+
+    // delete the thumbnail file on disk
+    await Deno.remove(thumbnail_path)
+    ctx.assert.equals(await fs.exists(thumbnail_path), false)
+
+    // reload should regenerate it
+    await forager.media.reload({query: {tags: ['doodle']}})
+
+    ctx.assert.equals(await fs.exists(thumbnail_path), true)
+  })
+
+  await ctx.subtest('reload regenerates video thumbnails', async () => {
+    const video_result = forager.media.get({media_reference_id: media_video.media_reference.id})
+    const thumbnail_path = video_result.thumbnails.results[0].filepath
+    ctx.assert.equals(await fs.exists(thumbnail_path), true)
+
+    await Deno.remove(thumbnail_path)
+    ctx.assert.equals(await fs.exists(thumbnail_path), false)
+
+    await forager.media.reload({query: {tags: ['video']}})
+
+    ctx.assert.equals(await fs.exists(thumbnail_path), true)
+  })
+
+  await ctx.subtest('reload skips media series', async () => {
+    const series = forager.series.create({ title: 'test series' })
+    forager.series.add({
+      series_id: series.media_reference.id,
+      media_reference_id: media_image.media_reference.id,
+      series_index: 0,
+    })
+
+    // search that includes only series - reload should skip them without error
+    await forager.media.reload({query: {series: true}})
+  })
+})
+
 test('forager class', async ctx => {
   // assert that we error out when passing bad data to the forager class
   ctx.assert.throws(() => new Forager({foo: 'bar'} as any))
