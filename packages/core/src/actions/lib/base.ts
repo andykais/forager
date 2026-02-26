@@ -158,7 +158,7 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
         })
       }
 
-      await this.deploy_thumbnails(thumbnails, media_file.id)
+      await this.attach_thumbnails(thumbnails, media_file.id)
       return { media_reference, tags, media_file }
     })
 
@@ -347,7 +347,7 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
     }
   }
 
-  protected async deploy_thumbnails(thumbnails: { source_folder: string, destination_folder: string, thumbnails: { destination_filepath: string, timestamp: number }[] }, media_file_id: number) {
+  protected async attach_thumbnails(thumbnails: { source_folder: string, destination_folder: string, thumbnails: { destination_filepath: string, timestamp: number }[] }, media_file_id: number) {
     for (const thumbnail of thumbnails.thumbnails) {
       this.models.MediaThumbnail.create({
         media_file_id,

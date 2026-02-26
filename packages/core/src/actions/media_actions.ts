@@ -290,7 +290,7 @@ class MediaActions extends Actions {
           }
         }
 
-        await this.deploy_thumbnails(thumbnails, media_file.id)
+        await this.attach_thumbnails(thumbnails, media_file.id)
       })
 
       await transaction()
