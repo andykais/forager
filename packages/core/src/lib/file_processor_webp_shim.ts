@@ -7,7 +7,10 @@
  * https://developers.google.com/speed/webp/docs/riff_container
  */
 
+import * as path from '@std/path'
+import { CODECS } from './codecs.ts'
 import * as errors from './errors.ts'
+import type { FileInfo } from './file_processor.ts'
 
 
 interface WebPFrame {
@@ -39,7 +42,7 @@ interface WebPAnimatedInfo extends WebPInfoBase {
   framecount: number
 }
 
-export type WebPInfo = WebPStillInfo | WebPAnimatedInfo
+type WebPInfo = WebPStillInfo | WebPAnimatedInfo
 
 
 class WebPParseError extends errors.FileProcessingError {
@@ -259,9 +262,32 @@ export function parse_webp(buffer: ArrayBuffer): WebPInfo {
 
 
 /**
- * Parse a WebP file from disk and return its metadata.
+ * Parse a WebP file from disk and return FileInfo compatible with FileProcessor.
+ * This is the primary entry point used by FileProcessor as a fallback when
+ * ffprobe cannot handle WebP files.
  */
-export async function parse_webp_file(filepath: string): Promise<WebPInfo> {
-  const buffer = await Deno.readFile(filepath)
-  return parse_webp(buffer.buffer as ArrayBuffer)
+export async function get_webp_file_info(filepath: string): Promise<FileInfo> {
+  const resolved_filepath = path.resolve(filepath)
+  const buffer = await Deno.readFile(resolved_filepath)
+  const webp_info = parse_webp(buffer.buffer as ArrayBuffer)
+
+  const filename = path.basename(resolved_filepath)
+  const codec_info = CODECS.get_codec('webp')
+
+  const duration = webp_info.animated ? webp_info.total_duration_ms / 1000 : 0
+  const framecount = webp_info.animated ? webp_info.framecount : 0
+  const framerate = webp_info.animated && duration > 0 ? framecount / duration : 0
+
+  return {
+    filepath: resolved_filepath,
+    filename,
+    ...codec_info,
+    width: webp_info.canvas_width,
+    height: webp_info.canvas_height,
+    animated: webp_info.animated,
+    duration,
+    framerate,
+    framecount,
+    audio: false,
+  } as FileInfo
 }
