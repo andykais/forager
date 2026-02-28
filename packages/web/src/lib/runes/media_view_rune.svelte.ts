@@ -45,7 +45,7 @@ export class MediaViewRune extends Rune {
   }
 
   get preview_thumbnail(): string | undefined {
-    return `/files/thumbnail/${this.media.thumbnails.results[0].id}`
+    return `/files/thumbnail/${this.media.thumbnails.results.at(0)?.id}`
   }
 
   get thumbnails() {
