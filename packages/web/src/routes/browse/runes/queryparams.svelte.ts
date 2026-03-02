@@ -317,9 +317,15 @@ export class QueryParamsManager extends Rune {
    * Get contextual query for other components (e.g., tag autocomplete)
    */
   public get contextual_query(): inputs.PaginatedSearch['query'] {
-    const tags = this.current.search_string.split(' ').filter((t) => t.length > 0)
+    const current_tags = this.current.search_string.split(/\s+/).filter((t) => t.length > 0)
+    const draft_tags = new Set(
+      this.draft.search_string.split(/\s+/).filter((t) => t.length > 0),
+    )
+    // Keep context in sync when tags are deleted from the draft input,
+    // while avoiding unsaved/incomplete draft tags that may not exist yet.
+    const tags = current_tags.filter((tag) => draft_tags.has(tag))
     return {
-      tags,
+      tags: tags.length > 0 ? tags : undefined,
       filepath: this.current.filepath,
       unread: this.current.unread_only || undefined,
       animated: this.current.media_type === 'animated' ? true : undefined,
