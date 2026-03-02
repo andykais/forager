@@ -712,6 +712,7 @@ core:
 8. **Never git amend commits** - Always make new commits for ease of review
 9. **Use comments where applicable** - But not liberally; code should be self-documenting
 10. **Core actions interfaces should have docstrings** - Document public API methods
+11. **PR titles must follow main's commit-title pattern** - Use lowercase Conventional Commit style, typically `<type>(<scope>): <summary>` (e.g. `fix(web): ...`, `impl(core): ...`, `docs: ...`)
 
 ### Security Considerations
 
