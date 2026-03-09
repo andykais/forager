@@ -275,16 +275,16 @@ test('tag alias', async (ctx) => {
       target_tag_slug: 'animal:cat',
     })
     ctx.assert.object_match(result.alias!.tag, { name: 'kitty', group: 'animal', media_reference_count: 0 })
-    ctx.assert.object_match(result.alias_target.tag, { name: 'cat', group: 'animal', media_reference_count: 3 })
+    ctx.assert.object_match(result.alias_for.tag, { name: 'cat', group: 'animal', media_reference_count: 3 })
   })
 
   await ctx.subtest('get shows alias relationships', () => {
     const kitty_detail = forager.tag.get({ slug: 'animal:kitty' })
-    ctx.assert.object_match(kitty_detail.alias_target!, { name: 'cat', group: 'animal' })
+    ctx.assert.object_match(kitty_detail.alias_for!, { name: 'cat', group: 'animal' })
     ctx.assert.list_partial(kitty_detail.aliases, [])
 
     const cat_detail = forager.tag.get({ slug: 'animal:cat' })
-    ctx.assert.equals(cat_detail.alias_target, null)
+    ctx.assert.equals(cat_detail.alias_for, null)
     ctx.assert.list_partial(cat_detail.aliases, [
       { slug: 'animal:kitty', name: 'kitty' },
     ])
@@ -334,7 +334,7 @@ test('tag alias', async (ctx) => {
     const result = forager.tag.alias_create({ source_tag: 'animal:dog', target_tag: 'animal:cat' })
     ctx.assert.equals(result.alias!.tag.media_reference_count, 0)
     // cat stays at 3 because ed-edd-eddy already had animal:cat
-    ctx.assert.equals(result.alias_target.tag.media_reference_count, 3)
+    ctx.assert.equals(result.alias_for.tag.media_reference_count, 3)
   })
 
   await ctx.subtest('alias tag that has a parent relationship', () => {
@@ -354,7 +354,7 @@ test('tag alias', async (ctx) => {
     })
     // source tag has no DB record, so alias detail is null
     ctx.assert.equals(result.alias, null)
-    ctx.assert.object_match(result.alias_target.tag, { name: 'cat' })
+    ctx.assert.object_match(result.alias_for.tag, { name: 'cat' })
 
     // animal:kitten has no DB record, so it won't appear in the resolved aliases list
     const cat = forager.tag.get({ slug: 'animal:cat' })
