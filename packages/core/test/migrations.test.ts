@@ -3,7 +3,7 @@ import * as fs from '@std/fs'
 import * as path from '@std/path'
 import { Forager } from '~/mod.ts'
 
-const CURRENT_VERSION = 8
+const CURRENT_VERSION = 9
 
 test('migrate from v1 schema', async (ctx) => {
   const forager_v1_path = ctx.create_fixture_path('forager_v1')
@@ -57,6 +57,11 @@ test('migrate from v1 schema', async (ctx) => {
       next_version: 8,
       backup: true,
     },
+    {
+      start_version: 8,
+      next_version: 9,
+      backup: true,
+    },
   ]
   ctx.assert.equals(v1_migration_info.db.migration_operations, expected_migration_operations)
 
@@ -83,7 +88,6 @@ test('migrate from v1 schema', async (ctx) => {
   const forager_new_info = forager_new.init()
 
   await ctx.subtest('assert migrated schema has no diff with freshly seeded schema', async () => {
-    // TODO this currently fails because of some weird older datetime strings. We should write a proper migration for those
     ctx.assert.equals(v1_migration_info.schemas.tables, forager_new_info.schemas.tables)
-  }, {ignore: true})
+  })
 })
