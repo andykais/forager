@@ -890,3 +890,27 @@ Forager is a well-architected media management system with:
 - Migration-based schema evolution
 
 When working on this codebase, prioritize type safety, follow established patterns, write tests, and maintain the clean separation of concerns across layers.
+
+## Cursor Cloud specific instructions
+
+### Environment
+
+- **Deno canary** is required. The update script installs/upgrades it automatically. Deno binary is at `$HOME/.deno/bin/deno`.
+- **FFmpeg/FFprobe** are pre-installed on the VM (v6.1.1). CI uses v8.0, which causes minor floating-point precision differences in test assertions (audio duration, video keypoint timestamps). These are not functionality bugs.
+- Use `DENO_TLS_CA_STORE=system` when running Deno commands to avoid TLS certificate errors.
+
+### Running services
+
+- **Lint**: `deno task --cwd packages/core lint` (see `packages/core/deno.json` for config)
+- **Core tests**: `DENO_TLS_CA_STORE=system deno task --cwd packages/core test` — expect 4 FFmpeg-version-related failures
+- **CLI tests**: `DENO_TLS_CA_STORE=system deno task --cwd packages/cli test` — requires web package to be built first
+- **Web build**: `DENO_TLS_CA_STORE=system deno task --cwd packages/web build`
+- **GUI server**: `DENO_TLS_CA_STORE=system deno run -P --check packages/cli/src/cli.ts gui` — serves on `127.0.0.1:8000`
+
+### Key gotchas
+
+- Before running CLI tests, the web package must be built (`deno task --cwd packages/web build`). Otherwise CLI tests fail with module-not-found errors.
+- To initialize a fresh Forager instance for testing: `deno run -P --check packages/cli/src/cli.ts --log-level DEBUG init --no-prompt`
+- To add test media: `deno run -P --check packages/cli/src/cli.ts create <filepath> --title "..." --tags "tag1,tag2"`
+- The `develop` task (`deno task develop`) expects a config file at `~/.config/forager/forager.yml`. Run `init --no-prompt` first.
+- No Docker, external databases, or external services are needed — everything is self-contained with embedded SQLite.
