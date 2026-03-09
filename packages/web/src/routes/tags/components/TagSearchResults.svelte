@@ -52,6 +52,8 @@
               Unread{sort_indicator('unread_media_reference_count')}
             </button>
           </th>
+          <th class="py-2 px-3 text-right">Aliases</th>
+          <th class="py-2 px-3 text-right">Parents</th>
           <th class="py-2 px-3">
             <button class="hover:text-slate-200 hover:cursor-pointer" onclick={() => sort_by('created_at')}>
               Created{sort_indicator('created_at')}
@@ -77,6 +79,8 @@
             <td class="py-2 px-3 text-slate-400">{tag.group || '(default)'}</td>
             <td class="py-2 px-3 text-right">{tag.media_reference_count}</td>
             <td class="py-2 px-3 text-right">{tag.unread_media_reference_count}</td>
+            <td class="py-2 px-3 text-right">{tag.alias_count || ''}</td>
+            <td class="py-2 px-3 text-right">{tag.parent_count || ''}</td>
             <td class="py-2 px-3"><Datetime value={tag.created_at} class="text-slate-400" /></td>
             <td class="py-2 px-3"><Datetime value={tag.updated_at} class="text-slate-400" /></td>
           </tr>

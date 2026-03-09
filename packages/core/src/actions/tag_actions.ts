@@ -39,6 +39,13 @@ export interface TagParentResponse {
   rule: result_types.TagParent
 }
 
+export interface TagSearchResultItem extends result_types.Tag {
+  /** Number of alias rules involving this tag (as source or target) */
+  alias_count: number
+  /** Number of parent rules where this tag is a child */
+  parent_count: number
+}
+
 
 /**
   * Actions associated with tag management in forager
@@ -77,7 +84,7 @@ class TagActions extends Actions {
       }
     }
 
-    return this.models.Tag.select_paginated({
+    const paginated = this.models.Tag.select_paginated({
       sort_by: parsed.sort_by,
       order: parsed.order,
       limit: parsed.limit,
@@ -85,6 +92,22 @@ class TagActions extends Actions {
       tag_match: parsed.query.tag_match,
       contextual_query: contextual_query,
     })
+
+    const results: TagSearchResultItem[] = paginated.results.map(tag => {
+      const aliases_as_target = this.models.TagAlias.select_all_by_target({ target_tag_slug: tag.slug })
+      const alias_as_source = this.models.TagAlias.select_by_source({ source_tag_slug: tag.slug })
+      const parents = this.models.TagParent.select_parents({ source_tag_slug: tag.slug })
+      return {
+        ...tag,
+        alias_count: aliases_as_target.length + (alias_as_source ? 1 : 0),
+        parent_count: parents.length,
+      }
+    })
+
+    return {
+      ...paginated,
+      results,
+    }
   }
 
   /**
