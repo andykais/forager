@@ -7,20 +7,15 @@ import * as errors from '~/lib/errors.ts'
 import type * as result_types from '~/models/lib/result_types.ts'
 
 
-interface TagRuleRef {
-  slug: string
-  tag?: result_types.Tag
-}
-
 /**
  * The full detail view for a single tag, including alias and parent/child relationships.
  */
 export interface TagDetail {
   tag: result_types.Tag
-  aliases: TagRuleRef[]
-  alias_target: TagRuleRef | null
-  children: TagRuleRef[]
-  parents: TagRuleRef[]
+  aliases: result_types.Tag[]
+  alias_target: result_types.Tag | null
+  children: result_types.Tag[]
+  parents: result_types.Tag[]
 }
 
 
@@ -28,6 +23,10 @@ export interface TagDetail {
   * Actions associated with tag management in forager
   */
 class TagActions extends Actions {
+
+  #format_slug(tag: { name: string; group?: string }): string {
+    return tag_slug_format(tag)
+  }
 
   /**
    * Search for tags with optional filtering and pagination.
@@ -82,23 +81,23 @@ class TagActions extends Actions {
     const child_rows = this.models.TagParent.select_children({ target_tag_slug: tag.slug })
     const parent_rows = this.models.TagParent.select_parents({ source_tag_slug: tag.slug })
 
-    const resolve_slug = (slug: string): TagRuleRef => {
-      const resolved = this.models.Tag.select_one({ slug })
-      return resolved ? { slug, tag: resolved } : { slug }
+    const resolve_slug = (slug: string): result_types.Tag | undefined => {
+      return this.models.Tag.select_one({ slug })
     }
 
     return {
       tag,
-      alias_target: alias_target_row ? resolve_slug(alias_target_row.target_tag_slug) : null,
-      aliases: alias_rows.map(row => resolve_slug(row.source_tag_slug)),
-      children: child_rows.map(row => resolve_slug(row.source_tag_slug)),
-      parents: parent_rows.map(row => resolve_slug(row.target_tag_slug)),
+      alias_target: alias_target_row ? (resolve_slug(alias_target_row.target_tag_slug) ?? null) : null,
+      aliases: alias_rows.map(row => resolve_slug(row.source_tag_slug)).filter((t): t is result_types.Tag => t !== undefined),
+      children: child_rows.map(row => resolve_slug(row.source_tag_slug)).filter((t): t is result_types.Tag => t !== undefined),
+      parents: parent_rows.map(row => resolve_slug(row.target_tag_slug)).filter((t): t is result_types.Tag => t !== undefined),
     }
   }
 
   /**
    * Update a tag's name, group, and/or description. If name or group changes, the slug is
    * recomputed and any tag_alias/tag_parent rows referencing the old slug are updated.
+   * Throws if any tag rules reference this tag and name/group is being changed.
    */
   update = (params: inputs.TagUpdate): void => {
     const parsed = parsers.TagUpdate.parse(params)
@@ -106,20 +105,28 @@ class TagActions extends Actions {
 
     const new_name = parsed.name ?? tag.name
     const new_group = parsed.group ?? tag.group
-    const new_slug = tag_slug_format({ name: new_name, group: new_group })
+    const new_slug = this.#format_slug({ name: new_name, group: new_group })
+
+    if (new_slug !== tag.slug) {
+      const existing = this.models.Tag.select_one({ slug: new_slug })
+      if (existing) {
+        throw new errors.BadInputError(`Tag with slug '${new_slug}' already exists (id: ${existing.id})`)
+      }
+
+      const has_alias_as_source = this.models.TagAlias.select_by_source({ source_tag_slug: tag.slug })
+      const has_alias_as_target = this.models.TagAlias.select_all_by_target({ target_tag_slug: tag.slug })
+      const has_parent_as_source = this.models.TagParent.select_parents({ source_tag_slug: tag.slug })
+      const has_parent_as_target = this.models.TagParent.select_children({ target_tag_slug: tag.slug })
+      if (has_alias_as_source || has_alias_as_target.length || has_parent_as_source.length || has_parent_as_target.length) {
+        throw new errors.BadInputError(`Cannot rename tag '${tag.slug}' because it has existing tag rules. Remove the rules first.`)
+      }
+    }
 
     let new_tag_group_id: number | undefined
     if (parsed.group !== undefined && parsed.group !== tag.group) {
       const color = get_hash_color(parsed.group, 'hsl')
       const tag_group = this.models.TagGroup.get_or_create({ name: parsed.group, color })!
       new_tag_group_id = tag_group.id
-    }
-
-    if (new_slug !== tag.slug) {
-      const existing = this.models.Tag.select_one({ slug: new_slug })
-      if (existing) {
-        throw new errors.BadInputError(`Tag with slug '${new_slug}' already exists`)
-      }
     }
 
     this.models.Tag.update({
@@ -129,13 +136,6 @@ class TagActions extends Actions {
       slug: new_slug,
       description: parsed.description ?? tag.description,
     })
-
-    if (new_slug !== tag.slug) {
-      this.models.TagAlias.update_source_slug({ source_tag_slug: new_slug, target_tag_slug: tag.slug })
-      this.models.TagAlias.update_target_slug({ source_tag_slug: tag.slug, target_tag_slug: new_slug })
-      this.models.TagParent.update_source_slug({ source_tag_slug: new_slug, target_tag_slug: tag.slug })
-      this.models.TagParent.update_target_slug({ source_tag_slug: tag.slug, target_tag_slug: new_slug })
-    }
   }
 
   /**
@@ -144,29 +144,35 @@ class TagActions extends Actions {
    */
   alias_create = (params: inputs.TagAliasCreate): { id: number } => {
     const parsed = parsers.TagAliasCreate.parse(params)
+    const source_slug = this.#format_slug(parsed.source_tag)
+    const target_slug = this.#format_slug(parsed.target_tag)
 
-    if (parsed.source_tag_slug === parsed.target_tag_slug) {
+    if (source_slug === target_slug) {
       throw new errors.BadInputError(`A tag cannot be an alias of itself`)
     }
 
-    const existing_alias = this.models.TagAlias.select_by_source({ source_tag_slug: parsed.source_tag_slug })
+    const existing_alias = this.models.TagAlias.select_by_source({ source_tag_slug: source_slug })
     if (existing_alias) {
-      throw new errors.BadInputError(`Tag '${parsed.source_tag_slug}' is already an alias of '${existing_alias.target_tag_slug}'`)
+      throw new errors.BadInputError(`Tag '${source_slug}' is already an alias of '${existing_alias.target_tag_slug}'`)
     }
 
-    const target_is_alias = this.models.TagAlias.select_by_source({ source_tag_slug: parsed.target_tag_slug })
+    const target_is_alias = this.models.TagAlias.select_by_source({ source_tag_slug: target_slug })
     if (target_is_alias) {
-      throw new errors.BadInputError(`Tag '${parsed.target_tag_slug}' is itself an alias of '${target_is_alias.target_tag_slug}' and cannot be a canonical tag`)
+      throw new errors.BadInputError(`Tag '${target_slug}' is itself an alias of '${target_is_alias.target_tag_slug}' and cannot be a canonical tag`)
     }
 
-    const { id } = this.models.TagAlias.create({
-      source_tag_slug: parsed.source_tag_slug,
-      target_tag_slug: parsed.target_tag_slug,
+    const transaction = this.ctx.db.transaction_sync(() => {
+      const { id } = this.models.TagAlias.create({
+        source_tag_slug: source_slug,
+        target_tag_slug: target_slug,
+      })
+
+      this.#migrate_alias_tags(source_slug, target_slug)
+
+      return { id }
     })
 
-    this.#migrate_alias_tags(parsed.source_tag_slug, parsed.target_tag_slug)
-
-    return { id }
+    return transaction()
   }
 
   /**
@@ -180,24 +186,32 @@ class TagActions extends Actions {
 
   /**
    * Create a parent/child relationship. The source tag (child) is implicitly included
-   * when the target tag (parent) is applied.
+   * when the target tag (parent) is applied. Adds the parent tag to all media references
+   * that currently have the child tag.
    */
   parent_create = (params: inputs.TagParentCreate): { id: number } => {
     const parsed = parsers.TagParentCreate.parse(params)
+    const source_slug = this.#format_slug(parsed.source_tag)
+    const target_slug = this.#format_slug(parsed.target_tag)
 
-    if (parsed.source_tag_slug === parsed.target_tag_slug) {
+    if (source_slug === target_slug) {
       throw new errors.BadInputError(`A tag cannot be its own parent`)
     }
 
-    // Check for circular parent chains: target must not already be a descendant of source
-    this.#check_circular_parents(parsed.source_tag_slug, parsed.target_tag_slug)
+    this.#check_circular_parents(source_slug, target_slug)
 
-    const { id } = this.models.TagParent.create({
-      source_tag_slug: parsed.source_tag_slug,
-      target_tag_slug: parsed.target_tag_slug,
+    const transaction = this.ctx.db.transaction_sync(() => {
+      const { id } = this.models.TagParent.create({
+        source_tag_slug: source_slug,
+        target_tag_slug: target_slug,
+      })
+
+      this.#apply_parent_to_existing_media(source_slug, target_slug)
+
+      return { id }
     })
 
-    return { id }
+    return transaction()
   }
 
   /**
@@ -227,6 +241,28 @@ class TagActions extends Actions {
         media_reference_id: row.media_reference_id,
         tag_id: target_tag_record.id,
         tag_group_id: target_tag_record.tag_group_id,
+        editor: row.editor,
+      })
+    }
+  }
+
+  /**
+   * When a parent rule is created, add the parent tag to all media references
+   * that currently have the child (source) tag.
+   */
+  #apply_parent_to_existing_media(child_slug: string, parent_slug: string) {
+    const child_tag = this.models.Tag.select_one({ slug: child_slug })
+    if (!child_tag || child_tag.media_reference_count === 0) return
+
+    const parent_tag = this.models.Tag.select_one({ slug: parent_slug })
+    if (!parent_tag) return
+
+    const child_rows = this.models.MediaReferenceTag.select_all_by_tag_id({ tag_id: child_tag.id })
+    for (const row of child_rows) {
+      this.models.MediaReferenceTag.get_or_create({
+        media_reference_id: row.media_reference_id,
+        tag_id: parent_tag.id,
+        tag_group_id: parent_tag.tag_group_id,
         editor: row.editor,
       })
     }
