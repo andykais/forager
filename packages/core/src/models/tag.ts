@@ -80,6 +80,14 @@ class Tag extends Model {
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
     WHERE media_reference_tag.media_reference_id = ${MediaReferenceTag.params.media_reference_id}
     ORDER BY tag.media_reference_count DESC, tag.updated_at DESC, tag.id DESC`
+  #update = this.query.exec`
+    UPDATE tag SET
+      name = ${Tag.params.name},
+      tag_group_id = ${Tag.params.tag_group_id},
+      slug = ${Tag.params.slug},
+      description = ${Tag.params.description}
+    WHERE id = ${Tag.params.id}`
+
   #delete_by_count = this.query`
     DELETE FROM tag
     WHERE tag.media_reference_count = 0`
@@ -121,6 +129,8 @@ class Tag extends Model {
   public select_one = this.select_one_fn(this.#select_one_impl.bind(this))
 
   public create = this.create_fn(this.#create)
+
+  public update = this.#update
 
   public select_paginated(params: {
     limit: number
