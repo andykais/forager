@@ -161,9 +161,7 @@ export class Migration extends torm.SeedMigration {
       source_tag_slug TEXT NOT NULL,
       target_tag_slug TEXT NOT NULL,
       updated_at ${TIMESTAMP_COLUMN},
-      created_at ${TIMESTAMP_COLUMN},
-
-      UNIQUE(source_tag_slug, target_tag_slug)
+      created_at ${TIMESTAMP_COLUMN}
     );
 
     CREATE TABLE tag_parent (
@@ -171,9 +169,7 @@ export class Migration extends torm.SeedMigration {
       source_tag_slug TEXT NOT NULL,
       target_tag_slug TEXT NOT NULL,
       updated_at ${TIMESTAMP_COLUMN},
-      created_at ${TIMESTAMP_COLUMN},
-
-      UNIQUE(source_tag_slug, target_tag_slug)
+      created_at ${TIMESTAMP_COLUMN}
     );
 
 
@@ -284,6 +280,12 @@ export class Migration extends torm.SeedMigration {
     CREATE UNIQUE INDEX media_series_index ON media_series_item (media_reference_id, series_index);
     CREATE UNIQUE INDEX tag_name ON tag (name, tag_group_id);
     CREATE UNIQUE INDEX tag_slug ON tag (slug);
+    CREATE UNIQUE INDEX tag_alias_pair ON tag_alias (source_tag_slug, target_tag_slug);
+    CREATE INDEX tag_alias_source ON tag_alias (source_tag_slug);
+    CREATE INDEX tag_alias_target ON tag_alias (target_tag_slug);
+    CREATE UNIQUE INDEX tag_parent_pair ON tag_parent (source_tag_slug, target_tag_slug);
+    CREATE INDEX tag_parent_source ON tag_parent (source_tag_slug);
+    CREATE INDEX tag_parent_target ON tag_parent (target_tag_slug);
     CREATE UNIQUE INDEX media_file_reference ON media_file (media_reference_id);
     CREATE UNIQUE INDEX media_filepath ON media_file (filepath);
     CREATE INDEX media_reference_edit_log ON edit_log (media_reference_id, created_at);
