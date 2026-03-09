@@ -116,11 +116,12 @@ export class Migration extends torm.Migration {
         source_tag_slug TEXT NOT NULL,
         target_tag_slug TEXT NOT NULL,
         updated_at ${TIMESTAMP_COLUMN},
-        created_at ${TIMESTAMP_COLUMN},
-
-        UNIQUE(source_tag_slug, target_tag_slug)
+        created_at ${TIMESTAMP_COLUMN}
       )
     `)
+    this.driver.exec(`CREATE UNIQUE INDEX tag_alias_pair ON tag_alias (source_tag_slug, target_tag_slug)`)
+    this.driver.exec(`CREATE INDEX tag_alias_source ON tag_alias (source_tag_slug)`)
+    this.driver.exec(`CREATE INDEX tag_alias_target ON tag_alias (target_tag_slug)`)
 
     console.log(`Creating tag_parent table`)
     this.driver.exec(`
@@ -129,10 +130,11 @@ export class Migration extends torm.Migration {
         source_tag_slug TEXT NOT NULL,
         target_tag_slug TEXT NOT NULL,
         updated_at ${TIMESTAMP_COLUMN},
-        created_at ${TIMESTAMP_COLUMN},
-
-        UNIQUE(source_tag_slug, target_tag_slug)
+        created_at ${TIMESTAMP_COLUMN}
       )
     `)
+    this.driver.exec(`CREATE UNIQUE INDEX tag_parent_pair ON tag_parent (source_tag_slug, target_tag_slug)`)
+    this.driver.exec(`CREATE INDEX tag_parent_source ON tag_parent (source_tag_slug)`)
+    this.driver.exec(`CREATE INDEX tag_parent_target ON tag_parent (target_tag_slug)`)
   }
 }
