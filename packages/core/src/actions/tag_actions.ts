@@ -18,6 +18,18 @@ export interface TagDetail {
   parents: result_types.Tag[]
 }
 
+export interface TagAliasResponse {
+  alias: TagDetail
+  alias_target: TagDetail
+  rule: result_types.TagAlias
+}
+
+export interface TagParentResponse {
+  parent: TagDetail
+  child: TagDetail
+  rule: result_types.TagParent
+}
+
 
 /**
   * Actions associated with tag management in forager
@@ -123,7 +135,7 @@ class TagActions extends Actions {
    * Create an alias relationship. The source tag becomes an alias for the target (canonical) tag.
    * Any existing media_reference_tag rows on the source are migrated to the target.
    */
-  alias_create = (params: inputs.TagAliasCreate): TagDetail => {
+  alias_create = (params: inputs.TagAliasCreate): TagAliasResponse => {
     const parsed = parsers.TagAliasCreate.parse(params)
     const source_slug = tag_slug_format(parsed.source_tag)
     const target_slug = tag_slug_format(parsed.target_tag)
@@ -143,18 +155,26 @@ class TagActions extends Actions {
     }
 
     const transaction = this.ctx.db.transaction_sync(() => {
-      this.models.TagAlias.create({
+      const { id } = this.models.TagAlias.create({
         source_tag_slug: source_slug,
         target_tag_slug: target_slug,
       })
 
       this.#apply_alias_to_existing_media(source_slug, target_slug)
+
+      return id
     })
 
-    transaction()
-
+    const rule_id = transaction()
+    const rule = this.models.TagAlias.select_one({ id: rule_id }, { or_raise: true })
+    const source_tag = this.models.Tag.select_one({ slug: source_slug }, { or_raise: true })
     const target_tag = this.models.Tag.select_one({ slug: target_slug }, { or_raise: true })
-    return this.#build_tag_detail(target_tag)
+
+    return {
+      alias: this.#build_tag_detail(source_tag),
+      alias_target: this.#build_tag_detail(target_tag),
+      rule,
+    }
   }
 
   /**
@@ -171,7 +191,7 @@ class TagActions extends Actions {
    * when the target tag (parent) is applied. Adds the parent tag to all media references
    * that currently have the child tag.
    */
-  parent_create = (params: inputs.TagParentCreate): TagDetail => {
+  parent_create = (params: inputs.TagParentCreate): TagParentResponse => {
     const parsed = parsers.TagParentCreate.parse(params)
     const source_slug = tag_slug_format(parsed.source_tag)
     const target_slug = tag_slug_format(parsed.target_tag)
@@ -183,18 +203,26 @@ class TagActions extends Actions {
     this.#check_circular_parents(source_slug, target_slug)
 
     const transaction = this.ctx.db.transaction_sync(() => {
-      this.models.TagParent.create({
+      const { id } = this.models.TagParent.create({
         source_tag_slug: source_slug,
         target_tag_slug: target_slug,
       })
 
       this.#apply_parent_to_existing_media(source_slug, target_slug)
+
+      return id
     })
 
-    transaction()
-
+    const rule_id = transaction()
+    const rule = this.models.TagParent.select_one({ id: rule_id }, { or_raise: true })
+    const source_tag = this.models.Tag.select_one({ slug: source_slug }, { or_raise: true })
     const target_tag = this.models.Tag.select_one({ slug: target_slug }, { or_raise: true })
-    return this.#build_tag_detail(target_tag)
+
+    return {
+      child: this.#build_tag_detail(source_tag),
+      parent: this.#build_tag_detail(target_tag),
+      rule,
+    }
   }
 
   /**
