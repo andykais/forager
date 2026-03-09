@@ -41,6 +41,10 @@ class MediaReferenceTag extends Model {
     DELETE FROM media_reference_tag
     WHERE media_reference_id = ${MediaReferenceTag.params.media_reference_id} AND tag_id = ${MediaReferenceTag.params.tag_id}`
 
+  #select_by_tag_id = this.query`
+    SELECT ${MediaReferenceTag.result['*']} FROM media_reference_tag
+    WHERE tag_id = ${MediaReferenceTag.params.tag_id}`
+
   #delete_impl(params: {
     media_reference_id: number
     tag_id?: number
@@ -58,6 +62,10 @@ class MediaReferenceTag extends Model {
   public delete = this.delete_fn(this.#delete_impl.bind(this))
 
   public select_one = this.select_one_fn(this.#select_one_by_media_reference_and_tag)
+
+  public select_all_by_tag_id(params: { tag_id: number }) {
+    return this.#select_by_tag_id.all(params)
+  }
 
   public get_or_create(params: Parameters<MediaReferenceTag['create']>[0]) {
     try {
