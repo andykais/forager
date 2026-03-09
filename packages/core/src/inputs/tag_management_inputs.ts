@@ -1,4 +1,5 @@
 import z from 'zod'
+import { Tag } from '~/inputs/tag_inputs.ts'
 
 
 export const TagGet = z.object({
@@ -13,8 +14,8 @@ export const TagUpdate = z.object({
 })
 
 export const TagAliasCreate = z.object({
-  source_tag_slug: z.string(),
-  target_tag_slug: z.string(),
+  source_tag: Tag,
+  target_tag: Tag,
 })
 
 export const TagAliasDelete = z.object({
@@ -22,8 +23,8 @@ export const TagAliasDelete = z.object({
 })
 
 export const TagParentCreate = z.object({
-  source_tag_slug: z.string(),
-  target_tag_slug: z.string(),
+  source_tag: Tag,
+  target_tag: Tag,
 })
 
 export const TagParentDelete = z.object({

@@ -5,7 +5,9 @@ import { Model, field } from '~/models/lib/base.ts'
 class TagParent extends Model {
   static schema = torm.schema('tag_parent', {
     id:              field.number(),
+    /** The slug of the child tag that is implicitly included when the parent is applied */
     source_tag_slug: field.string(),
+    /** The slug of the parent tag — when this tag is applied to media, the child tag is also included */
     target_tag_slug: field.string(),
     updated_at:      field.datetime(),
     created_at:      field.datetime(),

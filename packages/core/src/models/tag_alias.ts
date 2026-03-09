@@ -5,7 +5,9 @@ import { Model, field } from '~/models/lib/base.ts'
 class TagAlias extends Model {
   static schema = torm.schema('tag_alias', {
     id:              field.number(),
+    /** The slug of the tag that is only an alias (will have zero media_reference_tag rows) */
     source_tag_slug: field.string(),
+    /** The slug of the canonical tag that persists and receives all media associations */
     target_tag_slug: field.string(),
     updated_at:      field.datetime(),
     created_at:      field.datetime(),

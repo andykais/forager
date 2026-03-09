@@ -23,6 +23,7 @@ export type TagAliasCreate = z.input<typeof parsers.TagAliasCreate>
 export type TagAliasDelete = z.input<typeof parsers.TagAliasDelete>
 export type TagParentCreate = z.input<typeof parsers.TagParentCreate>
 export type TagParentDelete = z.input<typeof parsers.TagParentDelete>
+export type TagDetail = import('~/actions/tag_actions.ts').TagDetail
 
 export type SeriesItem = z.input<typeof parsers.SeriesItem>
 export type SeriesGet = z.input<typeof parsers.SeriesGet>
