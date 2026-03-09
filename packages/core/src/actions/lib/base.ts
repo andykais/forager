@@ -269,7 +269,7 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
     const group = tag.group ?? ''
     const color = get_hash_color(group, 'hsl')
     const tag_group = this.models.TagGroup.get_or_create({ name: group, color })!
-    const tag_record = this.models.Tag.get_or_create({ alias_tag_id: null, name: tag.name, tag_group_id: tag_group.id, description: tag.description, metadata: tag.metadata })
+    const tag_record = this.models.Tag.get_or_create({ name: tag.name, tag_group_id: tag_group.id, slug: tag.slug, description: tag.description, metadata: tag.metadata })
     return tag_record
   }
 

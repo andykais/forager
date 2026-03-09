@@ -3,7 +3,7 @@ import * as fs from '@std/fs'
 import * as path from '@std/path'
 import { Forager } from '~/mod.ts'
 
-const CURRENT_VERSION = 9
+const CURRENT_VERSION = 10
 
 test('migrate from v1 schema', async (ctx) => {
   const forager_v1_path = ctx.create_fixture_path('forager_v1')
@@ -60,6 +60,11 @@ test('migrate from v1 schema', async (ctx) => {
     {
       start_version: 8,
       next_version: 9,
+      backup: true,
+    },
+    {
+      start_version: 9,
+      next_version: 10,
       backup: true,
     },
   ]

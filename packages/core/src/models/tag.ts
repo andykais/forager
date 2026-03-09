@@ -18,8 +18,8 @@ class Tag extends Model {
   static schema = torm.schema('tag', {
     id:                           field.number(),
     name:                         field.string(),
-    tag_group_id:                 field.number(), // TODO support schema references (TagGroup::schema::id)
-    alias_tag_id:                 field.number().optional(), // TODO support lazy references? This is a Tag::schema::id
+    tag_group_id:                 field.number(),
+    slug:                         field.string(),
     description:                  field.string().optional(),
     metadata:                     field.json().optional(),
     media_reference_count:        field.number(),
@@ -36,13 +36,13 @@ class Tag extends Model {
     INSERT INTO tag (
       tag_group_id,
       name,
-      alias_tag_id,
+      slug,
       description,
       metadata
     ) VALUES (${[
         Tag.params.tag_group_id,
         Tag.params.name,
-        Tag.params.alias_tag_id,
+        Tag.params.slug,
         Tag.params.description,
         Tag.params.metadata
     ]}) RETURNING ${Tag.result.id}, ${Tag.result.tag_group_id}`
