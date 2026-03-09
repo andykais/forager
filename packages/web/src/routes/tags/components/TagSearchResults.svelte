@@ -1,6 +1,7 @@
 <script lang="ts">
   import Tag from '$lib/components/Tag.svelte'
   import Datetime from '$lib/components/Datetime.svelte'
+  import Scroller from '$lib/components/Scroller.svelte'
   import type { TagsController } from '../controller.ts'
 
   let { controller }: { controller: TagsController } = $props()
@@ -24,15 +25,20 @@
   }
 </script>
 
-<div class="p-4">
-  {#if queryparams.loading}
-    <p class="text-slate-400">Loading...</p>
-  {:else if queryparams.results.length === 0}
+{#if queryparams.results.length === 0 && !queryparams.loading}
+  <div class="p-4">
     <p class="text-slate-400">No tags found.</p>
-  {:else}
-    <div class="text-sm text-slate-400 mb-2">{queryparams.total} tags</div>
+  </div>
+{:else}
+  <div class="p-4 text-sm text-slate-400 mb-0">{queryparams.total} tags</div>
+  <Scroller
+    loading={queryparams.loading}
+    more={() => queryparams.load_more()}
+    class="overflow-y-auto p-4 pt-0"
+    style="max-height: calc(100dvh - 120px)"
+  >
     <table class="w-full text-sm text-left text-slate-300">
-      <thead class="text-xs uppercase text-slate-400 border-b border-slate-500">
+      <thead class="text-xs uppercase text-slate-400 border-b border-slate-500 sticky top-0 bg-gray-600">
         <tr>
           <th class="py-2 px-3">Tag</th>
           <th class="py-2 px-3">Group</th>
@@ -65,7 +71,7 @@
               <a
                 href="/tags/{encodeURIComponent(tag.slug)}"
                 class="hover:underline">
-                <Tag {tag} hide_count />
+                <Tag {tag} show_group={false} hide_count />
               </a>
             </td>
             <td class="py-2 px-3 text-slate-400">{tag.group || '(default)'}</td>
@@ -77,5 +83,8 @@
         {/each}
       </tbody>
     </table>
-  {/if}
-</div>
+    {#if queryparams.loading}
+      <p class="text-slate-400 text-sm p-2">Loading...</p>
+    {/if}
+  </Scroller>
+{/if}
