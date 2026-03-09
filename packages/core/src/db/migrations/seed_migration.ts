@@ -4,7 +4,7 @@ import { migrations, sql, TIMESTAMP_SQLITE, TIMESTAMP_COLUMN, TIMESTAMP_COLUMN_O
 
 @migrations.register()
 export class Migration extends torm.SeedMigration {
-  version = 8
+  version = 9
 
   sql = sql`
     CREATE TABLE media_file (
