@@ -79,6 +79,7 @@ class TagActions extends Actions {
 
     return this.models.Tag.select_paginated({
       sort_by: parsed.sort_by,
+      order: parsed.order,
       limit: parsed.limit,
       cursor: parsed.cursor,
       tag_match: parsed.query.tag_match,

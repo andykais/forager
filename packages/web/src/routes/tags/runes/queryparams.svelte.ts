@@ -1,7 +1,5 @@
 import type { Forager } from '@forager/core'
-import { onMount } from 'svelte'
-import { pushState } from '$app/navigation'
-import { Rune } from '$lib/runes/rune.ts'
+import { BaseQueryParams } from '$lib/runes/index.ts'
 import type { BaseController } from '$lib/base_controller.ts'
 
 type TagSearchResult = ReturnType<Forager['tag']['search']>
@@ -19,50 +17,23 @@ const DEFAULTS: SearchParams = {
   order: 'desc',
 }
 
-export class TagQueryParams extends Rune {
-  public draft: SearchParams = $state({ ...DEFAULTS })
-  public current: SearchParams = $state({ ...DEFAULTS })
+const URL_PARAM_MAP = {
+  search_string: 'q',
+} as const satisfies Partial<Record<keyof SearchParams, string>>
+
+export class TagQueryParams extends BaseQueryParams<SearchParams> {
   public results: TagSearchResult['results'] = $state([])
   public total: number = $state(0)
   public loading: boolean = $state(false)
 
+  get DEFAULTS() { return DEFAULTS }
+  get URL_PARAM_MAP() { return URL_PARAM_MAP }
+
   constructor(client: BaseController['client']) {
     super(client)
-
-    onMount(async () => {
-      const params = this.#parse_url(new URL(window.location.toString()))
-      this.current = params
-      this.draft = { ...params }
-      await this.#execute_search(params)
-
-      window.addEventListener('popstate', async () => {
-        const params = this.#parse_url(new URL(window.location.toString()))
-        this.current = params
-        this.draft = { ...params }
-        await this.#execute_search(params)
-      })
-    })
   }
 
-  #parse_url(url: URL): SearchParams {
-    const params: SearchParams = { ...DEFAULTS }
-    const search = url.searchParams
-    if (search.has('q')) params.search_string = search.get('q')!
-    if (search.has('sort_by')) params.sort_by = search.get('sort_by')! as SortBy
-    if (search.has('order')) params.order = search.get('order')! as 'asc' | 'desc'
-    return params
-  }
-
-  #serialize(params: SearchParams): string | null {
-    const url_params = new URLSearchParams()
-    if (params.search_string) url_params.set('q', params.search_string)
-    if (params.sort_by !== DEFAULTS.sort_by) url_params.set('sort_by', params.sort_by)
-    if (params.order !== DEFAULTS.order) url_params.set('order', params.order)
-    const qs = url_params.toString()
-    return qs ? '?' + qs : null
-  }
-
-  async #execute_search(params: SearchParams): Promise<void> {
+  protected async execute_search(params: SearchParams): Promise<void> {
     this.loading = true
     try {
       const search_options: Parameters<typeof this.client.forager.tag.search>[0] = {
@@ -79,16 +50,5 @@ export class TagQueryParams extends Rune {
     } finally {
       this.loading = false
     }
-  }
-
-  public async submit(): Promise<void> {
-    const serialized = this.#serialize(this.draft)
-    this.current = { ...this.draft }
-    if (serialized) {
-      pushState(serialized, {})
-    } else {
-      pushState(window.location.pathname, {})
-    }
-    await this.#execute_search(this.draft)
   }
 }

@@ -136,6 +136,7 @@ class Tag extends Model {
     limit: number
     cursor: PaginatedResult<unknown>['cursor']
     sort_by: 'unread_media_reference_count' | 'media_reference_count' | 'created_at' | 'updated_at'
+    order: 'asc' | 'desc'
     tag_match?: {
       name: string
       group: string | undefined
@@ -158,14 +159,15 @@ class Tag extends Model {
         TagGroup.result.color,
       ])
 
+      const dir = params.order === 'asc' ? 'ASC' : 'DESC'
       if (params.sort_by === 'media_reference_count') {
-        tags_sql_builder.set_order_by_clause(`ORDER BY tag.media_reference_count DESC, tag.updated_at DESC, tag.id DESC`)
+        tags_sql_builder.set_order_by_clause(`ORDER BY tag.media_reference_count ${dir}, tag.updated_at ${dir}, tag.id ${dir}`)
       } else if (params.sort_by === 'unread_media_reference_count') {
-        tags_sql_builder.set_order_by_clause(`ORDER BY tag.unread_media_reference_count DESC, tag.updated_at DESC, tag.id DESC`)
+        tags_sql_builder.set_order_by_clause(`ORDER BY tag.unread_media_reference_count ${dir}, tag.updated_at ${dir}, tag.id ${dir}`)
       } else if (params.sort_by === 'updated_at') {
-        tags_sql_builder.set_order_by_clause(`ORDER BY tag.updated_at DESC, tag.id DESC`)
+        tags_sql_builder.set_order_by_clause(`ORDER BY tag.updated_at ${dir}, tag.id ${dir}`)
       } else if (params.sort_by === 'created_at') {
-        tags_sql_builder.set_order_by_clause(`ORDER BY tag.created_at DESC, tag.id DESC`)
+        tags_sql_builder.set_order_by_clause(`ORDER BY tag.created_at ${dir}, tag.id ${dir}`)
       } else {
         throw new Error(`unexpected tag sort_by: ${params.sort_by}`)
       }
