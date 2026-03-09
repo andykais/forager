@@ -270,7 +270,31 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
     const color = get_hash_color(group, 'hsl')
     const tag_group = this.models.TagGroup.get_or_create({ name: group, color })!
     const tag_record = this.models.Tag.get_or_create({ name: tag.name, tag_group_id: tag_group.id, slug: tag.slug, description: tag.description, metadata: tag.metadata })
+
+    const alias = this.models.TagAlias.select_by_source({ source_tag_slug: tag.slug })
+    if (alias) {
+      const canonical = this.models.Tag.select_one({ slug: alias.target_tag_slug })
+      if (canonical) return canonical
+    }
+
     return tag_record
+  }
+
+  /** Collect all parent tag slugs that should be applied for a set of tag slugs. */
+  protected resolve_parent_tags(tag_slugs: string[]): string[] {
+    const all_parents = new Set<string>()
+    const queue = [...tag_slugs]
+    while (queue.length > 0) {
+      const current = queue.pop()!
+      const parents = this.models.TagParent.select_parents({ source_tag_slug: current })
+      for (const parent of parents) {
+        if (!all_parents.has(parent.target_tag_slug) && !tag_slugs.includes(parent.target_tag_slug)) {
+          all_parents.add(parent.target_tag_slug)
+          queue.push(parent.target_tag_slug)
+        }
+      }
+    }
+    return [...all_parents]
   }
 
   protected get_media_file_result(params: {
@@ -335,6 +359,25 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
       const tag_record = this.models.Tag.select_one({name: tag.name, group: tag.group }, {or_raise: true})
       this.models.MediaReferenceTag.delete({ media_reference_id: media_reference_id, tag_id: tag_record.id })
       tags_removed.add(tag.slug)
+    }
+
+    const applied_slugs = [...tags_existing.keys()]
+      .filter(slug => !tags_removed.has(slug))
+      .concat([...tags_added])
+    const parent_slugs = this.resolve_parent_tags(applied_slugs)
+    for (const parent_slug of parent_slugs) {
+      const parent_tag = this.models.Tag.select_one({ slug: parent_slug })
+      if (parent_tag) {
+        this.models.MediaReferenceTag.get_or_create({
+          media_reference_id,
+          tag_id: parent_tag.id,
+          tag_group_id: parent_tag.tag_group_id,
+          editor,
+        })
+        if (!tags_existing.has(parent_slug)) {
+          tags_added.add(parent_slug)
+        }
+      }
     }
 
     if (this.ctx.config.tags.auto_cleanup) {

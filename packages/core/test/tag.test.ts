@@ -532,3 +532,60 @@ test('tag update', async (ctx) => {
     )
   })
 })
+
+
+test('tag rules respected during media operations', async (ctx) => {
+  using forager = new Forager(ctx.get_test_config())
+  forager.init()
+
+  // seed some media with tags so the tags exist in the DB
+  await forager.media.create(ctx.resources.media_files['koch.tif'], {}, ['animal:cat', 'animal:kitty', 'genre:cartoon', 'genre:animation'])
+  await forager.media.create(ctx.resources.media_files['ed-edd-eddy.png'], {}, ['mood:relaxed', 'mood:chill', 'style:pixel_art', 'style:digital'])
+
+  await ctx.subtest('media.create resolves alias tags to canonical', async () => {
+    forager.tag.alias_create({ source_tag: 'animal:kitty', target_tag: 'animal:cat' })
+
+    const media = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {}, ['animal:kitty'])
+    // kitty is an alias for cat, so the media should have cat instead
+    ctx.assert.list_partial(media.tags, [
+      { name: 'cat', group: 'animal' },
+    ])
+  })
+
+  await ctx.subtest('media.update resolves alias tags to canonical', () => {
+    const media = forager.media.search()
+    const media_ref_id = media.results[0].media_reference.id
+
+    forager.tag.alias_create({ source_tag: 'mood:chill', target_tag: 'mood:relaxed' })
+    forager.media.update(media_ref_id, {}, { add: ['mood:chill'] })
+
+    const updated = forager.media.get({ media_reference_id: media_ref_id })
+    const tag_slugs = updated.tags.map(t => t.slug)
+    ctx.assert.list_includes(tag_slugs, ['mood:relaxed'])
+  })
+
+  await ctx.subtest('media.create applies parent tags', async () => {
+    // remove existing tags from cat_doodle so we can test fresh
+    const cat_doodle = forager.media.search().results.find(r => r.media_type === 'media_file' && r.media_file.filename === 'cat_doodle.jpg')!
+    forager.media.update(cat_doodle.media_reference.id, {}, { replace: [] })
+
+    forager.tag.parent_create({ source_tag: 'genre:cartoon', target_tag: 'genre:animation' })
+
+    forager.media.update(cat_doodle.media_reference.id, {}, { add: ['genre:cartoon'] })
+    const updated = forager.media.get({ media_reference_id: cat_doodle.media_reference.id })
+    const tag_slugs = updated.tags.map(t => t.slug)
+    ctx.assert.list_includes(tag_slugs, ['genre:cartoon', 'genre:animation'])
+  })
+
+  await ctx.subtest('media.update applies parent tags', () => {
+    const media = forager.media.search()
+    const media_ref_id = media.results[0].media_reference.id
+
+    forager.tag.parent_create({ source_tag: 'style:pixel_art', target_tag: 'style:digital' })
+    forager.media.update(media_ref_id, {}, { add: ['style:pixel_art'] })
+
+    const updated = forager.media.get({ media_reference_id: media_ref_id })
+    const tag_slugs = updated.tags.map(t => t.slug)
+    ctx.assert.list_includes(tag_slugs, ['style:pixel_art', 'style:digital'])
+  })
+})
