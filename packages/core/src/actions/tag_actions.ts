@@ -24,10 +24,6 @@ export interface TagDetail {
   */
 class TagActions extends Actions {
 
-  #format_slug(tag: { name: string; group?: string }): string {
-    return tag_slug_format(tag)
-  }
-
   /**
    * Search for tags with optional filtering and pagination.
    */
@@ -76,22 +72,7 @@ class TagActions extends Actions {
     const parsed = parsers.TagGet.parse(params)
     const tag = this.models.Tag.select_one({ slug: parsed.slug }, { or_raise: true })
 
-    const alias_target_row = this.models.TagAlias.select_by_source({ source_tag_slug: tag.slug })
-    const alias_rows = this.models.TagAlias.select_all_by_target({ target_tag_slug: tag.slug })
-    const child_rows = this.models.TagParent.select_children({ target_tag_slug: tag.slug })
-    const parent_rows = this.models.TagParent.select_parents({ source_tag_slug: tag.slug })
-
-    const resolve_slug = (slug: string): result_types.Tag | undefined => {
-      return this.models.Tag.select_one({ slug })
-    }
-
-    return {
-      tag,
-      alias_target: alias_target_row ? (resolve_slug(alias_target_row.target_tag_slug) ?? null) : null,
-      aliases: alias_rows.map(row => resolve_slug(row.source_tag_slug)).filter((t): t is result_types.Tag => t !== undefined),
-      children: child_rows.map(row => resolve_slug(row.source_tag_slug)).filter((t): t is result_types.Tag => t !== undefined),
-      parents: parent_rows.map(row => resolve_slug(row.target_tag_slug)).filter((t): t is result_types.Tag => t !== undefined),
-    }
+    return this.#build_tag_detail(tag)
   }
 
   /**
@@ -105,7 +86,7 @@ class TagActions extends Actions {
 
     const new_name = parsed.name ?? tag.name
     const new_group = parsed.group ?? tag.group
-    const new_slug = this.#format_slug({ name: new_name, group: new_group })
+    const new_slug = tag_slug_format({ name: new_name, group: new_group })
 
     if (new_slug !== tag.slug) {
       const existing = this.models.Tag.select_one({ slug: new_slug })
@@ -142,10 +123,10 @@ class TagActions extends Actions {
    * Create an alias relationship. The source tag becomes an alias for the target (canonical) tag.
    * Any existing media_reference_tag rows on the source are migrated to the target.
    */
-  alias_create = (params: inputs.TagAliasCreate): { id: number } => {
+  alias_create = (params: inputs.TagAliasCreate): TagDetail => {
     const parsed = parsers.TagAliasCreate.parse(params)
-    const source_slug = this.#format_slug(parsed.source_tag)
-    const target_slug = this.#format_slug(parsed.target_tag)
+    const source_slug = tag_slug_format(parsed.source_tag)
+    const target_slug = tag_slug_format(parsed.target_tag)
 
     if (source_slug === target_slug) {
       throw new errors.BadInputError(`A tag cannot be an alias of itself`)
@@ -162,17 +143,18 @@ class TagActions extends Actions {
     }
 
     const transaction = this.ctx.db.transaction_sync(() => {
-      const { id } = this.models.TagAlias.create({
+      this.models.TagAlias.create({
         source_tag_slug: source_slug,
         target_tag_slug: target_slug,
       })
 
-      this.#migrate_alias_tags(source_slug, target_slug)
-
-      return { id }
+      this.#apply_alias_to_existing_media(source_slug, target_slug)
     })
 
-    return transaction()
+    transaction()
+
+    const target_tag = this.models.Tag.select_one({ slug: target_slug }, { or_raise: true })
+    return this.#build_tag_detail(target_tag)
   }
 
   /**
@@ -189,10 +171,10 @@ class TagActions extends Actions {
    * when the target tag (parent) is applied. Adds the parent tag to all media references
    * that currently have the child tag.
    */
-  parent_create = (params: inputs.TagParentCreate): { id: number } => {
+  parent_create = (params: inputs.TagParentCreate): TagDetail => {
     const parsed = parsers.TagParentCreate.parse(params)
-    const source_slug = this.#format_slug(parsed.source_tag)
-    const target_slug = this.#format_slug(parsed.target_tag)
+    const source_slug = tag_slug_format(parsed.source_tag)
+    const target_slug = tag_slug_format(parsed.target_tag)
 
     if (source_slug === target_slug) {
       throw new errors.BadInputError(`A tag cannot be its own parent`)
@@ -201,17 +183,18 @@ class TagActions extends Actions {
     this.#check_circular_parents(source_slug, target_slug)
 
     const transaction = this.ctx.db.transaction_sync(() => {
-      const { id } = this.models.TagParent.create({
+      this.models.TagParent.create({
         source_tag_slug: source_slug,
         target_tag_slug: target_slug,
       })
 
       this.#apply_parent_to_existing_media(source_slug, target_slug)
-
-      return { id }
     })
 
-    return transaction()
+    transaction()
+
+    const target_tag = this.models.Tag.select_one({ slug: target_slug }, { or_raise: true })
+    return this.#build_tag_detail(target_tag)
   }
 
   /**
@@ -223,11 +206,31 @@ class TagActions extends Actions {
     this.models.TagParent.delete({ id: parsed.id }, { expected_deletes: 1 })
   }
 
+  /** Build a TagDetail response for a given tag record. */
+  #build_tag_detail(tag: result_types.Tag): TagDetail {
+    const alias_target_row = this.models.TagAlias.select_by_source({ source_tag_slug: tag.slug })
+    const alias_rows = this.models.TagAlias.select_all_by_target({ target_tag_slug: tag.slug })
+    const child_rows = this.models.TagParent.select_children({ target_tag_slug: tag.slug })
+    const parent_rows = this.models.TagParent.select_parents({ source_tag_slug: tag.slug })
+
+    const resolve_slug = (slug: string): result_types.Tag | undefined => {
+      return this.models.Tag.select_one({ slug })
+    }
+
+    return {
+      tag,
+      alias_target: alias_target_row ? (resolve_slug(alias_target_row.target_tag_slug) ?? null) : null,
+      aliases: alias_rows.map(row => resolve_slug(row.source_tag_slug)).filter((t): t is result_types.Tag => t !== undefined),
+      children: child_rows.map(row => resolve_slug(row.source_tag_slug)).filter((t): t is result_types.Tag => t !== undefined),
+      parents: parent_rows.map(row => resolve_slug(row.target_tag_slug)).filter((t): t is result_types.Tag => t !== undefined),
+    }
+  }
+
   /**
    * Migrate media_reference_tag rows from the source (alias) tag to the target (canonical) tag.
    * Uses delete + get_or_create to properly trigger count updates.
    */
-  #migrate_alias_tags(source_slug: string, target_slug: string) {
+  #apply_alias_to_existing_media(source_slug: string, target_slug: string) {
     const source_tag = this.models.Tag.select_one({ slug: source_slug })
     if (!source_tag || source_tag.media_reference_count === 0) return
 
