@@ -277,7 +277,7 @@ Fetches a single tag by slug along with its full relationship graph. Returns:
 interface TagDetail {
   tag: Tag & { group: string; color: string; slug: string }
   aliases: Array<{ slug: string; tag?: Tag & { group: string; color: string } }>
-  alias_target: { slug: string; tag?: Tag & { group: string; color: string } } | null
+  alias_for: { slug: string; tag?: Tag & { group: string; color: string } } | null
   children: Array<{ slug: string; tag?: Tag & { group: string; color: string } }>
   parents: Array<{ slug: string; tag?: Tag & { group: string; color: string } }>
 }
@@ -285,7 +285,7 @@ interface TagDetail {
 
 - `tag` — the tag record itself with group name, color, and slug
 - `aliases` — slugs (and resolved tags when they exist) that are aliases *for* this tag (this tag is canonical)
-- `alias_target` — if this tag is itself an alias, the canonical tag slug it points to (with resolved tag if it exists); otherwise `null`
+- `alias_for` — if this tag is itself an alias, the canonical tag slug it points to (with resolved tag if it exists); otherwise `null`
 - `children` — tag slugs (and resolved tags) automatically included when this tag is applied (this tag is the parent)
 - `parents` — tag slugs (and resolved tags) that, when applied, automatically include this tag (this tag is the child)
 

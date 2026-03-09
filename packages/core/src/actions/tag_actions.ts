@@ -11,21 +11,30 @@ import type * as result_types from '~/models/lib/result_types.ts'
  * The full detail view for a single tag, including alias and parent/child relationships.
  */
 export interface TagDetail {
+  /** The tag record itself with group name, color, and slug */
   tag: result_types.Tag
+  /** Tags that are aliases pointing to this tag (this tag is the canonical version) */
   aliases: result_types.Tag[]
-  alias_target: result_types.Tag | null
+  /** If this tag is an alias, the canonical tag it resolves to; null if this tag is not an alias */
+  alias_for: result_types.Tag | null
+  /** Tags that are automatically included when this tag is applied (this tag is the parent) */
   children: result_types.Tag[]
+  /** Tags that, when applied, automatically include this tag (this tag is the child) */
   parents: result_types.Tag[]
 }
 
 export interface TagAliasResponse {
+  /** Detail view for the alias tag (the tag being aliased away); null if the tag has no DB record yet */
   alias: TagDetail | null
-  alias_target: TagDetail
+  /** Detail view for the canonical tag that the alias resolves to */
+  alias_for: TagDetail
   rule: result_types.TagAlias
 }
 
 export interface TagParentResponse {
+  /** Detail view for the parent tag */
   parent: TagDetail
+  /** Detail view for the child tag; null if the tag has no DB record yet */
   child: TagDetail | null
   rule: result_types.TagParent
 }
@@ -172,7 +181,7 @@ class TagActions extends Actions {
 
     return {
       alias: source_tag ? this.#build_tag_detail(source_tag) : null,
-      alias_target: this.#build_tag_detail(target_tag),
+      alias_for: this.#build_tag_detail(target_tag),
       rule,
     }
   }
@@ -236,7 +245,7 @@ class TagActions extends Actions {
 
   /** Build a TagDetail response for a given tag record. */
   #build_tag_detail(tag: result_types.Tag): TagDetail {
-    const alias_target_row = this.models.TagAlias.select_by_source({ source_tag_slug: tag.slug })
+    const alias_for_row = this.models.TagAlias.select_by_source({ source_tag_slug: tag.slug })
     const alias_rows = this.models.TagAlias.select_all_by_target({ target_tag_slug: tag.slug })
     const child_rows = this.models.TagParent.select_children({ target_tag_slug: tag.slug })
     const parent_rows = this.models.TagParent.select_parents({ source_tag_slug: tag.slug })
@@ -247,7 +256,7 @@ class TagActions extends Actions {
 
     return {
       tag,
-      alias_target: alias_target_row ? (resolve_slug(alias_target_row.target_tag_slug) ?? null) : null,
+      alias_for: alias_for_row ? (resolve_slug(alias_for_row.target_tag_slug) ?? null) : null,
       aliases: alias_rows.map(row => resolve_slug(row.source_tag_slug)).filter((t): t is result_types.Tag => t !== undefined),
       children: child_rows.map(row => resolve_slug(row.source_tag_slug)).filter((t): t is result_types.Tag => t !== undefined),
       parents: parent_rows.map(row => resolve_slug(row.target_tag_slug)).filter((t): t is result_types.Tag => t !== undefined),
