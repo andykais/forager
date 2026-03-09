@@ -1,13 +1,10 @@
 <script lang="ts">
   import Tag from '$lib/components/Tag.svelte'
+  import Datetime from '$lib/components/Datetime.svelte'
   import type { TagsController } from '../controller.ts'
 
   let { controller }: { controller: TagsController } = $props()
   const { queryparams } = controller.runes
-
-  function format_date(date: Date | string): string {
-    return new Date(date).toLocaleDateString()
-  }
 </script>
 
 <div class="p-4">
@@ -41,8 +38,8 @@
             <td class="py-2 px-3 text-slate-400">{tag.group || '(default)'}</td>
             <td class="py-2 px-3 text-right">{tag.media_reference_count}</td>
             <td class="py-2 px-3 text-right">{tag.unread_media_reference_count}</td>
-            <td class="py-2 px-3 text-slate-400">{format_date(tag.created_at)}</td>
-            <td class="py-2 px-3 text-slate-400">{format_date(tag.updated_at)}</td>
+            <td class="py-2 px-3"><Datetime value={tag.created_at} class="text-slate-400" /></td>
+            <td class="py-2 px-3"><Datetime value={tag.updated_at} class="text-slate-400" /></td>
           </tr>
         {/each}
       </tbody>
