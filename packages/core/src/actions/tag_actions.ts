@@ -19,14 +19,14 @@ export interface TagDetail {
 }
 
 export interface TagAliasResponse {
-  alias: TagDetail
+  alias: TagDetail | null
   alias_target: TagDetail
   rule: result_types.TagAlias
 }
 
 export interface TagParentResponse {
   parent: TagDetail
-  child: TagDetail
+  child: TagDetail | null
   rule: result_types.TagParent
 }
 
@@ -167,11 +167,11 @@ class TagActions extends Actions {
 
     const rule_id = transaction()
     const rule = this.models.TagAlias.select_one({ id: rule_id }, { or_raise: true })
-    const source_tag = this.models.Tag.select_one({ slug: source_slug }, { or_raise: true })
+    const source_tag = this.models.Tag.select_one({ slug: source_slug })
     const target_tag = this.models.Tag.select_one({ slug: target_slug }, { or_raise: true })
 
     return {
-      alias: this.#build_tag_detail(source_tag),
+      alias: source_tag ? this.#build_tag_detail(source_tag) : null,
       alias_target: this.#build_tag_detail(target_tag),
       rule,
     }
@@ -215,11 +215,11 @@ class TagActions extends Actions {
 
     const rule_id = transaction()
     const rule = this.models.TagParent.select_one({ id: rule_id }, { or_raise: true })
-    const source_tag = this.models.Tag.select_one({ slug: source_slug }, { or_raise: true })
+    const source_tag = this.models.Tag.select_one({ slug: source_slug })
     const target_tag = this.models.Tag.select_one({ slug: target_slug }, { or_raise: true })
 
     return {
-      child: this.#build_tag_detail(source_tag),
+      child: source_tag ? this.#build_tag_detail(source_tag) : null,
       parent: this.#build_tag_detail(target_tag),
       rule,
     }
