@@ -69,6 +69,11 @@ class Tag extends Model {
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
     WHERE tag_group_id = ${Tag.params.tag_group_id} AND tag.name = ${Tag.params.name}`
 
+  #select_by_slug = this.query`
+    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')}, ${TagGroup.result.color} FROM tag
+    INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
+    WHERE tag.slug = ${Tag.params.slug}`
+
   #select_by_media_reference_id = this.query`
     SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')}, ${TagGroup.result.color}, ${MediaReferenceTag.result.editor} FROM tag
     INNER JOIN media_reference_tag ON media_reference_tag.tag_id = tag.id
@@ -84,12 +89,18 @@ class Tag extends Model {
     name?: string
     tag_group_id?: number
     group?: string
+    slug?: string
   }): (torm.InferSchemaTypes<typeof Tag.result> & {group: string; color: string}) | undefined {
     if (
       params.id !== undefined &&
       Object.keys(params).length === 1
     ) {
       return this.#select_by_id.one({id: params.id})
+    } else if (
+      params.slug !== undefined &&
+      Object.keys(params).length === 1
+    ) {
+      return this.#select_by_slug.one({slug: params.slug})
     } else if (
       params.name !== undefined &&
       params.group !== undefined &&
