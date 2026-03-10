@@ -1,8 +1,7 @@
 <script lang="ts">
+  import { page } from '$app/state'
   import * as theme from '$lib/theme.ts'
   import type { SvelteHTMLElements } from 'svelte/elements';
-  import Icon from '$lib/components/Icon.svelte'
-  import { Bars3 } from '$lib/icons/mod.ts'
 
   let {
     height = $bindable(),
@@ -12,14 +11,31 @@
     children: SvelteHTMLElements['div']['children']
   } = $props()
 
-  const icon_color = theme.colors.gray[800]
-  const icon_size = "32px"
+  const nav_items = [
+    { href: '/browse', label: 'Browse' },
+    { href: '/tags', label: 'Tags' },
+  ]
 </script>
 
 <header
-  class="drop-shadow-md bg-gray-700 flex justify-center items-center border-b-slate-700 border-b-2 relative z-10"
+  class="drop-shadow-md bg-gray-700 flex items-center border-b-slate-700 border-b-2 relative z-10"
   bind:clientHeight={height}
   >
+  <nav class="flex items-center gap-0 shrink-0 border-r border-slate-600">
+    {#each nav_items as item}
+      <a
+        href={item.href}
+        class={[
+          "px-3 py-2 text-sm transition-colors",
+          page.url.pathname.startsWith(item.href)
+            ? "text-slate-200 bg-gray-600"
+            : "text-slate-500 hover:text-slate-300 hover:bg-gray-650",
+        ]}
+      >{item.label}</a>
+    {/each}
+  </nav>
   <title>{props.title}</title>
-  {@render props.children?.()}
+  <div class="flex-grow flex justify-center items-center">
+    {@render props.children?.()}
+  </div>
 </header>
