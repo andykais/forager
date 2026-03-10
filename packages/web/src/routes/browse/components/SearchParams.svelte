@@ -20,12 +20,12 @@
   const icon_size = "22px"
 </script>
 
-<form class="grid grid-rows-1 w-full"
+<form class="contents"
   onsubmit={async e => {
     e.preventDefault()
     await update_search()
   }}>
-  <div class="flex flex-col gap-y-2 p-3 justify-center items-center w-full">
+  <div class="flex gap-2 p-3 justify-center items-center w-full">
     <div class="w-full grid grid-cols-[1fr_auto] gap-2">
       <TagAutoCompleteInput
         {controller}
@@ -43,10 +43,11 @@
         <Icon class="fill-gray-800 hover:fill-gray-600" data={Filter} size={icon_size} fill={icon_color} stroke={"none"} />
       </button>
     </div>
+  </div>
 
-    <div class="w-full grid grid-rows-2 justify-space-between items-center text-slate-950 gap-y-2"
-      style="display: {settings.ui.search.advanced_filters.hide ? 'none' : 'grid'}">
-      <div class="flex flex-row justify-between gap-8">
+  <div class="w-full grid grid-rows-2 justify-space-between items-center text-slate-950 gap-y-2 px-3 pb-3"
+    style="display: {settings.ui.search.advanced_filters.hide ? 'none' : 'grid'}; grid-column: 1 / -1">
+    <div class="flex flex-row justify-between gap-8">
         <div class="flex gap-1">
           <select
             id="sort_by"
@@ -182,6 +183,5 @@
         {/if}
       </div>
     </div>
-  </div>
   <input type="submit" hidden />
 </form>
