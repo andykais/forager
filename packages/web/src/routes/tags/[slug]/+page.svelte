@@ -156,8 +156,54 @@
         <section>
           <h2 class="text-slate-300 text-lg font-semibold mb-3 border-b border-slate-600 pb-1">Parent / Child Tags</h2>
 
-          <!-- Children -->
+          <!-- Parents -->
           <div class="mb-4">
+            <h3 class="text-slate-400 text-sm font-medium mb-2">Parents (when this tag is applied, the parent is also applied)</h3>
+            {#if controller.detail.parents.length > 0}
+              <div class="flex flex-col gap-1 mb-2">
+                {#each controller.detail.parents as parent (parent.id)}
+                  <div class="flex items-center gap-2">
+                    <a href="/tags/{parent.slug}" class="hover:underline flex-grow">
+                      <Tag tag={parent} />
+                    </a>
+                    <button
+                      class="hover:cursor-pointer shrink-0"
+                      title="Remove parent"
+                      onclick={() => controller.parent_delete(parent.rule_id)}
+                    >
+                      <Icon class="fill-red-400 hover:fill-red-300" data={XCircle} size="18px" color="none" />
+                    </button>
+                  </div>
+                {/each}
+              </div>
+            {:else}
+              <p class="text-slate-500 text-sm mb-2">No parent tags.</p>
+            {/if}
+            <form class="flex gap-2 items-end" onsubmit={async e => {
+              e.preventDefault()
+              if (parent_input.trim()) {
+                await controller.parent_add(parent_input.trim())
+                parent_input = ''
+              }
+            }}>
+              <div class="flex-grow">
+                <TagAutoCompleteInput
+                  {controller}
+                  bind:search_string={parent_input}
+                  kind="details"
+                  placeholder="add parent tag..."
+                  input_classes="w-full rounded-md py-1 px-3 text-slate-100 bg-gray-800 text-sm"
+                />
+              </div>
+              <button
+                type="submit"
+                class="rounded-md px-3 py-1 bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm shrink-0"
+              >Add Parent</button>
+            </form>
+          </div>
+
+          <!-- Children -->
+          <div>
             <h3 class="text-slate-400 text-sm font-medium mb-2">Children (when a child is applied, this tag is also applied)</h3>
             {#if controller.detail.children.length > 0}
               <div class="flex flex-col gap-1 mb-2">
@@ -202,51 +248,6 @@
             </form>
           </div>
 
-          <!-- Parents -->
-          <div>
-            <h3 class="text-slate-400 text-sm font-medium mb-2">Parents (when this tag is applied, the parent is also applied)</h3>
-            {#if controller.detail.parents.length > 0}
-              <div class="flex flex-col gap-1 mb-2">
-                {#each controller.detail.parents as parent (parent.id)}
-                  <div class="flex items-center gap-2">
-                    <a href="/tags/{parent.slug}" class="hover:underline flex-grow">
-                      <Tag tag={parent} />
-                    </a>
-                    <button
-                      class="hover:cursor-pointer shrink-0"
-                      title="Remove parent"
-                      onclick={() => controller.parent_delete(parent.rule_id)}
-                    >
-                      <Icon class="fill-red-400 hover:fill-red-300" data={XCircle} size="18px" color="none" />
-                    </button>
-                  </div>
-                {/each}
-              </div>
-            {:else}
-              <p class="text-slate-500 text-sm mb-2">No parent tags.</p>
-            {/if}
-            <form class="flex gap-2 items-end" onsubmit={async e => {
-              e.preventDefault()
-              if (parent_input.trim()) {
-                await controller.parent_add(parent_input.trim())
-                parent_input = ''
-              }
-            }}>
-              <div class="flex-grow">
-                <TagAutoCompleteInput
-                  {controller}
-                  bind:search_string={parent_input}
-                  kind="details"
-                  placeholder="add parent tag..."
-                  input_classes="w-full rounded-md py-1 px-3 text-slate-100 bg-gray-800 text-sm"
-                />
-              </div>
-              <button
-                type="submit"
-                class="rounded-md px-3 py-1 bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm shrink-0"
-              >Add Parent</button>
-            </form>
-          </div>
         </section>
 
       </div>
