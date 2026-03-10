@@ -30,7 +30,6 @@
     <p class="text-slate-400">No tags found.</p>
   </div>
 {:else}
-  <div class="p-4 text-sm text-slate-400 mb-0">{queryparams.total} tags</div>
   <Scroller
     loading={queryparams.loading}
     more={() => queryparams.load_more()}
