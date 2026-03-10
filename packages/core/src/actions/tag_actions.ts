@@ -21,9 +21,9 @@ export interface TagDetail {
   aliases: TagWithRuleId[]
   /** If this tag is an alias, the canonical tag it resolves to (with rule ID); null if this tag is not an alias */
   alias_for: TagWithRuleId | null
-  /** Tags that are automatically included when this tag is applied (this tag is the parent), with their parent rule IDs */
+  /** Tags that are children of this tag — when a child is applied, this tag (the parent) is also applied */
   children: TagWithRuleId[]
-  /** Tags that, when applied, automatically include this tag (this tag is the child), with their parent rule IDs */
+  /** Tags that are parents of this tag — when this tag is applied, the parent is also applied */
   parents: TagWithRuleId[]
 }
 
@@ -223,9 +223,9 @@ class TagActions extends Actions {
   }
 
   /**
-   * Create a parent/child relationship. The child tag is implicitly included
-   * when the parent tag is applied. Adds the parent tag to all media references
-   * that currently have the child tag.
+   * Create a parent/child relationship. When the child tag is applied to media,
+   * the parent tag is also automatically applied. Adds the parent tag to all
+   * media references that currently have the child tag.
    */
   parent_create = (params: inputs.TagParentCreate): TagParentResponse => {
     const parsed = parsers.TagParentCreate.parse(params)
