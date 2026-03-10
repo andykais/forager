@@ -4,7 +4,7 @@
   import MediaList from './components/MediaList.svelte'
   import MediaView from './components/MediaView.svelte'
   import Footer from './components/Footer.svelte'
-  import Header from './components/Header.svelte'
+  import Header from '$lib/components/Header.svelte'
 
   import { BrowseController } from './controller.ts'
 
@@ -17,7 +17,9 @@
 </script>
 
 <div class="h-dvh">
-  <Header {controller} bind:height={dimensions.heights.header} />
+  <Header title={queryparams.human_readable_summary || 'Forager'} bind:height={dimensions.heights.header} >
+    <SearchParams {controller} />
+  </Header>
   <div class="grid grid-cols-[auto_1fr]">
     <MediaDetails {controller} />
     <div class="relative">
