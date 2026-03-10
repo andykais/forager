@@ -11,12 +11,12 @@
   const icon_size = '22px'
 </script>
 
-<form class="flex flex-col p-3 w-full"
+<form class="contents"
   onsubmit={async e => {
     e.preventDefault()
     await queryparams.submit()
   }}>
-  <div class="flex gap-2 items-center">
+  <div class="flex gap-2 items-center p-3">
     <input
       class="flex-grow rounded-lg py-0.5 px-3 text-slate-100 bg-gray-800"
       type="text"
