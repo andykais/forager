@@ -396,9 +396,9 @@ test('tag parent', async (ctx) => {
   using forager = new Forager(ctx.get_test_config())
   forager.init()
 
-  await forager.media.create(ctx.resources.media_files['koch.tif'], {}, ['genre:fractal', 'genre:animation'])
-  await forager.media.create(ctx.resources.media_files['ed-edd-eddy.png'], {}, ['genre:cartoon'])
-  await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {}, ['genre:cartoon', 'genre:fractal'])
+  const media_generated = await forager.media.create(ctx.resources.media_files['koch.tif'], {}, ['genre:fractal', 'genre:animation'])
+  const media_cartoon = await forager.media.create(ctx.resources.media_files['ed-edd-eddy.png'], {}, ['genre:cartoon'])
+  const media_doodle = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {}, ['genre:cartoon', 'genre:fractal'])
 
   await ctx.subtest('create parent propagates to existing media', () => {
     const result = forager.tag.parent_create({
@@ -413,6 +413,22 @@ test('tag parent', async (ctx) => {
     ctx.assert.object_match(result.child!.tag, { name: 'cartoon', media_reference_count: 2 })
     // animation: koch.tif (already had it) + ed-edd-eddy + cat_doodle = 3
     ctx.assert.object_match(result.parent.tag, { name: 'animation', media_reference_count: 3 })
+
+    ctx.assert.list_partial(forager.media.get({media_reference_id: media_generated.media_reference.id}).tags, [
+      { slug: 'genre:animation' },
+      { slug: 'genre:fractal' },
+    ])
+
+    ctx.assert.list_partial(forager.media.get({media_reference_id: media_cartoon.media_reference.id}).tags, [
+      { slug: 'genre:animation' },
+      { slug: 'genre:cartoon' },
+    ])
+
+    ctx.assert.list_partial(forager.media.get({media_reference_id: media_doodle.media_reference.id}).tags, [
+      { slug: 'genre:animation' },
+      { slug: 'genre:cartoon' },
+      { slug: 'genre:fractal' },
+    ])
   })
 
   await ctx.subtest('get shows parent/child relationships', () => {
