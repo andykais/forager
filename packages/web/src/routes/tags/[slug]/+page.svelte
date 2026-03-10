@@ -6,7 +6,7 @@
   import Icon from '$lib/components/Icon.svelte'
   import { XCircle } from '$lib/icons/mod.ts'
   import TagAutoCompleteInput from '$lib/components/TagAutoCompleteInput.svelte'
-  import { TagDetailController } from './controller.ts'
+  import { TagDetailController } from './controller.svelte.ts'
 
   let props = $props()
   const controller = new TagDetailController(props.data.config)
@@ -85,7 +85,7 @@
             <div class="mb-3 p-2 rounded-md bg-gray-700">
               <span class="text-slate-400 text-sm">This tag is an alias for:</span>
               <div class="flex items-center gap-2 mt-1">
-                <a href="/tags/{encodeURIComponent(controller.detail.alias_for.slug)}" class="hover:underline">
+                <a href="/tags/{controller.detail.alias_for.slug}" class="hover:underline">
                   <Tag tag={controller.detail.alias_for} />
                 </a>
                 <button
@@ -105,7 +105,7 @@
               <div class="flex flex-col gap-1 mt-1">
                 {#each controller.detail.aliases as alias (alias.id)}
                   <div class="flex items-center gap-2">
-                    <a href="/tags/{encodeURIComponent(alias.slug)}" class="hover:underline flex-grow">
+                    <a href="/tags/{alias.slug}" class="hover:underline flex-grow">
                       <Tag tag={alias} />
                     </a>
                     <button
@@ -156,7 +156,7 @@
               <div class="flex flex-col gap-1 mb-2">
                 {#each controller.detail.children as child (child.id)}
                   <div class="flex items-center gap-2">
-                    <a href="/tags/{encodeURIComponent(child.slug)}" class="hover:underline flex-grow">
+                    <a href="/tags/{child.slug}" class="hover:underline flex-grow">
                       <Tag tag={child} />
                     </a>
                     <button
@@ -202,7 +202,7 @@
               <div class="flex flex-col gap-1 mb-2">
                 {#each controller.detail.parents as parent (parent.id)}
                   <div class="flex items-center gap-2">
-                    <a href="/tags/{encodeURIComponent(parent.slug)}" class="hover:underline flex-grow">
+                    <a href="/tags/{parent.slug}" class="hover:underline flex-grow">
                       <Tag tag={parent} />
                     </a>
                     <button
