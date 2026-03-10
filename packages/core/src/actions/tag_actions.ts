@@ -7,20 +7,24 @@ import * as errors from '~/lib/errors.ts'
 import type * as result_types from '~/models/lib/result_types.ts'
 
 
+interface TagWithRuleId extends result_types.Tag {
+  rule_id: number
+}
+
 /**
  * The full detail view for a single tag, including alias and parent/child relationships.
  */
 export interface TagDetail {
   /** The tag record itself with group name, color, and slug */
   tag: result_types.Tag
-  /** Tags that are aliases pointing to this tag (this tag is the canonical version) */
-  aliases: result_types.Tag[]
-  /** If this tag is an alias, the canonical tag it resolves to; null if this tag is not an alias */
-  alias_for: result_types.Tag | null
-  /** Tags that are automatically included when this tag is applied (this tag is the parent) */
-  children: result_types.Tag[]
-  /** Tags that, when applied, automatically include this tag (this tag is the child) */
-  parents: result_types.Tag[]
+  /** Tags that are aliases pointing to this tag (this tag is the canonical version), with their alias rule IDs */
+  aliases: TagWithRuleId[]
+  /** If this tag is an alias, the canonical tag it resolves to (with rule ID); null if this tag is not an alias */
+  alias_for: TagWithRuleId | null
+  /** Tags that are automatically included when this tag is applied (this tag is the parent), with their parent rule IDs */
+  children: TagWithRuleId[]
+  /** Tags that, when applied, automatically include this tag (this tag is the child), with their parent rule IDs */
+  parents: TagWithRuleId[]
 }
 
 export interface TagAliasResponse {
@@ -274,16 +278,18 @@ class TagActions extends Actions {
     const child_rows = this.models.TagParent.select_children({ target_tag_slug: tag.slug })
     const parent_rows = this.models.TagParent.select_parents({ source_tag_slug: tag.slug })
 
-    const resolve_slug = (slug: string): result_types.Tag | undefined => {
-      return this.models.Tag.select_one({ slug })
+    const resolve_with_rule = (slug: string, rule_id: number): TagWithRuleId | undefined => {
+      const resolved = this.models.Tag.select_one({ slug })
+      if (!resolved) return undefined
+      return { ...resolved, rule_id }
     }
 
     return {
       tag,
-      alias_for: alias_for_row ? (resolve_slug(alias_for_row.target_tag_slug) ?? null) : null,
-      aliases: alias_rows.map(row => resolve_slug(row.source_tag_slug)).filter((t): t is result_types.Tag => t !== undefined),
-      children: child_rows.map(row => resolve_slug(row.source_tag_slug)).filter((t): t is result_types.Tag => t !== undefined),
-      parents: parent_rows.map(row => resolve_slug(row.target_tag_slug)).filter((t): t is result_types.Tag => t !== undefined),
+      alias_for: alias_for_row ? (resolve_with_rule(alias_for_row.target_tag_slug, alias_for_row.id) ?? null) : null,
+      aliases: alias_rows.map(row => resolve_with_rule(row.source_tag_slug, row.id)).filter((t): t is TagWithRuleId => t !== undefined),
+      children: child_rows.map(row => resolve_with_rule(row.source_tag_slug, row.id)).filter((t): t is TagWithRuleId => t !== undefined),
+      parents: parent_rows.map(row => resolve_with_rule(row.target_tag_slug, row.id)).filter((t): t is TagWithRuleId => t !== undefined),
     }
   }
 
