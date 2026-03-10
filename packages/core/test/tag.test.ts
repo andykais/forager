@@ -260,9 +260,9 @@ test('tag alias', async (ctx) => {
   using forager = new Forager(ctx.get_test_config())
   forager.init()
 
-  await forager.media.create(ctx.resources.media_files['koch.tif'], {}, ['animal:cat', 'wallpaper'])
-  await forager.media.create(ctx.resources.media_files['ed-edd-eddy.png'], {}, ['animal:cat', 'animal:dog'])
-  await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {}, ['animal:kitty'])
+  const media_generated = await forager.media.create(ctx.resources.media_files['koch.tif'], {}, ['animal:cat', 'wallpaper'])
+  const media_cartoon = await forager.media.create(ctx.resources.media_files['ed-edd-eddy.png'], {}, ['animal:cat', 'animal:dog'])
+  const media_doodle = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {}, ['animal:kitty'])
 
   await ctx.subtest('create alias migrates media_reference_tag rows', () => {
     const result = forager.tag.alias_create({
@@ -276,6 +276,18 @@ test('tag alias', async (ctx) => {
     })
     ctx.assert.object_match(result.alias!.tag, { name: 'kitty', group: 'animal', media_reference_count: 0 })
     ctx.assert.object_match(result.alias_for.tag, { name: 'cat', group: 'animal', media_reference_count: 3 })
+
+    ctx.assert.list_partial(forager.media.get({media_reference_id: media_generated.media_reference.id }).tags, [
+      { slug: 'animal:cat' },
+      { slug: 'wallpaper' },
+    ])
+    ctx.assert.list_partial(forager.media.get({media_reference_id: media_cartoon.media_reference.id }).tags, [
+      { slug: 'animal:cat' },
+      { slug: 'animal:dog' },
+    ])
+    ctx.assert.list_partial(forager.media.get({media_reference_id: media_doodle.media_reference.id }).tags, [
+      { slug: 'animal:cat' },
+    ])
   })
 
   await ctx.subtest('get shows alias relationships', () => {
