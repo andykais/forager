@@ -158,7 +158,7 @@
 
           <!-- Children -->
           <div class="mb-4">
-            <h3 class="text-slate-400 text-sm font-medium mb-2">Children (included when this tag is applied)</h3>
+            <h3 class="text-slate-400 text-sm font-medium mb-2">Children (when a child is applied, this tag is also applied)</h3>
             {#if controller.detail.children.length > 0}
               <div class="flex flex-col gap-1 mb-2">
                 {#each controller.detail.children as child (child.id)}
@@ -204,7 +204,7 @@
 
           <!-- Parents -->
           <div>
-            <h3 class="text-slate-400 text-sm font-medium mb-2">Parents (this tag is included when a parent is applied)</h3>
+            <h3 class="text-slate-400 text-sm font-medium mb-2">Parents (when this tag is applied, the parent is also applied)</h3>
             {#if controller.detail.parents.length > 0}
               <div class="flex flex-col gap-1 mb-2">
                 {#each controller.detail.parents as parent (parent.id)}
