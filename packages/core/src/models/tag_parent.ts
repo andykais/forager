@@ -6,9 +6,9 @@ class TagParent extends Model {
   static schema = torm.schema('tag_parent', {
     id:              field.number(),
     /** The slug of the child tag that is implicitly included when the parent is applied */
-    source_tag_slug: field.string(),
+    child_tag_slug:  field.string(),
     /** The slug of the parent tag — when this tag is applied to media, the child tag is also included */
-    target_tag_slug: field.string(),
+    parent_tag_slug: field.string(),
     updated_at:      field.datetime(),
     created_at:      field.datetime(),
   })
@@ -16,8 +16,8 @@ class TagParent extends Model {
   static result = this.schema.result
 
   #create = this.query.one`
-    INSERT INTO tag_parent (source_tag_slug, target_tag_slug)
-    VALUES (${[TagParent.params.source_tag_slug, TagParent.params.target_tag_slug]})
+    INSERT INTO tag_parent (child_tag_slug, parent_tag_slug)
+    VALUES (${[TagParent.params.child_tag_slug, TagParent.params.parent_tag_slug]})
     RETURNING ${TagParent.result.id}`
 
   #delete_by_id = this.query.exec`
@@ -27,23 +27,21 @@ class TagParent extends Model {
     SELECT ${TagParent.result['*']} FROM tag_parent
     WHERE id = ${TagParent.params.id}`
 
-  /** Select children of a parent tag (source is child, target is parent) */
   #select_children = this.query`
     SELECT ${TagParent.result['*']} FROM tag_parent
-    WHERE target_tag_slug = ${TagParent.params.target_tag_slug}`
+    WHERE parent_tag_slug = ${TagParent.params.parent_tag_slug}`
 
-  /** Select parents of a child tag */
   #select_parents = this.query`
     SELECT ${TagParent.result['*']} FROM tag_parent
-    WHERE source_tag_slug = ${TagParent.params.source_tag_slug}`
+    WHERE child_tag_slug = ${TagParent.params.child_tag_slug}`
 
-  #update_source_slug = this.query.exec`
-    UPDATE tag_parent SET source_tag_slug = ${TagParent.params.source_tag_slug}
-    WHERE source_tag_slug = ${TagParent.params.target_tag_slug}`
+  #update_child_slug = this.query.exec`
+    UPDATE tag_parent SET child_tag_slug = ${TagParent.params.child_tag_slug}
+    WHERE child_tag_slug = ${TagParent.params.parent_tag_slug}`
 
-  #update_target_slug = this.query.exec`
-    UPDATE tag_parent SET target_tag_slug = ${TagParent.params.target_tag_slug}
-    WHERE target_tag_slug = ${TagParent.params.source_tag_slug}`
+  #update_parent_slug = this.query.exec`
+    UPDATE tag_parent SET parent_tag_slug = ${TagParent.params.parent_tag_slug}
+    WHERE parent_tag_slug = ${TagParent.params.child_tag_slug}`
 
   public create = this.create_fn(this.#create)
 
@@ -52,23 +50,23 @@ class TagParent extends Model {
   public select_one = this.select_one_fn(this.#select_by_id.one)
 
   /** Get child tag slugs for a parent */
-  public select_children(params: { target_tag_slug: string }) {
+  public select_children(params: { parent_tag_slug: string }) {
     return this.#select_children.all(params)
   }
 
   /** Get parent tag slugs for a child */
-  public select_parents(params: { source_tag_slug: string }) {
+  public select_parents(params: { child_tag_slug: string }) {
     return this.#select_parents.all(params)
   }
 
-  /** Rename a slug across all parent rows where it appears as source (child) */
-  public update_source_slug(params: { source_tag_slug: string; target_tag_slug: string }) {
-    return this.#update_source_slug({ source_tag_slug: params.source_tag_slug, target_tag_slug: params.target_tag_slug })
+  /** Rename a slug across all parent rows where it appears as child */
+  public update_child_slug(params: { child_tag_slug: string; parent_tag_slug: string }) {
+    return this.#update_child_slug(params)
   }
 
-  /** Rename a slug across all parent rows where it appears as target (parent) */
-  public update_target_slug(params: { source_tag_slug: string; target_tag_slug: string }) {
-    return this.#update_target_slug({ source_tag_slug: params.source_tag_slug, target_tag_slug: params.target_tag_slug })
+  /** Rename a slug across all parent rows where it appears as parent */
+  public update_parent_slug(params: { child_tag_slug: string; parent_tag_slug: string }) {
+    return this.#update_parent_slug(params)
   }
 }
 

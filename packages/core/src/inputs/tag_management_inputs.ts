@@ -14,8 +14,8 @@ export const TagUpdate = z.object({
 })
 
 export const TagAliasCreate = z.object({
-  source_tag: Tag,
-  target_tag: Tag,
+  alias_tag: Tag,
+  alias_for_tag: Tag,
 })
 
 export const TagAliasDelete = z.object({
@@ -23,8 +23,8 @@ export const TagAliasDelete = z.object({
 })
 
 export const TagParentCreate = z.object({
-  source_tag: Tag,
-  target_tag: Tag,
+  child_tag: Tag,
+  parent_tag: Tag,
 })
 
 export const TagParentDelete = z.object({
