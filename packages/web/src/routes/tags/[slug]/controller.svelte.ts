@@ -64,7 +64,7 @@ class TagDetailController extends BaseController {
       ? `${this.draft.group}:${this.draft.name}`
       : this.draft.name
     if (new_slug !== old_slug) {
-      goto(`/tags/${encodeURIComponent(new_slug)}`)
+      goto(`/tags/${new_slug}`)
     }
     await this.load(new_slug)
   }

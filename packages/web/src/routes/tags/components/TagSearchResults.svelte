@@ -70,7 +70,7 @@
           <tr class="border-b border-slate-700 hover:bg-slate-700">
             <td class="py-2 px-3">
               <a
-                href="/tags/{encodeURIComponent(tag.slug)}"
+                href="/tags/{tag.slug}"
                 class="hover:underline">
                 <Tag {tag} show_group={false} hide_count />
               </a>
