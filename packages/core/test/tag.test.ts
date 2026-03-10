@@ -266,13 +266,13 @@ test('tag alias', async (ctx) => {
 
   await ctx.subtest('create alias migrates media_reference_tag rows', () => {
     const result = forager.tag.alias_create({
-      source_tag: 'animal:kitty',
-      target_tag: 'animal:cat',
+      alias_tag: 'animal:kitty',
+      alias_for_tag: 'animal:cat',
     })
 
     ctx.assert.object_match(result.rule, {
-      source_tag_slug: 'animal:kitty',
-      target_tag_slug: 'animal:cat',
+      alias_tag_slug: 'animal:kitty',
+      alias_for_tag_slug: 'animal:cat',
     })
     ctx.assert.object_match(result.alias!.tag, { name: 'kitty', group: 'animal', media_reference_count: 0 })
     ctx.assert.object_match(result.alias_for.tag, { name: 'cat', group: 'animal', media_reference_count: 3 })
@@ -292,27 +292,27 @@ test('tag alias', async (ctx) => {
 
   await ctx.subtest('cannot create duplicate alias', () => {
     ctx.assert.throws(
-      () => forager.tag.alias_create({ source_tag: 'animal:kitty', target_tag: 'animal:cat' }),
+      () => forager.tag.alias_create({ alias_tag: 'animal:kitty', alias_for_tag: 'animal:cat' }),
       errors.BadInputError,
     )
   })
 
   await ctx.subtest('cannot alias a tag to itself', () => {
     ctx.assert.throws(
-      () => forager.tag.alias_create({ source_tag: 'animal:cat', target_tag: 'animal:cat' }),
+      () => forager.tag.alias_create({ alias_tag: 'animal:cat', alias_for_tag: 'animal:cat' }),
       errors.BadInputError,
     )
   })
 
   await ctx.subtest('cannot alias to a tag that is itself an alias', () => {
     ctx.assert.throws(
-      () => forager.tag.alias_create({ source_tag: 'wallpaper', target_tag: 'animal:kitty' }),
+      () => forager.tag.alias_create({ alias_tag: 'wallpaper', alias_for_tag: 'animal:kitty' }),
       errors.BadInputError,
     )
   })
 
   await ctx.subtest('delete alias', () => {
-    const wallpaper_result = forager.tag.alias_create({ source_tag: 'wallpaper', target_tag: 'animal:cat' })
+    const wallpaper_result = forager.tag.alias_create({ alias_tag: 'wallpaper', alias_for_tag: 'animal:cat' })
     ctx.assert.list_partial(forager.tag.get({ slug: 'animal:cat' }).aliases, [
       { slug: 'animal:kitty' },
       { slug: 'wallpaper' },
@@ -331,7 +331,7 @@ test('tag alias', async (ctx) => {
     const dog_before = forager.tag.get({ slug: 'animal:dog' })
     ctx.assert.equals(dog_before.tag.media_reference_count, 1)
 
-    const result = forager.tag.alias_create({ source_tag: 'animal:dog', target_tag: 'animal:cat' })
+    const result = forager.tag.alias_create({ alias_tag: 'animal:dog', alias_for_tag: 'animal:cat' })
     ctx.assert.equals(result.alias!.tag.media_reference_count, 0)
     // cat stays at 3 because ed-edd-eddy already had animal:cat
     ctx.assert.equals(result.alias_for.tag.media_reference_count, 3)
@@ -339,7 +339,7 @@ test('tag alias', async (ctx) => {
 
   await ctx.subtest('alias tag that has a parent relationship', () => {
     // create a fresh parent rule on a tag, then alias it away
-    forager.tag.parent_create({ source_tag: 'animal:kitty', target_tag: 'animal:cat' })
+    forager.tag.parent_create({ child_tag: 'animal:kitty', parent_tag: 'animal:cat' })
     const kitty = forager.tag.get({ slug: 'animal:kitty' })
     ctx.assert.list_partial(kitty.parents, [{ slug: 'animal:cat' }])
     // kitty is already an alias of cat and has 0 media refs, so the alias+parent overlap is benign
@@ -347,10 +347,10 @@ test('tag alias', async (ctx) => {
   })
 
   await ctx.subtest('alias when source tag does not exist yet', () => {
-    const result = forager.tag.alias_create({ source_tag: 'animal:kitten', target_tag: 'animal:cat' })
+    const result = forager.tag.alias_create({ alias_tag: 'animal:kitten', alias_for_tag: 'animal:cat' })
     ctx.assert.object_match(result.rule, {
-      source_tag_slug: 'animal:kitten',
-      target_tag_slug: 'animal:cat',
+      alias_tag_slug: 'animal:kitten',
+      alias_for_tag_slug: 'animal:cat',
     })
     // source tag has no DB record, so alias detail is null
     ctx.assert.equals(result.alias, null)
@@ -402,13 +402,13 @@ test('tag parent', async (ctx) => {
 
   await ctx.subtest('create parent propagates to existing media', () => {
     const result = forager.tag.parent_create({
-      source_tag: 'genre:cartoon',
-      target_tag: 'genre:animation',
+      child_tag: 'genre:cartoon',
+      parent_tag: 'genre:animation',
     })
 
     ctx.assert.object_match(result.rule, {
-      source_tag_slug: 'genre:cartoon',
-      target_tag_slug: 'genre:animation',
+      child_tag_slug: 'genre:cartoon',
+      parent_tag_slug: 'genre:animation',
     })
     ctx.assert.object_match(result.child!.tag, { name: 'cartoon', media_reference_count: 2 })
     // animation: koch.tif (already had it) + ed-edd-eddy + cat_doodle = 3
@@ -447,30 +447,30 @@ test('tag parent', async (ctx) => {
 
   await ctx.subtest('cannot parent a tag to itself', () => {
     ctx.assert.throws(
-      () => forager.tag.parent_create({ source_tag: 'genre:cartoon', target_tag: 'genre:cartoon' }),
+      () => forager.tag.parent_create({ child_tag: 'genre:cartoon', parent_tag: 'genre:cartoon' }),
       errors.BadInputError,
     )
   })
 
   await ctx.subtest('circular parent detection', () => {
     ctx.assert.throws(
-      () => forager.tag.parent_create({ source_tag: 'genre:animation', target_tag: 'genre:cartoon' }),
+      () => forager.tag.parent_create({ child_tag: 'genre:animation', parent_tag: 'genre:cartoon' }),
       errors.BadInputError,
     )
   })
 
   await ctx.subtest('multi-level circular parent detection', () => {
     // animation -> cartoon already exists. add cartoon -> fractal
-    forager.tag.parent_create({ source_tag: 'genre:fractal', target_tag: 'genre:cartoon' })
+    forager.tag.parent_create({ child_tag: 'genre:fractal', parent_tag: 'genre:cartoon' })
     // now fractal -> animation should be rejected (fractal -> cartoon -> animation is a cycle)
     ctx.assert.throws(
-      () => forager.tag.parent_create({ source_tag: 'genre:animation', target_tag: 'genre:fractal' }),
+      () => forager.tag.parent_create({ child_tag: 'genre:animation', parent_tag: 'genre:fractal' }),
       errors.BadInputError,
     )
   })
 
   await ctx.subtest('delete parent', () => {
-    const result = forager.tag.parent_create({ source_tag: 'genre:fractal', target_tag: 'genre:animation' })
+    const result = forager.tag.parent_create({ child_tag: 'genre:fractal', parent_tag: 'genre:animation' })
     ctx.assert.list_partial(forager.tag.get({ slug: 'genre:animation' }).children, [
       { slug: 'genre:cartoon' },
       { slug: 'genre:fractal' },
@@ -484,10 +484,10 @@ test('tag parent', async (ctx) => {
   })
 
   await ctx.subtest('parent when source tag does not exist yet', () => {
-    const result = forager.tag.parent_create({ source_tag: 'genre:anime', target_tag: 'genre:animation' })
+    const result = forager.tag.parent_create({ child_tag: 'genre:anime', parent_tag: 'genre:animation' })
     ctx.assert.object_match(result.rule, {
-      source_tag_slug: 'genre:anime',
-      target_tag_slug: 'genre:animation',
+      child_tag_slug: 'genre:anime',
+      parent_tag_slug: 'genre:animation',
     })
     // source tag has no DB record, so child detail is null
     ctx.assert.equals(result.child, null)
@@ -534,7 +534,7 @@ test('tag update', async (ctx) => {
   })
 
   await ctx.subtest('cannot rename tag with existing rules', () => {
-    forager.tag.alias_create({ source_tag: 'wallpaper', target_tag: 'art:fractals' })
+    forager.tag.alias_create({ alias_tag: 'wallpaper', alias_for_tag: 'art:fractals' })
     ctx.assert.throws(
       () => forager.tag.update({ slug: 'art:fractals', name: 'fractal_images' }),
       errors.BadInputError,
@@ -559,7 +559,7 @@ test('tag rules respected during media operations', async (ctx) => {
   await forager.media.create(ctx.resources.media_files['ed-edd-eddy.png'], {}, ['mood:relaxed', 'mood:chill', 'style:pixel_art', 'style:digital'])
 
   await ctx.subtest('media.create resolves alias tags to canonical', async () => {
-    forager.tag.alias_create({ source_tag: 'animal:kitty', target_tag: 'animal:cat' })
+    forager.tag.alias_create({ alias_tag: 'animal:kitty', alias_for_tag: 'animal:cat' })
 
     const media = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {}, ['animal:kitty'])
     // kitty is an alias for cat, so the media should have cat instead
@@ -572,7 +572,7 @@ test('tag rules respected during media operations', async (ctx) => {
     const media = forager.media.search()
     const media_ref_id = media.results[0].media_reference.id
 
-    forager.tag.alias_create({ source_tag: 'mood:chill', target_tag: 'mood:relaxed' })
+    forager.tag.alias_create({ alias_tag: 'mood:chill', alias_for_tag: 'mood:relaxed' })
     forager.media.update(media_ref_id, {}, { add: ['mood:chill'] })
 
     const updated = forager.media.get({ media_reference_id: media_ref_id })
@@ -585,7 +585,7 @@ test('tag rules respected during media operations', async (ctx) => {
     const cat_doodle = forager.media.search().results.find(r => r.media_type === 'media_file' && r.media_file.filename === 'cat_doodle.jpg')!
     forager.media.update(cat_doodle.media_reference.id, {}, { replace: [] })
 
-    forager.tag.parent_create({ source_tag: 'genre:cartoon', target_tag: 'genre:animation' })
+    forager.tag.parent_create({ child_tag: 'genre:cartoon', parent_tag: 'genre:animation' })
 
     forager.media.update(cat_doodle.media_reference.id, {}, { add: ['genre:cartoon'] })
     const updated = forager.media.get({ media_reference_id: cat_doodle.media_reference.id })
@@ -597,7 +597,7 @@ test('tag rules respected during media operations', async (ctx) => {
     const media = forager.media.search()
     const media_ref_id = media.results[0].media_reference.id
 
-    forager.tag.parent_create({ source_tag: 'style:pixel_art', target_tag: 'style:digital' })
+    forager.tag.parent_create({ child_tag: 'style:pixel_art', parent_tag: 'style:digital' })
     forager.media.update(media_ref_id, {}, { add: ['style:pixel_art'] })
 
     const updated = forager.media.get({ media_reference_id: media_ref_id })

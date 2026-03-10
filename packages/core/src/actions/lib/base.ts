@@ -271,9 +271,9 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
     const tag_group = this.models.TagGroup.get_or_create({ name: group, color })!
     const tag_record = this.models.Tag.get_or_create({ name: tag.name, tag_group_id: tag_group.id, slug: tag.slug, description: tag.description, metadata: tag.metadata })
 
-    const alias = this.models.TagAlias.select_by_source({ source_tag_slug: tag.slug })
+    const alias = this.models.TagAlias.select_by_alias({ alias_tag_slug: tag.slug })
     if (alias) {
-      const canonical = this.models.Tag.select_one({ slug: alias.target_tag_slug })
+      const canonical = this.models.Tag.select_one({ slug: alias.alias_for_tag_slug })
       if (canonical) return canonical
     }
 
@@ -286,11 +286,11 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
     const queue = [...tag_slugs]
     while (queue.length > 0) {
       const current = queue.pop()!
-      const parents = this.models.TagParent.select_parents({ source_tag_slug: current })
+      const parents = this.models.TagParent.select_parents({ child_tag_slug: current })
       for (const parent of parents) {
-        if (!all_parents.has(parent.target_tag_slug) && !tag_slugs.includes(parent.target_tag_slug)) {
-          all_parents.add(parent.target_tag_slug)
-          queue.push(parent.target_tag_slug)
+        if (!all_parents.has(parent.parent_tag_slug) && !tag_slugs.includes(parent.parent_tag_slug)) {
+          all_parents.add(parent.parent_tag_slug)
+          queue.push(parent.parent_tag_slug)
         }
       }
     }
