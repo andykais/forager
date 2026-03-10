@@ -69,11 +69,11 @@ class TagDetailController extends BaseController {
     await this.load(new_slug)
   }
 
-  async alias_create(source_tag_str: string) {
+  async alias_create(alias_tag_str: string) {
     if (!this.detail) return
     await this.client.forager.tag.alias_create({
-      source_tag: source_tag_str,
-      target_tag: this.detail.tag.slug,
+      alias_tag: alias_tag_str,
+      alias_for_tag: this.detail.tag.slug,
     })
     await this.load(this.detail.tag.slug)
   }
@@ -87,8 +87,8 @@ class TagDetailController extends BaseController {
   async child_create(child_tag_str: string) {
     if (!this.detail) return
     await this.client.forager.tag.parent_create({
-      source_tag: child_tag_str,
-      target_tag: this.detail.tag.slug,
+      child_tag: child_tag_str,
+      parent_tag: this.detail.tag.slug,
     })
     await this.load(this.detail.tag.slug)
   }
@@ -96,8 +96,8 @@ class TagDetailController extends BaseController {
   async parent_add(parent_tag_str: string) {
     if (!this.detail) return
     await this.client.forager.tag.parent_create({
-      source_tag: this.detail.tag.slug,
-      target_tag: parent_tag_str,
+      child_tag: this.detail.tag.slug,
+      parent_tag: parent_tag_str,
     })
     await this.load(this.detail.tag.slug)
   }
