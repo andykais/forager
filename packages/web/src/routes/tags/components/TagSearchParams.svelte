@@ -11,24 +11,24 @@
   const icon_size = '22px'
 </script>
 
-<form class="flex flex-col gap-2 p-4"
+<form class="flex flex-col p-3 w-full"
   onsubmit={async e => {
     e.preventDefault()
     await queryparams.submit()
   }}>
   <div class="flex gap-2 items-center">
     <input
-      class="flex-grow rounded-lg py-1 px-3 text-slate-100 bg-gray-800"
+      class="flex-grow rounded-lg py-0.5 px-3 text-slate-100 bg-gray-800"
       type="text"
       name="search"
-      placeholder="Search tags... (e.g. genre:adventure)"
+      placeholder="genre:adventure..."
       autocomplete="off"
       bind:value={queryparams.draft.search_string}
     />
 
     <div class="flex gap-1">
       <select
-        class="rounded-lg py-1 px-2 text-slate-100 bg-gray-800"
+        class="rounded-lg py-1 px-2 text-slate-950"
         bind:value={queryparams.draft.sort_by}
         onchange={() => queryparams.submit()}>
         <option value="media_reference_count">Media Count</option>

@@ -38,7 +38,7 @@
     style="max-height: calc(100dvh - 120px)"
   >
     <table class="w-full text-sm text-left text-slate-300">
-      <thead class="text-xs uppercase text-slate-400 border-b border-slate-500 sticky top-0 bg-gray-600">
+      <thead class="text-sm text-slate-800 border-b border-slate-500 sticky top-0 bg-gray-600">
         <tr>
           <th class="py-2 px-3">Tag</th>
           <th class="py-2 px-3">Group</th>
