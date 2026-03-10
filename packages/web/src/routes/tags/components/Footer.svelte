@@ -25,7 +25,7 @@
 <footer
   class="
   bg-gray-700 items-center px-2 py-1
-  text-slate-900 border-t border-t-[2px] border-gray-800"
+  text-slate-900 border-t-slate-700 border-t-2"
 >
   <div class="flex justify-end">
     <span>Total tags {human_readable_number(queryparams.total)}</span>
