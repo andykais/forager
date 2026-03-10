@@ -3,6 +3,7 @@
   import { onMount } from 'svelte'
   import Header from '$lib/components/Header.svelte'
   import Tag from '$lib/components/Tag.svelte'
+  import Datetime from '$lib/components/Datetime.svelte'
   import Icon from '$lib/components/Icon.svelte'
   import { XCircle } from '$lib/icons/mod.ts'
   import TagAutoCompleteInput from '$lib/components/TagAutoCompleteInput.svelte'
@@ -67,12 +68,18 @@
                 class="rounded-md py-1 px-3 text-slate-100 bg-gray-800 text-sm min-h-16"
                 bind:value={controller.draft.description}
               ></textarea>
+              <label class="text-slate-400 text-sm">Created</label>
+              <Datetime value={controller.detail.tag.created_at} class="text-slate-300 text-sm" />
             </div>
-            <div>
+            <div class="flex gap-3 items-center">
               <button
                 type="submit"
                 class="rounded-md px-4 py-1 bg-green-800 text-green-100 hover:bg-green-700 text-sm"
               >Save</button>
+              <a
+                href="/browse?tags={controller.detail.tag.slug}"
+                class="text-sm text-slate-400 hover:text-slate-200"
+              >Browse media with this tag</a>
             </div>
           </form>
         </section>
