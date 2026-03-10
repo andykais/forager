@@ -20,12 +20,12 @@
   const icon_size = "22px"
 </script>
 
-<form class="grid grid-rows-1 w-screen"
+<form class="grid grid-rows-1 w-full"
   onsubmit={async e => {
     e.preventDefault()
     await update_search()
   }}>
-  <div class="flex flex-col gap-y-2 p-3 justify-center items-center w-screen">
+  <div class="flex flex-col gap-y-2 p-3 justify-center items-center w-full">
     <div class="w-full grid grid-cols-[1fr_auto] gap-2">
       <TagAutoCompleteInput
         {controller}
