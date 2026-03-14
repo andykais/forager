@@ -8,6 +8,7 @@
   height = size,
   color = "currentColor",
   stroke = color,
+  stroke_width = undefined as string | number | undefined,
   fill = color,
   title = "",
   ...props
@@ -32,6 +33,7 @@
   {height}
   {viewBox}
   {stroke}
+  stroke-width={stroke_width}
   {fill}
   {...props}
 >

@@ -10,6 +10,12 @@ interface Context {
 
 class ForagerTagApi extends rpc.ApiController<Context> {
   search = this.context.forager.tag.search
+  get = this.context.forager.tag.get
+  update = this.context.forager.tag.update
+  alias_create = this.context.forager.tag.alias_create
+  alias_delete = this.context.forager.tag.alias_delete
+  parent_create = this.context.forager.tag.parent_create
+  parent_delete = this.context.forager.tag.parent_delete
 }
 
 class ForagerApi extends rpc.ApiController<Context> {

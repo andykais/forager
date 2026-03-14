@@ -40,14 +40,9 @@ class SeriesActions extends Actions {
       const tags: ReturnType<typeof this.models.Tag.select_one>[] = []
 
       for (const tag of parsed.tags) {
-        const group = tag.group ?? ''
-        // const color = get_hash_color(group, 'hsl')
-        const color = ''
-        const tag_group = this.models.TagGroup.get_or_create({ name: group, color })!
-        const {id: tag_id} = this.models.Tag.get_or_create({ alias_tag_id: null, name: tag.name, tag_group_id: tag_group.id, description: tag.description, metadata: tag.metadata })
-        this.models.MediaReferenceTag.create({ media_reference_id: media_reference.id, tag_id, tag_group_id: tag_group.id })
-
-        const tag_record = this.models.Tag.select_one({id: tag_id}, {or_raise: true})
+        const created = this.tag_create(tag)
+        this.models.MediaReferenceTag.create({ media_reference_id: media_reference.id, tag_id: created.id, tag_group_id: created.tag_group_id })
+        const tag_record = this.models.Tag.select_one({id: created.id}, {or_raise: true})
         tags.push(tag_record)
       }
       return { media_reference, tags }
@@ -78,11 +73,7 @@ class SeriesActions extends Actions {
         ...parsed.media_info,
       })
       for (const tag of parsed.tags) {
-        const group = tag.group ?? ''
-        // const color = get_hash_color(group, 'hsl')
-        const color = ''
-        const tag_group = this.models.TagGroup.get_or_create({ name: group, color })!
-        const tag_record = this.models.Tag.get_or_create({ alias_tag_id: null, name: tag.name, tag_group_id: tag_group.id, description: tag.description, metadata: tag.metadata })
+        const tag_record = this.tag_create(tag)
         this.models.MediaReferenceTag.get_or_create({ media_reference_id: parsed.series_id, tag_id: tag_record.id, tag_group_id: tag_record.tag_group_id })
       }
     })
