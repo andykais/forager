@@ -40,9 +40,8 @@ class MediaActions extends Actions {
         this.models.MediaFile.delete({id: result.media_file.id}, {expected_deletes: 1})
         this.models.MediaKeypoint.delete({media_reference_id: result.media_reference.id})
         this.models.MediaSeriesItem.delete({media_reference_id: result.media_reference.id})
-        this.models.MediaReference.delete({id: result.media_reference.id}, {expected_deletes: 1})
-        // TODO return views in media_get and add an expected_deletes for them here
         this.models.View.delete({media_reference_id: result.media_reference.id})
+        this.models.MediaReference.delete({id: result.media_reference.id}, {expected_deletes: 1})
         await Deno.remove(result.media_file.thumbnail_directory_path, {recursive: true})
         this.ctx.logger.info(`Removed ${result.media_file.filepath} media with media reference id ${result.media_reference.id}`)
       } else {

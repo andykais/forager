@@ -10,7 +10,7 @@ import '../src/cli.ts'
 
 function forager_cli(strings: TemplateStringsArray, ...params: string[]) {
   const cli_entrypoint = path.join(path.resolve(import.meta.dirname!, '..'), 'src/cli.ts')
-  const forager_bin = `deno run --no-check -A --unstable-raw-imports ${$.escapeArg(cli_entrypoint)}`
+  const forager_bin = `deno run --check -A --unstable-raw-imports ${$.escapeArg(cli_entrypoint)}`
   let command_string = ''
   for (let index = 0; index < strings.length - 1; index++) {
     const string_part = strings[index]
@@ -78,24 +78,27 @@ test('cli basics', async ctx => {
   })
 
   // Set up additional test data for filter tests
-  // Update existing cat_doodle.jpg with stars and view_count
+  // Update existing cat_doodle.jpg with stars and title (view_count stays 0 = unread)
   forager.media.update(
     forager.media.get({filepath: ctx.resources.media_files['cat_doodle.jpg']}).media_reference.id,
-    {stars: 5, view_count: 0, title: 'cat drawing'}
+    {stars: 5, title: 'cat drawing'}
   )
 
-  // Update cat_cronch.mp4 to mark it as read (view_count > 0)
-  forager.media.update(
-    forager.media.get({filepath: ctx.resources.media_files['cat_cronch.mp4']}).media_reference.id,
-    {view_count: 1}
-  )
+  // Mark cat_cronch.mp4 as read by recording a view
+  forager.views.start({
+    media_reference_id: forager.media.get({filepath: ctx.resources.media_files['cat_cronch.mp4']}).media_reference.id,
+  })
 
   // Create koch.tif with different attributes
   await forager_cli`--config ${config_path} create ${ctx.resources.media_files['koch.tif']} --title "koch fractal" --tags=math`
   forager.media.update(
     forager.media.get({filepath: ctx.resources.media_files['koch.tif']}).media_reference.id,
-    {stars: 3, view_count: 1}
+    {stars: 3}
   )
+  // Mark koch.tif as read by recording a view
+  forager.views.start({
+    media_reference_id: forager.media.get({filepath: ctx.resources.media_files['koch.tif']}).media_reference.id,
+  })
 
   // Test stars filter with gte (default)
   await ctx.subtest('stars filter gte', async () => {
@@ -153,12 +156,10 @@ test('cli basics', async ctx => {
       ]
     })
 
+    // Images have duration = 0, so --duration-max 10 matches all media (images at 0s and video at ~7s)
     const result_max = await forager_cli`--json --config ${config_path} search --duration-max 10`.json()
     ctx.assert.search_result(result_max, {
-      total: 1,
-      results: [
-        {media_file: {filepath: ctx.resources.media_files['cat_cronch.mp4']}},
-      ]
+      total: 3,
     })
 
     const result_range = await forager_cli`--json --config ${config_path} search --duration-min 5 --duration-max 10`.json()
