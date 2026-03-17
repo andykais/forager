@@ -162,10 +162,16 @@ class Tag extends Model {
     let total = -1
     let has_contextual_query = false
     if (params.contextual_query) {
-      if (Object.keys(params.contextual_query)) {
-        if (params.contextual_query.tag_ids?.length !== 0) {
-          has_contextual_query = true
-        }
+      for (const [key, val] of Object.entries(params.contextual_query)) {
+        if (val === undefined) continue
+        if (key === 'limit') continue
+        if (key === 'cursor') continue
+        if (key === 'sort_by') continue
+        if (key === 'order') continue
+        if (key === 'cursor') continue
+        if (key === 'stars_equality') continue // without `stars` present, this field does nothing
+        if (key === 'tag_ids' && val ? val.length === 0 : false) continue // ignore an empty list of tag_ids
+        has_contextual_query = true
       }
     }
     if (has_contextual_query) {

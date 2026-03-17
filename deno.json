@@ -7,7 +7,7 @@
   ],
 
   "tasks": {
-    "develop": "deno task --cwd packages/web build:local && deno task --cwd packages/cli develop --config ~/.config/forager/forager.yml --log-level DEBUG gui",
+    "develop": "deno task --cwd packages/web build:local && deno task --cwd packages/cli develop --log-level DEBUG gui",
     "compile":       "deno task --cwd packages/web prepare && deno task --cwd packages/web build       && deno task --cwd packages/cli compile",
     "compile:local": "deno task --cwd packages/web prepare && deno task --cwd packages/web build:local && deno task --cwd packages/cli compile:os:linux"
   },
