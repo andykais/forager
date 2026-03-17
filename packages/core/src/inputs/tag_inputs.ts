@@ -14,9 +14,17 @@ const RESERVED = {
   ]
 }
 const TagValue = z.string()
-                  .regex(/[a-zA-Z0-9_ ]*/)
+                  .superRefine((val, ctx) => {
+                    if (val.includes(':')) {
+                      ctx.addIssue({
+                        code: 'custom',
+                        message: `'${val}' is invalid. Tag groups and tag names cannot contain the character ':'`,
+                        input: val,
+                      })
+                    }
+                  })
                   .transform(value => value.toLowerCase().replace(/ /g, '_'))
-const TagMatch = z.string().regex(/[a-zA-Z0-9_*]*/)
+const TagMatch = z.string().regex(/[a-zA-Z0-9_*-]*/)
 
 export const TagShorthand = z.string().transform(tag_str => {
   const tag_split = tag_str.split(':')
@@ -46,7 +54,7 @@ export const TagObject = z.object({
       })
     }
   }),
-  group: TagValue.optional().default('').superRefine((val, ctx) => {
+  group: TagValue.or(z.literal('')).optional().default('').superRefine((val, ctx) => {
     if (RESERVED.groups.includes(val)) {
       ctx.addIssue({
         code: 'custom',
