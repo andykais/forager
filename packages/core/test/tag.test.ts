@@ -440,7 +440,7 @@ test('tag parent', async (ctx) => {
       { slug: 'genre:animation' },
       { slug: 'genre:cartoon' },
       { slug: 'genre:fractal' },
-    ])
+    ], (a, b) => a.slug.localeCompare(b.slug))
   })
 
   await ctx.subtest('get shows parent/child relationships', () => {

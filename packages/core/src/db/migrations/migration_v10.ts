@@ -105,8 +105,7 @@ export class Migration extends torm.Migration {
       END
     `)
 
-    this.driver.exec(`COMMIT`)
-    this.driver.exec(`PRAGMA foreign_keys = ON`)
+    // we turned off foreign key constraints, so lets check that the foreign keys are correct inside the transaction
     this.driver.exec(`PRAGMA foreign_key_check`)
 
     console.log(`Creating tag_alias table`)
@@ -136,5 +135,8 @@ export class Migration extends torm.Migration {
     this.driver.exec(`CREATE UNIQUE INDEX tag_parent_pair ON tag_parent (child_tag_slug, parent_tag_slug)`)
     this.driver.exec(`CREATE INDEX tag_parent_child_slug ON tag_parent (child_tag_slug)`)
     this.driver.exec(`CREATE INDEX tag_parent_slug ON tag_parent (parent_tag_slug)`)
+
+    this.driver.exec(`COMMIT`)
+    this.driver.exec(`PRAGMA foreign_keys = ON`)
   }
 }
