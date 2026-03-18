@@ -58,6 +58,7 @@ class Database {
       throw new Error(`Version mismatch: Forager app version is ${this.#torm.migrations.application_version()}, while the database version is currently ${init_info.current_version}. Consider turning on automatic migrations, or manually migrating the database`)
     }
     this.#torm.driver.exec(`PRAGMA journal_mode=WAL`)
+    this.#torm.driver.exec(`PRAGMA busy_timeout=${this.#ctx.config.database.busy_timeout}`)
     return init_info
   }
 
@@ -72,7 +73,7 @@ class Database {
 
   public transaction_sync = <T>(fn: () => T) => (): T => {
     try {
-      this.#torm.driver.exec('BEGIN TRANSACTION')
+      this.#torm.driver.exec('BEGIN IMMEDIATE')
       const result = fn()
       this.#torm.driver.exec('COMMIT')
       return result
@@ -84,12 +85,11 @@ class Database {
 
   public transaction_async = <T>(fn: () => Promise<T>) => async (): Promise<T> => {
     try {
-      this.#torm.driver.exec('BEGIN TRANSACTION')
+      this.#torm.driver.exec('BEGIN IMMEDIATE')
       const result = await fn()
       this.#torm.driver.exec('COMMIT')
       return result
     } catch(e) {
-      console.log(e)
       this.#torm.driver.exec('ROLLBACK')
       throw e
     }
