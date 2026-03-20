@@ -265,36 +265,73 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
     }
   }
 
+  /** Create or get a tag record. Does not resolve aliases or parents. */
   protected tag_create(tag: z.output<typeof parsers.Tag>) {
     const group = tag.group ?? ''
     const color = get_hash_color(group, 'hsl')
     const tag_group = this.models.TagGroup.get_or_create({ name: group, color })!
-    const tag_record = this.models.Tag.get_or_create({ name: tag.name, tag_group_id: tag_group.id, slug: tag.slug, description: tag.description, metadata: tag.metadata })
+    return this.models.Tag.get_or_create({ name: tag.name, tag_group_id: tag_group.id, slug: tag.slug, description: tag.description, metadata: tag.metadata })
+  }
+
+  /**
+   * Add a tag to a media reference, resolving aliases and propagating parent tags.
+   * Returns the resolved tag record (canonical if alias was resolved).
+   */
+  protected media_add_tag(media_reference_id: number, tag: z.output<typeof parsers.Tag>, editor?: string) {
+    const tag_record = this.tag_create(tag)
+
+    // alias resolution: if this tag is an alias, use the canonical tag instead
+    let resolved_tag_id = tag_record.id
+    let resolved_tag_group_id = tag_record.tag_group_id
+    let resolved_slug = tag.slug
+    let tag_alias_id: number | null = null
 
     const alias = this.models.TagAlias.select_by_alias({ alias_tag_slug: tag.slug })
     if (alias) {
       const canonical = this.models.Tag.select_one({ slug: alias.alias_for_tag_slug })
-      if (canonical) return canonical
+      if (canonical) {
+        resolved_tag_id = canonical.id
+        resolved_tag_group_id = canonical.tag_group_id
+        resolved_slug = canonical.slug
+        tag_alias_id = alias.id
+      }
     }
 
-    return tag_record
-  }
+    this.models.MediaReferenceTag.get_or_create({
+      media_reference_id,
+      tag_id: resolved_tag_id,
+      tag_group_id: resolved_tag_group_id,
+      editor,
+      tag_alias_id,
+      tag_parent_id: null,
+    })
 
-  /** Collect all parent tag slugs that should be applied for a set of tag slugs. */
-  protected resolve_parent_tags(tag_slugs: string[]): string[] {
-    const all_parents = new Set<string>()
-    const queue = [...tag_slugs]
+    // parent propagation: walk the parent chain and add each parent tag
+    const visited = new Set<string>([resolved_slug])
+    const queue = [resolved_slug]
     while (queue.length > 0) {
       const current = queue.pop()!
-      const parents = this.models.TagParent.select_parents({ child_tag_slug: current })
-      for (const parent of parents) {
-        if (!all_parents.has(parent.parent_tag_slug) && !tag_slugs.includes(parent.parent_tag_slug)) {
-          all_parents.add(parent.parent_tag_slug)
-          queue.push(parent.parent_tag_slug)
+      const parent_rules = this.models.TagParent.select_parents({ child_tag_slug: current })
+      for (const rule of parent_rules) {
+        if (visited.has(rule.parent_tag_slug)) continue
+        visited.add(rule.parent_tag_slug)
+
+        const parent_tag = this.models.Tag.select_one({ slug: rule.parent_tag_slug })
+        if (parent_tag) {
+          this.models.MediaReferenceTag.get_or_create({
+            media_reference_id,
+            tag_id: parent_tag.id,
+            tag_group_id: parent_tag.tag_group_id,
+            editor,
+            tag_alias_id: null,
+            tag_parent_id: rule.id,
+          })
+          queue.push(rule.parent_tag_slug)
         }
       }
     }
-    return [...all_parents]
+
+    return this.models.Tag.select_one({ id: resolved_tag_id }, { or_raise: true })
   }
 
   protected get_media_file_result(params: {
@@ -336,22 +373,20 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
       }
 
       for (const tag of tags.replace) {
-        const tag_record = this.tag_create(tag)
-        this.models.MediaReferenceTag.get_or_create({ media_reference_id: media_reference_id, tag_id: tag_record.id, tag_group_id: tag_record.tag_group_id, editor })
+        const resolved = this.media_add_tag(media_reference_id, tag, editor)
 
         tags_removed.delete(this.models.Tag.format_slug(tag))
         if (!tags_existing.has(tag.slug)) {
-          tags_added.add(this.models.Tag.format_slug(tag))
+          tags_added.add(resolved.slug)
         }
       }
     }
 
     for (const tag of tags.add) {
-      const tag_record = this.tag_create(tag)
-      this.models.MediaReferenceTag.get_or_create({ media_reference_id: media_reference_id, tag_id: tag_record.id, tag_group_id: tag_record.tag_group_id, editor })
+      const resolved = this.media_add_tag(media_reference_id, tag, editor)
       if (!tags_existing.has(tag.slug)) {
         tags_removed.delete(tag.slug)
-        tags_added.add(tag.slug)
+        tags_added.add(resolved.slug)
       }
     }
 
@@ -359,25 +394,6 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
       const tag_record = this.models.Tag.select_one({name: tag.name, group: tag.group }, {or_raise: true})
       this.models.MediaReferenceTag.delete({ media_reference_id: media_reference_id, tag_id: tag_record.id })
       tags_removed.add(tag.slug)
-    }
-
-    const applied_slugs = [...tags_existing.keys()]
-      .filter(slug => !tags_removed.has(slug))
-      .concat([...tags_added])
-    const parent_slugs = this.resolve_parent_tags(applied_slugs)
-    for (const parent_slug of parent_slugs) {
-      const parent_tag = this.models.Tag.select_one({ slug: parent_slug })
-      if (parent_tag) {
-        this.models.MediaReferenceTag.get_or_create({
-          media_reference_id,
-          tag_id: parent_tag.id,
-          tag_group_id: parent_tag.tag_group_id,
-          editor,
-        })
-        if (!tags_existing.has(parent_slug)) {
-          tags_added.add(parent_slug)
-        }
-      }
     }
 
     if (this.ctx.config.tags.auto_cleanup) {

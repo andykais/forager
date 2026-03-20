@@ -617,3 +617,110 @@ test('tag rules respected during media operations', async (ctx) => {
     ctx.assert.list_includes(tag_slugs, ['style:pixel_art', 'style:digital'])
   })
 })
+
+
+test('tag rule undo', async (ctx) => {
+  using forager = new Forager(ctx.get_test_config())
+  forager.init()
+
+  await forager.media.create(ctx.resources.media_files['koch.tif'], {}, ['animal:cat'])
+  await forager.media.create(ctx.resources.media_files['ed-edd-eddy.png'], {}, ['animal:kitty'])
+  await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {}, ['genre:cartoon', 'genre:animation'])
+
+  await ctx.subtest('alias_delete undoes media_reference_tag changes', () => {
+    const cat_before = forager.tag.get({ slug: 'animal:cat' })
+    ctx.assert.equals(cat_before.tag.media_reference_count, 1)
+
+    const result = forager.tag.alias_create({ alias_tag: 'animal:kitty', alias_for_tag: 'animal:cat' })
+    ctx.assert.object_match(forager.tag.get({ slug: 'animal:cat' }).tag, { media_reference_count: 2 })
+
+    forager.tag.alias_delete({ id: result.rule.id })
+    ctx.assert.object_match(forager.tag.get({ slug: 'animal:cat' }).tag, { media_reference_count: 1 })
+  })
+
+  await ctx.subtest('parent_delete undoes media_reference_tag changes', () => {
+    // cat_doodle has cartoon and animation. Create parent rule cartoon->animation.
+    // animation is already on cat_doodle so get_or_create is a no-op for that media.
+    // But koch.tif doesn't have cartoon, so nothing propagates there.
+    const animation_before = forager.tag.get({ slug: 'genre:animation' })
+    ctx.assert.equals(animation_before.tag.media_reference_count, 1)
+
+    // add cartoon to koch.tif so the parent rule propagates animation to it
+    forager.media.update(
+      forager.media.search().results.find(r => r.media_type === 'media_file' && r.media_file.filename === 'koch.tif')!.media_reference.id,
+      {}, { add: ['genre:cartoon'] }
+    )
+
+    const result = forager.tag.parent_create({ child_tag: 'genre:cartoon', parent_tag: 'genre:animation' })
+    // animation should now be on koch.tif too (from the parent rule)
+    ctx.assert.object_match(forager.tag.get({ slug: 'genre:animation' }).tag, { media_reference_count: 2 })
+
+    forager.tag.parent_delete({ id: result.rule.id })
+    // only the rule-created row (koch.tif) should be removed; cat_doodle's manual animation stays
+    ctx.assert.object_match(forager.tag.get({ slug: 'genre:animation' }).tag, { media_reference_count: 1 })
+  })
+
+  await ctx.subtest('alias_delete does not remove manually-added tags', () => {
+    const cat_doodle = forager.media.search().results.find(r => r.media_type === 'media_file' && r.media_file.filename === 'cat_doodle.jpg')!
+    const ed = forager.media.search().results.find(r => r.media_type === 'media_file' && r.media_file.filename === 'ed-edd-eddy.png')!
+
+    // restore kitty on ed-edd-eddy (lost from subtest 1's undo)
+    forager.media.update(ed.media_reference.id, {}, { add: ['animal:kitty'] })
+    // manually add animal:cat to cat_doodle (no rule involved)
+    forager.media.update(cat_doodle.media_reference.id, {}, { add: ['animal:cat'] })
+
+    const cat_count_before = forager.tag.get({ slug: 'animal:cat' }).tag.media_reference_count
+
+    // create alias kitty->cat, migrating ed-edd-eddy's kitty to cat
+    const result = forager.tag.alias_create({ alias_tag: 'animal:kitty', alias_for_tag: 'animal:cat' })
+    ctx.assert.equals(
+      forager.tag.get({ slug: 'animal:cat' }).tag.media_reference_count,
+      cat_count_before + 1,
+    )
+
+    // delete the alias — should only undo the rule-created row, not the manual one
+    forager.tag.alias_delete({ id: result.rule.id })
+    ctx.assert.equals(
+      forager.tag.get({ slug: 'animal:cat' }).tag.media_reference_count,
+      cat_count_before,
+    )
+  })
+
+  await ctx.subtest('media.create with alias tracks tag_alias_id', async () => {
+    const ed = forager.media.search().results.find(r => r.media_type === 'media_file' && r.media_file.filename === 'ed-edd-eddy.png')!
+    forager.media.update(ed.media_reference.id, {}, { add: ['animal:kitty'] })
+
+    const alias_result = forager.tag.alias_create({ alias_tag: 'animal:kitty', alias_for_tag: 'animal:cat' })
+
+    const cat_before = forager.tag.get({ slug: 'animal:cat' }).tag.media_reference_count
+
+    // create media with the alias tag — should resolve to cat via alias
+    const media = await forager.media.create(ctx.resources.media_files['blink.gif'], {}, ['animal:kitty'])
+    ctx.assert.list_partial(media.tags, [{ name: 'cat', group: 'animal' }])
+    ctx.assert.equals(forager.tag.get({ slug: 'animal:cat' }).tag.media_reference_count, cat_before + 1)
+
+    // delete the alias rule — removes ALL rows created by this alias (migration + media.create)
+    forager.tag.alias_delete({ id: alias_result.rule.id })
+
+    // cat_before included the migrated ed-edd-eddy row, so count drops below cat_before
+    ctx.assert.equals(forager.tag.get({ slug: 'animal:cat' }).tag.media_reference_count, cat_before - 1)
+  })
+
+  await ctx.subtest('media.update with parent tracks tag_parent_id', () => {
+    const ed = forager.media.search().results.find(r => r.media_type === 'media_file' && r.media_file.filename === 'ed-edd-eddy.png')!
+    const media_ref_id = ed.media_reference.id
+
+    // use tags that already exist in the DB
+    const result = forager.tag.parent_create({ child_tag: 'genre:cartoon', parent_tag: 'genre:animation' })
+    forager.media.update(media_ref_id, {}, { add: ['genre:cartoon'] })
+
+    const updated = forager.media.get({ media_reference_id: media_ref_id })
+    ctx.assert.list_includes(updated.tags.map(t => t.slug), ['genre:animation'])
+
+    // delete the parent rule — animation should be removed from ed-edd-eddy
+    forager.tag.parent_delete({ id: result.rule.id })
+
+    const after = forager.media.get({ media_reference_id: media_ref_id })
+    ctx.assert.equals(after.tags.map(t => t.slug).includes('genre:animation'), false)
+  })
+})
