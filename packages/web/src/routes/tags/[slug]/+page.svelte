@@ -136,19 +136,19 @@
             }
           }}>
             <div class="flex-grow">
-              <label class="text-slate-400 text-xs">Set a tag as alias for this one</label>
+              <label class="text-slate-400 text-xs">Set this tag as an alias for the following</label>
               <TagAutoCompleteInput
                 {controller}
                 bind:search_string={alias_input}
                 kind="details"
-                placeholder="tag to alias..."
+                placeholder="set alias for this tag..."
                 input_classes="w-full rounded-md py-1 px-3 text-slate-100 bg-gray-800 text-sm"
               />
             </div>
             <button
               type="submit"
               class="rounded-md px-3 py-1 bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm shrink-0"
-            >Add Alias</button>
+            >Alias This Tag</button>
           </form>
         </section>
 

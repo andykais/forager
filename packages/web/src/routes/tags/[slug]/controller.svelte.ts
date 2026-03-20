@@ -72,8 +72,8 @@ class TagDetailController extends BaseController {
   async alias_create(alias_tag_str: string) {
     if (!this.detail) return
     await this.client.forager.tag.alias_create({
-      alias_tag: alias_tag_str,
-      alias_for_tag: this.detail.tag.slug,
+      alias_tag: this.detail.tag.slug,
+      alias_for_tag: alias_tag_str,
     })
     await this.load(this.detail.tag.slug)
   }
