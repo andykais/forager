@@ -4,7 +4,7 @@ import { migrations, sql, TIMESTAMP_SQLITE, TIMESTAMP_COLUMN, TIMESTAMP_COLUMN_O
 
 @migrations.register()
 export class Migration extends torm.SeedMigration {
-  version = 9
+  version = 11
 
   sql = sql`
     CREATE TABLE media_file (
@@ -128,12 +128,16 @@ export class Migration extends torm.SeedMigration {
       tag_id INTEGER NOT NULL,
       editor TEXT,
       tag_group_id INTEGER NOT NULL,
+      tag_alias_id INTEGER,
+      tag_parent_id INTEGER,
       updated_at ${TIMESTAMP_COLUMN},
       created_at ${TIMESTAMP_COLUMN},
 
       PRIMARY KEY (media_reference_id, tag_id),
       FOREIGN KEY (media_reference_id) REFERENCES media_reference(id),
-      FOREIGN KEY (tag_id) REFERENCES tag(id)
+      FOREIGN KEY (tag_id) REFERENCES tag(id),
+      FOREIGN KEY (tag_alias_id) REFERENCES tag_alias(id),
+      FOREIGN KEY (tag_parent_id) REFERENCES tag_parent(id)
     );
 
 
@@ -143,8 +147,7 @@ export class Migration extends torm.SeedMigration {
       id INTEGER PRIMARY KEY NOT NULL,
       name TEXT NOT NULL,
       tag_group_id INTEGER NOT NULL,
-      -- some tags will just be aliases for others. We have to be careful not to have cyclical references here
-      alias_tag_id INTEGER,
+      slug TEXT NOT NULL,
       description TEXT,
       metadata JSON,
       updated_at ${TIMESTAMP_COLUMN},
@@ -153,8 +156,24 @@ export class Migration extends torm.SeedMigration {
       media_reference_count INTEGER NOT NULL DEFAULT 0,
       unread_media_reference_count INTEGER NOT NULL DEFAULT 0,
 
-      FOREIGN KEY (alias_tag_id) REFERENCES tag(id),
       FOREIGN KEY (tag_group_id) REFERENCES tag_group(id)
+    );
+
+
+    CREATE TABLE tag_alias (
+      id INTEGER PRIMARY KEY NOT NULL,
+      alias_tag_slug TEXT NOT NULL,
+      alias_for_tag_slug TEXT NOT NULL,
+      updated_at ${TIMESTAMP_COLUMN},
+      created_at ${TIMESTAMP_COLUMN}
+    );
+
+    CREATE TABLE tag_parent (
+      id INTEGER PRIMARY KEY NOT NULL,
+      child_tag_slug TEXT NOT NULL,
+      parent_tag_slug TEXT NOT NULL,
+      updated_at ${TIMESTAMP_COLUMN},
+      created_at ${TIMESTAMP_COLUMN}
     );
 
 
@@ -264,6 +283,13 @@ export class Migration extends torm.SeedMigration {
     CREATE UNIQUE INDEX media_series_name ON media_reference (media_series_name) WHERE media_series_name IS NOT NULL;
     CREATE UNIQUE INDEX media_series_index ON media_series_item (media_reference_id, series_index);
     CREATE UNIQUE INDEX tag_name ON tag (name, tag_group_id);
+    CREATE UNIQUE INDEX tag_slug ON tag (slug);
+    CREATE UNIQUE INDEX tag_alias_pair ON tag_alias (alias_tag_slug, alias_for_tag_slug);
+    CREATE INDEX tag_alias_slug ON tag_alias (alias_tag_slug);
+    CREATE INDEX tag_alias_for_slug ON tag_alias (alias_for_tag_slug);
+    CREATE UNIQUE INDEX tag_parent_pair ON tag_parent (child_tag_slug, parent_tag_slug);
+    CREATE INDEX tag_parent_child_slug ON tag_parent (child_tag_slug);
+    CREATE INDEX tag_parent_slug ON tag_parent (parent_tag_slug);
     CREATE UNIQUE INDEX media_file_reference ON media_file (media_reference_id);
     CREATE UNIQUE INDEX media_filepath ON media_file (filepath);
     CREATE INDEX media_reference_edit_log ON edit_log (media_reference_id, created_at);
