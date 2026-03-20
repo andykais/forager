@@ -4,7 +4,7 @@ import { migrations, sql, TIMESTAMP_SQLITE, TIMESTAMP_COLUMN, TIMESTAMP_COLUMN_O
 
 @migrations.register()
 export class Migration extends torm.SeedMigration {
-  version = 10
+  version = 11
 
   sql = sql`
     CREATE TABLE media_file (
@@ -128,12 +128,16 @@ export class Migration extends torm.SeedMigration {
       tag_id INTEGER NOT NULL,
       editor TEXT,
       tag_group_id INTEGER NOT NULL,
+      tag_alias_id INTEGER,
+      tag_parent_id INTEGER,
       updated_at ${TIMESTAMP_COLUMN},
       created_at ${TIMESTAMP_COLUMN},
 
       PRIMARY KEY (media_reference_id, tag_id),
       FOREIGN KEY (media_reference_id) REFERENCES media_reference(id),
-      FOREIGN KEY (tag_id) REFERENCES tag(id)
+      FOREIGN KEY (tag_id) REFERENCES tag(id),
+      FOREIGN KEY (tag_alias_id) REFERENCES tag_alias(id),
+      FOREIGN KEY (tag_parent_id) REFERENCES tag_parent(id)
     );
 
 
