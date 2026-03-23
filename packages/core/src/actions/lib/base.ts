@@ -306,7 +306,10 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
       tag_parent_id: null,
     })
 
-    // parent propagation: walk the parent chain and add each parent tag
+    // parent propagation: walk the parent chain and add each parent tag.
+    // NOTE: parent resolution does not resolve aliases on parent tags. A parent
+    // slug is looked up directly — if the parent tag itself is an alias, it won't
+    // be resolved to its canonical form. This is an intentional simplification.
     const visited = new Set<string>([resolved_slug])
     const queue = [resolved_slug]
     while (queue.length > 0) {

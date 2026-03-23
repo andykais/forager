@@ -195,14 +195,14 @@ class TagActions extends Actions {
         alias_tag_slug: alias_slug,
         alias_for_tag_slug: alias_for_slug,
       })
+      const rule = this.models.TagAlias.select_one({ id }, { or_raise: true })
 
-      this.#apply_alias_to_existing_media(alias_slug, alias_for_slug, id)
+      this.#apply_alias_to_existing_media(rule)
 
-      return id
+      return rule
     })
 
-    const rule_id = transaction()
-    const rule = this.models.TagAlias.select_one({ id: rule_id }, { or_raise: true })
+    const rule = transaction()
     const alias_tag = this.models.Tag.select_one({ slug: alias_slug })
     const alias_for_tag = this.models.Tag.select_one({ slug: alias_for_slug }, { or_raise: true })
 
@@ -220,8 +220,11 @@ class TagActions extends Actions {
   alias_delete = (params: inputs.TagAliasDelete): void => {
     const parsed = parsers.TagAliasDelete.parse(params)
     this.models.TagAlias.select_one({ id: parsed.id }, { or_raise: true })
-    this.models.MediaReferenceTag.delete_by_tag_alias_id({ tag_alias_id: parsed.id })
-    this.models.TagAlias.delete({ id: parsed.id }, { expected_deletes: 1 })
+    const transaction = this.ctx.db.transaction_sync(() => {
+      this.models.MediaReferenceTag.delete_by_tag_alias_id({ tag_alias_id: parsed.id })
+      this.models.TagAlias.delete({ id: parsed.id }, { expected_deletes: 1 })
+    })
+    transaction()
   }
 
   /**
@@ -245,14 +248,14 @@ class TagActions extends Actions {
         child_tag_slug: child_slug,
         parent_tag_slug: parent_slug,
       })
+      const rule = this.models.TagParent.select_one({ id }, { or_raise: true })
 
-      this.#apply_parent_to_existing_media(child_slug, parent_slug, id)
+      this.#apply_parent_to_existing_media(rule)
 
-      return id
+      return rule
     })
 
-    const rule_id = transaction()
-    const rule = this.models.TagParent.select_one({ id: rule_id }, { or_raise: true })
+    const rule = transaction()
     const child_tag = this.models.Tag.select_one({ slug: child_slug })
     const parent_tag = this.models.Tag.select_one({ slug: parent_slug }, { or_raise: true })
 
@@ -270,8 +273,11 @@ class TagActions extends Actions {
   parent_delete = (params: inputs.TagParentDelete): void => {
     const parsed = parsers.TagParentDelete.parse(params)
     this.models.TagParent.select_one({ id: parsed.id }, { or_raise: true })
-    this.models.MediaReferenceTag.delete_by_tag_parent_id({ tag_parent_id: parsed.id })
-    this.models.TagParent.delete({ id: parsed.id }, { expected_deletes: 1 })
+    const transaction = this.ctx.db.transaction_sync(() => {
+      this.models.MediaReferenceTag.delete_by_tag_parent_id({ tag_parent_id: parsed.id })
+      this.models.TagParent.delete({ id: parsed.id }, { expected_deletes: 1 })
+    })
+    transaction()
   }
 
   /** Build a TagDetail response for a given tag record. */
@@ -300,11 +306,11 @@ class TagActions extends Actions {
    * Migrate media_reference_tag rows from the alias tag to the canonical tag.
    * Uses delete + get_or_create to properly trigger count updates.
    */
-  #apply_alias_to_existing_media(alias_slug: string, canonical_slug: string, alias_rule_id: number) {
-    const alias_tag = this.models.Tag.select_one({ slug: alias_slug })
+  #apply_alias_to_existing_media(alias_rule: result_types.TagAlias) {
+    const alias_tag = this.models.Tag.select_one({ slug: alias_rule.alias_tag_slug })
     if (!alias_tag || alias_tag.media_reference_count === 0) return
 
-    const canonical_tag = this.models.Tag.select_one({ slug: canonical_slug })
+    const canonical_tag = this.models.Tag.select_one({ slug: alias_rule.alias_for_tag_slug })
     if (!canonical_tag) return
 
     const alias_rows = this.models.MediaReferenceTag.select_all_by_tag_id({ tag_id: alias_tag.id })
@@ -315,7 +321,7 @@ class TagActions extends Actions {
         tag_id: canonical_tag.id,
         tag_group_id: canonical_tag.tag_group_id,
         editor: row.editor,
-        tag_alias_id: alias_rule_id,
+        tag_alias_id: alias_rule.id,
         tag_parent_id: null,
       })
     }
@@ -325,11 +331,11 @@ class TagActions extends Actions {
    * When a parent rule is created, add the parent tag to all media references
    * that currently have the child tag.
    */
-  #apply_parent_to_existing_media(child_slug: string, parent_slug: string, parent_rule_id: number) {
-    const child_tag = this.models.Tag.select_one({ slug: child_slug })
+  #apply_parent_to_existing_media(parent_rule: result_types.TagParent) {
+    const child_tag = this.models.Tag.select_one({ slug: parent_rule.child_tag_slug })
     if (!child_tag || child_tag.media_reference_count === 0) return
 
-    const parent_tag = this.models.Tag.select_one({ slug: parent_slug })
+    const parent_tag = this.models.Tag.select_one({ slug: parent_rule.parent_tag_slug })
     if (!parent_tag) return
 
     const child_rows = this.models.MediaReferenceTag.select_all_by_tag_id({ tag_id: child_tag.id })
@@ -340,7 +346,7 @@ class TagActions extends Actions {
         tag_group_id: parent_tag.tag_group_id,
         editor: row.editor,
         tag_alias_id: null,
-        tag_parent_id: parent_rule_id,
+        tag_parent_id: parent_rule.id,
       })
     }
   }

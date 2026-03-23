@@ -80,8 +80,8 @@ export class Migration extends torm.Migration {
       END
     `)
 
+    this.driver.exec(`PRAGMA foreign_key_check`)
     this.driver.exec(`COMMIT`)
     this.driver.exec(`PRAGMA foreign_keys = ON`)
-    this.driver.exec(`PRAGMA foreign_key_check`)
   }
 }
