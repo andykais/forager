@@ -25,13 +25,19 @@ class TagDetailController extends BaseController {
     description: '',
   })
 
-  public constructor(config: Config) {
+  alias_input: string = $state('')
+  child_input: string = $state('')
+  parent_input: string = $state('')
+
+  public constructor(config: Config, slug: string) {
     super(config)
 
     this.runes = {
       focus: create_focuser(),
       settings: new SettingsRune(this.client, this.config),
     }
+
+    this.load(slug)
   }
 
   async load(slug: string) {
