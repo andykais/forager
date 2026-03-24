@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from '$app/state'
-  import { onMount } from 'svelte'
   import Header from '$lib/components/Header.svelte'
   import Tag from '$lib/components/Tag.svelte'
   import Datetime from '$lib/components/Datetime.svelte'
@@ -17,7 +16,7 @@
   let child_input = $state('')
   let parent_input = $state('')
 
-  onMount(() => {
+  $effect(() => {
     const slug = decodeURIComponent(page.params.slug)
     controller.load(slug)
   })
