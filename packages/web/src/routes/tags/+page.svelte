@@ -5,6 +5,7 @@
   import { TagsController } from './controller.ts'
   import Header from '$lib/components/Header.svelte'
 
+	/** @type {import('./$types').PageProps} */
   let props = $props()
   const controller = new TagsController(props.data.config)
 </script>

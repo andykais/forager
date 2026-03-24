@@ -3,8 +3,8 @@
   import Datetime from '$lib/components/Datetime.svelte'
   import Scroller from '$lib/components/Scroller.svelte'
   import type { TagsController } from '../controller.ts'
-    import { goto } from '$app/navigation';
-    import Numeric from '$lib/components/Numeric.svelte';
+  import { goto } from '$app/navigation';
+  import Numeric from '$lib/components/Numeric.svelte';
 
   let { controller }: { controller: TagsController } = $props()
   const { queryparams } = controller.runes

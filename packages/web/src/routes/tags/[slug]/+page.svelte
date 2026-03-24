@@ -8,6 +8,7 @@
   import { XCircle } from '$lib/icons/mod.ts'
   import TagAutoCompleteInput from '$lib/components/TagAutoCompleteInput.svelte'
   import { TagDetailController } from './controller.svelte.ts'
+  import Numeric from '$lib/components/Numeric.svelte';
 
   let props = $props()
   const controller = new TagDetailController(props.data.config)
@@ -69,9 +70,9 @@
                 bind:value={controller.draft.description}
               ></textarea>
               <label class="text-slate-400 text-sm">Media</label>
-              <span class="text-slate-300 text-sm">{controller.detail.tag.media_reference_count}</span>
+              <span class="text-slate-300 text-sm"><Numeric number={controller.detail.tag.media_reference_count} /></span>
               <label class="text-slate-400 text-sm">Unread</label>
-              <span class="text-slate-300 text-sm">{controller.detail.tag.unread_media_reference_count}</span>
+              <span class="text-slate-300 text-sm"><Numeric number={controller.detail.tag.unread_media_reference_count} /></span>
               <label class="text-slate-400 text-sm">Created</label>
               <Datetime value={controller.detail.tag.created_at} class="text-slate-300 text-sm" />
             </div>
@@ -94,9 +95,9 @@
 
           {#if controller.detail.alias_for}
             <div class="mb-3 p-2 rounded-md bg-gray-700">
-              <span class="text-slate-400 text-sm">This tag is an alias for:</span>
+              <span class="text-slate-400 text-sm">This tag is hidden as an alias for:</span>
               <div class="flex items-center gap-2 mt-1">
-                <a href="/tags/{controller.detail.alias_for.slug}" class="hover:underline">
+                <a href="/tags/{controller.detail.alias_for.slug}" class="hover:underline flex-grow">
                   <Tag tag={controller.detail.alias_for} />
                 </a>
                 <button
@@ -140,7 +141,7 @@
             }
           }}>
             <div class="flex-grow">
-              <label class="text-slate-400 text-xs">Set this tag as an alias for the following</label>
+              <label class="text-slate-400 text-xs">Set this tag as an alias that hides the following tags:</label>
               <TagAutoCompleteInput
                 {controller}
                 bind:search_string={alias_input}
