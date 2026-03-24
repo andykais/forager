@@ -1,5 +1,5 @@
 import * as torm from '@torm/sqlite'
-import { Model, field } from '~/models/lib/base.ts'
+import { Model, field, PaginationVars } from '~/models/lib/base.ts'
 import { Tag } from '~/models/tag.ts'
 import { TagGroup } from "./tag_group.ts";
 
@@ -45,8 +45,12 @@ class TagAlias extends Model {
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
     WHERE alias_for_tag_slug = ${TagAlias.params.alias_for_tag_slug}`
 
-  #select_by_alias_for = this.query`
-    SELECT ${TagAlias.result['*']} FROM tag_alias
+  #count_by_alias = this.query`
+    SELECT COUNT(1) AS ${PaginationVars.result.total} FROM tag_alias
+    WHERE alias_tag_slug = ${TagAlias.params.alias_tag_slug}`
+
+  #count_by_alias_for = this.query`
+    SELECT COUNT(1) AS ${PaginationVars.result.total} FROM tag_alias
     WHERE alias_for_tag_slug = ${TagAlias.params.alias_for_tag_slug}`
 
   #update_alias_slug = this.query.exec`
@@ -76,10 +80,14 @@ class TagAlias extends Model {
     return this.#select_by_alias_for_with_tags.all(params)
   }
 
-  /** Get all alias rules pointing to a canonical tag */
-  // NOTE this should change to a count
-  public select_all_by_alias_for(params: { alias_for_tag_slug: string }) {
-    return this.#select_by_alias_for.all(params)
+  /** Count alias rules where this tag is the alias */
+  public count_by_alias(params: { alias_tag_slug: string }): number {
+    return this.#count_by_alias.one(params)!.total
+  }
+
+  /** Count alias rules pointing to a canonical tag */
+  public count_by_alias_for(params: { alias_for_tag_slug: string }): number {
+    return this.#count_by_alias_for.one(params)!.total
   }
 
   /** Rename a slug across all alias rows where it appears as the alias */

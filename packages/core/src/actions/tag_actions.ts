@@ -98,13 +98,11 @@ class TagActions extends Actions {
     })
 
     const results: TagSearchResultItem[] = paginated.results.map(tag => {
-      const aliases_for_this = this.models.TagAlias.select_all_by_alias_for({ alias_for_tag_slug: tag.slug })
-      const this_is_alias = this.models.TagAlias.select_by_alias({ alias_tag_slug: tag.slug })
-      const parents = this.models.TagParent.select_parents({ child_tag_slug: tag.slug })
       return {
         ...tag,
-        alias_count: aliases_for_this.length + (this_is_alias ? 1 : 0),
-        parent_count: parents.length,
+        alias_count: this.models.TagAlias.count_by_alias_for({ alias_for_tag_slug: tag.slug })
+                   + this.models.TagAlias.count_by_alias({ alias_tag_slug: tag.slug }),
+        parent_count: this.models.TagParent.count_parents({ child_tag_slug: tag.slug }),
       }
     })
 
@@ -142,11 +140,12 @@ class TagActions extends Actions {
         throw new errors.BadInputError(`Tag with slug '${new_slug}' already exists (id: ${existing.id})`)
       }
 
-      const has_alias = this.models.TagAlias.select_by_alias({ alias_tag_slug: tag.slug })
-      const has_aliases_for = this.models.TagAlias.select_all_by_alias_for({ alias_for_tag_slug: tag.slug })
-      const has_parents = this.models.TagParent.select_parents({ child_tag_slug: tag.slug })
-      const has_children = this.models.TagParent.select_children({ parent_tag_slug: tag.slug })
-      if (has_alias || has_aliases_for.length || has_parents.length || has_children.length) {
+      const has_rules =
+        this.models.TagAlias.count_by_alias({ alias_tag_slug: tag.slug }) > 0
+        || this.models.TagAlias.count_by_alias_for({ alias_for_tag_slug: tag.slug }) > 0
+        || this.models.TagParent.count_parents({ child_tag_slug: tag.slug }) > 0
+        || this.models.TagParent.count_children({ parent_tag_slug: tag.slug }) > 0
+      if (has_rules) {
         throw new errors.BadInputError(`Cannot rename tag '${tag.slug}' because it has existing tag rules. Remove the rules first.`)
       }
     }

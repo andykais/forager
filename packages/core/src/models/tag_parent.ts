@@ -1,5 +1,5 @@
 import * as torm from '@torm/sqlite'
-import { Model, field } from '~/models/lib/base.ts'
+import { Model, field, PaginationVars } from '~/models/lib/base.ts'
 import { Tag, TagGroup } from "~/models/mod.ts";
 
 
@@ -28,10 +28,6 @@ class TagParent extends Model {
     SELECT ${TagParent.result['*']} FROM tag_parent
     WHERE id = ${TagParent.params.id}`
 
-  #select_children = this.query`
-    SELECT ${TagParent.result['*']} FROM tag_parent
-    WHERE parent_tag_slug = ${TagParent.params.parent_tag_slug}`
-
   #select_children_with_tags = this.query`
     SELECT ${Tag.result['*']}, ${TagGroup.result.color}, ${TagGroup.result.name.as('group')}, ${TagParent.result.id.as('rule_id')} FROM tag_parent
     INNER JOIN tag ON tag.slug = tag_parent.child_tag_slug
@@ -48,6 +44,14 @@ class TagParent extends Model {
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
     WHERE child_tag_slug = ${TagParent.params.child_tag_slug}`
 
+  #count_children = this.query`
+    SELECT COUNT(1) AS ${PaginationVars.result.total} FROM tag_parent
+    WHERE parent_tag_slug = ${TagParent.params.parent_tag_slug}`
+
+  #count_parents = this.query`
+    SELECT COUNT(1) AS ${PaginationVars.result.total} FROM tag_parent
+    WHERE child_tag_slug = ${TagParent.params.child_tag_slug}`
+
   #update_child_slug = this.query.exec`
     UPDATE tag_parent SET child_tag_slug = ${TagParent.params.child_tag_slug}
     WHERE child_tag_slug = ${TagParent.params.parent_tag_slug}`
@@ -62,9 +66,14 @@ class TagParent extends Model {
 
   public select_one = this.select_one_fn(this.#select_by_id.one)
 
-  /** Get child tag slugs for a parent */
-  public select_children(params: { parent_tag_slug: string }) {
-    return this.#select_children.all(params)
+  /** Count child tags for a parent */
+  public count_children(params: { parent_tag_slug: string }): number {
+    return this.#count_children.one(params)!.total
+  }
+
+  /** Count parent tags for a child */
+  public count_parents(params: { child_tag_slug: string }): number {
+    return this.#count_parents.one(params)!.total
   }
 
   /** Get child tag slugs for a parent with joined tags */
