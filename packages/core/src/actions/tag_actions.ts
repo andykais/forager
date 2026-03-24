@@ -213,14 +213,30 @@ class TagActions extends Actions {
   }
 
   /**
-   * Delete an alias relationship by ID. Removes any media_reference_tag rows
-   * that were created by this alias rule before deleting the rule itself.
+   * Delete an alias relationship by ID. Migrates media_reference_tag rows that
+   * were created by this alias rule back to the original alias tag, then deletes
+   * the rule.
    */
   alias_delete = (params: inputs.TagAliasDelete): void => {
     const parsed = parsers.TagAliasDelete.parse(params)
-    this.models.TagAlias.select_one({ id: parsed.id }, { or_raise: true })
+    const rule = this.models.TagAlias.select_one({ id: parsed.id }, { or_raise: true })
     const transaction = this.ctx.db.transaction_sync(() => {
-      this.models.MediaReferenceTag.delete_by_tag_alias_id({ tag_alias_id: parsed.id })
+      const alias_tag = this.tag_create(parsers.Tag.parse(rule.alias_tag_slug))
+      const alias_tag_record = this.models.Tag.select_one({ slug: rule.alias_tag_slug }, { or_raise: true })
+
+      const rows = this.models.MediaReferenceTag.select_all_by_tag_alias_id({ tag_alias_id: parsed.id })
+      for (const row of rows) {
+        this.models.MediaReferenceTag.delete({ media_reference_id: row.media_reference_id, tag_id: row.tag_id })
+        this.models.MediaReferenceTag.get_or_create({
+          media_reference_id: row.media_reference_id,
+          tag_id: alias_tag_record.id,
+          tag_group_id: alias_tag_record.tag_group_id,
+          editor: row.editor,
+          tag_alias_id: null,
+          tag_parent_id: null,
+        })
+      }
+
       this.models.TagAlias.delete({ id: parsed.id }, { expected_deletes: 1 })
     })
     transaction()
