@@ -1,5 +1,7 @@
 import * as torm from '@torm/sqlite'
 import { Model, field } from '~/models/lib/base.ts'
+import { Tag } from '~/models/tag.ts'
+import { TagGroup } from "./tag_group.ts";
 
 
 class TagAlias extends Model {
@@ -31,6 +33,18 @@ class TagAlias extends Model {
     SELECT ${TagAlias.result['*']} FROM tag_alias
     WHERE alias_tag_slug = ${TagAlias.params.alias_tag_slug}`
 
+  #select_by_alias_with_tags = this.query`
+    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')}, ${TagGroup.result.color}, ${TagAlias.result.id.as('rule_id')} FROM tag_alias
+    INNER JOIN tag ON tag.slug = tag_alias.alias_for_tag_slug
+    INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
+    WHERE alias_tag_slug = ${TagAlias.params.alias_tag_slug}`
+
+  #select_by_alias_for_with_tags = this.query`
+    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')}, ${TagGroup.result.color}, ${TagAlias.result.id.as('rule_id')} FROM tag_alias
+    INNER JOIN tag ON tag.slug = tag_alias.alias_tag_slug
+    INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
+    WHERE alias_for_tag_slug = ${TagAlias.params.alias_for_tag_slug}`
+
   #select_by_alias_for = this.query`
     SELECT ${TagAlias.result['*']} FROM tag_alias
     WHERE alias_for_tag_slug = ${TagAlias.params.alias_for_tag_slug}`
@@ -54,7 +68,16 @@ class TagAlias extends Model {
     return this.#select_by_alias.one(params)
   }
 
+  public select_by_alias_with_tags(params: { alias_tag_slug: string }) {
+    return this.#select_by_alias_with_tags.one(params)
+  }
+
+  public select_all_by_alias_for_with_tags(params: { alias_for_tag_slug: string }) {
+    return this.#select_by_alias_for_with_tags.all(params)
+  }
+
   /** Get all alias rules pointing to a canonical tag */
+  // NOTE this should change to a count
   public select_all_by_alias_for(params: { alias_for_tag_slug: string }) {
     return this.#select_by_alias_for.all(params)
   }

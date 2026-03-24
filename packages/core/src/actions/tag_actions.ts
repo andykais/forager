@@ -282,23 +282,17 @@ class TagActions extends Actions {
 
   /** Build a TagDetail response for a given tag record. */
   #build_tag_detail(tag: result_types.Tag): TagDetail {
-    const alias_for_row = this.models.TagAlias.select_by_alias({ alias_tag_slug: tag.slug })
-    const alias_rows = this.models.TagAlias.select_all_by_alias_for({ alias_for_tag_slug: tag.slug })
-    const child_rows = this.models.TagParent.select_children({ parent_tag_slug: tag.slug })
-    const parent_rows = this.models.TagParent.select_parents({ child_tag_slug: tag.slug })
-
-    const resolve_with_rule = (slug: string, rule_id: number): TagWithRuleId | undefined => {
-      const resolved = this.models.Tag.select_one({ slug })
-      if (!resolved) return undefined
-      return { ...resolved, rule_id }
-    }
+    const alias_for = this.models.TagAlias.select_by_alias_with_tags({ alias_tag_slug: tag.slug }) ?? null
+    const aliases = this.models.TagAlias.select_all_by_alias_for_with_tags({ alias_for_tag_slug: tag.slug })
+    const children = this.models.TagParent.select_children_with_tags({ parent_tag_slug: tag.slug })
+    const parents = this.models.TagParent.select_parents_with_tags({ child_tag_slug: tag.slug })
 
     return {
       tag,
-      alias_for: alias_for_row ? (resolve_with_rule(alias_for_row.alias_for_tag_slug, alias_for_row.id) ?? null) : null,
-      aliases: alias_rows.map(row => resolve_with_rule(row.alias_tag_slug, row.id)).filter((t): t is TagWithRuleId => t !== undefined),
-      children: child_rows.map(row => resolve_with_rule(row.child_tag_slug, row.id)).filter((t): t is TagWithRuleId => t !== undefined),
-      parents: parent_rows.map(row => resolve_with_rule(row.parent_tag_slug, row.id)).filter((t): t is TagWithRuleId => t !== undefined),
+      alias_for,
+      aliases,
+      children,
+      parents,
     }
   }
 

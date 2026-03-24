@@ -45,7 +45,7 @@ class Tag extends Model {
         Tag.params.slug,
         Tag.params.description,
         Tag.params.metadata
-    ]}) RETURNING ${Tag.result.id}, ${Tag.result.tag_group_id}`
+    ]}) RETURNING ${Tag.result.id}, ${Tag.result.slug}, ${Tag.result.tag_group_id}`
 
   #count = this.query`
     SELECT COUNT(1) AS ${PaginationVars.result.total} FROM tag`

@@ -281,26 +281,22 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
     const tag_record = this.tag_create(tag)
 
     // alias resolution: if this tag is an alias, use the canonical tag instead
-    let resolved_tag_id = tag_record.id
-    let resolved_tag_group_id = tag_record.tag_group_id
-    let resolved_slug = tag.slug
+    let resolved_tag = tag_record
     let tag_alias_id: number | null = null
 
     const alias = this.models.TagAlias.select_by_alias({ alias_tag_slug: tag.slug })
     if (alias) {
       const canonical = this.models.Tag.select_one({ slug: alias.alias_for_tag_slug })
       if (canonical) {
-        resolved_tag_id = canonical.id
-        resolved_tag_group_id = canonical.tag_group_id
-        resolved_slug = canonical.slug
+        resolved_tag = canonical
         tag_alias_id = alias.id
       }
     }
 
     this.models.MediaReferenceTag.get_or_create({
       media_reference_id,
-      tag_id: resolved_tag_id,
-      tag_group_id: resolved_tag_group_id,
+      tag_id: resolved_tag.id,
+      tag_group_id: resolved_tag.tag_group_id,
       editor,
       tag_alias_id,
       tag_parent_id: null,
@@ -310,8 +306,8 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
     // NOTE: parent resolution does not resolve aliases on parent tags. A parent
     // slug is looked up directly — if the parent tag itself is an alias, it won't
     // be resolved to its canonical form. This is an intentional simplification.
-    const visited = new Set<string>([resolved_slug])
-    const queue = [resolved_slug]
+    const visited = new Set<string>([resolved_tag.slug])
+    const queue = [resolved_tag.slug]
     while (queue.length > 0) {
       const current = queue.pop()!
       const parent_rules = this.models.TagParent.select_parents({ child_tag_slug: current })
@@ -334,7 +330,8 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
       }
     }
 
-    return this.models.Tag.select_one({ id: resolved_tag_id }, { or_raise: true })
+    // we reselect the tag here because the media_reference_count has been updated
+    return this.models.Tag.select_one({ id: resolved_tag.id }, { or_raise: true })
   }
 
   protected get_media_file_result(params: {

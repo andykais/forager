@@ -1,5 +1,6 @@
 import * as torm from '@torm/sqlite'
 import { Model, field } from '~/models/lib/base.ts'
+import { Tag, TagGroup } from "~/models/mod.ts";
 
 
 class TagParent extends Model {
@@ -31,8 +32,20 @@ class TagParent extends Model {
     SELECT ${TagParent.result['*']} FROM tag_parent
     WHERE parent_tag_slug = ${TagParent.params.parent_tag_slug}`
 
+  #select_children_with_tags = this.query`
+    SELECT ${Tag.result['*']}, ${TagGroup.result.color}, ${TagGroup.result.name.as('group')}, ${TagParent.result.id.as('rule_id')} FROM tag_parent
+    INNER JOIN tag ON tag.slug = tag_parent.child_tag_slug
+    INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
+    WHERE parent_tag_slug = ${TagParent.params.parent_tag_slug}`
+
   #select_parents = this.query`
     SELECT ${TagParent.result['*']} FROM tag_parent
+    WHERE child_tag_slug = ${TagParent.params.child_tag_slug}`
+
+  #select_parents_with_tags = this.query`
+    SELECT ${Tag.result['*']}, ${TagGroup.result.color}, ${TagGroup.result.name.as('group')}, ${TagParent.result.id.as('rule_id')} FROM tag_parent
+    INNER JOIN tag ON tag.slug = tag_parent.parent_tag_slug
+    INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
     WHERE child_tag_slug = ${TagParent.params.child_tag_slug}`
 
   #update_child_slug = this.query.exec`
@@ -54,9 +67,19 @@ class TagParent extends Model {
     return this.#select_children.all(params)
   }
 
+  /** Get child tag slugs for a parent with joined tags */
+  public select_children_with_tags(params: { parent_tag_slug: string }) {
+    return this.#select_children_with_tags.all(params)
+  }
+
   /** Get parent tag slugs for a child */
   public select_parents(params: { child_tag_slug: string }) {
     return this.#select_parents.all(params)
+  }
+
+  /** Get parent tag slugs for a child with joined tags */
+  public select_parents_with_tags(params: { child_tag_slug: string }) {
+    return this.#select_parents_with_tags.all(params)
   }
 
   /** Rename a slug across all parent rows where it appears as child */
