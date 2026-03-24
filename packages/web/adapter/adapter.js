@@ -3,6 +3,15 @@ import * as fs from 'jsr:@std/fs';
 import * as path from 'jsr:@std/path'
 import {build} from 'npm:esbuild';
 
+async function strip_type_imports(filepath) {
+  let file_contents = await Deno.readTextFile(filepath)
+  file_contents = file_contents.replaceAll(/@type.+import\(.*[*]/g, '*')
+          // (flags2 & DERIVED) !== 0 && /** @type {import('#client').Derived} */
+  file_contents = file_contents.replaceAll(/@param.+import\(.*[*]/g, '*')
+  file_contents = file_contents.replaceAll(/@param.+import\(.*/g, '')
+  await Deno.writeTextFile(filepath, file_contents)
+}
+
 /** @type {import('.').default} */
 export default function (opts = {}) {
   const {buildOptions = {}} = opts;
@@ -47,11 +56,11 @@ export default function (opts = {}) {
 
       // annoying code here, but sveltekit outputs type hints that are perhaps correct, but not resolved properly by deno, so we get checker errors https://github.com/sveltejs/kit/issues/12930
       const server_index_filepath = path.join(out_server_dir, 'index.js')
-      let file_contents = await Deno.readTextFile(server_index_filepath)
-      file_contents = file_contents.replaceAll(/@type.+import\(.*[*]/g, '*')
-      file_contents = file_contents.replaceAll(/@param.+import\(.*[*]/g, '*')
-      file_contents = file_contents.replaceAll(/@param.+import\(.*/g, '')
-      await Deno.writeTextFile(server_index_filepath, file_contents)
+      const chunks_internal_filepath = path.join(out_server_dir, 'chunks', 'internal.js')
+      await Promise.all([
+        strip_type_imports(server_index_filepath),
+        strip_type_imports(chunks_internal_filepath),
+      ])
 
       const vite_generated_build_files = [
         // ...await Array.fromAsync(fs.walk(out_server_dir, {includeDirs: false})),
