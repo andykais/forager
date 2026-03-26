@@ -10,12 +10,16 @@
   let is_fullscreen = $state(false)
 
   const refresh_fullscreen_state = () => {
-    is_fullscreen = document.fullscreenElement === dialog
+    is_fullscreen = document.fullscreenElement === fullscreen_container
   }
+
+  let {controller}: Props = $props()
+  const {media_selections} = controller.runes
+  let paused = $state(false)
 
   controller.keybinds.component_listen({
     Escape: e => {
-      if (document.fullscreenElement === dialog) {
+      if (document.fullscreenElement === fullscreen_container) {
         document.exitFullscreen()
         return
       }
@@ -38,10 +42,10 @@
       if (!dialog.open || !media_selections.current_selection.show) return
       e.detail.data.keyboard_event.preventDefault()
 
-      if (document.fullscreenElement === dialog) {
+      if (document.fullscreenElement === fullscreen_container) {
         await document.exitFullscreen()
       } else {
-        await dialog.requestFullscreen()
+        await fullscreen_container.requestFullscreen()
       }
     },
     CopyMedia: async e => {
@@ -52,10 +56,6 @@
       }
     },
   })
-
-  let {controller}: Props = $props()
-  const {media_selections} = controller.runes
-  let paused = $state(false)
 
   let filmstrip_thumbnails
   let filmstrip_height = 50
@@ -89,6 +89,7 @@
 
 
   let dialog: HTMLDialogElement
+  let fullscreen_container: HTMLDivElement
   let animation_width = $state(0)
   let animation_progress = $state(0)
 </script>
@@ -103,6 +104,7 @@
     controller.runes.media_selections.close_media()
   }}>
   <div class="flex items-center justify-center"
+  bind:this={fullscreen_container}
   style="height: {is_fullscreen ? '100dvh' : `${controller.runes.dimensions.heights.media_list}px`};"
   >
     {#if media_selections.current_selection.show && media_selections.current_selection.media_response}
