@@ -18,8 +18,8 @@ class Tag extends Model {
   static schema = torm.schema('tag', {
     id:                           field.number(),
     name:                         field.string(),
-    tag_group_id:                 field.number(), // TODO support schema references (TagGroup::schema::id)
-    alias_tag_id:                 field.number().optional(), // TODO support lazy references? This is a Tag::schema::id
+    tag_group_id:                 field.number(),
+    slug:                         field.string(),
     description:                  field.string().optional(),
     metadata:                     field.json().optional(),
     media_reference_count:        field.number(),
@@ -36,16 +36,16 @@ class Tag extends Model {
     INSERT INTO tag (
       tag_group_id,
       name,
-      alias_tag_id,
+      slug,
       description,
       metadata
     ) VALUES (${[
         Tag.params.tag_group_id,
         Tag.params.name,
-        Tag.params.alias_tag_id,
+        Tag.params.slug,
         Tag.params.description,
         Tag.params.metadata
-    ]}) RETURNING ${Tag.result.id}, ${Tag.result.tag_group_id}`
+    ]}) RETURNING ${Tag.result.id}, ${Tag.result.slug}, ${Tag.result.tag_group_id}`
 
   #count = this.query`
     SELECT COUNT(1) AS ${PaginationVars.result.total} FROM tag`
@@ -69,12 +69,25 @@ class Tag extends Model {
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
     WHERE tag_group_id = ${Tag.params.tag_group_id} AND tag.name = ${Tag.params.name}`
 
+  #select_by_slug = this.query`
+    SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')}, ${TagGroup.result.color} FROM tag
+    INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
+    WHERE tag.slug = ${Tag.params.slug}`
+
   #select_by_media_reference_id = this.query`
     SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')}, ${TagGroup.result.color}, ${MediaReferenceTag.result.editor} FROM tag
     INNER JOIN media_reference_tag ON media_reference_tag.tag_id = tag.id
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
     WHERE media_reference_tag.media_reference_id = ${MediaReferenceTag.params.media_reference_id}
     ORDER BY tag.media_reference_count DESC, tag.updated_at DESC, tag.id DESC`
+  #update = this.query.exec`
+    UPDATE tag SET
+      name = ${Tag.params.name},
+      tag_group_id = ${Tag.params.tag_group_id},
+      slug = ${Tag.params.slug},
+      description = ${Tag.params.description}
+    WHERE id = ${Tag.params.id}`
+
   #delete_by_count = this.query`
     DELETE FROM tag
     WHERE tag.media_reference_count = 0`
@@ -84,12 +97,18 @@ class Tag extends Model {
     name?: string
     tag_group_id?: number
     group?: string
+    slug?: string
   }): (torm.InferSchemaTypes<typeof Tag.result> & {group: string; color: string}) | undefined {
     if (
       params.id !== undefined &&
       Object.keys(params).length === 1
     ) {
       return this.#select_by_id.one({id: params.id})
+    } else if (
+      params.slug !== undefined &&
+      Object.keys(params).length === 1
+    ) {
+      return this.#select_by_slug.one({slug: params.slug})
     } else if (
       params.name !== undefined &&
       params.group !== undefined &&
@@ -111,10 +130,13 @@ class Tag extends Model {
 
   public create = this.create_fn(this.#create)
 
+  public update = this.#update
+
   public select_paginated(params: {
     limit: number
     cursor: PaginatedResult<unknown>['cursor']
     sort_by: 'unread_media_reference_count' | 'media_reference_count' | 'created_at' | 'updated_at'
+    order: 'asc' | 'desc'
     tag_match?: {
       name: string
       group: string | undefined
@@ -137,14 +159,15 @@ class Tag extends Model {
         TagGroup.result.color,
       ])
 
+      const dir = params.order === 'asc' ? 'ASC' : 'DESC'
       if (params.sort_by === 'media_reference_count') {
-        tags_sql_builder.set_order_by_clause(`ORDER BY tag.media_reference_count DESC, tag.updated_at DESC, tag.id DESC`)
+        tags_sql_builder.set_order_by_clause(`ORDER BY tag.media_reference_count ${dir}, tag.updated_at ${dir}, tag.id ${dir}`)
       } else if (params.sort_by === 'unread_media_reference_count') {
-        tags_sql_builder.set_order_by_clause(`ORDER BY tag.unread_media_reference_count DESC, tag.updated_at DESC, tag.id DESC`)
+        tags_sql_builder.set_order_by_clause(`ORDER BY tag.unread_media_reference_count ${dir}, tag.updated_at ${dir}, tag.id ${dir}`)
       } else if (params.sort_by === 'updated_at') {
-        tags_sql_builder.set_order_by_clause(`ORDER BY tag.updated_at DESC, tag.id DESC`)
+        tags_sql_builder.set_order_by_clause(`ORDER BY tag.updated_at ${dir}, tag.id ${dir}`)
       } else if (params.sort_by === 'created_at') {
-        tags_sql_builder.set_order_by_clause(`ORDER BY tag.created_at DESC, tag.id DESC`)
+        tags_sql_builder.set_order_by_clause(`ORDER BY tag.created_at ${dir}, tag.id ${dir}`)
       } else {
         throw new Error(`unexpected tag sort_by: ${params.sort_by}`)
       }

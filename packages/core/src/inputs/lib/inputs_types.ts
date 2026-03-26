@@ -17,6 +17,13 @@ export type MediaThumbnailGet = z.input<typeof parsers.MediaThumbnailGet>
 export type Tag = z.input<typeof parsers.Tag>
 export type TagSearch = z.input<typeof parsers.TagSearch>
 export type TagList = z.input<typeof parsers.TagList>
+export type TagGet = z.input<typeof parsers.TagGet>
+export type TagUpdate = z.input<typeof parsers.TagUpdate>
+export type TagAliasCreate = z.input<typeof parsers.TagAliasCreate>
+export type TagAliasDelete = z.input<typeof parsers.TagAliasDelete>
+export type TagParentCreate = z.input<typeof parsers.TagParentCreate>
+export type TagParentDelete = z.input<typeof parsers.TagParentDelete>
+export type TagDetail = import('~/actions/tag_actions.ts').TagDetail
 
 export type SeriesItem = z.input<typeof parsers.SeriesItem>
 export type SeriesGet = z.input<typeof parsers.SeriesGet>

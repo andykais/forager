@@ -1,9 +1,10 @@
 <script lang="ts">
   import type { Forager } from '@forager/core'
+	import type { ClassValue } from 'svelte/elements';
   import * as parsers from '$lib/parsers.ts'
 
   type Tag = ReturnType<Forager['tag']['search']>['results'][0]
-  let props: {tag: Tag, transparent?: boolean; show_group?: boolean; class?: ClassValue} = $props()
+  let props: {tag: Tag, transparent?: boolean; show_group?: boolean; hide_count?: boolean; class?: ClassValue} = $props()
 
   const tag_identifier = props.tag.group === '' || props.show_group === false
     ? `${props.tag.name}`
@@ -21,5 +22,7 @@
 
 <span class={["w-full flex rounded-sm px-1", props.class]} style={color_style} title="{props.tag.group}:{props.tag.name}">
   <span class="flex-grow">{tag_identifier}</span>
-  <span class="text-gray-600">{props.tag.media_reference_count}</span>
+  {#if !props.hide_count}
+    <span class="text-gray-600">{props.tag.media_reference_count}</span>
+  {/if}
 </span>

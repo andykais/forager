@@ -265,12 +265,73 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
     }
   }
 
+  /** Create or get a tag record. Does not resolve aliases or parents. */
   protected tag_create(tag: z.output<typeof parsers.Tag>) {
     const group = tag.group ?? ''
     const color = get_hash_color(group, 'hsl')
     const tag_group = this.models.TagGroup.get_or_create({ name: group, color })!
-    const tag_record = this.models.Tag.get_or_create({ alias_tag_id: null, name: tag.name, tag_group_id: tag_group.id, description: tag.description, metadata: tag.metadata })
-    return tag_record
+    return this.models.Tag.get_or_create({ name: tag.name, tag_group_id: tag_group.id, slug: tag.slug, description: tag.description, metadata: tag.metadata })
+  }
+
+  /**
+   * Add a tag to a media reference, resolving aliases and propagating parent tags.
+   * Returns the resolved tag record (canonical if alias was resolved).
+   */
+  protected media_add_tag(media_reference_id: number, tag: z.output<typeof parsers.Tag>, editor?: string) {
+    const tag_record = this.tag_create(tag)
+
+    // alias resolution: if this tag is an alias, use the canonical tag instead
+    let resolved_tag = tag_record
+    let tag_alias_id: number | null = null
+
+    const alias = this.models.TagAlias.select_by_alias({ alias_tag_slug: tag.slug })
+    if (alias) {
+      const canonical = this.models.Tag.select_one({ slug: alias.alias_for_tag_slug })
+      if (canonical) {
+        resolved_tag = canonical
+        tag_alias_id = alias.id
+      }
+    }
+
+    this.models.MediaReferenceTag.get_or_create({
+      media_reference_id,
+      tag_id: resolved_tag.id,
+      tag_group_id: resolved_tag.tag_group_id,
+      editor,
+      tag_alias_id,
+      tag_parent_id: null,
+    })
+
+    // parent propagation: walk the parent chain and add each parent tag.
+    // NOTE: parent resolution does not resolve aliases on parent tags. A parent
+    // slug is looked up directly — if the parent tag itself is an alias, it won't
+    // be resolved to its canonical form. This is an intentional simplification.
+    const visited = new Set<string>([resolved_tag.slug])
+    const queue = [resolved_tag.slug]
+    while (queue.length > 0) {
+      const current = queue.pop()!
+      const parent_rules = this.models.TagParent.select_parents({ child_tag_slug: current })
+      for (const rule of parent_rules) {
+        if (visited.has(rule.parent_tag_slug)) continue
+        visited.add(rule.parent_tag_slug)
+
+        const parent_tag = this.models.Tag.select_one({ slug: rule.parent_tag_slug })
+        if (parent_tag) {
+          this.models.MediaReferenceTag.get_or_create({
+            media_reference_id,
+            tag_id: parent_tag.id,
+            tag_group_id: parent_tag.tag_group_id,
+            editor,
+            tag_alias_id: null,
+            tag_parent_id: rule.id,
+          })
+          queue.push(rule.parent_tag_slug)
+        }
+      }
+    }
+
+    // we reselect the tag here because the media_reference_count has been updated
+    return this.models.Tag.select_one({ id: resolved_tag.id }, { or_raise: true })
   }
 
   protected get_media_file_result(params: {
@@ -312,22 +373,20 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
       }
 
       for (const tag of tags.replace) {
-        const tag_record = this.tag_create(tag)
-        this.models.MediaReferenceTag.get_or_create({ media_reference_id: media_reference_id, tag_id: tag_record.id, tag_group_id: tag_record.tag_group_id, editor })
+        const resolved = this.media_add_tag(media_reference_id, tag, editor)
 
         tags_removed.delete(this.models.Tag.format_slug(tag))
         if (!tags_existing.has(tag.slug)) {
-          tags_added.add(this.models.Tag.format_slug(tag))
+          tags_added.add(resolved.slug)
         }
       }
     }
 
     for (const tag of tags.add) {
-      const tag_record = this.tag_create(tag)
-      this.models.MediaReferenceTag.get_or_create({ media_reference_id: media_reference_id, tag_id: tag_record.id, tag_group_id: tag_record.tag_group_id, editor })
+      const resolved = this.media_add_tag(media_reference_id, tag, editor)
       if (!tags_existing.has(tag.slug)) {
         tags_removed.delete(tag.slug)
-        tags_added.add(tag.slug)
+        tags_added.add(resolved.slug)
       }
     }
 
