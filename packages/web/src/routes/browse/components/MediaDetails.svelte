@@ -7,7 +7,7 @@
   import SearchLink from './SearchLink.svelte'
   import Tag from '$lib/components/Tag.svelte'
   import Icon from '$lib/components/Icon.svelte'
-  import {XCircle} from '$lib/icons/mod.ts'
+  import {XCircle, MagnifyingGlassPlus, ArrowTopRightOnSquare, Trash, TrashOutline} from '$lib/icons/mod.ts'
   import * as parsers from '$lib/parsers.ts'
 
   import { BrowseController } from '../controller.ts'
@@ -87,19 +87,35 @@
       <label class="text-green-50" for="tags"><span>Tags</span></label>
       {#each sorted_tags as tag_group_entry, tag_entry_index (tag_group_entry[0])}
         {#each tag_group_entry[1] as tag, tag_index (tag.id)}
-          <div class="grid grid-cols-[1fr_auto] items-center gap-1 pb-1">
-            <SearchLink {controller} params={queryparams.merge({tags: parsers.Tag.encode(tag)})}>
+          <div class="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-0.5 pb-1">
+            <a
+              href="/tags/{parsers.Tag.encode(tag)}"
+            >
               <Tag show_group={false} {tag} />
-            </SearchLink>
+            </a>
             <button
               class="hover:cursor-pointer"
-              title="Remove"
+              title="Remove from media"
               type="button"
-              onclick={async e => {
-                await media_selections.current_selection.media_response.update(undefined, {remove: [`${tag.group}:${tag.name}`]})
+              onclick={async () => {
+                await media_selections.current_selection.media_response!.update(undefined, {remove: [`${tag.group}:${tag.name}`]})
               }}>
-              <Icon class="fill-green-50 hover:fill-green-300" data={XCircle} size="18px" color="none" />
+              <Icon class="stroke-green-50 hover:stroke-green-300" data={TrashOutline} stroke_width={1.5} size="20px" color="none" />
             </button>
+            <SearchLink
+              class="hover:cursor-pointer"
+              title="Apply to search"
+              {controller}
+              params={queryparams.merge({tags: parsers.Tag.encode(tag)})}>
+              <Icon class="fill-green-50 hover:fill-green-300" data={MagnifyingGlassPlus} size="20px" color="none" />
+            </SearchLink>
+            <SearchLink
+              class="hover:cursor-pointer"
+              title="Start new search"
+              {controller}
+              params={{...queryparams.DEFAULTS, search_string: parsers.Tag.encode(tag)}}>
+              <Icon class="fill-green-50 hover:fill-green-300" data={ArrowTopRightOnSquare} size="20px" color="none" />
+            </SearchLink>
           </div>
         {/each}
       {/each}

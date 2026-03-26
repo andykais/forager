@@ -1,18 +1,24 @@
 <script lang="ts">
   import type {BrowseController} from '../controller.ts'
+  import type { SvelteHTMLElements, ClassValue } from 'svelte/elements';
 
   interface Props {
     controller: BrowseController
-    params: BrowseController['runes']['queryparams']['DEFAULT']
-    class: ClassValue
+    params: Partial<BrowseController['runes']['queryparams']['DEFAULTS']>
+    class?: ClassValue
+    title?: string
+    children: SvelteHTMLElements['div']['children']
   }
   let {params, controller, children, ...props}: Props = $props()
   const {queryparams} = controller.runes
+
+  console.log({params})
 
 </script>
 
 <a
   class={props.class}
+  title={props.title}
   href={queryparams.serialize(params)}
   onclick={async e => {
     if (e.ctrlKey || e.shiftKey) return

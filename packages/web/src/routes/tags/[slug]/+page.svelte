@@ -4,7 +4,7 @@
   import Tag from '$lib/components/Tag.svelte'
   import Datetime from '$lib/components/Datetime.svelte'
   import Icon from '$lib/components/Icon.svelte'
-  import { XCircle } from '$lib/icons/mod.ts'
+  import { XCircle, ArrowTopRightOnSquare } from '$lib/icons/mod.ts'
   import TagAutoCompleteInput from '$lib/components/TagAutoCompleteInput.svelte'
   import { TagDetailController } from './controller.svelte.ts'
   import Numeric from '$lib/components/Numeric.svelte';
@@ -83,7 +83,15 @@
               <a
                 href="/browse?tags={controller.detail.tag.slug}"
                 class="text-sm text-slate-400 hover:text-slate-200"
-              >Browse media with this tag</a>
+              >Browse media with this Tag
+              </a>
+              <a
+                href="/browse?tags={controller.detail.tag.slug}"
+                class="text-sm text-slate-400 hover:text-slate-200 hover:fill-slate-200 grid grid-cols-2 gap-2"
+                target="_blank"
+              >
+              <Icon class="fill-slate-400 hover:fill-slate-200" data={ArrowTopRightOnSquare} size="18px" color="none" />
+              </a>
             </div>
           </form>
         </section>

@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Forager } from '@forager/core'
+	import type { ClassValue } from 'svelte/elements';
   import * as parsers from '$lib/parsers.ts'
 
   type Tag = ReturnType<Forager['tag']['search']>['results'][0]
