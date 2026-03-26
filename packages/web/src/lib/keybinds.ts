@@ -33,6 +33,13 @@ export class Keybinds {
   #keybind_mapper: Map<string, KeybindAction> | undefined
   #config: Config | undefined
 
+  #normalize_keybind_code(code: string) {
+    return code
+      .split('-')
+      .map(part => part.replace('Control', 'Ctrl').replace('Key', ''))
+      .join('-')
+  }
+
   public constructor(config: Config) {
     this.emitter = new EventTarget()
     this.disabled = false
@@ -41,7 +48,7 @@ export class Keybinds {
     this.#keybind_mapper = new Map<string, KeybindAction>()
     for (const [keyboard_action, keyboard_shortcuts] of Object.entries(this.#config.web.shortcuts)) {
       for (const keyboard_shortcut of keyboard_shortcuts) {
-        this.#keybind_mapper.set(keyboard_shortcut, keyboard_action as KeybindAction)
+        this.#keybind_mapper.set(this.#normalize_keybind_code(keyboard_shortcut), keyboard_action as KeybindAction)
       }
     }
   }
