@@ -90,7 +90,11 @@ class Tag extends Model {
 
   #delete_by_count = this.query`
     DELETE FROM tag
-    WHERE tag.media_reference_count = 0`
+    WHERE tag.media_reference_count = 0
+      AND tag.slug NOT IN (SELECT alias_tag_slug FROM tag_alias)
+      AND tag.slug NOT IN (SELECT alias_for_tag_slug FROM tag_alias)
+      AND tag.slug NOT IN (SELECT child_tag_slug FROM tag_parent)
+      AND tag.slug NOT IN (SELECT parent_tag_slug FROM tag_parent)`
 
   #select_one_impl(params: {
     id?: number
@@ -142,6 +146,7 @@ class Tag extends Model {
       group: string | undefined
     } | undefined
     contextual_query: SelectManyFilters | undefined
+    include_zero_reference_count?: boolean
   }): PaginatedResult<TagJoin> {
     if (params.cursor !== undefined) {
       throw new Error('unimplemented')
@@ -179,6 +184,10 @@ class Tag extends Model {
       } else {
         tags_sql_builder.add_where_clause(`tag.name GLOB '${name}' AND tag_group.name GLOB '${group}'`)
       }
+    }
+
+    if (!params.include_zero_reference_count) {
+      tags_sql_builder.add_where_clause(`tag.media_reference_count > 0`)
     }
 
     let results: TagJoin[]

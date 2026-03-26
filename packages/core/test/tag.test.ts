@@ -157,8 +157,8 @@ test('tag actions', async (ctx) => {
     ctx.assert.tag_search_result(forager.tag.search(), assert_tags_after)
     doodle = forager.media.update(doodle.media_reference.id, {}, {replace: []})
     ctx.assert.list_partial(doodle.tags, [])
-    // now observe that the tag _does_ exist
-    ctx.assert.tag_search_result(forager.tag.search(), {
+    // now observe that the tag _does_ exist when we include zero-reference-count tags
+    ctx.assert.tag_search_result(forager.tag.search({include_zero_reference_count: true}), {
       total: 6,
       results: [
         {group: '', name: 'wallpaper', media_reference_count: 2},
@@ -169,11 +169,34 @@ test('tag actions', async (ctx) => {
         {group: '', name: 'foobar', media_reference_count: 0},
       ]
     })
+    // default tag.search hides zero-reference-count tags
+    ctx.assert.tag_search_result(forager.tag.search(), {
+      total: 5,
+      results: [
+        {group: '', name: 'wallpaper', media_reference_count: 2},
+        {group: 'genre', name: 'cartoon'},
+        {group: 'colors', name: 'black'},
+        {group: '', name: 'generated'},
+        {group: 'genre', name: 'procedural_generation'},
+      ]
+    })
   })
 
   await ctx.subtest(`tag sort`, async () => {
-    // default sort is by 'media_reference_count'
+    // default sort is by 'media_reference_count', zero-count tags hidden by default
     ctx.assert.tag_search_result(forager.tag.search({sort_by: 'media_reference_count'}), {
+      total: 5,
+      results: [
+        {group: '', name: 'wallpaper', media_reference_count: 2},
+        {group: 'genre', name: 'cartoon'},
+        {group: 'colors', name: 'black'},
+        {group: '', name: 'generated'},
+        {group: 'genre', name: 'procedural_generation'},
+      ]
+    })
+
+    // with include_zero_reference_count, foobar shows up
+    ctx.assert.tag_search_result(forager.tag.search({sort_by: 'media_reference_count', include_zero_reference_count: true}), {
       total: 6,
       results: [
         {group: '', name: 'wallpaper', media_reference_count: 2},
@@ -189,7 +212,7 @@ test('tag actions', async (ctx) => {
     await ctx.timeout(10)
     forager.media.update(doodle.media_reference.id, {}, {add: ['genre:cartoon']})
 
-    ctx.assert.tag_search_result(forager.tag.search({sort_by: 'updated_at'}), {
+    ctx.assert.tag_search_result(forager.tag.search({sort_by: 'updated_at', include_zero_reference_count: true}), {
       results: [
         {name: 'cartoon', media_reference_count: 2},
         {group: '', name: 'foobar', media_reference_count: 0},
@@ -376,10 +399,9 @@ test('tag alias', async (ctx) => {
     ])
   })
 
-  await ctx.subtest('auto cleanup interaction with aliases', async () => {
-    // kitty has 0 media_reference_count after alias migration.
-    // With auto_cleanup on, updating media tags triggers delete_unreferenced which
-    // removes the kitty tag record. But the alias rule (slug-based) survives.
+  await ctx.subtest('auto cleanup preserves tags referenced by alias rules', async () => {
+    // kitty has 0 media_reference_count after alias migration, but it's referenced
+    // by an alias rule, so delete_unreferenced should NOT remove it.
     const kitty_before = forager.tag.get({ slug: 'animal:kitty' })
     ctx.assert.equals(kitty_before.tag.media_reference_count, 0)
 
@@ -389,17 +411,22 @@ test('tag alias', async (ctx) => {
     forager.media.update(media_ref_id, {}, { add: ['temp_tag'] })
     forager.media.update(media_ref_id, {}, { remove: ['temp_tag'] })
 
-    // kitty tag record should be gone now (0 refs + auto_cleanup)
+    // kitty tag record should survive (referenced by alias rule)
+    const kitty_after = forager.tag.get({ slug: 'animal:kitty' })
+    ctx.assert.equals(kitty_after.tag.media_reference_count, 0)
+
+    // cat still lists kitty as a resolved alias
+    const cat = forager.tag.get({ slug: 'animal:cat' })
+    ctx.assert.list_partial(cat.aliases, [
+      { slug: 'animal:kitty' },
+      { slug: 'animal:dog' },
+    ])
+
+    // temp_tag (no rules) was cleaned up
     ctx.assert.throws(
-      () => forager.tag.get({ slug: 'animal:kitty' }),
+      () => forager.tag.get({ slug: 'temp_tag' }),
       errors.NotFoundError,
     )
-
-    // but the alias rule still exists — cat no longer lists kitty as resolved alias
-    const cat = forager.tag.get({ slug: 'animal:cat' })
-    // kitty and dog are gone from resolved aliases (both have 0 refs and were cleaned)
-    // only unresolved rules remain in the DB, but they're filtered from the response
-    ctx.assert.list_partial(cat.aliases, [])
   })
 })
 

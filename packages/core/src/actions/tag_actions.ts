@@ -95,6 +95,7 @@ class TagActions extends Actions {
       cursor: parsed.cursor,
       tag_match: parsed.query.tag_match,
       contextual_query: contextual_query,
+      include_zero_reference_count: parsed.include_zero_reference_count,
     })
 
     const results: TagSearchResultItem[] = paginated.results.map(tag => {

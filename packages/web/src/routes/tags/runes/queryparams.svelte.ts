@@ -41,6 +41,7 @@ export class TagQueryParams extends BaseQueryParams<SearchParams> {
       sort_by: params.sort_by,
       order: params.order,
       limit,
+      include_zero_reference_count: true,
     }
     if (params.search_string) {
       search_options.query = { tag_match: params.search_string }

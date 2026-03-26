@@ -13,6 +13,7 @@ export const TagSearch  = PaginatedQuery.extend({
       return {...q}
     }),
   contextual_query: MediaReferenceQuery,
+  include_zero_reference_count: z.boolean().optional().default(false),
   limit: z.number().optional().default(10),
   sort_by: z.enum(['created_at', 'updated_at', 'media_reference_count', 'unread_media_reference_count']).default('media_reference_count'),
   order: z.enum(['desc', 'asc']).default('desc'),
