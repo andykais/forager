@@ -228,7 +228,7 @@ class TagActions extends Actions {
     const rule = this.models.TagAlias.select_one({ id: parsed.id }, { or_raise: true })
     const transaction = this.ctx.db.transaction_sync(() => {
       const alias_tag = this.tag_create(parsers.Tag.parse(rule.alias_tag_slug))
-      const alias_tag_record = this.models.Tag.select_one({ slug: rule.alias_tag_slug }, { or_raise: true })
+      const alias_tag_record = this.models.Tag.select_one({ id: alias_tag.id }, { or_raise: true })
 
       const rows = this.models.MediaReferenceTag.select_all_by_tag_alias_id({ tag_alias_id: parsed.id })
       for (const row of rows) {
