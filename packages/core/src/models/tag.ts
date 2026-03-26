@@ -146,7 +146,7 @@ class Tag extends Model {
       group: string | undefined
     } | undefined
     contextual_query: SelectManyFilters | undefined
-    include_zero_reference_count?: boolean
+    include_unreferenced_tags?: boolean
   }): PaginatedResult<TagJoin> {
     if (params.cursor !== undefined) {
       throw new Error('unimplemented')
@@ -186,7 +186,7 @@ class Tag extends Model {
       }
     }
 
-    if (!params.include_zero_reference_count) {
+    if (!params.include_unreferenced_tags) {
       tags_sql_builder.add_where_clause(`tag.media_reference_count > 0`)
     }
 

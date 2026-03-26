@@ -158,7 +158,7 @@ test('tag actions', async (ctx) => {
     doodle = forager.media.update(doodle.media_reference.id, {}, {replace: []})
     ctx.assert.list_partial(doodle.tags, [])
     // now observe that the tag _does_ exist when we include zero-reference-count tags
-    ctx.assert.tag_search_result(forager.tag.search({include_zero_reference_count: true}), {
+    ctx.assert.tag_search_result(forager.tag.search({include_unreferenced_tags: true}), {
       total: 6,
       results: [
         {group: '', name: 'wallpaper', media_reference_count: 2},
@@ -196,7 +196,7 @@ test('tag actions', async (ctx) => {
     })
 
     // with include_zero_reference_count, foobar shows up
-    ctx.assert.tag_search_result(forager.tag.search({sort_by: 'media_reference_count', include_zero_reference_count: true}), {
+    ctx.assert.tag_search_result(forager.tag.search({sort_by: 'media_reference_count', include_unreferenced_tags: true}), {
       total: 6,
       results: [
         {group: '', name: 'wallpaper', media_reference_count: 2},
@@ -212,7 +212,7 @@ test('tag actions', async (ctx) => {
     await ctx.timeout(10)
     forager.media.update(doodle.media_reference.id, {}, {add: ['genre:cartoon']})
 
-    ctx.assert.tag_search_result(forager.tag.search({sort_by: 'updated_at', include_zero_reference_count: true}), {
+    ctx.assert.tag_search_result(forager.tag.search({sort_by: 'updated_at', include_unreferenced_tags: true}), {
       results: [
         {name: 'cartoon', media_reference_count: 2},
         {group: '', name: 'foobar', media_reference_count: 0},
