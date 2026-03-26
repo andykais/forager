@@ -164,6 +164,11 @@ class TagActions extends Actions {
       slug: new_slug,
       description: parsed.description ?? tag.description,
     })
+    if (tag.slug !== new_slug) {
+      this.ctx.logger.info(`Updated tag ${tag.slug} to ${new_slug}`)
+    } else {
+      this.ctx.logger.info(`Updated tag ${tag.slug}`)
+    }
   }
 
   /**
@@ -196,12 +201,13 @@ class TagActions extends Actions {
       })
       const rule = this.models.TagAlias.select_one({ id }, { or_raise: true })
 
-      this.#apply_alias_to_existing_media(rule)
+      const media_reference_tags_changed = this.#apply_alias_to_existing_media(rule)
 
-      return rule
+      return {rule, media_reference_tags_changed }
     })
 
-    const rule = transaction()
+    const {rule, media_reference_tags_changed } = transaction()
+    this.ctx.logger.info(`Set ${alias_slug} as an alias for ${alias_for_slug}. ${media_reference_tags_changed} ${alias_for_slug} media tags updated to ${alias_slug}.`)
     const alias_tag = this.models.Tag.select_one({ slug: alias_slug })
     const alias_for_tag = this.models.Tag.select_one({ slug: alias_for_slug }, { or_raise: true })
 
@@ -238,8 +244,10 @@ class TagActions extends Actions {
       }
 
       this.models.TagAlias.delete({ id: parsed.id }, { expected_deletes: 1 })
+      return {media_reference_tags_deleted: rows.length}
     })
-    transaction()
+    const { media_reference_tags_deleted } = transaction()
+    this.ctx.logger.info(`Removed alias ${rule.alias_tag_slug} for tag ${rule.alias_for_tag_slug}. ${media_reference_tags_deleted} media tags reverted from ${rule.alias_tag_slug} to ${rule.alias_for_tag_slug}.`)
   }
 
   /**
@@ -265,12 +273,13 @@ class TagActions extends Actions {
       })
       const rule = this.models.TagParent.select_one({ id }, { or_raise: true })
 
-      this.#apply_parent_to_existing_media(rule)
+      const media_reference_tags_updated = this.#apply_parent_to_existing_media(rule)
 
-      return rule
+      return {rule, media_reference_tags_updated}
     })
 
-    const rule = transaction()
+    const {rule, media_reference_tags_updated} = transaction()
+    this.ctx.logger.info(`Set ${parent_slug} tag as parent to ${child_slug}. Added ${parent_slug} to ${media_reference_tags_updated} tags.`)
     const child_tag = this.models.Tag.select_one({ slug: child_slug })
     const parent_tag = this.models.Tag.select_one({ slug: parent_slug }, { or_raise: true })
 
@@ -287,12 +296,14 @@ class TagActions extends Actions {
    */
   parent_delete = (params: inputs.TagParentDelete): void => {
     const parsed = parsers.TagParentDelete.parse(params)
-    this.models.TagParent.select_one({ id: parsed.id }, { or_raise: true })
+    const tag_rule = this.models.TagParent.select_one({ id: parsed.id }, { or_raise: true })
     const transaction = this.ctx.db.transaction_sync(() => {
-      this.models.MediaReferenceTag.delete_by_tag_parent_id({ tag_parent_id: parsed.id })
+      const result = this.models.MediaReferenceTag.delete_by_tag_parent_id({ tag_parent_id: parsed.id })
       this.models.TagParent.delete({ id: parsed.id }, { expected_deletes: 1 })
+      return result.changes
     })
-    transaction()
+    const media_reference_tags_deleted = transaction()
+    this.ctx.logger.info(`Removed ${tag_rule.parent_tag_slug} parent tag from media tagged with ${tag_rule.child_tag_slug}. ${media_reference_tags_deleted} media tags removed.`)
   }
 
   /** Build a TagDetail response for a given tag record. */
@@ -334,6 +345,7 @@ class TagActions extends Actions {
         tag_parent_id: null,
       })
     }
+    return alias_rows.length
   }
 
   /**
@@ -358,6 +370,7 @@ class TagActions extends Actions {
         tag_parent_id: parent_rule.id,
       })
     }
+    return child_rows.length
   }
 
   /** Walk the parent chain to detect circular references before inserting. */
