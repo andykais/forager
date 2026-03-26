@@ -7,9 +7,18 @@
 
   // TODO wire this into settings
   let show_controls = $state<boolean>(false);
+  let is_fullscreen = $state(false)
+
+  const refresh_fullscreen_state = () => {
+    is_fullscreen = document.fullscreenElement === dialog
+  }
 
   controller.keybinds.component_listen({
     Escape: e => {
+      if (document.fullscreenElement === dialog) {
+        document.exitFullscreen()
+        return
+      }
       dialog.close()
       controller.runes.media_selections.close_media()
     },
@@ -24,6 +33,16 @@
     },
     ToggleMediaControls: async e => {
       show_controls = !show_controls
+    },
+    ToggleFullScreen: async e => {
+      if (!dialog.open || !media_selections.current_selection.show) return
+      e.detail.data.keyboard_event.preventDefault()
+
+      if (document.fullscreenElement === dialog) {
+        await document.exitFullscreen()
+      } else {
+        await dialog.requestFullscreen()
+      }
     },
     CopyMedia: async e => {
       if (media_selections.current_selection.media_response) {
@@ -77,11 +96,14 @@
 
 <dialog
   class="absolute w-full z-10 outline-none"
-  style="height: {controller.runes.dimensions.heights.media_list}px;"
+  style="height: {is_fullscreen ? '100dvh' : `${controller.runes.dimensions.heights.media_list}px`};"
   bind:this={dialog}
-  onclose={controller.runes.media_selections.close_media}>
+  onclose={() => {
+    refresh_fullscreen_state()
+    controller.runes.media_selections.close_media()
+  }}>
   <div class="flex items-center justify-center"
-  style="height: {controller.runes.dimensions.heights.media_list}px;"
+  style="height: {is_fullscreen ? '100dvh' : `${controller.runes.dimensions.heights.media_list}px`};"
   >
     {#if media_selections.current_selection.show && media_selections.current_selection.media_response}
       {#if media_selections.current_selection.media_response.media_type === 'media_file'}
@@ -132,6 +154,8 @@
     {/if}
   </div>
 </dialog>
+
+<svelte:document on:fullscreenchange={refresh_fullscreen_state} />
 
 <style>
   dialog {
