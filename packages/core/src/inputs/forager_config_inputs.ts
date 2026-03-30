@@ -25,6 +25,9 @@ export const ForagerConfig = z.object({
 
     /** Enable backups during migrations (saved in <database.folder>/backups/) */
     backups: z.boolean().default(true),
+
+    /** How long (in milliseconds) to wait when the database is locked by another process before throwing an error. Relevant when running multiple processes (e.g. web GUI and CLI ingest) against the same database. Set to 0 to fail immediately. */
+    busy_timeout: z.number().int().min(0).default(5000),
   }).strict(),
 
   logger: z.object({
