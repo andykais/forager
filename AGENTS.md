@@ -442,29 +442,36 @@ await this.ctx.db.transaction_async(async () => {
 #### Creating Migrations
 
 1. Create new file in `packages/core/src/db/migrations/`
-2. Follow naming convention: `v{number}.ts`
-3. Export migration object:
+2. Follow naming convention: `migration_v{number}.ts`
+3. Use the decorator class pattern:
 
 ```typescript
-import { type Migration } from '@torm/sqlite'
+import * as torm from '@torm/sqlite'
+import { migrations, TIMESTAMP_COLUMN } from './registry.ts'
 
-export const v9: Migration = {
-  version: 9,
-  up: (db) => {
-    db.exec(`
-      CREATE TABLE new_table (
-        id INTEGER PRIMARY KEY,
-        name TEXT NOT NULL
-      )
-    `)
-  },
-  down: (db) => {
-    db.exec(`DROP TABLE new_table`)
+@migrations.register()
+export class Migration extends torm.Migration {
+  version = 12
+
+  call = () => {
+    this.driver.exec(`ALTER TABLE tag ADD COLUMN description TEXT`)
   }
 }
 ```
 
-4. Register in `packages/core/src/db/migrations/mod.ts`
+4. Register in `packages/core/src/db/migrations/mod.ts` by adding import './migration_v{N}.ts'
+5. Update the seed migration version to match: `version = {N}` in `seed_migration.ts`
+6. Update the seed migration's `CREATE TABLE` statements to include the new schema
+7. Update `test/migrations.test.ts`: bump `CURRENT_VERSION` and add a new migration step to `expected_migration_operations`
+
+##### SQLite Migration Pitfalls
+
+- `DROP COLUMN` fails when the column has a `FOREIGN KEY` constraint. You must rebuild the table: create a new table without the column, copy data, drop old table, rename new table. This also requires dropping and recreating all triggers that reference the table.
+- `PRAGMA foreign_keys = OFF` cannot be set inside a transaction. When rebuilding tables, set `override TRANSACTION = false` on the migration class and manage `BEGIN TRANSACTION / COMMIT` manually.
+- **Triggers reference tables by name**. When you drop and recreate a table (even via rename), all triggers that reference it must be dropped first and recreated after, including triggers defined on other tables that reference the rebuilt table in their body.
+- `PRAGMA foreign_key_check` should be called before `COMMIT` when rebuilding tables with FK constraints disabled.
+- The seed migration schema must match the migrated schema exactly. The migration test (`test/migrations.test.ts`) compares a freshly seeded database against a database migrated from v1. If the schemas differ (e.g., `ALTER TABLE ADD COLUMN` stores FK constraints differently than `CREATE TABLE`), use the table rebuild pattern instead.
+
 
 ### Working with Media Files
 
@@ -713,6 +720,8 @@ core:
 9. **Use comments where applicable** - But not liberally; code should be self-documenting
 10. **Core actions interfaces should have docstrings** - Document public API methods
 11. **PR titles must follow main's commit-title pattern** - Use lowercase Conventional Commit style, typically `<type>(<scope>): <summary>` (e.g. `fix(web): ...`, `impl(core): ...`, `docs: ...`)
+12. **Use semantic field names** - Avoid generic names like `source`/`target` in database columns and interfaces. Use names that describe what the field represents (e.g. `alias_tag_slug`/`alias_for_tag_slug` instead of `source_tag_slug`/`target_tag_slug`)
+13. **Consider side effects of cleanup operations** - When tags or other entities can be auto-cleaned (e.g. `Tag.delete_unreferenced`), ensure rules or references that depend on them are accounted for. Cleanup queries should exclude entities that are referenced by rules.
 
 ### Security Considerations
 
@@ -723,10 +732,11 @@ core:
 
 ### Performance Considerations
 
-1. **Database transactions** - Use for multiple operations
+1. **Database transactions** - Use for multiple operations. Wrap related create/delete sequences in `transaction_sync`.
 2. **Thumbnail generation** - Async and cached
 3. **Large file handling** - Stream when possible
 4. **Query optimization** - Use indexes, limit results
+5. **Use `COUNT` queries** - When you only need to check existence or get a count, use a `SELECT COUNT(1)` query instead of fetching all rows and checking `.length`. See `TagAlias.count_by_alias` and `TagParent.count_children` for examples.
 
 ### Breaking Changes
 
