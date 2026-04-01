@@ -1365,8 +1365,6 @@ test('media_reference updated_at', async ctx => {
     await ctx.timeout(50)
     const updated_a = forager.media.update(media_a.media_reference.id, {stars: 3})
     ctx.assert.not_equals(updated_a.media_reference.updated_at.getTime(), original_updated_at_a.getTime())
-    const a_after_update = updated_a.media_reference.updated_at
-
     // media_b should still have its original updated_at
     const b_result = forager.media.get({media_reference_id: media_b.media_reference.id})
     ctx.assert.equals(b_result.media_reference.updated_at.getTime(), original_updated_at_b.getTime())
