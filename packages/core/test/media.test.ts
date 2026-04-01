@@ -1405,9 +1405,14 @@ test('media_reference updated_at', async ctx => {
   })
 
   await ctx.subtest('updated_at does NOT change on alias_create/delete', async () => {
-    const a_before = forager.media.get({media_reference_id: media_a.media_reference.id})
+    // add a second tag so we can alias it to tag_a
+    forager.media.update(media_a.media_reference.id, {}, ['tag_a', 'tag_a_alias'])
+    // wait so the tag add's updated_at settles, then read the "before" state
     await ctx.timeout(50)
-    const alias_result = forager.tag.alias_create({alias_tag: 'tag_a', alias_for_tag: 'tag_a_canonical'})
+    const a_before = forager.media.get({media_reference_id: media_a.media_reference.id})
+
+    await ctx.timeout(50)
+    const alias_result = forager.tag.alias_create({alias_tag: 'tag_a_alias', alias_for_tag: 'tag_a'})
     const a_after = forager.media.get({media_reference_id: media_a.media_reference.id})
     ctx.assert.equals(a_after.media_reference.updated_at.getTime(), a_before.media_reference.updated_at.getTime())
 
@@ -1418,9 +1423,13 @@ test('media_reference updated_at', async ctx => {
   })
 
   await ctx.subtest('updated_at does NOT change on parent_create/delete', async () => {
-    const a_before = forager.media.get({media_reference_id: media_a.media_reference.id})
+    // add a child tag so we can create a parent rule
+    forager.media.update(media_a.media_reference.id, {}, ['tag_a', 'child_tag', 'parent_tag'])
     await ctx.timeout(50)
-    const parent_result = forager.tag.parent_create({child_tag: 'tag_a', parent_tag: 'parent_tag'})
+    const a_before = forager.media.get({media_reference_id: media_a.media_reference.id})
+
+    await ctx.timeout(50)
+    const parent_result = forager.tag.parent_create({child_tag: 'child_tag', parent_tag: 'parent_tag'})
     const a_after = forager.media.get({media_reference_id: media_a.media_reference.id})
     ctx.assert.equals(a_after.media_reference.updated_at.getTime(), a_before.media_reference.updated_at.getTime())
 
