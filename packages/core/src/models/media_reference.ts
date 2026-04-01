@@ -152,7 +152,8 @@ class MediaReference extends Model {
       source_url = IFNULL(${MediaReference.params.source_url}, source_url),
       source_created_at = IFNULL(${MediaReference.params.source_created_at}, source_created_at),
       stars = IFNULL(${MediaReference.params.stars}, stars),
-      editors = IFNULL(${MediaReference.params.editors}, editors)
+      editors = IFNULL(${MediaReference.params.editors}, editors),
+      updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'NOW')
     WHERE id = ${MediaReference.params.id}`
 
   #select_by_id = this.query`
@@ -166,6 +167,15 @@ class MediaReference extends Model {
   #delete_by_id = this.query.exec`
     DELETE FROM media_reference
     WHERE id = ${MediaReference.params.id}`
+
+  #restore_updated_at = this.query.exec`
+    UPDATE media_reference
+    SET updated_at = ${MediaReference.params.updated_at}
+    WHERE id = ${MediaReference.params.id}`
+
+  public restore_updated_at(params: { id: number, updated_at: Date }) {
+    this.#restore_updated_at(params)
+  }
 
   #select_one_impl(params: SelectOneFilters) {
     const key_count = Object.keys(params).filter((key) => params[key as keyof SelectOneFilters] !== undefined).length

@@ -58,6 +58,10 @@ class MediaReferenceTag extends Model {
     DELETE FROM media_reference_tag
     WHERE tag_alias_id = ${MediaReferenceTag.params.tag_alias_id}`
 
+  #select_by_tag_parent_id = this.query`
+    SELECT ${MediaReferenceTag.result['*']} FROM media_reference_tag
+    WHERE tag_parent_id = ${MediaReferenceTag.params.tag_parent_id}`
+
   #delete_by_tag_parent_id = this.query.exec`
     DELETE FROM media_reference_tag
     WHERE tag_parent_id = ${MediaReferenceTag.params.tag_parent_id}`
@@ -86,6 +90,10 @@ class MediaReferenceTag extends Model {
 
   public select_all_by_tag_alias_id(params: { tag_alias_id: number }) {
     return this.#select_by_tag_alias_id.all(params)
+  }
+
+  public select_all_by_tag_parent_id(params: { tag_parent_id: number }) {
+    return this.#select_by_tag_parent_id.all(params)
   }
 
   public delete_by_tag_alias_id(params: { tag_alias_id: number }) {
