@@ -1350,6 +1350,107 @@ test('media reload', async (ctx) => {
   })
 })
 
+test('media_reference updated_at', async ctx => {
+  using forager = new Forager(ctx.get_test_config())
+  forager.init()
+
+  const media_a = await forager.media.create(ctx.resources.media_files['koch.tif'], {title: 'Art A'}, ['tag_a'])
+  await ctx.timeout(50)
+  const media_b = await forager.media.create(ctx.resources.media_files['ed-edd-eddy.png'], {title: 'Art B'}, ['tag_b'])
+
+  const original_updated_at_a = media_a.media_reference.updated_at
+  const original_updated_at_b = media_b.media_reference.updated_at
+
+  await ctx.subtest('updated_at changes on media update', async () => {
+    await ctx.timeout(50)
+    const updated_a = forager.media.update(media_a.media_reference.id, {stars: 3})
+    ctx.assert.not_equals(updated_a.media_reference.updated_at.getTime(), original_updated_at_a.getTime())
+    const a_after_update = updated_a.media_reference.updated_at
+
+    // media_b should still have its original updated_at
+    const b_result = forager.media.get({media_reference_id: media_b.media_reference.id})
+    ctx.assert.equals(b_result.media_reference.updated_at.getTime(), original_updated_at_b.getTime())
+
+    // sorting by updated_at desc should put media_a first now
+    ctx.assert.search_result(forager.media.search({sort_by: 'updated_at', order: 'desc'}), {
+      results: [
+        {media_reference: {id: media_a.media_reference.id}},
+        {media_reference: {id: media_b.media_reference.id}},
+      ]
+    })
+  })
+
+  await ctx.subtest('updated_at changes on tag add', async () => {
+    const b_before = forager.media.get({media_reference_id: media_b.media_reference.id})
+    await ctx.timeout(50)
+    forager.media.update(media_b.media_reference.id, {}, ['new_tag'])
+    const b_after = forager.media.get({media_reference_id: media_b.media_reference.id})
+    ctx.assert.not_equals(b_after.media_reference.updated_at.getTime(), b_before.media_reference.updated_at.getTime())
+  })
+
+  await ctx.subtest('updated_at changes on tag remove', async () => {
+    const b_before = forager.media.get({media_reference_id: media_b.media_reference.id})
+    await ctx.timeout(50)
+    forager.media.update(media_b.media_reference.id, {}, {remove: ['new_tag']})
+    const b_after = forager.media.get({media_reference_id: media_b.media_reference.id})
+    ctx.assert.not_equals(b_after.media_reference.updated_at.getTime(), b_before.media_reference.updated_at.getTime())
+  })
+
+  await ctx.subtest('updated_at does NOT change on view', async () => {
+    const a_before = forager.media.get({media_reference_id: media_a.media_reference.id})
+    await ctx.timeout(50)
+    forager.views.start({media_reference_id: media_a.media_reference.id})
+    const a_after = forager.media.get({media_reference_id: media_a.media_reference.id})
+    ctx.assert.equals(a_after.media_reference.updated_at.getTime(), a_before.media_reference.updated_at.getTime())
+  })
+
+  await ctx.subtest('updated_at does NOT change on alias_create/delete', async () => {
+    const a_before = forager.media.get({media_reference_id: media_a.media_reference.id})
+    await ctx.timeout(50)
+    const alias_result = forager.tag.alias_create({alias_tag: 'tag_a', alias_for_tag: 'tag_a_canonical'})
+    const a_after = forager.media.get({media_reference_id: media_a.media_reference.id})
+    ctx.assert.equals(a_after.media_reference.updated_at.getTime(), a_before.media_reference.updated_at.getTime())
+
+    await ctx.timeout(50)
+    forager.tag.alias_delete({id: alias_result.rule.id})
+    const a_after_delete = forager.media.get({media_reference_id: media_a.media_reference.id})
+    ctx.assert.equals(a_after_delete.media_reference.updated_at.getTime(), a_before.media_reference.updated_at.getTime())
+  })
+
+  await ctx.subtest('updated_at does NOT change on parent_create/delete', async () => {
+    const a_before = forager.media.get({media_reference_id: media_a.media_reference.id})
+    await ctx.timeout(50)
+    const parent_result = forager.tag.parent_create({child_tag: 'tag_a', parent_tag: 'parent_tag'})
+    const a_after = forager.media.get({media_reference_id: media_a.media_reference.id})
+    ctx.assert.equals(a_after.media_reference.updated_at.getTime(), a_before.media_reference.updated_at.getTime())
+
+    await ctx.timeout(50)
+    forager.tag.parent_delete({id: parent_result.rule.id})
+    const a_after_delete = forager.media.get({media_reference_id: media_a.media_reference.id})
+    ctx.assert.equals(a_after_delete.media_reference.updated_at.getTime(), a_before.media_reference.updated_at.getTime())
+  })
+})
+
+test('series updated_at', async ctx => {
+  using forager = new Forager(ctx.get_test_config())
+  forager.init()
+
+  const media_a = await forager.media.create(ctx.resources.media_files['koch.tif'], {title: 'Art A'})
+  const series = forager.series.create({media_series_name: 'My Series'})
+  const series_before = forager.series.get({series_id: series.media_reference.id})
+
+  await ctx.subtest('updated_at changes when adding item to series', async () => {
+    await ctx.timeout(50)
+    forager.series.add({
+      series_id: series.media_reference.id,
+      media_reference_id: media_a.media_reference.id,
+      series_index: 0,
+    })
+    const series_after = forager.series.get({series_id: series.media_reference.id})
+    ctx.assert.not_equals(series_after.media_reference.updated_at.getTime(), series_before.media_reference.updated_at.getTime())
+  })
+})
+
 test('forager class', async ctx => {
   // assert that we error out when passing bad data to the forager class
   ctx.assert.throws(() => new Forager({foo: 'bar'} as any))
