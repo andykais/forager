@@ -11,12 +11,19 @@
     stat?: object
     queryparams?: string
     value: object
+    enabled: boolean
+    order: number
   }
   interface Props {
     entries: InfoEntry[]
     controller: BrowseController
   }
-  let {controller, entries}: Props = $props()
+  let props: Props = $props()
+  let {controller} = props
+  let entries = $derived(props.entries
+    .filter(entry => entry.enabled)
+    .sort((a, b) => a.order - b.order)
+  )
   const {queryparams, settings, media_selections, media_list} = controller.runes
 
   const icon_size = 14
@@ -28,10 +35,11 @@
   ]
 </script>
 
+
 <table class="w-full">
   <tbody>
     {#each entries as entry, index}
-    <tr class={[
+<tr class={[
       "grid grid-cols-[auto_auto_auto] justify-between px-3 py-1",
       index !== entries.length - 1 && "border-b-gray-500 border-b",
     ]}

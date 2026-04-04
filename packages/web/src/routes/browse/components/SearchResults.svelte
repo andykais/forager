@@ -179,11 +179,15 @@
                     value:result.group_metadata.value,
                     stat: result.group_metadata.count,
                     queryparams: queryparams.merge({mode: 'media', tags: `${queryparams.current.group_by ?? ''}:${result.group_metadata.value}`}),
+                    enabled: controller.runes.settings.ui.media_list.info_tiles.tag_group.enabled,
+                    order: controller.runes.settings.ui.media_list.info_tiles.tag_group.order,
                   },
                   {
-                    name: 'oldest',
+                    name: 'sort_top',
                     icon: icons.ArrowUp,
                     value: human_readable_sort_per_group(result.group_metadata),
+                    enabled: controller.runes.settings.ui.media_list.info_tiles.sort_top.enabled,
+                    order: controller.runes.settings.ui.media_list.info_tiles.sort_top.order,
                   },
                 ]}
               />
