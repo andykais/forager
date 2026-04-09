@@ -100,30 +100,33 @@ class SeriesActions extends Actions {
     // making it default to the back of the list is more complicated (either storing that data on MediaReference or doing MAX() sql call) so for now we just default to putting it on the front of the list
     const series_index = parsed.series_index ?? 0
 
-    try {
-      const series_item = this.models.MediaSeriesItem.create({
-        series_id: parsed.series_id,
-        media_reference_id: parsed.media_reference_id,
-        series_index: series_index,
-      })!
-      this.#merge_media_item_tags_into_series(parsed.series_id, parsed.media_reference_id)
-      this.models.MediaReference.touch({id: parsed.series_id})
-      return this.models.MediaSeriesItem.select_one({id: series_item.id})
-    } catch (e) {
-      if (e instanceof torm.errors.UniqueConstraintError) {
-        const series = this.models.MediaReference.select_one_media_series({id: parsed.series_id})
+    const transaction = this.ctx.db.transaction_sync(() => {
+      try {
+        const series_item = this.models.MediaSeriesItem.create({
+          series_id: parsed.series_id,
+          media_reference_id: parsed.media_reference_id,
+          series_index: series_index,
+        })!
+        this.#merge_media_item_tags_into_series(parsed.series_id, parsed.media_reference_id)
+        this.models.MediaReference.touch({id: parsed.series_id})
+        return this.models.MediaSeriesItem.select_one({id: series_item.id})
+      } catch (e) {
+        if (e instanceof torm.errors.UniqueConstraintError) {
+          const series = this.models.MediaReference.select_one_media_series({id: parsed.series_id})
 
-        const existing_media_series_item = this.models.MediaSeriesItem.select_one({media_reference_id: parsed.media_reference_id})
-        if (existing_media_series_item?.series_index === series_index) {
-          // if this is an existing media series item, then we can assume that the point of this was an "upsert" of the existing data
-          this.#merge_media_item_tags_into_series(parsed.series_id, parsed.media_reference_id)
+          const existing_media_series_item = this.models.MediaSeriesItem.select_one({media_reference_id: parsed.media_reference_id})
+          if (existing_media_series_item?.series_index === series_index) {
+            // if this is an existing media series item, then we can assume that the point of this was an "upsert" of the existing data
+            this.#merge_media_item_tags_into_series(parsed.series_id, parsed.media_reference_id)
+          }
+
+          throw new errors.SeriesItemAlreadyExistsError(series.media_series_name!, parsed.series_index!, parsed.media_reference_id)
+        } else {
+          throw e
         }
-
-        throw new errors.SeriesItemAlreadyExistsError(series.media_series_name!, parsed.series_index!, parsed.media_reference_id)
-      } else {
-        throw e
       }
-    }
+    })
+    return transaction()
   }
 
   #merge_media_item_tags_into_series(series_id: number, media_reference_id: number) {
