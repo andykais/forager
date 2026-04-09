@@ -7,7 +7,6 @@
   import * as datetime from '@std/datetime'
   import Datetime from '$lib/components/Datetime.svelte'
   import * as icons from '$lib/icons/mod.ts'
-  import MediaTileInfoTable from './MediaTileInfoTable.svelte';
 
   interface Props {
     controller: BrowseController
@@ -33,11 +32,7 @@
     return `${hours.toFixed(2)}h`
   }
 
-  function format_human_readable_datetime(date_str: string) {
-    const date = new Date(date_str)
-    console.log({date})
-    return datetime.format(date, 'yyyy/MM/dd')
-  }
+  function format_datetime(d)
   interface SearchResultGroupMetadata {}
   function human_readable_sort_per_group(group_metadata: SearchResultGroupMetadata) {
     const order = controller.runes.queryparams.current.order === 'desc' ? 'oldest' : 'newest'
@@ -46,17 +41,17 @@
     switch (controller.runes.queryparams.current.sort) {
       case 'source_created_at': {
         sort_descriptor = 'created'
-        human_readable_datetime = format_human_readable_datetime(group_metadata.source_created_at)
+        human_readable_datetime = datetime.format('YYYY/mm/dd', group_metadata.source_created_at)
         break
       }
       case 'created_at': {
         sort_descriptor = 'added on'
-        human_readable_datetime = format_human_readable_datetime(group_metadata.created_at)
+        human_readable_datetime = datetime.format('YYYY/mm/dd', group_metadata.created_at)
         break
       }
       case 'updated_at': {
         sort_descriptor = 'updated'
-        human_readable_datetime = format_human_readable_datetime(group_metadata.updated_at)
+        human_readable_datetime = datetime.format('YYYY/mm/dd', group_metadata.updated_at)
         break
       }
       defaut: {
@@ -67,11 +62,7 @@
     // Newest added on {result.group_metadata.created_at}
     console.log({datetime})
 
-    // sort descriptor does not seem particularly nice. E.g. "oldest created YYYY/MM/dd"
-    // we already have this information at the top with "created_at". We could even abstract away "oldest" as a icon.
-    // return `${order} ${sort_descriptor} ${human_readable_datetime}`
-    // return `${order} ${human_readable_datetime}`
-    return human_readable_datetime
+    return `${order} ${sort_descriptor} ${human_readable_datetime}`
   }
 </script>
 
@@ -171,26 +162,15 @@
               <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
               <span>({result.media_reference.media_series_length})</span>
           {:else if result.media_type === 'grouped'}
-              <MediaTileInfoTable
-                {controller}
-                entries={[
-                  { name: 'tag_group',
-                    icon: icons.Copy,
-                    value:result.group_metadata.value,
-                    stat: result.group_metadata.count,
-                    queryparams: queryparams.merge({mode: 'media', tags: `${queryparams.current.group_by ?? ''}:${result.group_metadata.value}`}),
-                    enabled: controller.runes.settings.ui.media_list.info_tiles.tag_group.enabled,
-                    order: controller.runes.settings.ui.media_list.info_tiles.tag_group.order,
-                  },
-                  {
-                    name: 'sort_top',
-                    icon: icons.ArrowUp,
-                    value: human_readable_sort_per_group(result.group_metadata),
-                    enabled: controller.runes.settings.ui.media_list.info_tiles.sort_top.enabled,
-                    order: controller.runes.settings.ui.media_list.info_tiles.sort_top.order,
-                  },
-                ]}
-              />
+              <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
+              <SearchLink
+                class="hover:text-green-500 hover:bg-gray-700 px-2 rounded-sm"
+                {controller} params={queryparams.merge({mode: 'media', tags: `${queryparams.current.group_by ?? ''}:${result.group_metadata.value}`})}> {result.group_metadata.value} 
+              </SearchLink>
+              <span>
+                {human_readable_sort_per_group(result.group_metadata)}
+              </span>
+              <span>{result.group_metadata.count}</span>
           {:else}
             UNEXPECTED MEDIA TYPE {result.media_type}
           {/if}
