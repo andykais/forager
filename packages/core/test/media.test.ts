@@ -467,7 +467,7 @@ test('search sort duration', async ctx => {
   const media_gif = await forager.media.create(ctx.resources.media_files['blink.gif'])
   // cat_cronch.mp4 - duration: 6.763
   const media_video = await forager.media.create(ctx.resources.media_files['cat_cronch.mp4'])
-  // music_snippet.mp3 - duration: 6.92 (actual value from FFmpeg)
+  // music_snippet.mp3 - duration can vary slightly across FFmpeg builds
   const media_audio = await forager.media.create(ctx.resources.media_files['music_snippet.mp3'])
 
   // Create a media series to ensure it's properly excluded when sorting by duration
@@ -475,23 +475,33 @@ test('search sort duration', async ctx => {
   const test_series = forager.series.create({title: 'test series'})
 
   await ctx.subtest('duration sort order ascending', () => {
-    ctx.assert.search_result(forager.media.search({sort_by: 'duration', order: 'asc'}), {
+    const asc_results = forager.media.search({sort_by: 'duration', order: 'asc'})
+    const asc_media_results = asc_results.results as MediaFileResponse[]
+    ctx.assert.search_result(asc_results, {
       results: [
-        {media_reference: {id: media_gif.media_reference.id}, media_file: {duration: 3.18}},
-        {media_reference: {id: media_video.media_reference.id}, media_file: {duration: 6.763}},
-        {media_reference: {id: media_audio.media_reference.id}, media_file: {duration: 6.92}},
+        {media_reference: {id: media_gif.media_reference.id}},
+        {media_reference: {id: media_video.media_reference.id}},
+        {media_reference: {id: media_audio.media_reference.id}},
       ]
     })
+    ctx.assert.almost_equals(asc_media_results[0].media_file.duration, 3.18, 0.01)
+    ctx.assert.almost_equals(asc_media_results[1].media_file.duration, 6.763, 0.01)
+    ctx.assert.almost_equals(asc_media_results[2].media_file.duration, 6.92, 0.1)
   })
 
   await ctx.subtest('duration sort order descending', () => {
-    ctx.assert.search_result(forager.media.search({sort_by: 'duration', order: 'desc'}), {
+    const desc_results = forager.media.search({sort_by: 'duration', order: 'desc'})
+    const desc_media_results = desc_results.results as MediaFileResponse[]
+    ctx.assert.search_result(desc_results, {
       results: [
-        {media_reference: {id: media_audio.media_reference.id}, media_file: {duration: 6.92}},
-        {media_reference: {id: media_video.media_reference.id}, media_file: {duration: 6.763}},
-        {media_reference: {id: media_gif.media_reference.id}, media_file: {duration: 3.18}},
+        {media_reference: {id: media_audio.media_reference.id}},
+        {media_reference: {id: media_video.media_reference.id}},
+        {media_reference: {id: media_gif.media_reference.id}},
       ]
     })
+    ctx.assert.almost_equals(desc_media_results[0].media_file.duration, 6.92, 0.1)
+    ctx.assert.almost_equals(desc_media_results[1].media_file.duration, 6.763, 0.01)
+    ctx.assert.almost_equals(desc_media_results[2].media_file.duration, 3.18, 0.01)
   })
 
   await ctx.subtest('duration sort with pagination', () => {
@@ -929,7 +939,7 @@ test('search group by', async ctx => {
     // Succulentsaur.mp4 - has artist:andrew tag
     // cat_cronch.mp4 - duration: 6.763, has artist:alice tag
 
-    // Create music_snippet.mp3 with duration 6.92
+    // Create music_snippet.mp3 with duration that can vary slightly by FFmpeg build
     const music_snippet = await forager.media.create(
       ctx.resources.media_files['music_snippet.mp3'],
       {title: 'Music Snippet'},
@@ -949,10 +959,13 @@ test('search group by', async ctx => {
       { group: { value: 'alice', count: 2 } },
       { group: { value: 'bob', count: 1 } },
     ])
-    ctx.assert.list_deep_partial(group_with_duration_sort_asc.results[1].group.media!, [
-      { media_reference: { id: cat_cronch.media_reference.id }, media_file: { duration: 6.763 } },
-      { media_reference: { id: music_snippet.media_reference.id }, media_file: { duration: 6.92 } },
+    const alice_group_media_asc = group_with_duration_sort_asc.results[1].group.media! as MediaFileResponse[]
+    ctx.assert.list_deep_partial(alice_group_media_asc, [
+      { media_reference: { id: cat_cronch.media_reference.id } },
+      { media_reference: { id: music_snippet.media_reference.id } },
     ])
+    ctx.assert.almost_equals(alice_group_media_asc[0].media_file.duration, 6.763, 0.01)
+    ctx.assert.almost_equals(alice_group_media_asc[1].media_file.duration, 6.92, 0.1)
     ctx.assert.list_deep_partial(group_with_duration_sort_asc.results[2].group.media!, [
       { media_reference: { id: ed_edd_eddy.media_reference.id }, media_file: { duration: 0 } },
     ])
@@ -974,10 +987,13 @@ test('search group by', async ctx => {
       { media_reference: { id: generated_art.media_reference.id }, media_file: { duration: 0 } },
     ])
     // same 'artist:alice' tag group as above, media is now sorted by descending duration
-    ctx.assert.list_deep_partial(group_with_duration_sort_desc.results[1].group.media!, [
-      { media_reference: { id: music_snippet.media_reference.id }, media_file: { duration: 6.92 } },
-      { media_reference: { id: cat_cronch.media_reference.id }, media_file: { duration: 6.763 } },
+    const alice_group_media_desc = group_with_duration_sort_desc.results[1].group.media! as MediaFileResponse[]
+    ctx.assert.list_deep_partial(alice_group_media_desc, [
+      { media_reference: { id: music_snippet.media_reference.id } },
+      { media_reference: { id: cat_cronch.media_reference.id } },
     ])
+    ctx.assert.almost_equals(alice_group_media_desc[0].media_file.duration, 6.92, 0.1)
+    ctx.assert.almost_equals(alice_group_media_desc[1].media_file.duration, 6.763, 0.01)
   })
 
   await ctx.subtest('with group sort_by duration', async () => {
@@ -991,7 +1007,7 @@ test('search group by', async ctx => {
       order: 'asc'
     })
 
-    // alice group has cat_cronch (6.763) and music_snippet (6.92) - MIN: 6.763
+    // alice group has cat_cronch (6.763) and music_snippet (~6.92-6.96) - MIN: 6.763
     // andrew group has succulentsaur (16.733333), cat_doodle (0), generated_art (0) - MIN: 0
     // bob group has ed_edd_eddy (0) - MIN: 0
     // When sorting by MIN duration ascending, andrew and bob should come before alice
@@ -1000,7 +1016,8 @@ test('search group by', async ctx => {
     ctx.assert.not_equals(alice_group, undefined)
     ctx.assert.equals(alice_group!.group.count, 2)
     // Alice's min duration is 6.763 from cat_cronch
-    ctx.assert.equals(alice_group!.group.duration, 6.763)
+    ctx.assert.not_equals(alice_group!.group.duration, undefined)
+    ctx.assert.almost_equals(alice_group!.group.duration!, 6.763, 0.01)
 
     // Group by artist and sort groups by duration (descending = MAX duration)
     const groups_sorted_by_duration_desc = forager.media.group({
@@ -1009,16 +1026,25 @@ test('search group by', async ctx => {
       order: 'desc'
     })
 
-    // alice group MAX: 6.92
+    // alice group MAX: ~6.92-6.96 depending on FFmpeg
     // andrew group MAX: 16.733333
     // bob group MAX: 0
     // When sorting by MAX duration descending, andrew should come first, then alice, then bob
 
     ctx.assert.list_deep_partial(groups_sorted_by_duration_desc.results, [
-      { group: { value: 'andrew', count: 3, duration: 16.733333 } },
-      { group: { value: 'alice', count: 2, duration: 6.92 } },
-      { group: { value: 'bob', count: 1, duration: 0 } },
+      { group: { value: 'andrew', count: 3 } },
+      { group: { value: 'alice', count: 2 } },
+      { group: { value: 'bob', count: 1 } },
     ])
+    const andrew_duration = groups_sorted_by_duration_desc.results[0].group.duration
+    const alice_duration = groups_sorted_by_duration_desc.results[1].group.duration
+    const bob_duration = groups_sorted_by_duration_desc.results[2].group.duration
+    ctx.assert.not_equals(andrew_duration, undefined)
+    ctx.assert.not_equals(alice_duration, undefined)
+    ctx.assert.not_equals(bob_duration, undefined)
+    ctx.assert.almost_equals(andrew_duration!, 16.733333, 0.01)
+    ctx.assert.almost_equals(alice_duration!, 6.92, 0.1)
+    ctx.assert.almost_equals(bob_duration!, 0, 0.001)
   })
 })
 
@@ -1090,8 +1116,9 @@ test('video media', async ctx => {
     ctx.assert.equals(4.7 + 0.39999999999999947, 5.1)
     ctx.assert.equals(bite_keypoint.media_timestamp, 4.7)
 
-    ctx.assert.equals(media_cronch.media_file.duration, 6.763)
-    ctx.assert.list_partial(forager.media.get({media_reference_id: media_cronch.media_reference.id}).thumbnails.results, [
+    ctx.assert.almost_equals(media_cronch.media_file.duration, 6.763, 0.01)
+    const sorted_thumbnails = forager.media.get({media_reference_id: media_cronch.media_reference.id}).thumbnails.results.toSorted((a, b) => a.media_timestamp - b.media_timestamp)
+    const expected_thumbnails = [
       { kind: "standard", media_timestamp: 0 },
       { kind: "standard", media_timestamp: 0.366667 },
       { kind: "standard", media_timestamp: 0.766667 },
@@ -1112,7 +1139,13 @@ test('video media', async ctx => {
       { kind: "standard", media_timestamp: 5.933333 },
       { kind: "standard", media_timestamp: 6.333333 },
       { kind: "standard", media_timestamp: 6.7 }
-    ], (a, b) => a.media_timestamp - b.media_timestamp)
+    ] as const
+    ctx.assert.equals(sorted_thumbnails.length, expected_thumbnails.length)
+    expected_thumbnails.forEach((expected_thumbnail, index) => {
+      const actual_thumbnail = sorted_thumbnails[index]
+      ctx.assert.equals(actual_thumbnail.kind, expected_thumbnail.kind)
+      ctx.assert.almost_equals(actual_thumbnail.media_timestamp, expected_thumbnail.media_timestamp, 0.00001)
+    })
 
     // assert tags are created as well
     ctx.assert.list_partial(forager.media.get({media_reference_id: media_cronch.media_reference.id}).tags, [
@@ -1257,7 +1290,6 @@ test('audio media', async ctx => {
           filepath: ctx.resources.media_files['music_snippet.mp3'],
           audio: true,
           animated: false,
-          duration: 6.92,
           framerate: 0,
           checksum: '1735a26d0182589686bfe0dd9ec4d1e73d82ef7ee95edec3ad6edc9aad48e8d5',
           media_type: 'AUDIO',
@@ -1265,6 +1297,8 @@ test('audio media', async ctx => {
       }
     ]
   })
+  const audio_result = results.results[0] as MediaFileResponse
+  ctx.assert.almost_equals(audio_result.media_file.duration, 6.92, 0.1)
   ctx.assert.equals(results.results[0].thumbnails.results.length, 1)
 })
 
