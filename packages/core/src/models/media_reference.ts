@@ -3,6 +3,7 @@ import * as errors from '~/lib/errors.ts'
 import { Model, field, PaginationVars, GroupByVars, type PaginatedResult } from '~/models/lib/base.ts'
 import { SQLBuilder } from '~/models/lib/sql_builder.ts'
 import { type outputs } from '~/inputs/mod.ts'
+import { TIMESTAMP_SQLITE } from '~/db/migrations/registry.ts'
 
 interface SelectOneFilters {
   id?: number
@@ -145,15 +146,14 @@ class MediaReference extends Model {
       MediaReference.params.editors,
     ]}) RETURNING ${MediaReference.result.id}`
 
-  #update = this.query`UPDATE media_reference SET
+  #update_fields = this.query.exec`UPDATE media_reference SET
       title = IFNULL(${MediaReference.params.title}, title),
       description = IFNULL(${MediaReference.params.description}, description),
       metadata = IFNULL(${MediaReference.params.metadata}, metadata),
       source_url = IFNULL(${MediaReference.params.source_url}, source_url),
       source_created_at = IFNULL(${MediaReference.params.source_created_at}, source_created_at),
       stars = IFNULL(${MediaReference.params.stars}, stars),
-      editors = IFNULL(${MediaReference.params.editors}, editors),
-      updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'NOW')
+      editors = IFNULL(${MediaReference.params.editors}, editors)
     WHERE id = ${MediaReference.params.id}`
 
   #select_by_id = this.query`
@@ -168,14 +168,9 @@ class MediaReference extends Model {
     DELETE FROM media_reference
     WHERE id = ${MediaReference.params.id}`
 
-  #touch = this.query.exec`
-    UPDATE media_reference
-    SET updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'NOW')
-    WHERE id = ${MediaReference.params.id}`
-
   /** Bump updated_at to the current time without changing any other fields. */
   public touch(params: { id: number }) {
-    this.#touch(params)
+    this.driver.prepare(`UPDATE media_reference SET updated_at = ${TIMESTAMP_SQLITE} WHERE id = :id`).run(params)
   }
 
   #select_one_impl(params: SelectOneFilters) {
@@ -624,7 +619,10 @@ ${group_builder.generate_sql()}
 
   public create = this.create_fn(this.#create)
 
-  public update = this.#update.exec
+  public update = (params: {id: number} & Record<string, unknown>) => {
+    this.#update_fields(params as any)
+    this.touch({id: params.id})
+  }
 
   public delete = this.delete_fn(this.#delete_by_id)
 
