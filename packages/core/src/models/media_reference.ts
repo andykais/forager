@@ -3,6 +3,7 @@ import * as errors from '~/lib/errors.ts'
 import { Model, field, PaginationVars, GroupByVars, type PaginatedResult } from '~/models/lib/base.ts'
 import { SQLBuilder } from '~/models/lib/sql_builder.ts'
 import { type outputs } from '~/inputs/mod.ts'
+import { TIMESTAMP_SQLITE } from "~/db/migrations/registry.ts"
 
 interface SelectOneFilters {
   id?: number
@@ -153,7 +154,7 @@ class MediaReference extends Model {
       source_created_at = IFNULL(${MediaReference.params.source_created_at}, source_created_at),
       stars = IFNULL(${MediaReference.params.stars}, stars),
       editors = IFNULL(${MediaReference.params.editors}, editors),
-      updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'NOW')
+      updated_at = ${TIMESTAMP_SQLITE}
     WHERE id = ${MediaReference.params.id}`
 
   #select_by_id = this.query`
@@ -170,7 +171,7 @@ class MediaReference extends Model {
 
   #touch = this.query.exec`
     UPDATE media_reference
-    SET updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'NOW')
+    SET updated_at = ${TIMESTAMP_SQLITE}
     WHERE id = ${MediaReference.params.id}`
 
   /** Bump updated_at to the current time without changing any other fields. */
