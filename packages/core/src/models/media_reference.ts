@@ -168,13 +168,14 @@ class MediaReference extends Model {
     DELETE FROM media_reference
     WHERE id = ${MediaReference.params.id}`
 
-  #restore_updated_at = this.query.exec`
+  #touch = this.query.exec`
     UPDATE media_reference
-    SET updated_at = ${MediaReference.params.updated_at}
+    SET updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'NOW')
     WHERE id = ${MediaReference.params.id}`
 
-  public restore_updated_at(params: { id: number, updated_at: Date }) {
-    this.#restore_updated_at(params)
+  /** Bump updated_at to the current time without changing any other fields. */
+  public touch(params: { id: number }) {
+    this.#touch(params)
   }
 
   #select_one_impl(params: SelectOneFilters) {

@@ -107,6 +107,7 @@ class SeriesActions extends Actions {
         series_index: series_index,
       })!
       this.#merge_media_item_tags_into_series(parsed.series_id, parsed.media_reference_id)
+      this.models.MediaReference.touch({id: parsed.series_id})
       return this.models.MediaSeriesItem.select_one({id: series_item.id})
     } catch (e) {
       if (e instanceof torm.errors.UniqueConstraintError) {

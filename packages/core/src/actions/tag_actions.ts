@@ -232,9 +232,6 @@ class TagActions extends Actions {
       const alias_tag_record = this.models.Tag.select_one({ id: alias_tag.id }, { or_raise: true })
 
       const rows = this.models.MediaReferenceTag.select_all_by_tag_alias_id({ tag_alias_id: parsed.id })
-
-      const saved_timestamps = this.#save_media_reference_timestamps(rows.map(r => r.media_reference_id))
-
       for (const row of rows) {
         this.models.MediaReferenceTag.delete({ media_reference_id: row.media_reference_id, tag_id: row.tag_id })
         this.models.MediaReferenceTag.get_or_create({
@@ -246,8 +243,6 @@ class TagActions extends Actions {
           tag_parent_id: null,
         })
       }
-
-      this.#restore_media_reference_timestamps(saved_timestamps)
 
       this.models.TagAlias.delete({ id: parsed.id }, { expected_deletes: 1 })
       return {media_reference_tags_deleted: rows.length}
@@ -304,13 +299,7 @@ class TagActions extends Actions {
     const parsed = parsers.TagParentDelete.parse(params)
     const tag_rule = this.models.TagParent.select_one({ id: parsed.id }, { or_raise: true })
     const transaction = this.ctx.db.transaction_sync(() => {
-      const rows = this.models.MediaReferenceTag.select_all_by_tag_parent_id({ tag_parent_id: parsed.id })
-      const saved_timestamps = this.#save_media_reference_timestamps(rows.map(r => r.media_reference_id))
-
       const result = this.models.MediaReferenceTag.delete_by_tag_parent_id({ tag_parent_id: parsed.id })
-
-      this.#restore_media_reference_timestamps(saved_timestamps)
-
       this.models.TagParent.delete({ id: parsed.id }, { expected_deletes: 1 })
       return result.changes
     })
@@ -346,9 +335,6 @@ class TagActions extends Actions {
     if (!canonical_tag) return
 
     const alias_rows = this.models.MediaReferenceTag.select_all_by_tag_id({ tag_id: alias_tag.id })
-
-    const saved_timestamps = this.#save_media_reference_timestamps(alias_rows.map(r => r.media_reference_id))
-
     for (const row of alias_rows) {
       this.models.MediaReferenceTag.delete({ media_reference_id: row.media_reference_id, tag_id: alias_tag.id })
       this.models.MediaReferenceTag.get_or_create({
@@ -360,9 +346,6 @@ class TagActions extends Actions {
         tag_parent_id: null,
       })
     }
-
-    this.#restore_media_reference_timestamps(saved_timestamps)
-
     return alias_rows.length
   }
 
@@ -378,9 +361,6 @@ class TagActions extends Actions {
     if (!parent_tag) return
 
     const child_rows = this.models.MediaReferenceTag.select_all_by_tag_id({ tag_id: child_tag.id })
-
-    const saved_timestamps = this.#save_media_reference_timestamps(child_rows.map(r => r.media_reference_id))
-
     for (const row of child_rows) {
       this.models.MediaReferenceTag.get_or_create({
         media_reference_id: row.media_reference_id,
@@ -391,26 +371,7 @@ class TagActions extends Actions {
         tag_parent_id: parent_rule.id,
       })
     }
-
-    this.#restore_media_reference_timestamps(saved_timestamps)
-
     return child_rows.length
-  }
-
-  #save_media_reference_timestamps(media_reference_ids: number[]): Map<number, Date> {
-    const timestamps = new Map<number, Date>()
-    for (const id of media_reference_ids) {
-      if (timestamps.has(id)) continue
-      const mr = this.models.MediaReference.select_one({ id }, { or_raise: true })
-      timestamps.set(id, mr.updated_at)
-    }
-    return timestamps
-  }
-
-  #restore_media_reference_timestamps(saved: Map<number, Date>) {
-    for (const [id, updated_at] of saved) {
-      this.models.MediaReference.restore_updated_at({ id, updated_at })
-    }
   }
 
   /** Walk the parent chain to detect circular references before inserting. */

@@ -51,6 +51,8 @@ class KeypointActions extends Actions {
       await fs.copy(thumbnail.source_filepath, thumbnail.destination_filepath, {overwrite: true})
       await Deno.remove(thumbnails.source_folder, {recursive: true})
 
+      this.models.MediaReference.touch({id: media_reference.id})
+
       return keypoint
     })
 
