@@ -1350,6 +1350,96 @@ test('media reload', async (ctx) => {
   })
 })
 
+test('media_reference updated_at', async ctx => {
+  using forager = new Forager(ctx.get_test_config())
+  forager.init()
+
+  const media_a = await forager.media.create(ctx.resources.media_files['koch.tif'], {title: 'Art A'}, ['tag_a'])
+  await ctx.timeout(50) // stagger created_at/updated_at between media_a and media_b
+  const media_b = await forager.media.create(ctx.resources.media_files['ed-edd-eddy.png'], {title: 'Art B'}, ['tag_b'])
+
+  const original_updated_at_a = media_a.media_reference.updated_at
+  const original_updated_at_b = media_b.media_reference.updated_at
+
+  await ctx.subtest('updated_at changes on media.update', async () => {
+    await ctx.timeout(50) // stagger so updated_at is distinguishable from the original
+    const updated_a = forager.media.update(media_a.media_reference.id, {stars: 3})
+    ctx.assert.greater_than(updated_a.media_reference.updated_at.getTime(), original_updated_at_a.getTime())
+
+    // media_b should still have its original updated_at
+    const b_result = forager.media.get({media_reference_id: media_b.media_reference.id})
+    ctx.assert.equals(b_result.media_reference.updated_at.getTime(), original_updated_at_b.getTime())
+
+    // sorting by updated_at desc should put media_a first now
+    ctx.assert.search_result(forager.media.search({sort_by: 'updated_at', order: 'desc'}), {
+      results: [
+        {media_reference: {id: media_a.media_reference.id}},
+        {media_reference: {id: media_b.media_reference.id}},
+      ]
+    })
+  })
+
+  await ctx.subtest('updated_at changes on media.update with tags', async () => {
+    const b_before = forager.media.get({media_reference_id: media_b.media_reference.id})
+    await ctx.timeout(50)
+    forager.media.update(media_b.media_reference.id, {}, ['new_tag'])
+    const b_after = forager.media.get({media_reference_id: media_b.media_reference.id})
+    ctx.assert.greater_than(b_after.media_reference.updated_at.getTime(), b_before.media_reference.updated_at.getTime())
+  })
+
+  await ctx.subtest('updated_at does NOT change on view', async () => {
+    const a_before = forager.media.get({media_reference_id: media_a.media_reference.id})
+    await ctx.timeout(50)
+    forager.views.start({media_reference_id: media_a.media_reference.id})
+    const a_after = forager.media.get({media_reference_id: media_a.media_reference.id})
+    ctx.assert.equals(a_after.media_reference.updated_at.getTime(), a_before.media_reference.updated_at.getTime())
+  })
+
+  await ctx.subtest('updated_at changes on keypoints.create', async () => {
+    const media_video = await forager.media.create(ctx.resources.media_files['cat_cronch.mp4'], {title: 'Cat Video'})
+    await ctx.timeout(50)
+    const before = forager.media.get({media_reference_id: media_video.media_reference.id})
+    await ctx.timeout(50)
+    await forager.keypoints.create({
+      media_reference_id: media_video.media_reference.id,
+      tag: 'crunch_moment',
+      start_timestamp: 5.2,
+    })
+    const after = forager.media.get({media_reference_id: media_video.media_reference.id})
+    ctx.assert.not_equals(after.media_reference.updated_at.getTime(), before.media_reference.updated_at.getTime())
+  })
+})
+
+test('series updated_at', async ctx => {
+  using forager = new Forager(ctx.get_test_config())
+  forager.init()
+
+  const media_a = await forager.media.create(ctx.resources.media_files['koch.tif'], {title: 'Art A'})
+
+  await ctx.subtest('updated_at changes on series.update', async () => {
+    const series = forager.series.create({media_series_name: 'My Series'})
+    const before = forager.series.get({series_id: series.media_reference.id})
+    await ctx.timeout(50) // stagger so updated_at is distinguishable from the original
+    forager.series.update(series.media_reference.id, {stars: 3})
+    const after = forager.series.get({series_id: series.media_reference.id})
+    ctx.assert.greater_than(after.media_reference.updated_at.getTime(), before.media_reference.updated_at.getTime())
+  })
+
+  await ctx.subtest('updated_at changes on series.add', async () => {
+    const series = forager.series.create({media_series_name: 'Another Series'})
+    await ctx.timeout(50) // stagger to ensure any timestamp change would be detectable
+    const before = forager.series.get({series_id: series.media_reference.id})
+    await ctx.timeout(50) // stagger so updated_at is distinguishable from the read
+    forager.series.add({
+      series_id: series.media_reference.id,
+      media_reference_id: media_a.media_reference.id,
+      series_index: 0,
+    })
+    const after = forager.series.get({series_id: series.media_reference.id})
+    ctx.assert.greater_than(after.media_reference.updated_at.getTime(), before.media_reference.updated_at.getTime())
+  })
+})
+
 test('forager class', async ctx => {
   // assert that we error out when passing bad data to the forager class
   ctx.assert.throws(() => new Forager({foo: 'bar'} as any))
