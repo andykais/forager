@@ -36,7 +36,15 @@ export class Keybinds {
   #normalize_keybind_code(code: string) {
     return code
       .split('-')
-      .map(part => part.replace('Control', 'Ctrl').replace('Key', ''))
+      .map(part => {
+        const normalized_part = part
+          .replace('Control', 'Ctrl')
+          .replace('Spacebar', 'Space')
+          .replace('Key', '')
+        if (normalized_part === ' ') return 'Space'
+        if (normalized_part === 'Esc') return 'Escape'
+        return normalized_part
+      })
       .join('-')
   }
 
@@ -92,9 +100,15 @@ export class Keybinds {
     if (e.shiftKey) keys_down.push('Shift')
     if (e.altKey) keys_down.push('Alt')
     keys_down.push(last_keycode)
-    const code = keys_down.join('-')
+    const code = this.#normalize_keybind_code(keys_down.join('-'))
+    const key_fallback = this.#normalize_keybind_code([
+      ...(e.ctrlKey ? ['Ctrl'] : []),
+      ...(e.shiftKey ? ['Shift'] : []),
+      ...(e.altKey ? ['Alt'] : []),
+      e.key,
+    ].join('-'))
 
-    const action = this.#keybind_mapper.get(code)
+    const action = this.#keybind_mapper.get(code) ?? this.#keybind_mapper.get(key_fallback)
     if (action) {
       this.emitter.dispatchEvent(new CustomEvent(action, {
         detail: {
