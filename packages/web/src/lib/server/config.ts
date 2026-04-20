@@ -52,6 +52,10 @@ export const PackagesConfig = z.object({
       }).strict().prefault({}),
 
       media_view: z.object({
+        fit: z.object({
+          mode: z.enum(['original', 'fill']).default('original'),
+          edge: z.enum(['width', 'height']).default('height'),
+        }).strict().prefault({}),
         filmstrip: z.object({
           enabled: z.boolean().default(false),
             thumbnail_size: z.number().default(100),

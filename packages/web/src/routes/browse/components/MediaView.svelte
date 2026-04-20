@@ -14,54 +14,78 @@
   }
 
   let {controller}: Props = $props()
-  const {media_selections} = controller.runes
   let paused = $state(false)
 
-  controller.keybinds.component_listen({
-    Escape: e => {
-      if (document.fullscreenElement === fullscreen_container) {
-        document.exitFullscreen()
-        return
-      }
-      dialog.close()
-      controller.runes.media_selections.close_media()
-    },
-    PlayPauseMedia: e => {
-      paused = !paused
-    },
-    OpenMedia: e => {
-      /*
-      // TODO we need to be aware of the focus when making this call. Currently this will take over hitting "Enter" on the search bar
-      media_selections.open_media()
-      */
-    },
-    ToggleMediaControls: async e => {
-      show_controls = !show_controls
-    },
-    ToggleFullScreen: async e => {
-      if (!dialog.open || !media_selections.current_selection.show) return
-      e.detail.data.keyboard_event.preventDefault()
+  const toggle_fit_mode = () => {
+    const updated_mode = controller.runes.settings.ui.media_view.fit.mode === 'original'
+      ? 'fill'
+      : 'original'
+    controller.runes.settings.set('ui.media_view.fit.mode', updated_mode)
+  }
 
-      if (document.fullscreenElement === fullscreen_container) {
-        await document.exitFullscreen()
-      } else {
-        await fullscreen_container.requestFullscreen()
-      }
-    },
-    CopyMedia: async e => {
-      if (media_selections.current_selection.media_response) {
-        if (media_selections.current_selection.media_response.media_type === 'media_file') {
-          await navigator.clipboard.writeText(media_selections.current_selection.media_response.media_file.filepath)
-        }
-      }
-    },
+  const media_fit_classes = $derived.by(() => {
+    if (controller.runes.settings.ui.media_view.fit.mode === 'original') {
+      return 'w-auto h-auto max-w-full max-h-full'
+    }
+
+    if (controller.runes.settings.ui.media_view.fit.edge === 'width') {
+      return 'w-full h-auto max-h-full'
+    }
+
+    return 'h-full w-auto max-w-full'
   })
+
+  const register_component_keybinds = () => {
+    controller.keybinds.component_listen({
+      Escape: e => {
+        if (document.fullscreenElement === fullscreen_container) {
+          document.exitFullscreen()
+          return
+        }
+        dialog.close()
+        controller.runes.media_selections.close_media()
+      },
+      PlayPauseMedia: e => {
+        paused = !paused
+      },
+      OpenMedia: e => {
+        /*
+        // TODO we need to be aware of the focus when making this call. Currently this will take over hitting "Enter" on the search bar
+        media_selections.open_media()
+        */
+      },
+      ToggleMediaControls: async e => {
+        show_controls = !show_controls
+      },
+      ToggleFitMedia: async e => {
+        toggle_fit_mode()
+      },
+      ToggleFullScreen: async e => {
+        if (!dialog.open || !controller.runes.media_selections.current_selection.show) return
+        e.detail.data.keyboard_event.preventDefault()
+
+        if (document.fullscreenElement === fullscreen_container) {
+          await document.exitFullscreen()
+        } else {
+          await fullscreen_container.requestFullscreen()
+        }
+      },
+      CopyMedia: async e => {
+        if (controller.runes.media_selections.current_selection.media_response) {
+          if (controller.runes.media_selections.current_selection.media_response.media_type === 'media_file') {
+            await navigator.clipboard.writeText(controller.runes.media_selections.current_selection.media_response.media_file.filepath)
+          }
+        }
+      },
+    })
+  }
+  register_component_keybinds()
 
   let filmstrip_thumbnails
   let filmstrip_height = 50
 
   $effect(() => {
-    if (!dialog.open && media_selections.current_selection.show) {
+    if (!dialog.open && controller.runes.media_selections.current_selection.show) {
       dialog.show()
     }
   })
@@ -76,10 +100,10 @@
   }
 
   let media_url = $derived.by(() => {
-    if (media_selections.current_selection.media_response?.media_type !== 'media_file') {
+    if (controller.runes.media_selections.current_selection.media_response?.media_type !== 'media_file') {
       return
     }
-    return `/files/media_file/${media_selections.current_selection.media_response.media_reference.id}`
+    return `/files/media_file/${controller.runes.media_selections.current_selection.media_response.media_reference.id}`
   })
   $effect(() => {
     if (media_url) {
@@ -107,16 +131,16 @@
   bind:this={fullscreen_container}
   style="height: {is_fullscreen ? '100dvh' : `${controller.runes.dimensions.heights.media_list}px`};"
   >
-    {#if media_selections.current_selection.show && media_selections.current_selection.media_response}
-      {#if media_selections.current_selection.media_response.media_type === 'media_file'}
-        {#if media_selections.current_selection.media_response.media_file.media_type === 'IMAGE'}
+    {#if controller.runes.media_selections.current_selection.show && controller.runes.media_selections.current_selection.media_response}
+      {#if controller.runes.media_selections.current_selection.media_response.media_type === 'media_file'}
+        {#if controller.runes.media_selections.current_selection.media_response.media_file.media_type === 'IMAGE'}
           <img
-            class="object-contain max-h-full"
+            class="object-contain {media_fit_classes}"
             src={media_url} alt="">
-        {:else if media_selections.current_selection.media_response.media_file.media_type === 'VIDEO'}
+        {:else if controller.runes.media_selections.current_selection.media_response.media_file.media_type === 'VIDEO'}
           <video
             bind:clientWidth={animation_width}
-            class="object-contain max-h-full outline-none"
+            class="object-contain outline-none {media_fit_classes}"
             autoplay
             loop
             bind:paused
@@ -130,19 +154,19 @@
           <progress
             class="w-full h-1 absolute bottom-0"
             style="width: {animation_width}px"
-            max={media_selections.current_selection.media_response.media_file.duration} value={animation_progress}></progress>
+            max={controller.runes.media_selections.current_selection.media_response.media_file.duration} value={animation_progress}></progress>
           {#if controller.runes.settings.ui.media_view.filmstrip.enabled}
             <div class="w-full flex flex-row justify-center gap-1 overflow-x-scroll" style="height: {controller.runes.settings.ui.media_view.filmstrip.thumbnail_size}px;">
-              {#each media_selections.current_selection.thumbnails.results as thumbnail, index}
+              {#each controller.runes.media_selections.current_selection.thumbnails.results as thumbnail, index (thumbnail.id)}
                 <div class="h-full">
-                  <img class="h-full" src="/files/thumbnail/{media_selections.current_selection.media_response.media_reference.id}?index={index}" alt="Thumbnail {index}"></div>
+                  <img class="h-full" src="/files/thumbnail/{controller.runes.media_selections.current_selection.media_response.media_reference.id}?index={index}" alt="Thumbnail {index}"></div>
               {/each}
             </div>
           {/if}
-        {:else if media_selections.current_selection.media_response.media_file.media_type === 'AUDIO'}
+        {:else if controller.runes.media_selections.current_selection.media_response.media_file.media_type === 'AUDIO'}
           <img
-            class="object-contain max-h-full"
-            src="/files/thumbnail/{media_selections.current_selection.media_response.media_reference.id}" alt="Audio thumbnail">
+            class="object-contain {media_fit_classes}"
+            src="/files/thumbnail/{controller.runes.media_selections.current_selection.media_response.media_reference.id}" alt="Audio thumbnail">
           <audio
             autoplay
             loop
@@ -151,7 +175,7 @@
           </audio>
         {/if}
       {:else}
-        unhandled media type {media_selections.current_selection.media_response.media_type}
+        unhandled media type {controller.runes.media_selections.current_selection.media_response.media_type}
       {/if}
     {/if}
   </div>
