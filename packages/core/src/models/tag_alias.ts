@@ -39,9 +39,6 @@ class TagAlias extends Model {
     INNER JOIN tag_group ON tag_group.id = tag.tag_group_id
     WHERE alias_tag_slug = ${TagAlias.params.alias_tag_slug}`
 
-  // TODO I noticed that we have an issue. Aliases do not play nicely with our rule to remove tags with "zero" entries
-  // I think what we want here is to exclude those tags from any tag search _except_ the manage tags listing
-  // so that we can retain all of this info
   #select_by_alias_for_with_tags = this.query`
     SELECT ${Tag.result['*']}, ${TagGroup.result.name.as('group')}, ${TagGroup.result.color}, ${TagAlias.result.id.as('rule_id')} FROM tag_alias
     INNER JOIN tag ON tag.slug = tag_alias.alias_tag_slug
