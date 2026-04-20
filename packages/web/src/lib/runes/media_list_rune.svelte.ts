@@ -6,6 +6,7 @@ import { MediaViewRune } from '.'
 type Result =
   | ReturnType<Forager['media']['search']>
   | ReturnType<Forager['media']['group']>
+  | ReturnType<Forager['series']['search']>
 
 interface SearchInput {
   type: 'media'
@@ -19,10 +20,15 @@ interface FilesystemInput {
   type: 'filesystem'
   params: {}
 }
+interface SeriesSearchInput {
+  type: 'series_search'
+  params: Parameters<Forager['series']['search']>[0]
+}
 export type Input =
   | SearchInput
   | GroupByInput
   | FilesystemInput
+  | SeriesSearchInput
 
 interface MediaListState {
   loading: boolean
@@ -31,7 +37,7 @@ interface MediaListState {
 }
 
 export class MediaListRune extends Rune {
-  #saved_params_type: 'media' | 'group_by' = 'media'
+  #saved_params_type: Input['type'] = 'media'
   #saved_params: {} | undefined
   #prev_query_hash: string = ''
   #fetch_count = 0
@@ -87,6 +93,8 @@ export class MediaListRune extends Rune {
     else if (params_type === 'group_by') {
       fetch_params.limit = fetch_params.limit ?? 30
       content = await this.client.forager.media.group(fetch_params)
+    } else if (params_type === 'series_search') {
+      content = await this.client.forager.series.search(fetch_params)
     } else {
       throw new Error('unimplemented')
     }

@@ -1,5 +1,6 @@
 type FocusComponent =
   | 'BrowsePage'
+  | 'SeriesPage'
   | 'TagAutoCompleteInput'
 
 interface Focus {

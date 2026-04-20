@@ -1,9 +1,17 @@
 <script lang="ts">
   import Scroller from '$lib/components/Scroller.svelte'
   import SearchResults from './SearchResults.svelte'
-  import type { BrowseController } from '../controller.ts'
+  import type { BrowseLikeController } from '$lib/base_controller.ts'
 
-  let {controller}: {controller: BrowseController} = $props()
+  let {
+    controller,
+    show_series_index = false,
+    show_series_link = false,
+  }: {
+    controller: BrowseLikeController
+    show_series_index?: boolean
+    show_series_link?: boolean
+  } = $props()
   let media_list_element: HTMLElement
 
   controller.keybinds.component_listen({
@@ -54,6 +62,6 @@
     ]}
     style="height: {controller.runes.dimensions.heights.media_list}px"
   >
-    <SearchResults {controller} />
+    <SearchResults {controller} {show_series_index} {show_series_link} />
   </Scroller>
 </div>

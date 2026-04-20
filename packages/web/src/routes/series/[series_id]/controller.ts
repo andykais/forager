@@ -7,20 +7,20 @@ import {
   MediaSelectionsRune,
   create_dimensional_rune,
 } from '$lib/runes/index.ts'
-import { QueryParamsManager } from './runes/queryparams.svelte.ts'
+import { SeriesQueryParamsManager } from './runes/queryparams.svelte.ts'
 
 
-class BrowseController extends BrowseLikeController {
+class SeriesController extends BrowseLikeController {
   runes: {
     media_list: MediaListRune
     focus: ReturnType<typeof create_focuser>
     dimensions: ReturnType<typeof create_dimensional_rune>
     settings: SettingsRune
     media_selections: MediaSelectionsRune
-    queryparams: QueryParamsManager
+    queryparams: SeriesQueryParamsManager
   }
 
-  public constructor(config: Config) {
+  public constructor(config: Config, series_id: number) {
     super(config)
 
     const media_list_rune = new MediaListRune(this.client, this.settings)
@@ -30,9 +30,9 @@ class BrowseController extends BrowseLikeController {
       dimensions: create_dimensional_rune(),
       settings: new SettingsRune(this.client, this.config),
       media_selections: new MediaSelectionsRune(this.client, media_list_rune),
-      queryparams: new QueryParamsManager(this.client, media_list_rune),
+      queryparams: new SeriesQueryParamsManager(this.client, media_list_rune, series_id),
     }
   }
 }
 
-export { BrowseController }
+export { SeriesController }

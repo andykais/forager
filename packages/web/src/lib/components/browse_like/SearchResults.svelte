@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { BrowseController } from '../controller.ts'
+  import type { BrowseLikeController } from '$lib/base_controller.ts'
   import * as theme from '$lib/theme.ts'
   import { focusable, scrollable } from '$lib/actions/mod.ts'
   import Icon from '$lib/components/Icon.svelte'
@@ -7,16 +7,24 @@
   import * as icons from '$lib/icons/mod.ts'
 
   interface Props {
-    controller: BrowseController
+    controller: BrowseLikeController
+    /**
+     * When true, display the series_index under each tile (for the series view).
+     */
+    show_series_index?: boolean
+    /**
+     * When true, show a link under media-series tiles pointing to the series
+     * detail view. Defaults to false for routes that are themselves already a
+     * series view.
+     */
+    show_series_link?: boolean
   }
 
-  let {controller}: Props = $props()
-  const {queryparams, settings, media_selections, media_list} = controller.runes
+  let { controller, show_series_index = false, show_series_link = false }: Props = $props()
+  const { queryparams, settings, media_selections, media_list } = controller.runes
 
-  let tile_size = settings.ui.media_list.thumbnail_size
   const icon_size = 14
   const icon_color = theme.colors.green[200]
-  let dialog: HTMLDialogElement
 
   function human_readable_duration(seconds: number) {
     if (seconds < 100) {
@@ -41,7 +49,7 @@
   .container-media-tile {
     display: grid;
     gap: 5px;
-    grid-template-rows: 1fr max-content;
+    grid-template-rows: 1fr max-content max-content;
     height: 100%;
     width: 100%;
     align-items: center;
@@ -53,7 +61,7 @@
 <div class="container-masonry p-4" style="--thumbnail-size: {settings.ui.media_list.thumbnail_size}px">
   {#each media_list.results as result, result_index}
     <div>
-      <div 
+      <div
         type="button"
         class="inline-flex items-center justify-center p-1
                outline-none"
@@ -66,7 +74,7 @@
           <div
             class="flex justify-center items-center overflow-hidden focus:outline-none"
             style="width:{settings.ui.media_list.thumbnail_size}px; height: {settings.ui.media_list.thumbnail_size}px"
-            onkeydown={e => {
+            onkeydown={(e) => {
               if (e.key === 'Enter') {
                 media_selections.set_current_selection(result, result_index)
               }
@@ -74,7 +82,7 @@
             role="button"
             tabindex="0"
             use:focusable={!media_selections.current_selection.show && media_selections.current_selection.result_index === result_index}
-            onclick={e => media_selections.set_current_selection(result, result_index)}
+            onclick={(e) => media_selections.set_current_selection(result, result_index)}
           >
             {#if settings.ui.media_list.thumbnail_shape === 'original'}
               <img
@@ -87,7 +95,7 @@
                     && "hover:border-slate-400 border-green-300 border border-2 hover:shadow-slate-400 shadow-green-300",
                 ]}
                 src={result.preview_thumbnail}
-                alt="Thumbnail for {result.media_reference?.title ?? 'media'}"/>
+                alt="Thumbnail for {result.media_reference?.title ?? 'media'}" />
             {:else}
               <img
                 class={[
@@ -99,12 +107,12 @@
                     && "hover:border-slate-400 border-green-300 border border-2 hover:shadow-slate-400 shadow-green-300",
                 ]}
                 src={result.preview_thumbnail}
-                alt="Thumbnail for {result.media_reference?.title ?? 'media'}"/>
+                alt="Thumbnail for {result.media_reference?.title ?? 'media'}" />
             {/if}
           </div>
 
           <!-- info chips -->
-          <div class="flex text-xs text-gray-400 justify-between  p-0.5">
+          <div class="flex text-xs text-gray-400 justify-between p-0.5">
             {#if result.media_type === 'media_file'}
               {#if result.media_file.media_type === 'VIDEO'}
                 <span class="flex">
@@ -123,20 +131,36 @@
               {:else}
                 unknown media type {result.media_file.media_type}
               {/if}
-          {:else if result.media_type === 'media_series'}
+            {:else if result.media_type === 'media_series'}
               <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
               <span>({result.media_reference.media_series_length})</span>
-          {:else if result.media_type === 'grouped'}
+            {:else if result.media_type === 'grouped'}
               <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
               <SearchLink
                 class="hover:text-green-500 hover:bg-gray-700 px-2 rounded-sm"
-                {controller} params={queryparams.merge({mode: 'media', tags: `${queryparams.current.group_by ?? ''}:${result.group_metadata.value}`})}> {result.group_metadata.value} 
+                {controller} params={queryparams.merge({ mode: 'media', tags: `${queryparams.current.group_by ?? ''}:${result.group_metadata.value}` })}> {result.group_metadata.value}
               </SearchLink>
               <span>{result.group_metadata.count}</span>
-          {:else}
-            UNEXPECTED MEDIA TYPE {result.media_type}
+            {:else}
+              UNEXPECTED MEDIA TYPE {result.media_type}
+            {/if}
+          </div>
+
+          <!-- series row: either a series_index label (series view) or a "View series" link (browse view) -->
+          {#if show_series_index && result.series_index !== undefined}
+            <div class="flex text-xs text-gray-400 justify-center p-0.5">
+              <span title="Page in series">#{result.series_index}</span>
+            </div>
+          {:else if show_series_link && result.media_type === 'media_series'}
+            <div class="flex text-xs justify-center p-0.5">
+              <a
+                class="text-green-300 hover:text-green-400 hover:underline"
+                href={`/series/${result.media_reference.id}`}
+                title="View this media series"
+                onclick={(e) => e.stopPropagation()}
+              >View series</a>
+            </div>
           {/if}
-        </div>
         </div>
       </div>
     </div>
