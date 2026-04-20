@@ -71,7 +71,7 @@
       <span>{runes.settings.ui.media_list.thumbnail_size}px</span>
     </div>
 
-    <div>
+    <div class="flex gap-2">
       <button
         title="Toggle thumbnail shape"
         class="rounded-sm bg-gray-800 px-2 text-slate-400 hover:bg-gray-600"
@@ -82,6 +82,11 @@
           runes.settings.set('ui.media_list.thumbnail_shape', updated_shape)
         }}
       >{runes.settings.ui.media_list.thumbnail_shape}</button>
+      <button
+        title="Toggle media info tiles"
+        class="rounded-sm bg-gray-800 px-2 text-slate-400 hover:bg-gray-600"
+        onclick={() => runes.settings.toggle('ui.media_list.info_tiles.enabled')}
+      >info tiles: {runes.settings.ui.media_list.info_tiles.enabled ? 'on' : 'off'}</button>
     </div>
 
     <span class="">

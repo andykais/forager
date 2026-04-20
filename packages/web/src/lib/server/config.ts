@@ -5,7 +5,15 @@ import * as forager from '@forager/core'
 
 const LogLevel = z.enum(['SILENT', 'ERROR', 'WARN', 'INFO', 'DEBUG'])
 
-const MediaTileInfoTableTypes = z.enum(['tag_group', 'sort_top'])
+const MediaTileInfoTableTypes = z.enum([
+  'tag_group',
+  'sort_top',
+  'tag_count',
+  'unread',
+  'stars',
+  'datetime',
+  'series_count',
+])
 
 const Keybind = (default_keybind: string) => z.union([z.string(), z.string().array()]).default(default_keybind).transform(keybind => {
   if (Array.isArray(keybind)) return keybind
@@ -43,6 +51,7 @@ export const PackagesConfig = z.object({
         thumbnail_shape: z.enum(['square', 'original']).prefault('original'),
 
         info_tiles: z.object({
+          enabled: z.boolean().default(true),
           tag_group: z.object({
             enabled: z.boolean().default(true),
             order: z.number().optional(), // TBD if needed. We may be able to get away with yaml ordering if the serialization is consistent
@@ -50,6 +59,26 @@ export const PackagesConfig = z.object({
           sort_top: z.object({
             enabled: z.boolean().default(true),
             order: z.number().optional(), // TBD if needed. We may be able to get away with yaml ordering if the serialization is consistent
+          }).prefault({}),
+          tag_count: z.object({
+            enabled: z.boolean().default(true),
+            order: z.number().optional(),
+          }).prefault({}),
+          unread: z.object({
+            enabled: z.boolean().default(true),
+            order: z.number().optional(),
+          }).prefault({}),
+          stars: z.object({
+            enabled: z.boolean().default(true),
+            order: z.number().optional(),
+          }).prefault({}),
+          datetime: z.object({
+            enabled: z.boolean().default(true),
+            order: z.number().optional(),
+          }).prefault({}),
+          series_count: z.object({
+            enabled: z.boolean().default(true),
+            order: z.number().optional(),
           }).prefault({}),
         }).prefault({}),
       }).strict().prefault({}),

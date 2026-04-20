@@ -20,3 +20,7 @@ export {default as ArrowTopRightOnSquare} from './svgs/arrow-top-right-on-square
 export {default as MagnifyingGlassPlus} from './svgs/magnifying-glass-plus.svg?raw'
 export {default as Trash} from './svgs/trash.svg?raw'
 export {default as TrashOutline} from './svgs/outline/trash.svg?raw'
+export {default as Eye} from './svgs/outline/eye.svg?raw'
+export {default as EyeSlash} from './svgs/outline/eye-slash.svg?raw'
+export {default as TagIcon} from './svgs/outline/tag.svg?raw'
+export {default as Calendar} from './svgs/outline/calendar.svg?raw'

@@ -5,13 +5,19 @@
   import Icon from '$lib/components/Icon.svelte'
   import SearchLink from './SearchLink.svelte'
 
-  interface InfoEntry {
+  interface StarsValue {
+    type: 'stars'
+    value: number
+    max?: number
+  }
+
+  export interface InfoEntry {
     name: string
     icon: string
     title?: string
-    stat?: object
-    queryparams?: string
-    value: object
+    stat?: unknown
+    queryparams?: Partial<BrowseController['runes']['queryparams']['DEFAULTS']>
+    value: string | number | StarsValue
     enabled: boolean
     order: number
   }
@@ -25,15 +31,15 @@
     .filter(entry => entry.enabled)
     .sort((a, b) => a.order - b.order)
   )
-  const {queryparams, settings, media_selections, media_list} = controller.runes
 
   const icon_size = 14
   const icon_color = theme.colors.green[200]
+  const star_filled_color = theme.colors.yellow?.[300] ?? theme.colors.green[200]
+  const star_empty_color = theme.colors.gray[600]
 
-  const row_colors = [
-    theme.colors.gray[800],
-    theme.colors.gray[700],
-  ]
+  function is_stars(value: InfoEntry['value']): value is StarsValue {
+    return typeof value === 'object' && value !== null && (value as StarsValue).type === 'stars'
+  }
 </script>
 
 
@@ -41,25 +47,36 @@
   <tbody>
     {#each entries as entry, index}
 <tr class={[
-      "grid grid-cols-[auto_auto_auto] justify-between px-3 py-1",
+      "grid grid-cols-[auto_1fr_auto] gap-2 items-center px-3 py-1",
       index !== entries.length - 1 && "border-b-gray-500 border-b",
     ]}
       >
-      <!-- style={`background-color: ${row_colors[index % 2]}`} -->
       <td>
         <Icon data={entry.icon} fill={icon_color} stroke="none" size={icon_size} title={entry.title} />
       </td>
-      <td>
-          {#if entry.queryparams}
+      <td class="justify-self-start">
+          {#if is_stars(entry.value)}
+            {@const max = entry.value.max ?? 5}
+            <span class="flex items-center gap-0.5" title={entry.title}>
+              {#each Array(max) as _, i}
+                <Icon
+                  data={icons.Star}
+                  fill={i < entry.value.value ? star_filled_color : star_empty_color}
+                  stroke="none"
+                  size={icon_size}
+                />
+              {/each}
+            </span>
+          {:else if entry.queryparams}
             <SearchLink
               class="hover:text-green-500 hover:bg-gray-800 bg-gray-700 px-2 rounded-sm"
               {controller} params={entry.queryparams}> {entry.value}
             </SearchLink>
           {:else}
-            <span>{entry.value} </span>
+            <span title={entry.title}>{entry.value}</span>
           {/if}
       </td>
-      <td>{entry.stat}</td>
+      <td class="justify-self-end">{entry.stat ?? ''}</td>
     </tr>
     {/each}
   </tbody>
