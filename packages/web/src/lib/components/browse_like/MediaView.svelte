@@ -1,31 +1,31 @@
 <script lang="ts">
-  import type { BrowseController } from '../controller.ts'
+  import type { BrowseLikeController } from '$lib/base_controller.ts'
 
   interface Props {
-    controller: BrowseController
+    controller: BrowseLikeController
   }
 
   // TODO wire this into settings
-  let show_controls = $state<boolean>(false);
+  let show_controls = $state<boolean>(false)
 
   controller.keybinds.component_listen({
-    Escape: e => {
+    Escape: (e) => {
       dialog.close()
       controller.runes.media_selections.close_media()
     },
-    PlayPauseMedia: e => {
+    PlayPauseMedia: (e) => {
       paused = !paused
     },
-    OpenMedia: e => {
+    OpenMedia: (e) => {
       /*
       // TODO we need to be aware of the focus when making this call. Currently this will take over hitting "Enter" on the search bar
       media_selections.open_media()
       */
     },
-    ToggleMediaControls: async e => {
+    ToggleMediaControls: async (e) => {
       show_controls = !show_controls
     },
-    CopyMedia: async e => {
+    CopyMedia: async (e) => {
       if (media_selections.current_selection.media_response) {
         if (media_selections.current_selection.media_response.media_type === 'media_file') {
           await navigator.clipboard.writeText(media_selections.current_selection.media_response.media_file.filepath)
@@ -34,8 +34,8 @@
     },
   })
 
-  let {controller}: Props = $props()
-  const {media_selections} = controller.runes
+  let { controller }: Props = $props()
+  const { media_selections } = controller.runes
   let paused = $state(false)
 
   let filmstrip_thumbnails
@@ -52,7 +52,7 @@
       update(video_source_url: string) {
         animation_progress = 0
         node.load()
-      }
+      },
     }
   }
 

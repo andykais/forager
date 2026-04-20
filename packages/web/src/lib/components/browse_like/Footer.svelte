@@ -1,8 +1,8 @@
 <script lang="ts">
   import * as theme from '$lib/theme.ts'
-  import type { BrowseController } from '../controller.ts'
+  import type { BrowseLikeController } from '$lib/base_controller.ts'
 
-  let {controller, height = $bindable()}: {controller: BrowseController, height: number} = $props()
+  let { controller, height = $bindable() }: { controller: BrowseLikeController; height: number } = $props()
   const runes = controller.runes
 
 
@@ -65,8 +65,8 @@
         min={50}
         max={500}
         value={runes.settings.ui.media_list.thumbnail_size}
-        oninput={e => {
-          runes.settings.set('ui.media_list.thumbnail_size', e.target.value)
+        oninput={(e) => {
+          runes.settings.set('ui.media_list.thumbnail_size', (e.target as HTMLInputElement).value)
         }}>
       <span>{runes.settings.ui.media_list.thumbnail_size}px</span>
     </div>
@@ -75,7 +75,7 @@
       <button
         title="Toggle thumbnail shape"
         class="rounded-sm bg-gray-800 px-2 text-slate-400 hover:bg-gray-600"
-        onclick={e => {
+        onclick={(e) => {
           const updated_shape = runes.settings.ui.media_list.thumbnail_shape === 'square'
             ? 'original'
             : 'square'

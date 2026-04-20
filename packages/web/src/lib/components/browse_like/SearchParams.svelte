@@ -2,14 +2,28 @@
   import SelectInput from '$lib/components/SelectInput.svelte'
   import * as theme from '$lib/theme.ts'
   import Icon from '$lib/components/Icon.svelte'
-  import { Filter, ChevronUp, ChevronDown, ArrowDown, ArrowUp } from '$lib/icons/mod.ts'
-  import TagAutoCompleteInput from "$lib/components/TagAutoCompleteInput.svelte";
-  import type { BrowseController } from "../controller.ts";
+  import { Filter, ArrowDown, ArrowUp } from '$lib/icons/mod.ts'
+  import TagAutoCompleteInput from '$lib/components/TagAutoCompleteInput.svelte'
+  import type { BrowseLikeController } from '$lib/base_controller.ts'
   import StarInput from '$lib/components/StarInput.svelte'
+  import type { Snippet } from 'svelte'
 
-  let {controller}: {controller: BrowseController} = $props()
+  interface Props {
+    controller: BrowseLikeController
+    /**
+     * Renders route-specific <option> elements for the sort_by select.
+     */
+    sort_options: Snippet
+    /**
+     * Renders an optional trailing block for additional route-specific
+     * controls in the filter row (e.g. search_mode select, group_by input).
+     */
+    extra_filters?: Snippet
+  }
 
-  const {queryparams, media_selections, settings} = controller.runes
+  let { controller, sort_options, extra_filters }: Props = $props()
+
+  const { queryparams, media_selections, settings } = controller.runes
 
   async function update_search() {
     await queryparams.submit()
@@ -17,11 +31,11 @@
   }
 
   const icon_color = theme.colors.gray[800]
-  const icon_size = "22px"
+  const icon_size = '22px'
 </script>
 
 <form class="contents"
-  onsubmit={async e => {
+  onsubmit={async (e) => {
     e.preventDefault()
     await update_search()
   }}>
@@ -37,7 +51,7 @@
         class="hover:cursor-pointer"
         title="click to {settings.ui.search.advanced_filters.hide ? 'show' : 'hide'} advanced filters"
         type="button"
-        onclick={e => {
+        onclick={(e) => {
           settings.toggle('ui.search.advanced_filters.hide')
         }}>
         <Icon class="fill-gray-800 hover:fill-gray-600" data={Filter} size={icon_size} fill={icon_color} stroke={"none"} />
@@ -54,21 +68,13 @@
             name="sort_by"
             bind:value={queryparams.draft.sort}
             onchange={update_search}>
-            <option value="source_created_at">Created At</option>
-            <option value="created_at">Added On</option>
-            <option value="updated_at">Updated At</option>
-            <option value="view_count">View Count</option>
-            <option value="last_viewed_at">Last Viewed</option>
-            <option value="duration">Duration</option>
-            {#if queryparams.draft.search_mode === 'group_by'}
-            <option value="count">Count</option>
-            {/if}
+            {@render sort_options()}
           </select>
           <button
             class="hover:cursor-pointer"
             title="order by ascending"
             type="button"
-            onclick={e => {
+            onclick={(e) => {
               if (queryparams.draft.order === 'asc') queryparams.draft.order = 'desc'
               else queryparams.draft.order = 'asc'
               update_search()
@@ -83,11 +89,11 @@
 
         <SelectInput
           options={[
-            {label: 'All', value: 'all'},
-            {label: 'Animated', value: 'animated'},
-            {label: 'Image',    value: 'image'},
-            {label: 'Video',    value: 'video'},
-            {label: 'Audio',    value: 'audio'},
+            { label: 'All', value: 'all' },
+            { label: 'Animated', value: 'animated' },
+            { label: 'Image', value: 'image' },
+            { label: 'Video', value: 'video' },
+            { label: 'Audio', value: 'audio' },
           ]}
           bind:value={queryparams.draft.media_type}
           onchange={update_search}
@@ -98,13 +104,13 @@
             'rounded-lg px-2 border border-2 border-gray-800 hover:border-gray-400',
             queryparams.draft.unread_only
               ? 'bg-gray-800 text-gray-400'
-              : ''
+              : '',
           ]}
           type="button"
-          onclick={e => {
+          onclick={(e) => {
             queryparams.draft.unread_only = !queryparams.draft.unread_only
             update_search()
-        }}
+          }}
           title="Show unread results only"
         >
           Unread
@@ -120,7 +126,7 @@
             type="button"
             class="px-2 bg-gray-800 rounded-lg"
             onclick={() => {
-              switch(queryparams.draft.stars_equality) {
+              switch (queryparams.draft.stars_equality) {
                 case 'eq': {
                   queryparams.draft.stars_equality = 'gte'
                   break
@@ -156,30 +162,8 @@
             bind:value={queryparams.draft.filepath}>
         </div>
 
-        <SelectInput
-          label="Search Mode"
-          options={[
-            {label: 'Media', value: 'media'},
-            {label: 'Grouped', value: 'group_by'},
-            {label: 'Filesystem', value: 'filesystem'},
-          ]}
-          onchange={() => {
-            if (queryparams.draft.search_mode !== 'group_by') {
-              queryparams.draft.group_by = undefined
-            }
-          }}
-          bind:value={queryparams.draft.search_mode}
-        />
-
-        {#if queryparams.draft.search_mode == "group_by"}
-          <div class="flex gap-2">
-            <label class="" for="group_by">Group By:</label>
-            <input
-              class="rounded-lg py-1 px-3 text-slate-100 bg-gray-800 text-sm"
-              name="group_by"
-              type="text"
-              bind:value={queryparams.draft.group_by}>
-          </div>
+        {#if extra_filters}
+          {@render extra_filters()}
         {/if}
       </div>
     </div>
