@@ -3,7 +3,6 @@
   import type { BrowseController } from '../controller.ts'
 
   let {controller, height = $bindable()}: {controller: BrowseController, height: number} = $props()
-  const runes = controller.runes
 
 
   function human_readable_number(n: number) {
@@ -55,7 +54,7 @@
   bind:clientHeight={height}
 >
 
-  <div class="grid grid-cols-[1fr_auto_auto] gap-4 justify-between">
+  <div class="grid grid-cols-[1fr_auto_auto_auto] gap-4 justify-between">
     <div class="w-full grid grid-cols-[auto_1fr_auto] gap-4 items-center" style="--slider-thumb-color: {theme.colors.green[300]}; --slider-thumb-color-hover: {theme.colors.green[500]}">
       <label for="thumbnail-size">Thumbnail Size</label>
       <input
@@ -64,11 +63,11 @@
         type="range"
         min={50}
         max={500}
-        value={runes.settings.ui.media_list.thumbnail_size}
+        value={controller.runes.settings.ui.media_list.thumbnail_size}
         oninput={e => {
-          runes.settings.set('ui.media_list.thumbnail_size', e.target.value)
+          controller.runes.settings.set('ui.media_list.thumbnail_size', e.target.value)
         }}>
-      <span>{runes.settings.ui.media_list.thumbnail_size}px</span>
+      <span>{controller.runes.settings.ui.media_list.thumbnail_size}px</span>
     </div>
 
     <div>
@@ -76,16 +75,29 @@
         title="Toggle thumbnail shape"
         class="rounded-sm bg-gray-800 px-2 text-slate-400 hover:bg-gray-600"
         onclick={e => {
-          const updated_shape = runes.settings.ui.media_list.thumbnail_shape === 'square'
+          const updated_shape = controller.runes.settings.ui.media_list.thumbnail_shape === 'square'
             ? 'original'
             : 'square'
-          runes.settings.set('ui.media_list.thumbnail_shape', updated_shape)
+          controller.runes.settings.set('ui.media_list.thumbnail_shape', updated_shape)
         }}
-      >{runes.settings.ui.media_list.thumbnail_shape}</button>
+      >{controller.runes.settings.ui.media_list.thumbnail_shape}</button>
+    </div>
+
+    <div>
+      <button
+        title="Toggle media fit mode"
+        class="rounded-sm bg-gray-800 px-2 text-slate-400 hover:bg-gray-600"
+        onclick={() => {
+          const updated_mode = controller.runes.settings.ui.media_view.fit.mode === 'original'
+            ? 'fill'
+            : 'original'
+          controller.runes.settings.set('ui.media_view.fit.mode', updated_mode)
+        }}
+      >Media: {controller.runes.settings.ui.media_view.fit.mode}</button>
     </div>
 
     <span class="">
-      Total results {human_readable_number(runes.media_list.total)}
+      Total results {human_readable_number(controller.runes.media_list.total)}
     </span>
   </div>
 </footer>
