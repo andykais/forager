@@ -8,6 +8,7 @@
   interface InfoEntry {
     name: string
     icon: string
+    title?: string
     stat?: object
     queryparams?: string
     value: object
@@ -46,7 +47,7 @@
       >
       <!-- style={`background-color: ${row_colors[index % 2]}`} -->
       <td>
-        <Icon data={entry.icon} fill={icon_color} stroke="none" size={icon_size} />
+        <Icon data={entry.icon} fill={icon_color} stroke="none" size={icon_size} title={entry.title} />
       </td>
       <td>
           {#if entry.queryparams}

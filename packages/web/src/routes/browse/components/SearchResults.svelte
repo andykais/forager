@@ -35,43 +35,18 @@
 
   function format_human_readable_datetime(date_str: string) {
     const date = new Date(date_str)
-    console.log({date})
-    return datetime.format(date, 'yyyy/MM/dd')
+    return datetime.format(date, 'yyyy-MM-dd')
   }
   interface SearchResultGroupMetadata {}
-  function human_readable_sort_per_group(group_metadata: SearchResultGroupMetadata) {
-    const order = controller.runes.queryparams.current.order === 'desc' ? 'oldest' : 'newest'
-    let sort_descriptor: string
-    let human_readable_datetime: string
-    switch (controller.runes.queryparams.current.sort) {
-      case 'source_created_at': {
-        sort_descriptor = 'created'
-        human_readable_datetime = format_human_readable_datetime(group_metadata.source_created_at)
-        break
-      }
-      case 'created_at': {
-        sort_descriptor = 'added on'
-        human_readable_datetime = format_human_readable_datetime(group_metadata.created_at)
-        break
-      }
-      case 'updated_at': {
-        sort_descriptor = 'updated'
-        human_readable_datetime = format_human_readable_datetime(group_metadata.updated_at)
-        break
-      }
-      defaut: {
-        throw new Error(`Unexpected query params sort ${controller.runes.queryparams.current.sort}`)
-      }
-    }
+  function format_human_readable_grouped_datetime(group_metadata: SearchResultGroupMetadata) {
+    const date_str = group_metadata[grouped_datetime(group_metadata)]
+    return format_human_readable_datetime(date_str)
+  }
 
-    // Newest added on {result.group_metadata.created_at}
-    console.log({datetime})
-
-    // sort descriptor does not seem particularly nice. E.g. "oldest created YYYY/MM/dd"
-    // we already have this information at the top with "created_at". We could even abstract away "oldest" as a icon.
-    // return `${order} ${sort_descriptor} ${human_readable_datetime}`
-    // return `${order} ${human_readable_datetime}`
-    return human_readable_datetime
+  function grouped_datetime(group_metadata: SearchResultGroupMetadata) {
+    return typeof group_metadata[controller.runes.queryparams.current.sort] === 'string'
+      ? controller.runes.queryparams.current.sort
+      : 'created_at'
   }
 </script>
 
@@ -175,6 +150,7 @@
                 {controller}
                 entries={[
                   { name: 'tag_group',
+                    title: 'Tag Group',
                     icon: icons.Copy,
                     value:result.group_metadata.value,
                     stat: result.group_metadata.count,
@@ -184,8 +160,9 @@
                   },
                   {
                     name: 'sort_top',
-                    icon: icons.ArrowUp,
-                    value: human_readable_sort_per_group(result.group_metadata),
+                    title: `Top ${grouped_datetime(result.group_metadata)} date`,
+                    icon: controller.runes.queryparams.current.order === 'desc' ? icons.ArrowDown : icons.ArrowUp,
+                    value: format_human_readable_grouped_datetime(result.group_metadata),
                     enabled: controller.runes.settings.ui.media_list.info_tiles.sort_top.enabled,
                     order: controller.runes.settings.ui.media_list.info_tiles.sort_top.order,
                   },
