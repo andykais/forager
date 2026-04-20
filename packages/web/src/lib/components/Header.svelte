@@ -7,6 +7,7 @@
     height = $bindable(),
     ...props
   }: {
+    height?: number
     title: string
     children: SvelteHTMLElements['div']['children']
   } = $props()
