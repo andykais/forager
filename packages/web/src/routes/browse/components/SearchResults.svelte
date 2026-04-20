@@ -33,7 +33,7 @@
     return `${hours.toFixed(2)}h`
   }
 
-  function format_human_readable_datetime(date_str: string) {
+  function format_human_readable_datetime(date_str: string | Date) {
     const date = new Date(date_str)
     return datetime.format(date, 'yyyy-MM-dd')
   }
@@ -47,6 +47,19 @@
     return typeof group_metadata[controller.runes.queryparams.current.sort] === 'string'
       ? controller.runes.queryparams.current.sort
       : 'created_at'
+  }
+
+  function pick_datetime(media_reference: {source_created_at?: string | Date | null, created_at: string | Date}) {
+    if (media_reference.source_created_at) {
+      return {
+        field: 'source_created_at' as const,
+        value: media_reference.source_created_at,
+      }
+    }
+    return {
+      field: 'created_at' as const,
+      value: media_reference.created_at,
+    }
   }
 </script>
 
@@ -123,55 +136,127 @@
           </div>
 
           <!-- info chips -->
-          <div class="flex text-xs text-gray-400 justify-between  p-0.5">
-            {#if result.media_type === 'media_file'}
-              {#if result.media_file.media_type === 'VIDEO'}
-                <span class="flex">
-                  <Icon data={icons.PlayCircle} fill={icon_color} stroke="none" size={icon_size} />
-                  {#if result.media_file.audio}
-                    <Icon data={icons.Music} fill={icon_color} stroke="none" size={icon_size} />
-                  {/if}
-                </span>
-                <span>{human_readable_duration(result.media_file.duration)}</span>
-              {:else if result.media_file.media_type === 'IMAGE' && result.media_file.content_type === 'image/gif'}
-                <Icon data={icons.Gif} fill={icon_color} stroke="none" size={icon_size} />
-              {:else if result.media_file.media_type === 'IMAGE'}
-                <Icon data={icons.Photo} fill={icon_color} stroke="none" size={icon_size} />
-              {:else if result.media_file.media_type === 'AUDIO'}
-                <Icon data={icons.Music} fill={icon_color} stroke="none" size={icon_size} />
-              {:else}
-                unknown media type {result.media_file.media_type}
-              {/if}
-          {:else if result.media_type === 'media_series'}
-              <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
-              <span>({result.media_reference.media_series_length})</span>
-          {:else if result.media_type === 'grouped'}
-              <MediaTileInfoTable
-                {controller}
-                entries={[
-                  { name: 'tag_group',
-                    title: 'Tag Group',
-                    icon: icons.Copy,
-                    value:result.group_metadata.value,
-                    stat: result.group_metadata.count,
-                    queryparams: queryparams.merge({mode: 'media', tags: `${queryparams.current.group_by ?? ''}:${result.group_metadata.value}`}),
-                    enabled: controller.runes.settings.ui.media_list.info_tiles.tag_group.enabled,
-                    order: controller.runes.settings.ui.media_list.info_tiles.tag_group.order,
-                  },
-                  {
-                    name: 'sort_top',
-                    title: `Top ${grouped_datetime(result.group_metadata)} date`,
-                    icon: controller.runes.queryparams.current.order === 'desc' ? icons.ArrowDown : icons.ArrowUp,
-                    value: format_human_readable_grouped_datetime(result.group_metadata),
-                    enabled: controller.runes.settings.ui.media_list.info_tiles.sort_top.enabled,
-                    order: controller.runes.settings.ui.media_list.info_tiles.sort_top.order,
-                  },
-                ]}
-              />
+          {#if result.media_type === 'grouped'}
+            <MediaTileInfoTable
+              {controller}
+              entries={[
+                { name: 'tag_group',
+                  title: 'Tag Group',
+                  icon: icons.Copy,
+                  value: result.group_metadata.value,
+                  stat: result.group_metadata.count,
+                  queryparams: queryparams.merge({mode: 'media', tags: `${queryparams.current.group_by ?? ''}:${result.group_metadata.value}`}),
+                  enabled: controller.runes.settings.ui.media_list.info_tiles.tag_group.enabled,
+                  order: controller.runes.settings.ui.media_list.info_tiles.tag_group.order ?? 0,
+                },
+                {
+                  name: 'sort_top',
+                  title: `Top ${grouped_datetime(result.group_metadata)} date`,
+                  icon: controller.runes.queryparams.current.order === 'desc' ? icons.ArrowDown : icons.ArrowUp,
+                  value: format_human_readable_grouped_datetime(result.group_metadata),
+                  enabled: controller.runes.settings.ui.media_list.info_tiles.sort_top.enabled,
+                  order: controller.runes.settings.ui.media_list.info_tiles.sort_top.order ?? 1,
+                },
+              ]}
+            />
+          {:else if settings.ui.media_list.info_tiles.enabled && result.media_type === 'media_file'}
+            {@const datetime_entry = pick_datetime(result.media_reference)}
+            <MediaTileInfoTable
+              {controller}
+              entries={[
+                {
+                  name: 'tag_count',
+                  title: 'Tag count',
+                  icon: icons.TagIcon,
+                  value: result.media_reference.tag_count ?? 0,
+                  enabled: settings.ui.media_list.info_tiles.tag_count.enabled,
+                  order: settings.ui.media_list.info_tiles.tag_count.order ?? 0,
+                },
+                {
+                  name: 'unread',
+                  title: (result.media_reference.view_count ?? 0) > 0 ? 'Read' : 'Unread',
+                  icon: (result.media_reference.view_count ?? 0) > 0 ? icons.Eye : icons.EyeSlash,
+                  value: (result.media_reference.view_count ?? 0) > 0 ? 'read' : 'unread',
+                  enabled: settings.ui.media_list.info_tiles.unread.enabled,
+                  order: settings.ui.media_list.info_tiles.unread.order ?? 1,
+                },
+                {
+                  name: 'stars',
+                  title: `${result.media_reference.stars ?? 0} stars`,
+                  icon: icons.Star,
+                  value: { type: 'stars', value: result.media_reference.stars ?? 0 },
+                  enabled: settings.ui.media_list.info_tiles.stars.enabled,
+                  order: settings.ui.media_list.info_tiles.stars.order ?? 2,
+                },
+                {
+                  name: 'datetime',
+                  title: datetime_entry.field,
+                  icon: icons.Calendar,
+                  value: format_human_readable_datetime(datetime_entry.value as string),
+                  enabled: settings.ui.media_list.info_tiles.datetime.enabled,
+                  order: settings.ui.media_list.info_tiles.datetime.order ?? 3,
+                },
+              ]}
+            />
+          {:else if settings.ui.media_list.info_tiles.enabled && result.media_type === 'media_series'}
+            {@const datetime_entry = pick_datetime(result.media_reference)}
+            <MediaTileInfoTable
+              {controller}
+              entries={[
+                {
+                  name: 'series_count',
+                  title: 'Series items',
+                  icon: icons.Copy,
+                  value: result.media_reference.media_series_length ?? 0,
+                  enabled: settings.ui.media_list.info_tiles.series_count.enabled,
+                  order: settings.ui.media_list.info_tiles.series_count.order ?? 0,
+                },
+                {
+                  name: 'stars',
+                  title: `${result.media_reference.stars ?? 0} stars`,
+                  icon: icons.Star,
+                  value: { type: 'stars', value: result.media_reference.stars ?? 0 },
+                  enabled: settings.ui.media_list.info_tiles.stars.enabled,
+                  order: settings.ui.media_list.info_tiles.stars.order ?? 1,
+                },
+                {
+                  name: 'datetime',
+                  title: datetime_entry.field,
+                  icon: icons.Calendar,
+                  value: format_human_readable_datetime(datetime_entry.value as string),
+                  enabled: settings.ui.media_list.info_tiles.datetime.enabled,
+                  order: settings.ui.media_list.info_tiles.datetime.order ?? 2,
+                },
+              ]}
+            />
           {:else}
-            UNEXPECTED MEDIA TYPE {result.media_type}
+            <div class="flex text-xs text-gray-400 justify-between p-0.5">
+              {#if result.media_type === 'media_file'}
+                {#if result.media_file.media_type === 'VIDEO'}
+                  <span class="flex">
+                    <Icon data={icons.PlayCircle} fill={icon_color} stroke="none" size={icon_size} />
+                    {#if result.media_file.audio}
+                      <Icon data={icons.Music} fill={icon_color} stroke="none" size={icon_size} />
+                    {/if}
+                  </span>
+                  <span>{human_readable_duration(result.media_file.duration)}</span>
+                {:else if result.media_file.media_type === 'IMAGE' && result.media_file.content_type === 'image/gif'}
+                  <Icon data={icons.Gif} fill={icon_color} stroke="none" size={icon_size} />
+                {:else if result.media_file.media_type === 'IMAGE'}
+                  <Icon data={icons.Photo} fill={icon_color} stroke="none" size={icon_size} />
+                {:else if result.media_file.media_type === 'AUDIO'}
+                  <Icon data={icons.Music} fill={icon_color} stroke="none" size={icon_size} />
+                {:else}
+                  unknown media type {result.media_file.media_type}
+                {/if}
+              {:else if result.media_type === 'media_series'}
+                <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
+                <span>({result.media_reference.media_series_length})</span>
+              {:else}
+                UNEXPECTED MEDIA TYPE {result.media_type}
+              {/if}
+            </div>
           {/if}
-        </div>
         </div>
       </div>
     </div>
