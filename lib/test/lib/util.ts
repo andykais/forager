@@ -62,6 +62,7 @@ interface CapturedEvent {
 
 class Assertions {
   equals = asserts.assertEquals
+  almost_equals = asserts.assertAlmostEquals
   not_equals = asserts.assertNotEquals
   greater_than = asserts.assertGreater
   rejects = asserts.assertRejects
