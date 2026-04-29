@@ -51,9 +51,6 @@ interface Thumbnails {
 }
 
 
-const FFProbeOutputSubtitleStream = z.object({
-    codec_type: z.literal('subtitle'),
-})
 const FFProbeOutputVideoStream = z.object({
     codec_type: z.literal('video'),
     codec_name: z.string(),
@@ -73,9 +70,8 @@ const FFProbeOutputVideoStream = z.object({
     }).passthrough().optional(),
     side_data_list: z.object({
       rotation: z.number().optional(),
-    }).passthrough().array().optional(),
-}).passthrough()
-
+    }).array().optional(),
+})
 
 const FFProbeOutputAudioStream = z.object({
     codec_type: z.literal('audio'),
@@ -83,11 +79,21 @@ const FFProbeOutputAudioStream = z.object({
     duration: z.coerce.number().optional(),
 }).passthrough()
 
-
 const FFProbeOutputBinDataStream = z.object({
     codec_type: z.literal('data'),
 }).passthrough()
 
+
+const FFProbeOutputSubtitleStream = z.object({
+    codec_type: z.literal('subtitle'),
+})
+const FFProbeOutputAttachmentStream = z.object({
+    codec_type: z.literal('attachment'),
+})
+
+const FFProbeOutputUnknownStream = z.object({
+    codec_type: z.literal('unknown'),
+}).passthrough()
 
 const FFProbeOutput = z.object({
   format: z.object({
@@ -98,6 +104,8 @@ const FFProbeOutput = z.object({
     FFProbeOutputAudioStream,
     FFProbeOutputBinDataStream,
     FFProbeOutputSubtitleStream,
+    FFProbeOutputAttachmentStream,
+    FFProbeOutputUnknownStream,
   ]).array().min(1)
 }).passthrough()
 
