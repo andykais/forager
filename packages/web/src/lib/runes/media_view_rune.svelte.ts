@@ -52,6 +52,11 @@ export class MediaViewRune extends Rune {
     return this.media.thumbnails
   }
 
+  get series_index(): number | undefined {
+    // Present on responses returned from `forager.series.search`
+    return (this.media as unknown as { series_index?: number }).series_index
+  }
+
   public update(media_info: inputs.MediaInfo, tags: inputs.MediaReferenceUpdateTags) {
     throw new Error('requires override')
   }
