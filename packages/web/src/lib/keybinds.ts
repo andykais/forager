@@ -3,13 +3,19 @@ import type { Config } from '$lib/server/config.ts'
 
 
 type KeybindAction =
+  | 'OpenMedia'
   | 'Escape'
   | 'Search'
+  | 'AddTag'
   | 'PrevMedia'
   | 'NextMedia'
   | 'PrevTagSuggestion'
   | 'NextTagSuggestion'
+  | 'CopyMedia'
+  | 'ToggleFitMedia'
+  | 'ToggleFullScreen'
   | 'PlayPauseMedia'
+  | 'ToggleVideoMute'
   | 'ToggleMediaControls'
   | 'ToggleSidebar'
   | 'Star0'
@@ -27,6 +33,21 @@ export class Keybinds {
   #keybind_mapper: Map<string, KeybindAction> | undefined
   #config: Config | undefined
 
+  #normalize_keybind_code(code: string) {
+    return code
+      .split('-')
+      .map(part => {
+        const normalized_part = part
+          .replace('Control', 'Ctrl')
+          .replace('Spacebar', 'Space')
+          .replace('Key', '')
+        if (normalized_part === ' ') return 'Space'
+        if (normalized_part === 'Esc') return 'Escape'
+        return normalized_part
+      })
+      .join('-')
+  }
+
   public constructor(config: Config) {
     this.emitter = new EventTarget()
     this.disabled = false
@@ -35,7 +56,7 @@ export class Keybinds {
     this.#keybind_mapper = new Map<string, KeybindAction>()
     for (const [keyboard_action, keyboard_shortcuts] of Object.entries(this.#config.web.shortcuts)) {
       for (const keyboard_shortcut of keyboard_shortcuts) {
-        this.#keybind_mapper.set(keyboard_shortcut, keyboard_action as KeybindAction)
+        this.#keybind_mapper.set(this.#normalize_keybind_code(keyboard_shortcut), keyboard_action as KeybindAction)
       }
     }
   }
@@ -79,9 +100,15 @@ export class Keybinds {
     if (e.shiftKey) keys_down.push('Shift')
     if (e.altKey) keys_down.push('Alt')
     keys_down.push(last_keycode)
-    const code = keys_down.join('-')
+    const code = this.#normalize_keybind_code(keys_down.join('-'))
+    const key_fallback = this.#normalize_keybind_code([
+      ...(e.ctrlKey ? ['Ctrl'] : []),
+      ...(e.shiftKey ? ['Shift'] : []),
+      ...(e.altKey ? ['Alt'] : []),
+      e.key,
+    ].join('-'))
 
-    const action = this.#keybind_mapper.get(code)
+    const action = this.#keybind_mapper.get(code) ?? this.#keybind_mapper.get(key_fallback)
     if (action) {
       this.emitter.dispatchEvent(new CustomEvent(action, {
         detail: {
