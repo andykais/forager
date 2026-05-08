@@ -48,10 +48,13 @@ const Duration = z.object({
   }
 })
 
+export const MediaType = z.enum(['IMAGE', 'VIDEO', 'AUDIO'])
+
 export const MediaReferenceQuery = z.object({
   series_id: z.number().optional(),
   series: z.boolean().optional(),
   animated: z.boolean().optional(),
+  media_type: MediaType.optional(),
   /** filepath can be an exact path or a glob */
   filepath: z.string().optional(),
   media_reference_id: z.number().optional(),

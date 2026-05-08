@@ -1242,6 +1242,66 @@ test('search query.animated', async ctx => {
   })
 })
 
+test('search query.media_type', async ctx => {
+  using forager = new Forager(ctx.get_test_config())
+  forager.init()
+
+  const media_generated_art = await forager.media.create(ctx.resources.media_files['koch.tif'])
+  const media_cartoon = await forager.media.create(ctx.resources.media_files["ed-edd-eddy.png"])
+  const media_gif = await forager.media.create(ctx.resources.media_files['blink.gif'])
+  const media_doodle = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'])
+  const media_video = await forager.media.create(ctx.resources.media_files['cat_cronch.mp4'])
+  const media_audio = await forager.media.create(ctx.resources.media_files['music_snippet.mp3'])
+
+  // baseline: all media is returned with no filter
+  ctx.assert.search_result(forager.media.search(), {
+    total: 6,
+    results: [
+      {media_reference: {id: media_audio.media_reference.id}, media_file: {media_type: 'AUDIO'}},
+      {media_reference: {id: media_video.media_reference.id}, media_file: {media_type: 'VIDEO'}},
+      {media_reference: {id: media_doodle.media_reference.id}, media_file: {media_type: 'IMAGE'}},
+      {media_reference: {id: media_gif.media_reference.id}, media_file: {media_type: 'IMAGE'}},
+      {media_reference: {id: media_cartoon.media_reference.id}, media_file: {media_type: 'IMAGE'}},
+      {media_reference: {id: media_generated_art.media_reference.id}, media_file: {media_type: 'IMAGE'}},
+    ]
+  })
+
+  // media_type: 'IMAGE' returns only image media files (including animated images like gifs)
+  ctx.assert.search_result(forager.media.search({query: {media_type: 'IMAGE'}}), {
+    total: 4,
+    results: [
+      {media_reference: {id: media_doodle.media_reference.id}, media_file: {media_type: 'IMAGE', animated: false}},
+      {media_reference: {id: media_gif.media_reference.id}, media_file: {media_type: 'IMAGE', animated: true}},
+      {media_reference: {id: media_cartoon.media_reference.id}, media_file: {media_type: 'IMAGE', animated: false}},
+      {media_reference: {id: media_generated_art.media_reference.id}, media_file: {media_type: 'IMAGE', animated: false}},
+    ]
+  })
+
+  // media_type: 'VIDEO' returns only the mp4
+  ctx.assert.search_result(forager.media.search({query: {media_type: 'VIDEO'}}), {
+    total: 1,
+    results: [
+      {media_reference: {id: media_video.media_reference.id}, media_file: {media_type: 'VIDEO'}},
+    ]
+  })
+
+  // media_type: 'AUDIO' returns only the mp3
+  ctx.assert.search_result(forager.media.search({query: {media_type: 'AUDIO'}}), {
+    total: 1,
+    results: [
+      {media_reference: {id: media_audio.media_reference.id}, media_file: {media_type: 'AUDIO'}},
+    ]
+  })
+
+  // media_type and animated combine via AND: animated images only (the gif)
+  ctx.assert.search_result(forager.media.search({query: {media_type: 'IMAGE', animated: true}}), {
+    total: 1,
+    results: [
+      {media_reference: {id: media_gif.media_reference.id}, media_file: {media_type: 'IMAGE', animated: true}},
+    ]
+  })
+})
+
 test('audio media', async ctx => {
   using forager = new Forager(ctx.get_test_config())
   forager.init()
