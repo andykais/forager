@@ -6,6 +6,23 @@ import { onMount } from 'svelte'
 import { pushState } from '$app/navigation'
 import { Rune } from '$lib/runes/rune.ts'
 
+type MediaTypeFilter = 'all' | 'animated' | 'image' | 'video' | 'audio'
+
+const MEDIA_TYPE_FILTER_VALUES = new Set<MediaTypeFilter>([
+  'all',
+  'animated',
+  'image',
+  'video',
+  'audio',
+])
+
+// maps the lowercase URL/UI value to the uppercase core enum value
+const MEDIA_TYPE_TO_CORE: Record<'image' | 'video' | 'audio', NonNullable<inputs.PaginatedSearch['query']>['media_type']> = {
+  image: 'IMAGE',
+  video: 'VIDEO',
+  audio: 'AUDIO',
+}
+
 interface SearchParams {
   search_string: string
   filepath: string | undefined
@@ -16,7 +33,7 @@ interface SearchParams {
   stars: number | undefined
   stars_equality: 'gte' | 'eq' | undefined
   order: 'desc' | 'asc'
-  media_type: string
+  media_type: MediaTypeFilter
 }
 
 const DEFAULTS: SearchParams = {
@@ -109,6 +126,10 @@ export class QueryParamsManager extends Rune {
           params.stars = parseInt(val)
         } else if (params_key === 'filepath') {
           params.filepath = decodeURIComponent(val)
+        } else if (params_key === 'media_type') {
+          if (MEDIA_TYPE_FILTER_VALUES.has(val as MediaTypeFilter)) {
+            params.media_type = val as MediaTypeFilter
+          }
         } else {
           // @ts-ignore - dynamic assignment
           params[params_key] = val
@@ -209,9 +230,13 @@ export class QueryParamsManager extends Rune {
       query.stars_equality = params.stars_equality ?? 'gte'
     }
 
-    // Handle media type filtering
+    // Handle media type filtering. The dropdown is mutually exclusive in the UI:
+    // 'animated' maps to query.animated, while 'image'/'video'/'audio' map to
+    // the canonical uppercase query.media_type filter on core.
     if (params.media_type === 'animated') {
       query.animated = true
+    } else if (params.media_type !== 'all') {
+      query.media_type = MEDIA_TYPE_TO_CORE[params.media_type]
     }
 
     // Execute appropriate search
@@ -324,11 +349,15 @@ export class QueryParamsManager extends Rune {
     // Keep context in sync when tags are deleted from the draft input,
     // while avoiding unsaved/incomplete draft tags that may not exist yet.
     const tags = current_tags.filter((tag) => draft_tags.has(tag))
+    const media_type = this.current.media_type
     return {
       tags: tags.length > 0 ? tags : undefined,
       filepath: this.current.filepath,
       unread: this.current.unread_only || undefined,
-      animated: this.current.media_type === 'animated' ? true : undefined,
+      animated: media_type === 'animated' ? true : undefined,
+      media_type: media_type === 'image' || media_type === 'video' || media_type === 'audio'
+        ? MEDIA_TYPE_TO_CORE[media_type]
+        : undefined,
     }
   }
 
