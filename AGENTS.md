@@ -895,7 +895,7 @@ When working on this codebase, prioritize type safety, follow established patter
 
 ### Environment
 
-- **Deno stable** (not canary) must be used for the web package build. The Deno canary channel has a regression where dynamic `import()` of bare specifiers fails inside the `.deno/` node_modules directory during vite build. Use Deno stable 2.7.x.
+- **Deno stable** (not canary) must be used for the web package build. Deno canary has a regression where bare specifiers (e.g. `import 'zimmerframe'` inside `svelte/src/compiler/index.js`) are resolved as relative paths during vite's config evaluation, causing `Unable to load .../svelte/compiler` errors. The root cause: when vite loads vite.config.ts, it evaluates `@sveltejs/kit`'s `import_peer('svelte/compiler')` which loads `node_modules/svelte/src/compiler/index.js`; that file's `import 'zimmerframe'` is then incorrectly resolved as `./zimmerframe` instead of using Node module resolution. `nodeModulesDir: "manual"` + `npm install` does NOT fix this because the issue is in Deno canary's module loader (not the node_modules layout). Use Deno stable 2.7.x.
 - **FFmpeg** is pre-installed at `/usr/bin/ffmpeg` and `/usr/bin/ffprobe`.
 - **No external services** are needed — the database is embedded SQLite and the web server is built into the CLI.
 
@@ -911,7 +911,8 @@ When working on this codebase, prioritize type safety, follow established patter
 | Lint (core) | `deno task --cwd packages/core lint` |
 | Test (core) | `deno task --cwd packages/core test` |
 | Test (CLI) | `deno task --cwd packages/cli test` (requires web build first) |
-| Build (web) | `deno task --cwd packages/web build` |
+| Build (web) | `deno task --cwd packages/web build` or `build:local` |
+| Dev (web HMR) | `deno task --cwd packages/web dev` (vite dev on port 5173) |
 | Format | `deno fmt` |
 | Full dev | `deno task develop` |
 
