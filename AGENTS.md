@@ -890,3 +890,33 @@ Forager is a well-architected media management system with:
 - Migration-based schema evolution
 
 When working on this codebase, prioritize type safety, follow established patterns, write tests, and maintain the clean separation of concerns across layers.
+
+## Cursor Cloud specific instructions
+
+### Environment
+
+- **Deno stable** (not canary) must be used for the web package build. The Deno canary channel has a regression where dynamic `import()` of bare specifiers fails inside the `.deno/` node_modules directory during vite build. Use Deno stable 2.7.x.
+- **FFmpeg** is pre-installed at `/usr/bin/ffmpeg` and `/usr/bin/ffprobe`.
+- **No external services** are needed — the database is embedded SQLite and the web server is built into the CLI.
+
+### Running services
+
+- **GUI server**: `deno task --cwd packages/cli develop --config <config_path> gui` starts the web UI on `127.0.0.1:8000`. Requires a YAML config file (see AGENTS.md main section for schema). A minimal config needs `core.database.folder`, `core.database.filename`, `core.thumbnails.folder`, `core.migrations.automatic: true`, and `web.port`.
+- **Dev mode** (with HMR): `deno task develop` first builds the web package then starts the CLI GUI. This is the recommended dev workflow.
+
+### Key commands
+
+| Task | Command |
+|------|---------|
+| Lint (core) | `deno task --cwd packages/core lint` |
+| Test (core) | `deno task --cwd packages/core test` |
+| Test (CLI) | `deno task --cwd packages/cli test` (requires web build first) |
+| Build (web) | `deno task --cwd packages/web build` |
+| Format | `deno fmt` |
+| Full dev | `deno task develop` |
+
+### Known test quirks
+
+- Core tests have 4 failures related to FFmpeg version-specific floating-point precision (duration values differ slightly from expected). These are not code bugs.
+- CLI tests require the web package to be built first (`deno task --cwd packages/web build`).
+- The `--env-file=../../.env` warning from CLI develop tasks is harmless if no `.env` file exists.
