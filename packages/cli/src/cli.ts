@@ -4,6 +4,13 @@ import deno_json from '../deno.json' with { type: "json" };
 import { ForagerHelpers } from './helpers.ts'
 
 const LOG_LEVEL_TYPE = new cliffy.EnumType(["DEBUG", "INFO", "ERROR", 'SILENT']);
+const MEDIA_TYPE_TYPE = new cliffy.EnumType(['image', 'video', 'audio']);
+
+const MEDIA_TYPE_TO_CORE = {
+  image: 'IMAGE',
+  video: 'VIDEO',
+  audio: 'AUDIO',
+} as const;
 
 
 const cli = new cliffy.Command()
@@ -40,9 +47,11 @@ const cli = new cliffy.Command()
     })
 
   .command('search', 'search for media in the forager database')
+    .type('media-type', MEDIA_TYPE_TYPE)
     .option('--tags=<tags>', 'A comma separated list of tags to search with')
     .option('--filepath=<filepath>', 'A globpath to search for media files in the file system')
     .option('--media-reference-id=<media_reference_id:number>', 'A forager database media reference id')
+    .option('--media-type=<media_type:media-type>', 'Restrict to a single media file kind (image, video, audio)')
     .action(async opts => {
       const forager_helpers = new ForagerHelpers(opts)
       const forager = await forager_helpers.launch_forager()
@@ -51,6 +60,7 @@ const cli = new cliffy.Command()
           media_reference_id: opts.mediaReferenceId,
           filepath: opts.filepath,
           tags: opts.tags?.split(','),
+          media_type: opts.mediaType ? MEDIA_TYPE_TO_CORE[opts.mediaType] : undefined,
         }
       })
       forager_helpers.print_output(result)
