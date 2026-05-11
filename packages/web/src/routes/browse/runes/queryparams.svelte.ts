@@ -17,10 +17,14 @@ const MEDIA_TYPE_FILTER_VALUES = new Set<MediaTypeFilter>([
 ])
 
 // maps the lowercase URL/UI value to the uppercase core enum value
-const MEDIA_TYPE_TO_CORE: Record<'image' | 'video' | 'audio', NonNullable<inputs.PaginatedSearch['query']>['media_type']> = {
+const MEDIA_TYPE_TO_CORE = {
   image: 'IMAGE',
   video: 'VIDEO',
   audio: 'AUDIO',
+} as const satisfies Record<'image' | 'video' | 'audio', NonNullable<inputs.PaginatedSearch['query']>['media_type']>
+
+function is_core_media_type(v: MediaTypeFilter): v is keyof typeof MEDIA_TYPE_TO_CORE {
+  return v in MEDIA_TYPE_TO_CORE
 }
 
 interface SearchParams {
@@ -355,9 +359,7 @@ export class QueryParamsManager extends Rune {
       filepath: this.current.filepath,
       unread: this.current.unread_only || undefined,
       animated: media_type === 'animated' ? true : undefined,
-      media_type: media_type === 'image' || media_type === 'video' || media_type === 'audio'
-        ? MEDIA_TYPE_TO_CORE[media_type]
-        : undefined,
+      media_type: is_core_media_type(media_type) ? MEDIA_TYPE_TO_CORE[media_type] : undefined,
     }
   }
 
