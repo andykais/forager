@@ -453,3 +453,73 @@ test('series search duration sort', async ctx => {
     })
   })
 })
+
+test('series.search query.media_type filter', async ctx => {
+  using forager = new Forager(ctx.get_test_config())
+  forager.init()
+
+  const media_image = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'])
+  const media_gif = await forager.media.create(ctx.resources.media_files['blink.gif'])
+  const media_video = await forager.media.create(ctx.resources.media_files['cat_cronch.mp4'])
+  const media_audio = await forager.media.create(ctx.resources.media_files['music_snippet.mp3'])
+
+  const mixed_series = forager.series.create({media_series_name: 'mixed_media'})
+  forager.series.add({series_id: mixed_series.media_reference.id, media_reference_id: media_image.media_reference.id, series_index: 0})
+  forager.series.add({series_id: mixed_series.media_reference.id, media_reference_id: media_gif.media_reference.id, series_index: 1})
+  forager.series.add({series_id: mixed_series.media_reference.id, media_reference_id: media_video.media_reference.id, series_index: 2})
+  forager.series.add({series_id: mixed_series.media_reference.id, media_reference_id: media_audio.media_reference.id, series_index: 3})
+
+  // baseline: all 4 items returned in series_index order
+  ctx.assert.series_search_result(forager.series.search({
+    query: {series_id: mixed_series.media_reference.id}
+  }), {
+    total: 4,
+    results: [
+      {media_reference: {id: media_image.media_reference.id}, series_index: 0},
+      {media_reference: {id: media_gif.media_reference.id}, series_index: 1},
+      {media_reference: {id: media_video.media_reference.id}, series_index: 2},
+      {media_reference: {id: media_audio.media_reference.id}, series_index: 3},
+    ]
+  })
+
+  // media_type IMAGE filters to images (jpg + gif)
+  ctx.assert.series_search_result(forager.series.search({
+    query: {series_id: mixed_series.media_reference.id, media_type: 'IMAGE'}
+  }), {
+    total: 2,
+    results: [
+      {media_reference: {id: media_image.media_reference.id}, series_index: 0},
+      {media_reference: {id: media_gif.media_reference.id}, series_index: 1},
+    ]
+  })
+
+  // media_type VIDEO filters to videos
+  ctx.assert.series_search_result(forager.series.search({
+    query: {series_id: mixed_series.media_reference.id, media_type: 'VIDEO'}
+  }), {
+    total: 1,
+    results: [
+      {media_reference: {id: media_video.media_reference.id}, series_index: 2},
+    ]
+  })
+
+  // media_type AUDIO filters to audio
+  ctx.assert.series_search_result(forager.series.search({
+    query: {series_id: mixed_series.media_reference.id, media_type: 'AUDIO'}
+  }), {
+    total: 1,
+    results: [
+      {media_reference: {id: media_audio.media_reference.id}, series_index: 3},
+    ]
+  })
+
+  // media_type and animated combine via AND: only animated images (the gif)
+  ctx.assert.series_search_result(forager.series.search({
+    query: {series_id: mixed_series.media_reference.id, media_type: 'IMAGE', animated: true}
+  }), {
+    total: 1,
+    results: [
+      {media_reference: {id: media_gif.media_reference.id}, series_index: 1},
+    ]
+  })
+})

@@ -1,7 +1,7 @@
 import z from 'zod'
 import { PaginatedQuery } from '~/lib/inputs_base.ts'
 import { Tag } from './tag_inputs.ts'
-import {MediaInfo} from './media_reference_inputs.ts'
+import {MediaInfo, MediaType} from './media_reference_inputs.ts'
 
 const Duration = z.object({
   seconds: z.number().optional(),
@@ -36,6 +36,7 @@ export const SeriesGet = z.object({
 export const SeriesSearchQuery = z.object({
   series_id: z.number(),
   animated: z.boolean().optional(),
+  media_type: MediaType.optional(),
   filepath: z.string().optional(),
   tags: z.array(Tag).optional(),
   keypoint: Tag.optional(),

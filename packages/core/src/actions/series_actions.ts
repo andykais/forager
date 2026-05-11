@@ -168,6 +168,7 @@ class SeriesActions extends Actions {
       limit: parsed.limit,
       sort_by: parsed.sort_by,
       animated: query.animated,
+      media_type: query.media_type,
       order: parsed.order,
       stars: query.stars,
       stars_equality: query.stars_equality,
