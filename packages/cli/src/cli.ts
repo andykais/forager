@@ -29,6 +29,8 @@ const cli = new cliffy.Command()
         asset_folder: forager_helpers.config.web.asset_folder,
         port: forager_helpers.config.web.port,
         logger: forager_helpers.config.web.logger,
+        forager,
+        config: forager_helpers.config,
         kit: {
           env: {
             FORAGER_INSTANCE: forager as any,
@@ -111,6 +113,8 @@ const cli = new cliffy.Command()
         asset_folder: forager_helpers.config.web.asset_folder,
         port: forager_helpers.config.web.port,
         logger: forager_helpers.config.web.logger,
+        forager,
+        config: forager_helpers.config,
         kit: {
           env: {
             FORAGER_INSTANCE: forager as any,
