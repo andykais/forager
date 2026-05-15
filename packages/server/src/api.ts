@@ -1,0 +1,40 @@
+import { type Forager } from '@forager/core'
+import * as rpc from '@andykais/ts-rpc/adapters/sveltekit.ts'
+import type { Config } from './config.ts'
+
+
+export interface ApiContext {
+  forager: Forager
+  config: Config
+}
+
+class ForagerTagApi extends rpc.ApiController<ApiContext> {
+  search = this.context.forager.tag.search
+  get = this.context.forager.tag.get
+  update = this.context.forager.tag.update
+  alias_create = this.context.forager.tag.alias_create
+  alias_delete = this.context.forager.tag.alias_delete
+  parent_create = this.context.forager.tag.parent_create
+  parent_delete = this.context.forager.tag.parent_delete
+}
+
+class ForagerApi extends rpc.ApiController<ApiContext> {
+  media = this.context.forager.media
+  series = this.context.forager.series
+  tag = this.module(ForagerTagApi)
+  views = this.context.forager.views
+}
+
+export class Api extends rpc.ApiController<ApiContext> {
+  forager = this.module(ForagerApi)
+
+  config(): Config {
+    return this.context.config
+  }
+
+  server_time(): Date {
+    return new Date()
+  }
+}
+
+export type ApiSpec = rpc.InferSpec<typeof Api>
