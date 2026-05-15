@@ -113,12 +113,8 @@ Lifted almost entirely from existing code:
 New responsibilities the standalone server needs:
 
 1. **CORS** — Tauri's webview uses a custom scheme (`tauri://localhost` or `http://tauri.localhost`); the server must allow it. Same for arbitrary LAN origins if the user opens `http://my-nas:8000` in a browser. Configurable allow-list via `forager.yaml`.
-2. **Optional bearer token auth** — opt-in via config (`web.server.auth_token`). When set, RPC calls and `/files/*` requests must include `Authorization: Bearer <token>`. For media tags in `<img>`/`<video>`, we either:
-   - Use signed URLs (`/files/media_file/123?token=<signature>`), or
-   - Switch to `crossorigin="use-credentials"` + cookie auth.
-   The signed-URL approach is simpler and what we'll plan for.
-3. **Range requests / streaming** — already implemented today; carried over as-is.
-4. **Static frontend mount** — when running co-located, the server can serve the built SPA from `web.asset_folder`. When running headless ("server-only" mode), it can be configured to refuse to serve HTML.
+2. **Range requests / streaming** — already implemented today; carried over as-is.
+3. **Always serve the static frontend** — even when invoked via `forager serve`, the server mounts the built SPA at `/`. There's no real downside to leaving the HTML reachable: the static bytes are already in the binary's asset folder, the route doesn't touch any private state, and it avoids a second config knob plus a second "mode" of the server. If the user wants the Tauri client to talk to a server that doesn't serve HTML, they simply don't open the URL in a browser. Auth/access-control is explicitly out of scope here and is being designed separately.
 
 Public surface of `@forager/server`:
 
@@ -130,14 +126,12 @@ const server = new ForagerServer({
   config,                     // the resolved PackagesConfig
   port: 8000,
   hostname: '0.0.0.0',        // explicit, default '127.0.0.1'
-  serve_frontend: true,       // mount static SPA at '/'
-  auth_token: '…',            // optional
   cors: { allow: ['tauri://localhost', 'http://tauri.localhost'] },
 })
 await server.start()
 ```
 
-This is a strict superset of what `web.Server` does today; the existing `@forager/web` `Server` class becomes a thin wrapper that pre-configures `serve_frontend: true`.
+This is a strict superset of what `web.Server` does today; the existing `@forager/web` `Server` class becomes a thin wrapper around it.
 
 ## 5. Refactored `@forager/frontend`
 
@@ -145,20 +139,18 @@ The SPA we ship to both Tauri and the browser. Concretely:
 
 - Move `packages/web/src` (minus `routes/files/*`, `routes/rpc/*`, and `hooks.server.ts`) into `packages/frontend/src`. The `routes/files/*` and `routes/rpc/*` directories disappear from the frontend entirely.
 - Switch the SvelteKit adapter from the custom `./adapter/adapter.js` to `@sveltejs/adapter-static`. Set `ssr=false`, `prerender=true` for the root, and a `fallback: 'index.html'` so client-side routing handles unknown paths.
-- Introduce a small `frontend/src/lib/connection.ts` module that resolves the API base URL and auth token at runtime, using this order:
+- Introduce a small `frontend/src/lib/connection.ts` module that resolves the API base URL at runtime, using this order:
   1. `window.__FORAGER_CONNECTION__` (injected by Tauri at startup — see §7).
-  2. URL query string (`?api=https://example.com&token=…`) — useful for the browser-served case too.
-  3. Built-in default: same origin, no token (current behaviour).
+  2. URL query string (`?api=https://example.com`) — useful for the browser-served case too.
+  3. Built-in default: same origin (current behaviour).
 - `BaseController` is updated to take a `connection` instead of constructing its own:
 
   ```ts
   constructor(config: Config, connection: Connection) {
-    this.client = rpc.create<ApiSpec>(`${connection.base_url}/rpc/:signature`, {
-      headers: connection.auth_headers,
-    })
-    this.media_url = (id: number) => connection.sign(`/files/media_file/${id}`)
+    this.client = rpc.create<ApiSpec>(`${connection.base_url}/rpc/:signature`)
+    this.media_url = (id: number) => `${connection.base_url}/files/media_file/${id}`
     this.thumbnail_url = (id: number, index = 0) =>
-      connection.sign(`/files/thumbnail/${id}?index=${index}`)
+      `${connection.base_url}/files/thumbnail/${id}?index=${index}`
   }
   ```
 
@@ -179,14 +171,9 @@ const filepath = media.media_file.filepath
 const file = await Deno.open(absolute_path, { read: true })
 ```
 
-When the Tauri app talks to a _remote_ Forager, the file lives on the remote machine, but the `<video>` element is local. There are exactly two reasonable choices:
+When the Tauri app talks to a _remote_ Forager, the file lives on the remote machine, but the `<video>` element is local. The first-cut answer is **always proxy through HTTP**: both browser and Tauri webview point `<video src>` and `<img src>` at the remote `@forager/server`'s `/files/...` endpoints. Range requests already work. This is what the architecture above assumes, and funneling every URL through `controller.media_url(...)` / `controller.thumbnail_url(...)` is sufficient.
 
-1. **Always proxy through HTTP** (the only one that actually works in the remote case). Both browser and Tauri webview point `<video src>` and `<img src>` at the remote `@forager/server`'s `/files/...` endpoints. Range requests already work. This is what the architecture above assumes.
-2. **Tauri custom URI scheme for local-only.** Optional optimization for `--serve-local`, where the Tauri app could register a `forager-media://` scheme handler in Rust that reads files directly off disk and skips HTTP entirely. Not part of the first cut; called out so we don't paint ourselves into a corner.
-
-So the implementation in §5 — funneling every URL through `connection.sign(...)` — is sufficient.
-
-The only thing we must be careful about: **video seeking depends on `Range` requests**, which means the auth token has to be visible to the webview's media stack. Browsers won't send custom headers on `<video src>`, so signed query-string tokens (option above) are mandatory for any token-protected deployment.
+**Future consideration — Tauri custom URI scheme for local-only.** When `--serve-local` is in play, the Tauri app could register a `forager-media://` scheme handler in Rust that reads files directly off disk and skips HTTP entirely. Worth keeping in mind so the abstraction stays compatible, but explicitly out of scope for the first cut.
 
 ## 7. `@forager/desktop` (the Tauri app)
 
@@ -215,7 +202,7 @@ Rust invoke handlers (kept minimal):
 
 ```rust
 #[tauri::command]
-fn get_connection() -> Connection { ... }   // returns { base_url, token, label }
+fn get_connection() -> Connection { ... }   // returns { base_url }
 
 #[tauri::command]
 fn open_in_os(path: String) -> Result<(), String> { ... }
@@ -226,10 +213,8 @@ fn open_in_os(path: String) -> Result<(), String> { ... }
 How the Tauri app finds the connection:
 
 1. Read `--config` (default `~/.config/forager/forager.yml`) at startup.
-2. Resolve `web.desktop.server` (see §8 schema). If it's `local`, fail — the Tauri shell alone has no backend (and the user should use `forager gui --serve-local` for that flow; see §9).
-3. Otherwise expose `{ base_url, token }` to the frontend.
-
-A second-pass enhancement (probably worth doing in the first iteration anyway): a tiny in-app "connection picker" screen for switching between known remotes without editing yaml.
+2. Read `web.desktop.base_url` (see §8 schema) and expose `{ base_url }` to the frontend.
+3. When the CLI launches the Tauri binary with `--serve-local`, it overrides `base_url` to `http://127.0.0.1:<port>` via env var before spawning.
 
 ## 8. Config schema additions
 
@@ -241,24 +226,13 @@ web:
   server:
     hostname: 127.0.0.1            # default unchanged
     port: 8000                     # already exists, moves under server.*
-    auth_token: null               # optional bearer/signed-url secret
     cors_allow_origins:            # list of allowed CORS origins
       - tauri://localhost
       - http://tauri.localhost
-    serve_frontend: true           # default true; `forager serve` overrides to false
 
   # NEW: client-side connection settings (used by Tauri `forager gui`)
   desktop:
-    # connection profile to use on launch; can be a named profile or 'local'
-    server: default
-    profiles:
-      default:
-        base_url: https://forager.my-nas.lan
-        token: my-secret-token
-        label: Home NAS
-      laptop:
-        base_url: http://127.0.0.1:8000
-        label: This laptop
+    base_url: http://127.0.0.1:8000
 
   # existing keys stay where they are
   editing: ...
@@ -271,7 +245,6 @@ Schema work (`packages/frontend/src/lib/server/config.ts`, formerly `packages/we
 
 - Add Zod schemas for `WebServer` and `WebDesktop` blocks.
 - Keep `port` at the top level of `web` working via a `.transform()` that hoists it into `web.server.port` when the new key is absent. This preserves all existing `forager.yml` files in the wild.
-- Type-export `DesktopConnectionProfile` for use by `@forager/desktop`.
 
 The `core.thumbnails.folder` and `core.database.folder` paths obviously only need to exist on the server-side host; for the desktop client we'll skip validating those paths when the config is loaded by the Tauri app (the resolved `core` block is only needed by `forager serve`).
 
@@ -282,7 +255,7 @@ The existing `init`, `search`, `discover`, `create`, `delete` commands stay as-i
 ### `forager serve`
 
 ```text
-forager serve [--port N] [--hostname H] [--no-frontend] [--auth-token T]
+forager serve [--port N] [--hostname H]
 ```
 
 - Builds a `Forager` (current `launch_forager()` flow).
@@ -292,12 +265,11 @@ forager serve [--port N] [--hostname H] [--no-frontend] [--auth-token T]
 ### `forager gui`
 
 ```text
-forager gui [--profile NAME] [--serve-local] [--port N]
+forager gui [--serve-local] [--port N]
 ```
 
-- Without flags: launches the Tauri app pointed at `web.desktop.profiles[web.desktop.server]`.
-- `--profile NAME`: pick a non-default profile from `web.desktop.profiles`.
-- `--serve-local`: also spawn `forager serve` (in-process or as a child process — see below) and override the active connection profile to point at `http://127.0.0.1:<port>`.
+- Without flags: launches the Tauri app pointed at `web.desktop.base_url`.
+- `--serve-local`: also spawn `forager serve` (in-process or as a child process — see below) and override `base_url` for that run to `http://127.0.0.1:<port>`.
 
 Implementation notes:
 
@@ -309,7 +281,7 @@ Implementation notes:
 ### CI / release impact
 
 - `packages/cli`'s compile tasks stay the same.
-- `packages/desktop` adds three new GitHub Actions matrix builds (Linux, macOS, Windows) that run `tauri build` and attach the produced binaries to releases. Rust toolchain + platform-specific webview deps required; this is the biggest CI footprint change.
+- `packages/desktop` adds one new GitHub Actions job (Linux) that runs `tauri build` and attaches the produced binary to releases. Rust toolchain + `libwebkit2gtk` required; this is the biggest CI footprint change. macOS and Windows builds are deferred until the Linux flow is stable.
 
 ## 10. Phased rollout
 
@@ -328,7 +300,7 @@ Each phase ends in a buildable, testable state. None of them break the current b
 **Phase 3 — Static SPA build.**
 - Swap the SvelteKit adapter to `adapter-static`.
 - Delete the custom `packages/web/adapter/` directory (or repurpose it for a transition period).
-- `@forager/server` now serves `frontend/build/` as static files when `serve_frontend: true`.
+- `@forager/server` now serves `frontend/build/` as static files.
 - This is also when `packages/web` either becomes a tiny façade or is removed in favor of `packages/server` + `packages/frontend`. Keep it around with deprecation notice if external consumers depend on the JSR package.
 
 **Phase 4 — Config schema extensions.**
@@ -343,9 +315,9 @@ Each phase ends in a buildable, testable state. None of them break the current b
 - Manual test: `cargo tauri dev` opens a window pointed at a `forager serve` running on the same machine.
 
 **Phase 6 — CLI `gui` switches to Tauri sidecar.**
-- `forager gui` discovers the Tauri binary and `spawn`s it with the active profile in env.
+- `forager gui` discovers the Tauri binary and `spawn`s it with `base_url` (resolved from config or `--serve-local`) passed in via env.
 - `--serve-local` flag.
-- Release pipeline updated to ship `forager-gui-<platform>` alongside the CLI.
+- Release pipeline updated to ship `forager-gui-linux` alongside the CLI.
 
 **Phase 7 (optional) — Tauri-only optimizations.**
 - Custom URI scheme for local-mode media (skip HTTP).
@@ -353,13 +325,12 @@ Each phase ends in a buildable, testable state. None of them break the current b
 
 ## 11. Risks / open questions
 
-1. **Deno + Tauri dev ergonomics.** Tauri assumes Node-ish tooling. Vite + Deno works (it's already in use), but the `beforeDevCommand` invocation needs `deno` on PATH in dev environments. Worth verifying early in Phase 5 that `tauri dev` and `tauri build` cleanly drive a Deno-based Vite build, especially on Windows where shell quoting differs.
-2. **SvelteKit `experimental.async` / `experimental.remoteFunctions`.** Both are enabled in `svelte.config.js`. We should check whether `adapter-static` is compatible with the routes that currently rely on these flags. If they're only used to allow top-level `await` in components, dropping the adapter is fine. If we depend on remote functions, those become regular `fetch` calls into `@forager/server` instead.
-3. **Auth model.** The signed-URL approach for `/files/*` needs a thought-out token format (probably HMAC over `<path>?expires=…&token=…` with the server's `auth_token` as key). If we punt and only support unauthenticated `127.0.0.1` for now, that's fine — but document it.
-4. **CORS preflight for RPC.** `@andykais/ts-rpc` does `PUT` requests with JSON bodies, which is preflighted by browsers. The server needs to handle `OPTIONS` correctly for any cross-origin client. Not hard, but easy to forget.
-5. **Tauri webview quirks per OS.** WebKit on macOS (in particular) has historically been finicky about `<video>` autoplay, Range responses, and `MediaSource`. Phase 5 testing should explicitly include media playback, since that's our most fragile UX.
-6. **`@forager/web` JSR consumers.** The package is published to JSR and consumed by `@forager/cli`. If we delete it, downstream tooling breaks. Easier path: keep `@forager/web` as a façade re-exporting `Server` from `@forager/server`. Plan accordingly in Phase 3.
-7. **CI binary distribution.** The current release flow only ships the Deno-compiled CLI binaries. Adding Tauri increases artifact size and OS-specific complexity (signing on macOS, MSIX/WiX on Windows). For an experimental project we can ship unsigned binaries to start.
+Initial target is **Linux only**; macOS/Windows are explicitly out of scope for the first cut.
+
+1. **Deno + Tauri dev ergonomics.** Tauri assumes Node-ish tooling. Vite + Deno works (it's already in use), but the `beforeDevCommand` invocation needs `deno` on PATH in dev environments. Worth verifying early in Phase 5 that `tauri dev` and `tauri build` cleanly drive a Deno-based Vite build.
+2. **CORS preflight for RPC.** `@andykais/ts-rpc` does `PUT` requests with JSON bodies, which is preflighted by browsers. The server needs to handle `OPTIONS` correctly for any cross-origin client. Not hard, but easy to forget.
+3. **`@forager/web` JSR consumers.** The package is published to JSR and consumed by `@forager/cli`. If we delete it, downstream tooling breaks. Easier path: keep `@forager/web` as a façade re-exporting `Server` from `@forager/server`. Plan accordingly in Phase 3.
+4. **CI binary distribution.** The current release flow only ships the Deno-compiled CLI binaries. Adding Tauri increases artifact size and OS-specific complexity. For an experimental Linux-first project we can ship unsigned binaries to start.
 
 ## 12. Summary of files & packages touched
 
