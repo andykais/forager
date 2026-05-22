@@ -45,7 +45,9 @@ export class MediaViewRune extends Rune {
   }
 
   get preview_thumbnail(): string | undefined {
-    return `/files/thumbnail/${this.media.thumbnails.results.at(0)?.id}`
+    const thumbnail = this.media.thumbnails.results.at(0)
+    if (thumbnail === undefined) return undefined
+    return this.thumbnail_url(thumbnail.id)
   }
 
   get thumbnails() {
@@ -185,7 +187,7 @@ export class MediaGroupRune extends MediaViewRune {
   get preview_thumbnail(): string | undefined {
     const media_entry = this.grouped_state.media_list.at(0)
     if (media_entry) {
-      return `/files/thumbnail/${media_entry.thumbnails.results[0].id}`
+      return this.thumbnail_url(media_entry.thumbnails.results[0].id)
     }
     return undefined
   }

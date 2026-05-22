@@ -60,7 +60,7 @@
     if (media_selections.current_selection.media_response?.media_type !== 'media_file') {
       return
     }
-    return `/files/media_file/${media_selections.current_selection.media_response.media_reference.id}`
+    return controller.media_url(media_selections.current_selection.media_response.media_reference.id)
   })
   $effect(() => {
     if (media_url) {
@@ -111,14 +111,14 @@
             <div class="w-full flex flex-row justify-center gap-1 overflow-x-scroll" style="height: {controller.runes.settings.ui.media_view.filmstrip.thumbnail_size}px;">
               {#each media_selections.current_selection.thumbnails.results as thumbnail, index}
                 <div class="h-full">
-                  <img class="h-full" src="/files/thumbnail/{media_selections.current_selection.media_response.media_reference.id}?index={index}" alt="Thumbnail {index}"></div>
+                  <img class="h-full" src={controller.thumbnail_url(media_selections.current_selection.media_response.media_reference.id, index)} alt="Thumbnail {index}"></div>
               {/each}
             </div>
           {/if}
         {:else if media_selections.current_selection.media_response.media_file.media_type === 'AUDIO'}
           <img
             class="object-contain max-h-full"
-            src="/files/thumbnail/{media_selections.current_selection.media_response.media_reference.id}" alt="Audio thumbnail">
+            src={controller.thumbnail_url(media_selections.current_selection.media_response.media_reference.id)} alt="Audio thumbnail">
           <audio
             autoplay
             loop
