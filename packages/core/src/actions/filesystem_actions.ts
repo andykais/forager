@@ -4,6 +4,7 @@ import { Actions } from '~/actions/lib/base.ts'
 import * as torm from '@torm/sqlite'
 import { inputs, parsers } from '~/inputs/mod.ts'
 import * as plugin from '~/lib/plugin_script.ts'
+import { FilesystemPath } from '~/models/filesystem_path.ts'
 
 interface FileSystemDiscoverStats {
   created: {
@@ -60,11 +61,24 @@ class FileSystemActions extends Actions {
     }
 
     this.ctx.logger.info(`Collecting files in ${walk_path}...`)
+
+    // Resolve the starting ingest_priority once for the whole discovery pass.
+    // Previously the model's INSERT did this lookup via a
+    // `(SELECT MAX(ingest_priority) ...)` subquery on every row, which made
+    // `filesystem.discover` quadratic in the size of the table. Within a
+    // single discover() run we are the only writer, so we can safely hand out
+    // priorities by simple in-memory increment.
+    const initial_max_priority = this.models.FilesystemPath.select_max_priority() ?? 0
+    let next_file_priority = initial_max_priority + FilesystemPath.PRIORITY_SPACER
+
     let progress = 0
     for await (const entry of fs.walk(walk_path, walk_options)) {
       const receiver = this.ctx.plugin_script.recievers.find(receiver => receiver.matches(entry))
       if (receiver) {
-        this.#add_filepath(stats, receiver, entry, parsed.params.reingest)
+        const created = this.#add_filepath(stats, receiver, entry, parsed.params.reingest, next_file_priority)
+        if (created) {
+          next_file_priority += FilesystemPath.PRIORITY_SPACER
+        }
       } else {
         stats.ignored.files ++
       }
@@ -79,11 +93,17 @@ class FileSystemActions extends Actions {
     return { stats }
   }
 
-  #add_filepath(stats: FileSystemDiscoverStats, receiver: plugin.FileSystemReceiver, entry: fs.WalkEntry, reingest: boolean) {
+  #add_filepath(
+    stats: FileSystemDiscoverStats,
+    receiver: plugin.FileSystemReceiver,
+    entry: fs.WalkEntry,
+    reingest: boolean,
+    ingest_priority: number,
+  ): boolean {
       const filesystem_path_data = {
         directory: false,
         filepath: entry.path,
-        priority_instruction: 'first',
+        ingest_priority,
         ingested: false,
         ingest_retriever: receiver.name,
         ingested_at: null,
@@ -100,13 +120,14 @@ class FileSystemActions extends Actions {
             updated_at: new Date(),
           })
           stats.existing.files ++
-          return
+          return false
       }
 
       try {
         this.models.FilesystemPath.create(filesystem_path_data)
         stats.created.files ++
         this.#add_directories(stats, path.dirname(entry.path))
+        return true
       } catch (e) {
         if (e instanceof torm.errors.UniqueConstraintError) {
           // this is just being defensive against potential concurrency conflicts that shouldn't arise
@@ -118,8 +139,9 @@ class FileSystemActions extends Actions {
             ingest_retriever: filesystem_path_data.ingest_retriever,
             updated_at: new Date(),
           })
+          return false
         }
-        else throw e
+        throw e
       }
   }
 
@@ -128,7 +150,7 @@ class FileSystemActions extends Actions {
       this.models.FilesystemPath.create({
         directory: true,
         filepath: filepath,
-        priority_instruction: 'none',
+        ingest_priority: null,
         ingested: false,
         ingest_retriever: null,
         ingested_at: null,

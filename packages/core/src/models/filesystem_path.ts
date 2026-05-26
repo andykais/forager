@@ -3,8 +3,8 @@ import { Model, field } from '~/models/lib/base.ts'
 import { SQLBuilder } from '~/models/lib/sql_builder.ts'
 
 const FilesystemPathVars = torm.Vars({
-  priority_instruction: field.string(), // TODO support enums in torm. This should be constrained to "first" | "last" | "none"
   total: field.number(),
+  priority: field.number().optional(),
 })
 
 
@@ -34,6 +34,15 @@ class FilesystemPath extends Model {
   static params = this.schema.params
   static result = this.schema.result
 
+  static PRIORITY_SPACER = PRIORITY_SPACER
+
+  // NOTE: callers are responsible for supplying an `ingest_priority` value.
+  // Previously this INSERT computed `MAX(ingest_priority) + 1000` inline via a
+  // CASE/subquery, but SQLite chose the `filesystem_path_directory` index over
+  // the partial unique index `filesystem_path_priority`, forcing a full scan
+  // of every `directory=0` row on every insert. During bulk `filesystem.discover`
+  // that made discovery O(n^2). Resolving the next priority once per batch in
+  // application code and passing it as a parameter keeps inserts O(1).
   #create = this.query.one`INSERT INTO filesystem_path (
     filepath,
     filename,
@@ -51,17 +60,22 @@ class FilesystemPath extends Model {
     FilesystemPath.params.ingested,
     FilesystemPath.params.ingest_retriever,
     FilesystemPath.params.ingested_at,
-  ]},
-    CASE
-      WHEN ${FilesystemPathVars.params.priority_instruction} = 'first'
-        THEN COALESCE((SELECT MAX(ingest_priority) FROM filesystem_path WHERE directory = 0), 0) + ${PRIORITY_SPACER}
-      WHEN ${FilesystemPathVars.params.priority_instruction} = 'last'
-        THEN COALESCE((SELECT MIN(ingest_priority) FROM filesystem_path WHERE directory = 0), 0) - ${PRIORITY_SPACER}
-      WHEN ${FilesystemPathVars.params.priority_instruction} = 'none'
-        THEN NULL
-      ELSE 1/0 -- NOTE this is hacky, but it lets us throw an error if we receive a priority_instruction thats an unexpected value
-    END
-  ) RETURNING ${FilesystemPath.result.id}`
+    FilesystemPath.params.ingest_priority,
+  ]}) RETURNING ${FilesystemPath.result.id}`
+
+  // The `INDEXED BY filesystem_path_priority` hint is load-bearing: without it
+  // SQLite picks the non-partial `filesystem_path_directory` index and scans
+  // every directory=0 row. The partial unique index is keyed on
+  // `ingest_priority` and only contains directory=0 rows, so MAX()/MIN()
+  // resolve in O(log n) via a covering index lookup. The `WHERE directory = 0`
+  // clause is required for SQLite to match the partial index.
+  #select_max_priority_q = this.query.one`
+    SELECT MAX(ingest_priority) AS ${FilesystemPathVars.result.priority}
+    FROM filesystem_path INDEXED BY filesystem_path_priority WHERE directory = 0`
+
+  #select_min_priority_q = this.query.one`
+    SELECT MIN(ingest_priority) AS ${FilesystemPathVars.result.priority}
+    FROM filesystem_path INDEXED BY filesystem_path_priority WHERE directory = 0`
 
   #select_by_filepath = this.query`SELECT ${FilesystemPath.result['*']} FROM filesystem_path WHERE filepath = ${FilesystemPath.params.filepath}`
 
@@ -148,6 +162,25 @@ class FilesystemPath extends Model {
   public update = this.#update.exec
 
   public update_ingest = this.#update_filepath_ingest
+
+  /**
+   * Returns the current MAX(ingest_priority) among non-directory rows, or null
+   * if no such rows exist. Uses the partial unique index
+   * `filesystem_path_priority` for an O(log n) lookup.
+   */
+  public select_max_priority(): number | null {
+    const row = this.#select_max_priority_q()
+    return row?.priority ?? null
+  }
+
+  /**
+   * Returns the current MIN(ingest_priority) among non-directory rows, or null
+   * if no such rows exist. See {@link select_max_priority} for index strategy.
+   */
+  public select_min_priority(): number | null {
+    const row = this.#select_min_priority_q()
+    return row?.priority ?? null
+  }
 
   public count_entries(params: SelectFilesystemPathFilters) {
     const builder = new SQLBuilder(this.driver)
