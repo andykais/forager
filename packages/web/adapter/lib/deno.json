@@ -8,15 +8,12 @@
   },
 
   "imports": {
-    "@opentelemetry/api": "npm:@opentelemetry/api@1.9.0",
-    "@andykais/ts-rpc": "jsr:@andykais/ts-rpc@^0.2.2",
-    "@std/http/file-server": "jsr:@std/http@0.224.5/file-server",
-    "svelte": "npm:svelte@~5.39.8"
+    "@std/http/file-server": "jsr:@std/http@0.224.5/file-server"
   },
 
   "exports": {
     ".": "./mod.ts",
-    "./config": "./config.ts"
+    "./config": "./shim_config.ts"
   },
 
   "publish": {
@@ -24,10 +21,8 @@
       "README.md",
       "LICENSE",
       "mod.ts",
-      "config.ts",
-      "server.js",
-      "static/**/*",
-      "server/**/*"
+      "shim_config.ts",
+      "build/**/*"
     ]
   }
 }
