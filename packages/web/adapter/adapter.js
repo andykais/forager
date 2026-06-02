@@ -1,43 +1,37 @@
-import {fileURLToPath} from 'node:url';
-import * as fs from 'jsr:@std/fs';
+import * as fs from 'jsr:@std/fs'
 import * as path from 'jsr:@std/path'
-import {build} from 'npm:esbuild';
 
-async function strip_type_imports(filepath) {
-  let file_contents = await Deno.readTextFile(filepath)
-  file_contents = file_contents.replaceAll(/@type.+import\(.*[*]/g, '*')
-          // (flags2 & DERIVED) !== 0 && /** @type {import('#client').Derived} */
-  file_contents = file_contents.replaceAll(/@param.+import\(.*[*]/g, '*')
-  file_contents = file_contents.replaceAll(/@param.+import\(.*/g, '')
-  await Deno.writeTextFile(filepath, file_contents)
-}
-
-/** @type {import('.').default} */
-export default function (opts = {}) {
-  const {buildOptions = {}} = opts;
-
+/**
+ * Custom SvelteKit adapter for @forager/web.
+ *
+ * As of phase 3 of the Tauri port, this adapter produces a pure static SPA
+ * (equivalent to @sveltejs/adapter-static with `fallback: 'index.html'`).
+ * The bytes-imports machinery is retained so the static assets can be
+ * embedded inside a `deno compile`-built CLI binary.
+ *
+ * Output layout (relative to packages/web/adapter/lib/build):
+ *   static/                        — client assets + SPA fallback (index.html)
+ *   bytes_imports.ts               — `with { type: 'bytes' }` re-exports of every static file
+ *   build.json                     — manifest used by mod.ts at runtime
+ */
+export default function () {
   return {
-    name: 'deno-deploy-adapter',
+    name: 'forager-static-adapter',
 
     async adapt(builder) {
       const web_package_root = path.resolve(import.meta.dirname, '..')
       const published_package_dir = path.join(web_package_root, 'adapter', 'lib')
       const out = path.join(published_package_dir, 'build')
-      const tmp = builder.getBuildDirectory('deno-deploy-adapter');
 
-      builder.rimraf(out);
-      builder.rimraf(tmp);
-      builder.mkdirp(tmp);
+      builder.rimraf(out)
+      builder.mkdirp(out)
 
-      const out_server_dir = path.join(out, 'server')
       const out_static_dir = path.join(out, 'static')
       const out_static_kit_dir = path.join(out_static_dir, builder.config.kit.paths.base)
 
-      builder.writeClient(out_static_kit_dir);
-      builder.writePrerendered(out_static_kit_dir);
-      builder.writeServer(out_server_dir);
-
-      builder.copy(path.join(web_package_root, 'src/lib/server/config.ts'), path.join(out, 'config.ts'))
+      builder.writeClient(out_static_kit_dir)
+      builder.writePrerendered(out_static_kit_dir)
+      await builder.generateFallback(path.join(out_static_kit_dir, 'index.html'))
 
       const deno_json = JSON.parse(await Deno.readTextFile(path.join(published_package_dir, 'deno.json')))
       const LOCAL_BUILD = Deno.env.get('LOCAL_BUILD')
@@ -47,27 +41,17 @@ export default function (opts = {}) {
 
       const js_static_imports = {}
       const build_manifest = {
-        package_version: package_version,
+        package_version,
         APP_DIR: builder.getAppPath(),
-        PRERENDERED: builder.prerendered.paths,
+        SPA_FALLBACK: 'index.html',
         generated_files: {},
       }
 
+      const vite_generated_build_files = await Array.fromAsync(
+        fs.walk(out_static_dir, { includeDirs: false }),
+      )
 
-      // annoying code here, but sveltekit outputs type hints that are perhaps correct, but not resolved properly by deno, so we get checker errors https://github.com/sveltejs/kit/issues/12930
-      const server_index_filepath = path.join(out_server_dir, 'index.js')
-      const chunks_internal_filepath = path.join(out_server_dir, 'chunks', 'internal.js')
-      await Promise.all([
-        strip_type_imports(server_index_filepath),
-        strip_type_imports(chunks_internal_filepath),
-      ])
-
-      const vite_generated_build_files = [
-        // ...await Array.fromAsync(fs.walk(out_server_dir, {includeDirs: false})),
-        ...await Array.fromAsync(fs.walk(out_static_dir, {includeDirs: false})),
-      ]
-
-      for await (const file of vite_generated_build_files) {
+      for (const file of vite_generated_build_files) {
         const relative_path = path.relative(out, file.path)
         const file_id = relative_path.replaceAll(/[^a-zA-Z0-9]/g, '_')
         if (js_static_imports[file_id]) {
@@ -80,39 +64,6 @@ export default function (opts = {}) {
       const js_static_import_file = [...Object.values(js_static_imports)].join('\n')
       await Deno.writeTextFile(path.join(out, 'bytes_imports.ts'), js_static_import_file)
       await Deno.writeTextFile(path.join(out, 'build.json'), JSON.stringify(build_manifest, null, 2))
-
-      /*
-      // transpile build/server.js and build/server/* into a single esm compatible bundle
-      const defaultOptions = {
-        entryPoints: [`${out}/server.js`],
-        outfile: `${out}/server.js`,
-        bundle: true,
-        format: 'esm',
-        target: 'esnext',
-        platform: 'node',
-        allowOverwrite: true
-      };
-
-      for (const key of Object.keys(buildOptions)) {
-        if (Object.hasOwn(defaultOptions, key)) {
-          console.warn(
-            `Warning: "buildOptions" has override for default "${key}" this may break deployment.`
-          );
-        }
-      }
-
-      try {
-        await build({
-          ...defaultOptions,
-          ...buildOptions
-        });
-      } catch (err) {
-        console.error(err);
-        process.exit(1);
-      } finally {
-        // builder.rimraf(`${out}/server`);
-      }
-      */
-    }
-  };
+    },
+  }
 }

@@ -31,12 +31,6 @@ const cli = new cliffy.Command()
         logger: forager_helpers.config.web.logger,
         forager,
         config: forager_helpers.config,
-        kit: {
-          env: {
-            FORAGER_INSTANCE: forager as any,
-            FORAGER_CONFIG: forager_helpers.config as any,
-          }
-        }
       })
       await server.init()
     })
@@ -115,12 +109,6 @@ const cli = new cliffy.Command()
         logger: forager_helpers.config.web.logger,
         forager,
         config: forager_helpers.config,
-        kit: {
-          env: {
-            FORAGER_INSTANCE: forager as any,
-            FORAGER_CONFIG: forager_helpers.config as any,
-          }
-        }
       })
       await server.init()
       await server.start()

@@ -9,13 +9,10 @@ const config = {
 
 	kit: {
 		adapter: adapter(),
-    experimental: {
-      remoteFunctions: true,
-    },
     prerender: {
       crawl: false,
-			entries: []
-		}
+      entries: []
+    }
 	},
 	compilerOptions: {
 		experimental: {

@@ -48,6 +48,16 @@ export default defineConfig({
 
     host: '127.0.0.1', // Only bind to localhost'
 
+    // Phase 3 of the Tauri port: vite dev no longer runs an in-process
+    // Forager (no more SvelteKit hooks). Forward backend traffic to a
+    // running `forager gui`/`forager serve` on FORAGER_API_URL (defaults to
+    // http://127.0.0.1:8000). Start that separately when iterating with
+    // `deno task --cwd packages/web dev`.
+    proxy: {
+      '/rpc':   { target: process.env.FORAGER_API_URL ?? 'http://127.0.0.1:8000', changeOrigin: true },
+      '/files': { target: process.env.FORAGER_API_URL ?? 'http://127.0.0.1:8000', changeOrigin: true },
+    },
+
     // // NOTE that this disables hmr and hard server refresh.
     // // refreshing manually may be a better iterative workflow
     // hmr: {
