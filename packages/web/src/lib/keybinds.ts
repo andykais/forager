@@ -25,7 +25,11 @@ type KeybindAction =
   | 'Star4'
   | 'Star5'
 
-type KeybindActionListener = (e: KeyboardEvent) => void
+interface KeybindActionEventDetail {
+  data: { keyboard_event: KeyboardEvent }
+}
+type KeybindActionEvent = CustomEvent<KeybindActionEventDetail>
+type KeybindActionListener = (e: KeybindActionEvent) => void
 
 export class Keybinds {
   public emitter: EventTarget
@@ -76,12 +80,12 @@ export class Keybinds {
   }
 
   public listen(event: KeybindAction, handler: KeybindActionListener) {
-    this.emitter.addEventListener(event, handler)
+    this.emitter.addEventListener(event, handler as EventListener)
     return handler
   }
 
   public remove_listener(event: KeybindAction, handler: KeybindActionListener) {
-    this.emitter.removeEventListener(event, handler)
+    this.emitter.removeEventListener(event, handler as EventListener)
   }
 
   public handler = (e: KeyboardEvent) => {
