@@ -93,14 +93,16 @@ class FileSystemActions extends Actions {
 
       const filesystem_path = this.models.FilesystemPath.select_one({filepath: filesystem_path_data.filepath})
       if (filesystem_path) {
+        if (reingest) {
           this.models.FilesystemPath.update({
             id: filesystem_path.id,
             ingest_retriever: filesystem_path_data.ingest_retriever,
-            ingested: reingest ? false : filesystem_path.ingested,
+            ingested: false,
             updated_at: new Date(),
           })
-          stats.existing.files ++
-          return
+        }
+        stats.existing.files ++
+        return
       }
 
       try {
