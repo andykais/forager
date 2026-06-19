@@ -70,6 +70,7 @@ class TagActions extends Actions {
 
       contextual_query = {
         animated: parsed.contextual_query.animated,
+        media_type: parsed.contextual_query.media_type,
         cursor: undefined,
         filepath: parsed.contextual_query.filepath,
         id: undefined,

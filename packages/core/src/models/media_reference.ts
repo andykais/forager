@@ -20,6 +20,7 @@ export interface SelectManyFilters {
   cursor: PaginatedResult<unknown>['cursor']
   order: 'asc' | 'desc' | undefined
   animated: boolean | undefined
+  media_type: 'IMAGE' | 'VIDEO' | 'AUDIO' | undefined
   stars: number | undefined
   sort_by: string
   stars_equality: 'gte' | 'eq' | undefined
@@ -37,6 +38,7 @@ export interface SelectManySeriesFilters {
   cursor: PaginatedResult<unknown>['cursor']
   order: 'asc' | 'desc' | undefined
   animated: boolean | undefined
+  media_type: 'IMAGE' | 'VIDEO' | 'AUDIO' | undefined
   stars: number | undefined
   sort_by: outputs.SeriesSearchSortBy
   stars_equality: 'gte' | 'eq' | undefined
@@ -447,7 +449,7 @@ ${group_builder.generate_sql()}
       builder.add_where_clause('media_series_reference = true')
     }
 
-    if (params.animated || params.filepath || params.duration_min !== undefined || params.duration_max !== undefined || params.sort_by === 'duration') {
+    if (params.animated || params.media_type || params.filepath || params.duration_min !== undefined || params.duration_max !== undefined || params.sort_by === 'duration') {
       builder.add_join_clause('INNER JOIN', 'media_file', 'media_file.media_reference_id = media_reference.id')
 
       if (params.series) {
@@ -456,6 +458,10 @@ ${group_builder.generate_sql()}
 
       if (params.animated) {
         builder.add_where_clause(`media_file.animated = true`)
+      }
+
+      if (params.media_type) {
+        builder.add_where_clause(`media_file.media_type = '${params.media_type}'`)
       }
 
       if (params.filepath) {

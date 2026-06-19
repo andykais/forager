@@ -77,6 +77,36 @@ test('cli basics', async ctx => {
     })
   })
 
+  await ctx.subtest('search --media-type filter', async () => {
+    const video_result = await forager_cli`--json --config ${config_path} search --media-type video`.json()
+    ctx.assert.search_result(video_result, {
+      total: 1,
+      results: [
+        {media_file: {filepath: ctx.resources.media_files['cat_cronch.mp4'], media_type: 'VIDEO'}},
+      ]
+    })
+
+    const image_result = await forager_cli`--json --config ${config_path} search --media-type image`.json()
+    ctx.assert.search_result(image_result, {
+      total: 1,
+      results: [
+        {media_file: {filepath: ctx.resources.media_files['cat_doodle.jpg'], media_type: 'IMAGE'}},
+      ]
+    })
+
+    const audio_result = await forager_cli`--json --config ${config_path} search --media-type audio`.json()
+    ctx.assert.search_result(audio_result, {
+      total: 0,
+      results: []
+    })
+
+    // unknown values should be rejected by cliffy's enum type
+    const garbage = await forager_cli`--json --config ${config_path} search --media-type garbage`
+      .stderr('piped')
+      .noThrow()
+    ctx.assert.equals(garbage.code !== 0, true, 'expected --media-type=garbage to fail')
+  })
+
   await ctx.subtest('delete subcommand', async () => {
     await forager_cli`--config ${config_path} delete --filepath ${ctx.resources.media_files["cat_cronch.mp4"]}`
     ctx.assert.throws(() => forager.media.get({filepath: ctx.resources.media_files["cat_cronch.mp4"]}), errors.NotFoundError)
