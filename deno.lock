@@ -1544,6 +1544,12 @@
           "jsr:@cliffy/command@1.0.0-rc.8"
         ]
       },
+      "packages/server": {
+        "dependencies": [
+          "jsr:@andykais/ts-rpc@~0.2.2",
+          "npm:@opentelemetry/api@1.9.0"
+        ]
+      },
       "packages/web": {
         "packageJson": {
           "dependencies": [

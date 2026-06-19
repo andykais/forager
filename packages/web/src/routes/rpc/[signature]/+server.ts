@@ -1,17 +1,20 @@
-import type { RequestHandler } from "@sveltejs/kit"
-import * as rpc from '@andykais/ts-rpc/adapters/sveltekit.ts'
-import {Api} from '$lib/api.ts'
+import type { RequestHandler } from '@sveltejs/kit'
+import { create_rpc_handler } from '@forager/server/handlers'
+import type { ApiContext } from '@forager/server'
 
 
+// Cache the rpc handler per context (forager + config) so realtime/SSE state
+// can be shared across requests. In practice context is a stable singleton
+// for the lifetime of the SvelteKit server.
+let cached_handler: ((req: Request) => Promise<Response>) | undefined
+let cached_context: ApiContext | undefined
 
-// this adapter stores stateful information like realtime connections. It should be instantiated once and reused
-let API_SINGLETON: rpc.ServerAdapter | undefined
 
-
-export const PUT: RequestHandler = async (params) => {
-  if (API_SINGLETON === undefined) {
-    const context = params.locals
-    API_SINGLETON = rpc.adapt(Api, context)
+export const PUT: RequestHandler = async ({ request, locals }) => {
+  const context: ApiContext = locals as unknown as ApiContext
+  if (!cached_handler || cached_context !== context) {
+    cached_handler = create_rpc_handler(context)
+    cached_context = context
   }
-  return await API_SINGLETON(params)
+  return await cached_handler(request)
 }

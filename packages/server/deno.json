@@ -1,0 +1,25 @@
+{
+  "name": "@forager/server",
+  "version": "0.0.1",
+  "license": "MIT",
+
+  "imports": {
+    "@andykais/ts-rpc": "jsr:@andykais/ts-rpc@^0.2.2",
+    "@opentelemetry/api": "npm:@opentelemetry/api@1.9.0"
+  },
+
+  "exports": {
+    ".": "./src/mod.ts",
+    "./api": "./src/api.ts",
+    "./config": "./src/config.ts",
+    "./handlers": "./src/handlers/mod.ts"
+  },
+
+  "publish": {
+    "include": [
+      "README.md",
+      "LICENSE",
+      "src/**/*.ts"
+    ]
+  }
+}
