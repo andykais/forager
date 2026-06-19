@@ -79,6 +79,7 @@
     "npm:path-to-regexp@6.2.1": "6.2.1",
     "npm:sv@*": "0.12.5",
     "npm:sv@latest": "0.12.5",
+    "npm:svelte-check@*": "4.3.2_svelte@5.39.8__acorn@8.15.0_typescript@5.9.3",
     "npm:svelte-check@4.3.2": "4.3.2_svelte@5.39.8__acorn@8.15.0_typescript@5.9.3",
     "npm:svelte@5.39.8": "5.39.8_acorn@8.15.0",
     "npm:svelte@~5.39.8": "5.39.8_acorn@8.15.0",

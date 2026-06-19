@@ -1,5 +1,5 @@
-import {Rune} from '$lib/runes/rune.ts'
-import type { Forager, MediaResponse } from '@forager/core'
+import { Rune } from '$lib/runes/rune.ts'
+import type { MediaResponse } from '@forager/core'
 import type * as runes from '$lib/runes/index.ts'
 import type { BaseController } from '$lib/base_controller.ts'
 
@@ -37,10 +37,10 @@ const CURRENT_SELECTION_DEFAULTS: CurrentSelection = {
   result_index: 0,
 }
 export class MediaSelectionsRune extends Rune {
-  #selected_thumbnails = $state<ThumbnailSelections>({type: 'none'})
-  #current_selection = $state<CurrentSelection>({...CURRENT_SELECTION_DEFAULTS})
+  #selected_thumbnails = $state<ThumbnailSelections>({ type: 'none' })
+  #current_selection = $state<CurrentSelection>({ ...CURRENT_SELECTION_DEFAULTS })
 
-  public constructor(client: BaseController['client'], media_list_rune: MediaListRune) {
+  public constructor(client: BaseController['client'], media_list_rune: runes.MediaListRune) {
     super(client)
   }
 
@@ -51,7 +51,6 @@ export class MediaSelectionsRune extends Rune {
   public get current_selection() {
     return this.#current_selection
   }
-
 
   private is_currently_selected(media_reference_id: number) {
     if (this.#current_selection.media_response?.media_reference.id === media_reference_id) {
@@ -78,7 +77,7 @@ export class MediaSelectionsRune extends Rune {
   }
 
   public clear_current_selection() {
-    this.#current_selection = {...CURRENT_SELECTION_DEFAULTS}
+    this.#current_selection = { ...CURRENT_SELECTION_DEFAULTS }
   }
 
   public async open_media() {

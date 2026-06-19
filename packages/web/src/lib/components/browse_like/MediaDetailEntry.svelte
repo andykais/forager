@@ -1,13 +1,13 @@
 <script lang="ts">
   import * as datetime from '@std/datetime'
   import type { Json } from '@andykais/ts-rpc/adapters/sveltekit.ts'
+  import type { BrowseLikeController } from '$lib/base_controller.ts'
 
-  import { BrowseController } from '../controller.ts'
-  let {controller, ...props}: {
-    controller: BrowseController
+  let { controller, ...props }: {
+    controller: BrowseLikeController
     label: string
     content: string | number | Date | null | Json
-    type?: "text" | "datetime-local"
+    type?: 'text' | 'datetime-local'
     editable?: boolean
     hide_if_null?: boolean
   } = $props()
