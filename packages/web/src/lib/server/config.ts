@@ -5,6 +5,8 @@ import * as forager from '@forager/core'
 
 const LogLevel = z.enum(['SILENT', 'ERROR', 'WARN', 'INFO', 'DEBUG'])
 
+const MediaTileInfoTableTypes = z.enum(['tag_group', 'sort_top'])
+
 const Keybind = (default_keybind: string) => z.union([z.string(), z.string().array()]).default(default_keybind).transform(keybind => {
   if (Array.isArray(keybind)) return keybind
   else return [keybind]
@@ -38,7 +40,18 @@ export const PackagesConfig = z.object({
 
       media_list: z.object({
         thumbnail_size: z.number().default(110),
-        thumbnail_shape: z.enum(['square', 'original']).prefault('original')
+        thumbnail_shape: z.enum(['square', 'original']).prefault('original'),
+
+        info_tiles: z.object({
+          tag_group: z.object({
+            enabled: z.boolean().default(true),
+            order: z.number().optional(), // TBD if needed. We may be able to get away with yaml ordering if the serialization is consistent
+          }).prefault({}),
+          sort_top: z.object({
+            enabled: z.boolean().default(true),
+            order: z.number().optional(), // TBD if needed. We may be able to get away with yaml ordering if the serialization is consistent
+          }).prefault({}),
+        }).prefault({}),
       }).strict().prefault({}),
 
       sidebar: z.object({
