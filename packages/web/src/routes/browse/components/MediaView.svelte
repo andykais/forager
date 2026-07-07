@@ -28,6 +28,16 @@
     return 'h-full w-auto max-w-full'
   })
 
+  const focused_on_editable_element = () => {
+    const active_element = document.activeElement
+    if (!active_element) return false
+
+    if (active_element instanceof HTMLInputElement) return true
+    if (active_element instanceof HTMLTextAreaElement) return true
+    if (active_element instanceof HTMLSelectElement) return true
+    return active_element.hasAttribute('contenteditable')
+  }
+
   controller.keybinds.component_listen({
     Escape: e => {
       if (document.fullscreenElement === fullscreen_container) {
@@ -57,13 +67,12 @@
     },
     ToggleFullScreen: async e => {
       if (!dialog.open || !controller.runes.media_selections.current_selection.show) return
+      if (focused_on_editable_element()) return
       e.detail.data.keyboard_event.preventDefault()
 
       if (document.fullscreenElement === fullscreen_container) {
-        console.log('exiting full screen...')
         await document.exitFullscreen()
       } else {
-        console.log('requesting full screen...')
         await fullscreen_container.requestFullscreen()
       }
     },
