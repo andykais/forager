@@ -16,13 +16,6 @@
   let {controller}: Props = $props()
   let paused = $state(false)
 
-  const toggle_fit_mode = () => {
-    const updated_mode = controller.runes.settings.ui.media_view.fit.mode === 'original'
-      ? 'fill'
-      : 'original'
-    controller.runes.settings.set('ui.media_view.fit.mode', updated_mode)
-  }
-
   const media_fit_classes = $derived.by(() => {
     if (controller.runes.settings.ui.media_view.fit.mode === 'original') {
       return 'w-auto h-auto max-w-full max-h-full'
@@ -35,51 +28,53 @@
     return 'h-full w-auto max-w-full'
   })
 
-  const register_component_keybinds = () => {
-    controller.keybinds.component_listen({
-      Escape: e => {
-        if (document.fullscreenElement === fullscreen_container) {
-          document.exitFullscreen()
-          return
-        }
-        dialog.close()
-        controller.runes.media_selections.close_media()
-      },
-      PlayPauseMedia: e => {
-        paused = !paused
-      },
-      OpenMedia: e => {
-        /*
-        // TODO we need to be aware of the focus when making this call. Currently this will take over hitting "Enter" on the search bar
-        media_selections.open_media()
-        */
-      },
-      ToggleMediaControls: async e => {
-        show_controls = !show_controls
-      },
-      ToggleFitMedia: async e => {
-        toggle_fit_mode()
-      },
-      ToggleFullScreen: async e => {
-        if (!dialog.open || !controller.runes.media_selections.current_selection.show) return
-        e.detail.data.keyboard_event.preventDefault()
+  controller.keybinds.component_listen({
+    Escape: e => {
+      if (document.fullscreenElement === fullscreen_container) {
+        document.exitFullscreen()
+        return
+      }
+      dialog.close()
+      controller.runes.media_selections.close_media()
+    },
+    PlayPauseMedia: e => {
+      paused = !paused
+    },
+    OpenMedia: e => {
+      /*
+      // TODO we need to be aware of the focus when making this call. Currently this will take over hitting "Enter" on the search bar
+      media_selections.open_media()
+      */
+    },
+    ToggleMediaControls: async e => {
+      show_controls = !show_controls
+    },
+    ToggleFitMedia: async e => {
+      const updated_mode = controller.runes.settings.ui.media_view.fit.mode === 'original'
+        ? 'fill'
+        : 'original'
+      controller.runes.settings.set('ui.media_view.fit.mode', updated_mode)
+    },
+    ToggleFullScreen: async e => {
+      if (!dialog.open || !controller.runes.media_selections.current_selection.show) return
+      e.detail.data.keyboard_event.preventDefault()
 
-        if (document.fullscreenElement === fullscreen_container) {
-          await document.exitFullscreen()
-        } else {
-          await fullscreen_container.requestFullscreen()
+      if (document.fullscreenElement === fullscreen_container) {
+        console.log('exiting full screen...')
+        await document.exitFullscreen()
+      } else {
+        console.log('requesting full screen...')
+        await fullscreen_container.requestFullscreen()
+      }
+    },
+    CopyMedia: async e => {
+      if (controller.runes.media_selections.current_selection.media_response) {
+        if (controller.runes.media_selections.current_selection.media_response.media_type === 'media_file') {
+          await navigator.clipboard.writeText(controller.runes.media_selections.current_selection.media_response.media_file.filepath)
         }
-      },
-      CopyMedia: async e => {
-        if (controller.runes.media_selections.current_selection.media_response) {
-          if (controller.runes.media_selections.current_selection.media_response.media_type === 'media_file') {
-            await navigator.clipboard.writeText(controller.runes.media_selections.current_selection.media_response.media_file.filepath)
-          }
-        }
-      },
-    })
-  }
-  register_component_keybinds()
+      }
+    },
+  })
 
   let filmstrip_thumbnails
   let filmstrip_height = 50

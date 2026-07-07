@@ -71,6 +71,7 @@
     </div>
 
     <div>
+      tiles:
       <button
         title="Toggle thumbnail shape"
         class="rounded-sm bg-gray-800 px-2 text-slate-400 hover:bg-gray-600"
@@ -84,8 +85,9 @@
     </div>
 
     <div>
+      view:
       <button
-        title="Toggle media fit mode"
+        title="Toggle view fit mode"
         class="rounded-sm bg-gray-800 px-2 text-slate-400 hover:bg-gray-600"
         onclick={() => {
           const updated_mode = controller.runes.settings.ui.media_view.fit.mode === 'original'
@@ -93,7 +95,7 @@
             : 'original'
           controller.runes.settings.set('ui.media_view.fit.mode', updated_mode)
         }}
-      >Media: {controller.runes.settings.ui.media_view.fit.mode}</button>
+      >{controller.runes.settings.ui.media_view.fit.mode}</button>
     </div>
 
     <span class="">

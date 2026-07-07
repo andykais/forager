@@ -37,8 +37,11 @@ export class Keybinds {
   #keybind_mapper: Map<string, KeybindAction> | undefined
   #config: Config | undefined
 
-  #normalize_keybind_code(code: string) {
-    return code
+  // this function is for some user ergonomics.
+  // It makes sure the user defined key order (Ctrl-Shift-Alt-S) matches the way we grab keybinds internally
+  // (same order, replace common mispellings like Control -> Ctrl)
+  #get_keybind_code(code: string) {
+    const keycodes = code
       .split('-')
       .map(part => {
         const normalized_part = part
@@ -49,7 +52,13 @@ export class Keybinds {
         if (normalized_part === 'Esc') return 'Escape'
         return normalized_part
       })
-      .join('-')
+
+    const order_preference = ['Ctrl', 'Shift', 'Alt']
+    keycodes.sort((a, b) => {
+      return order_preference.indexOf(b) - order_preference.indexOf(a)
+    })
+
+    return keycodes.join('-')
   }
 
   public constructor(config: Config) {
@@ -60,7 +69,7 @@ export class Keybinds {
     this.#keybind_mapper = new Map<string, KeybindAction>()
     for (const [keyboard_action, keyboard_shortcuts] of Object.entries(this.#config.web.shortcuts)) {
       for (const keyboard_shortcut of keyboard_shortcuts) {
-        this.#keybind_mapper.set(this.#normalize_keybind_code(keyboard_shortcut), keyboard_action as KeybindAction)
+        this.#keybind_mapper.set(this.#get_keybind_code(keyboard_shortcut), keyboard_action as KeybindAction)
       }
     }
   }
@@ -104,15 +113,8 @@ export class Keybinds {
     if (e.shiftKey) keys_down.push('Shift')
     if (e.altKey) keys_down.push('Alt')
     keys_down.push(last_keycode)
-    const code = this.#normalize_keybind_code(keys_down.join('-'))
-    const key_fallback = this.#normalize_keybind_code([
-      ...(e.ctrlKey ? ['Ctrl'] : []),
-      ...(e.shiftKey ? ['Shift'] : []),
-      ...(e.altKey ? ['Alt'] : []),
-      e.key,
-    ].join('-'))
-
-    const action = this.#keybind_mapper.get(code) ?? this.#keybind_mapper.get(key_fallback)
+    const code = this.#get_keybind_code(keys_down.join('-'))
+    const action = this.#keybind_mapper.get(code)
     if (action) {
       this.emitter.dispatchEvent(new CustomEvent(action, {
         detail: {
