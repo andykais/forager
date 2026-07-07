@@ -8,6 +8,27 @@ import { Rune } from '$lib/runes/rune.ts'
 
 type SortBy = inputs.SeriesSearch['sort_by']
 
+type MediaTypeFilter = 'all' | 'animated' | 'image' | 'video' | 'audio'
+
+const MEDIA_TYPE_FILTER_VALUES = new Set<MediaTypeFilter>([
+  'all',
+  'animated',
+  'image',
+  'video',
+  'audio',
+])
+
+// maps the lowercase URL/UI value to the uppercase core enum value
+const MEDIA_TYPE_TO_CORE = {
+  image: 'IMAGE',
+  video: 'VIDEO',
+  audio: 'AUDIO',
+} as const satisfies Record<'image' | 'video' | 'audio', NonNullable<inputs.SeriesSearch['query']>['media_type']>
+
+function is_core_media_type(v: MediaTypeFilter): v is keyof typeof MEDIA_TYPE_TO_CORE {
+  return v in MEDIA_TYPE_TO_CORE
+}
+
 interface SearchParams {
   search_string: string
   filepath: string | undefined
@@ -16,7 +37,7 @@ interface SearchParams {
   unread_only: boolean
   stars: number | undefined
   stars_equality: 'gte' | 'eq' | undefined
-  media_type: string
+  media_type: MediaTypeFilter
 }
 
 const DEFAULTS: SearchParams = {
@@ -99,6 +120,10 @@ export class SeriesQueryParamsManager extends Rune {
           params.stars = parseInt(val)
         } else if (params_key === 'filepath') {
           params.filepath = decodeURIComponent(val)
+        } else if (params_key === 'media_type') {
+          if (MEDIA_TYPE_FILTER_VALUES.has(val as MediaTypeFilter)) {
+            params.media_type = val as MediaTypeFilter
+          }
         } else {
           // @ts-ignore - dynamic assignment
           params[params_key] = val
@@ -173,8 +198,13 @@ export class SeriesQueryParamsManager extends Rune {
       query.stars_equality = params.stars_equality ?? 'gte'
     }
 
+    // Handle media type filtering. The dropdown is mutually exclusive in the UI:
+    // 'animated' maps to query.animated, while 'image'/'video'/'audio' map to
+    // the canonical uppercase query.media_type filter on core.
     if (params.media_type === 'animated') {
       query.animated = true
+    } else if (params.media_type !== 'all') {
+      query.media_type = MEDIA_TYPE_TO_CORE[params.media_type]
     }
 
     await this.#media_list.paginate({
@@ -233,12 +263,14 @@ export class SeriesQueryParamsManager extends Rune {
       this.draft.search_string.split(/\s+/).filter((t) => t.length > 0),
     )
     const tags = current_tags.filter((tag) => draft_tags.has(tag))
+    const media_type = this.current.media_type
     return {
       series_id: this.#series_id,
       tags: tags.length > 0 ? tags.map(this.#parse_tag) : undefined,
       filepath: this.current.filepath,
       unread: this.current.unread_only || undefined,
-      animated: this.current.media_type === 'animated' ? true : undefined,
+      animated: media_type === 'animated' ? true : undefined,
+      media_type: is_core_media_type(media_type) ? MEDIA_TYPE_TO_CORE[media_type] : undefined,
     }
   }
 
