@@ -39,7 +39,7 @@
   }
 
   controller.keybinds.component_listen({
-    Escape: e => {
+    Escape: () => {
       if (document.fullscreenElement === fullscreen_container) {
         document.exitFullscreen()
         return
@@ -47,19 +47,19 @@
       dialog.close()
       controller.runes.media_selections.close_media()
     },
-    PlayPauseMedia: e => {
+    PlayPauseMedia: () => {
       paused = !paused
     },
-    OpenMedia: e => {
+    OpenMedia: () => {
       /*
       // TODO we need to be aware of the focus when making this call. Currently this will take over hitting "Enter" on the search bar
       media_selections.open_media()
       */
     },
-    ToggleMediaControls: async e => {
+    ToggleMediaControls: async () => {
       show_controls = !show_controls
     },
-    ToggleFitMedia: async e => {
+    ToggleFitMedia: async () => {
       const updated_mode = controller.runes.settings.ui.media_view.fit.mode === 'original'
         ? 'fill'
         : 'original'
@@ -76,7 +76,7 @@
         await fullscreen_container.requestFullscreen()
       }
     },
-    CopyMedia: async e => {
+    CopyMedia: async () => {
       if (controller.runes.media_selections.current_selection.media_response) {
         if (controller.runes.media_selections.current_selection.media_response.media_type === 'media_file') {
           await navigator.clipboard.writeText(controller.runes.media_selections.current_selection.media_response.media_file.filepath)
@@ -96,7 +96,7 @@
 
   function video_loader(node: HTMLVideoElement) {
     return {
-      update(video_source_url: string) {
+      update(_video_source_url: string) {
         animation_progress = 0
         node.load()
       }
