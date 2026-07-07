@@ -61,6 +61,18 @@ export class Keybinds {
     return keycodes.join('-')
   }
 
+
+  #focused_on_editable_element = () => {
+    const active_element = document.activeElement
+    if (!active_element) return false
+
+    if (active_element instanceof HTMLInputElement) return true
+    if (active_element instanceof HTMLTextAreaElement) return true
+    if (active_element instanceof HTMLSelectElement) return true
+    return active_element.hasAttribute('contenteditable')
+  }
+
+
   public constructor(config: Config) {
     this.emitter = new EventTarget()
     this.disabled = false
@@ -100,6 +112,7 @@ export class Keybinds {
   public handler = (e: KeyboardEvent) => {
     if (this.disabled) return
     if (!this.#keybind_mapper) return
+    if (this.#focused_on_editable_element()) return
 
     const last_keycode = e.code
       .replace('Shift', '')
