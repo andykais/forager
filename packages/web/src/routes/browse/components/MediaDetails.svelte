@@ -1,6 +1,6 @@
 <script lang="ts">
   import * as path from '@std/path'
-  import type { Forager } from '@forager/core'
+  import type { model_types } from '@forager/core'
   import Sidebar from '$lib/components/Sidebar.svelte'
   import MediaDetailEntry from './MediaDetailEntry.svelte'
   import TagAutoCompleteInput from '$lib/components/TagAutoCompleteInput.svelte'
@@ -16,7 +16,7 @@
 
   let new_tag_str = $state<string>('')
 
-  type TagRecord = ReturnType<Forager['tag']['search']>['results'][0]
+  type TagRecord = model_types.Tag
   let sorted_tags: [string, TagRecord[]][] = $derived.by(() => {
     const grouped_tags: Record<string, TagRecord[]> = {}
     media_selections.current_selection.media_response?.tags.map(t => {

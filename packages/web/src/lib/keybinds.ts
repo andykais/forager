@@ -22,7 +22,8 @@ type KeybindAction =
   | 'Star4'
   | 'Star5'
 
-type KeybindActionListener = (e: KeyboardEvent) => void
+export type KeybindActionEvent = CustomEvent<{ data: { keyboard_event: KeyboardEvent } }>
+type KeybindActionListener = (e: KeybindActionEvent) => void
 
 export class Keybinds {
   public emitter: EventTarget

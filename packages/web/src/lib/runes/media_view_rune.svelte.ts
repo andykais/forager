@@ -59,7 +59,7 @@ export class MediaViewRune extends Rune {
     throw new Error(`thumbnails are not available on ${this.media.media_type} responses`)
   }
 
-  public update(media_info: inputs.MediaInfo, tags: inputs.MediaReferenceUpdateTags) {
+  public update(media_info?: inputs.MediaInfo, tags?: inputs.MediaReferenceUpdateTags) {
     throw new Error('requires override')
   }
 
@@ -104,7 +104,7 @@ export class MediaViewRune extends Rune {
 export class MediaFileRune extends MediaViewRune {
   media_type  = 'media_file' as const satisfies MediaResponse['media_type']
 
-  public override async update(media_info: inputs.MediaInfo, tags: inputs.MediaReferenceUpdateTags) {
+  public override async update(media_info?: inputs.MediaInfo, tags?: inputs.MediaReferenceUpdateTags) {
     const updated = await this.client.forager.media.update(
       this.media_reference.id,
       media_info,
@@ -120,7 +120,7 @@ export class MediaFileRune extends MediaViewRune {
   }
 
   public img_fit_classes() {
-    if (this.media_file.width > this.media_file.height) {
+    if ((this.media_file.width ?? 0) > (this.media_file.height ?? 0)) {
       // its long edge is wide
       return "w-full"
     } else {
@@ -204,7 +204,7 @@ export class MediaGroupRune extends MediaViewRune {
       return "w-full h-full"
     } else {
       const media = this.grouped_state.media_list[0]
-      if (media.media_type === 'media_file' && media.media_file.width > media.media_file.height) {
+      if (media.media_type === 'media_file' && (media.media_file.width ?? 0) > (media.media_file.height ?? 0)) {
         // its long edge is wide
         return "w-full"
       } else {

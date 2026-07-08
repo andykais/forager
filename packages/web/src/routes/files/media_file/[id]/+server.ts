@@ -29,6 +29,10 @@ export const GET: RequestHandler = async ({ params, request, locals }) => {
     throw err
   }
 
+  if (media.media_type !== 'media_file') {
+    throw error(404, 'Media reference is not a media file')
+  }
+
   const filepath = media.media_file.filepath
 
   // Security: Validate file path is within allowed directories

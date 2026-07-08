@@ -8,6 +8,10 @@
   // TODO wire this into settings
   let show_controls = $state<boolean>(false);
 
+  let {controller}: Props = $props()
+  const {media_selections} = controller.runes
+  let paused = $state(false)
+
   controller.keybinds.component_listen({
     Escape: e => {
       dialog.close()
@@ -33,10 +37,6 @@
       }
     },
   })
-
-  let {controller}: Props = $props()
-  const {media_selections} = controller.runes
-  let paused = $state(false)
 
   let filmstrip_thumbnails
   let filmstrip_height = 50
