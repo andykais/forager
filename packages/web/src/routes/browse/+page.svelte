@@ -31,6 +31,6 @@
 </div>
 
 <svelte:window
-  on:keydown={controller.keybinds.handler}
+  on:keydown|capture={controller.keybinds.handler}
   bind:innerHeight={dimensions.heights.screen} 
 />

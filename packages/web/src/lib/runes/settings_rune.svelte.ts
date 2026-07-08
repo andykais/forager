@@ -5,6 +5,7 @@ import type { BaseController } from '$lib/base_controller.ts'
 interface MutatableSettings {
   'ui.media_list.thumbnail_size': Config['web']['ui_defaults']['media_list']['thumbnail_size']
   'ui.media_list.thumbnail_shape': Config['web']['ui_defaults']['media_list']['thumbnail_shape']
+  'ui.media_view.fit.mode': Config['web']['ui_defaults']['media_view']['fit']['mode']
   'ui.search.advanced_filters.hide': Config['web']['ui_defaults']['search']['advanced_filters']['hide']
   'ui.sidebar.hide': Config['web']['ui_defaults']['sidebar']['hide']
 }
@@ -33,6 +34,10 @@ export class SettingsRune extends Rune {
       }
       case 'ui.media_list.thumbnail_shape': {
         this.ui.media_list.thumbnail_shape = value
+        break
+      }
+      case 'ui.media_view.fit.mode': {
+        this.ui.media_view.fit.mode = value
         break
       }
       case 'ui.search.advanced_filters.hide': {
@@ -67,6 +72,9 @@ export class SettingsRune extends Rune {
       }
       case 'ui.search.advanced_filters.hide': {
         return this.ui.search.advanced_filters.hide
+      }
+      case 'ui.media_view.fit.mode': {
+        return this.ui.media_view.fit.mode
       }
       default: {
         throw new Error(`Unexpected path '${path}'`)

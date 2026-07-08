@@ -713,6 +713,11 @@ core:
 9. **Use comments where applicable** - But not liberally; code should be self-documenting
 10. **Core actions interfaces should have docstrings** - Document public API methods
 11. **PR titles must follow main's commit-title pattern** - Use lowercase Conventional Commit style, typically `<type>(<scope>): <summary>` (e.g. `fix(web): ...`, `impl(core): ...`, `docs: ...`)
+12. **Prefer `impl(<scope>): ...` for feature/additive PR titles** - Use `fix(...)` for bug fixes and keep key feature names explicit in the title (e.g. `impl(web): ToggleFullScreen and ToggleFitMedia keybinds`)
+13. **PR body style should be concise and structured**:
+    - Use `## Summary` with short bullets in the form `implements ...` / `improves ...`
+    - Use a separate `## Vision Testing` section describing manual + automated verification
+    - Prefer practical behavior-focused bullets over long prose
 
 ### Security Considerations
 

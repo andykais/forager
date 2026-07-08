@@ -3,13 +3,19 @@ import type { Config } from '$lib/server/config.ts'
 
 
 type KeybindAction =
+  | 'OpenMedia'
   | 'Escape'
   | 'Search'
+  | 'AddTag'
   | 'PrevMedia'
   | 'NextMedia'
   | 'PrevTagSuggestion'
   | 'NextTagSuggestion'
+  | 'CopyMedia'
+  | 'ToggleFitMedia'
+  | 'ToggleFullScreen'
   | 'PlayPauseMedia'
+  | 'ToggleVideoMute'
   | 'ToggleMediaControls'
   | 'ToggleSidebar'
   | 'Star0'
@@ -19,13 +25,53 @@ type KeybindAction =
   | 'Star4'
   | 'Star5'
 
-type KeybindActionListener = (e: KeyboardEvent) => void
+interface KeybindActionEventDetail {
+  data: { keyboard_event: KeyboardEvent }
+}
+type KeybindActionEvent = CustomEvent<KeybindActionEventDetail>
+type KeybindActionListener = (e: KeybindActionEvent) => void
 
 export class Keybinds {
   public emitter: EventTarget
   public disabled: boolean
   #keybind_mapper: Map<string, KeybindAction> | undefined
   #config: Config | undefined
+
+  // this function is for some user ergonomics.
+  // It makes sure the user defined key order (Ctrl-Shift-Alt-S) matches the way we grab keybinds internally
+  // (same order, replace common mispellings like Control -> Ctrl)
+  #get_keybind_code(code: string) {
+    const keycodes = code
+      .split('-')
+      .map(part => {
+        const normalized_part = part
+          .replace('Control', 'Ctrl')
+          .replace('Spacebar', 'Space')
+          .replace('Key', '')
+        if (normalized_part === ' ') return 'Space'
+        if (normalized_part === 'Esc') return 'Escape'
+        return normalized_part
+      })
+
+    const order_preference = ['Ctrl', 'Shift', 'Alt']
+    keycodes.sort((a, b) => {
+      return order_preference.indexOf(b) - order_preference.indexOf(a)
+    })
+
+    return keycodes.join('-')
+  }
+
+
+  #focused_on_editable_element = () => {
+    const active_element = document.activeElement
+    if (!active_element) return false
+
+    if (active_element instanceof HTMLInputElement) return true
+    if (active_element instanceof HTMLTextAreaElement) return true
+    if (active_element instanceof HTMLSelectElement) return true
+    return active_element.hasAttribute('contenteditable')
+  }
+
 
   public constructor(config: Config) {
     this.emitter = new EventTarget()
@@ -35,7 +81,7 @@ export class Keybinds {
     this.#keybind_mapper = new Map<string, KeybindAction>()
     for (const [keyboard_action, keyboard_shortcuts] of Object.entries(this.#config.web.shortcuts)) {
       for (const keyboard_shortcut of keyboard_shortcuts) {
-        this.#keybind_mapper.set(keyboard_shortcut, keyboard_action as KeybindAction)
+        this.#keybind_mapper.set(this.#get_keybind_code(keyboard_shortcut), keyboard_action as KeybindAction)
       }
     }
   }
@@ -55,17 +101,18 @@ export class Keybinds {
   }
 
   public listen(event: KeybindAction, handler: KeybindActionListener) {
-    this.emitter.addEventListener(event, handler)
+    this.emitter.addEventListener(event, handler as EventListener)
     return handler
   }
 
   public remove_listener(event: KeybindAction, handler: KeybindActionListener) {
-    this.emitter.removeEventListener(event, handler)
+    this.emitter.removeEventListener(event, handler as EventListener)
   }
 
   public handler = (e: KeyboardEvent) => {
     if (this.disabled) return
     if (!this.#keybind_mapper) return
+    if (this.#focused_on_editable_element()) return
 
     const last_keycode = e.code
       .replace('Shift', '')
@@ -79,8 +126,7 @@ export class Keybinds {
     if (e.shiftKey) keys_down.push('Shift')
     if (e.altKey) keys_down.push('Alt')
     keys_down.push(last_keycode)
-    const code = keys_down.join('-')
-
+    const code = this.#get_keybind_code(keys_down.join('-'))
     const action = this.#keybind_mapper.get(code)
     if (action) {
       this.emitter.dispatchEvent(new CustomEvent(action, {
