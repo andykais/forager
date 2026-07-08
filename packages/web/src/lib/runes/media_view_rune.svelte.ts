@@ -1,22 +1,24 @@
 import {Rune} from '$lib/runes/rune.ts'
+import type { MediaResponse, MediaGroupResponse, Forager, inputs, model_types } from '@forager/core'
 import type { BaseController } from '$lib/base_controller.ts'
-import type { MediaResponse, inputs, type model_types } from '@forager/core'
 
+
+type AnyMediaResponse = MediaResponse | MediaGroupResponse
+
+type GroupSearchParams = Parameters<Forager['media']['group']>[0]
 
 interface State {
-  media: MediaResponse
+  media: AnyMediaResponse
   full_thumbnails: MediaResponse['thumbnails'] | undefined
 }
 
 
-interface SearchParams {}
-
 export class MediaViewRune extends Rune {
-  media_type!: MediaResponse['media_type'] | 'grouped'
+  media_type!: AnyMediaResponse['media_type']
   state = $state<State>()
-  current_view: model_types.View
+  current_view: model_types.View | undefined
 
-  protected constructor(client: BaseController['client'], media_response: MediaResponse) {
+  protected constructor(client: BaseController['client'], media_response: AnyMediaResponse) {
     super(client)
     this.state = {
       media: media_response,
@@ -28,28 +30,33 @@ export class MediaViewRune extends Rune {
     return this.state!.media
   }
 
-  set media(media: MediaResponse) {
-    return this.state!.media = media
+  set media(media: AnyMediaResponse) {
+    this.state!.media = media
   }
 
   get tags() {
-    return this.media.tags
+    if ('tags' in this.media) return this.media.tags
+    throw new Error(`tags are not available on ${this.media.media_type} responses`)
   }
 
   get media_reference() {
-    return this.media.media_reference
+    if ('media_reference' in this.media) return this.media.media_reference
+    throw new Error(`media_reference is not available on ${this.media.media_type} responses`)
   }
 
   get media_file() {
-    return this.media.media_file
+    if (this.media.media_type === 'media_file') return this.media.media_file
+    throw new Error(`media_file is not available on ${this.media.media_type} responses`)
   }
 
   get preview_thumbnail(): string | undefined {
-    return `/files/thumbnail/${this.media.thumbnails.results.at(0)?.id}`
+    if ('thumbnails' in this.media) return `/files/thumbnail/${this.media.thumbnails.results.at(0)?.id}`
+    return undefined
   }
 
   get thumbnails() {
-    return this.media.thumbnails
+    if ('thumbnails' in this.media) return this.media.thumbnails
+    throw new Error(`thumbnails are not available on ${this.media.media_type} responses`)
   }
 
   public update(media_info: inputs.MediaInfo, tags: inputs.MediaReferenceUpdateTags) {
@@ -72,10 +79,10 @@ export class MediaViewRune extends Rune {
     // TODO track view and update it as a video loops, or as an image has stayed open for a while
     const view_response = await this.client.forager.views.start({media_reference_id: this.media_reference.id })
     this.current_view = view_response.view
-    this.state.media.media_reference.view_count = view_response.media_reference.view_count
+    this.media_reference.view_count = view_response.media_reference.view_count
   }
 
-  static create(client: BaseController['client'], media_response: MediaResponse, search_params: SearchParams) {
+  static create(client: BaseController['client'], media_response: AnyMediaResponse, search_params: GroupSearchParams) {
     if (media_response.media_type === 'media_file') {
       return new MediaFileRune(client, media_response)
     } else if (media_response.media_type === 'media_series') {
@@ -87,7 +94,7 @@ export class MediaViewRune extends Rune {
     }
   }
 
-  public img_fit_classes() {
+  public img_fit_classes(): string {
     throw new Error('requires override')
   }
 
@@ -113,7 +120,7 @@ export class MediaFileRune extends MediaViewRune {
   }
 
   public img_fit_classes() {
-    if (this.media.media_file.width > this.media.media_file.height) {
+    if (this.media_file.width > this.media_file.height) {
       // its long edge is wide
       return "w-full"
     } else {
@@ -129,10 +136,10 @@ export class MediaSeriesRune extends MediaViewRune {
 
   public override async load_detailed_view() {
     if (this.state!.full_thumbnails) return
-    const series = await forager.series.get({series_id: media_response.media_reference.id })
+    const series = await this.client.forager.series.get({series_id: this.media_reference.id })
     this.state!.full_thumbnails = series.thumbnails
-    const series_items = await forager.media.search({query: {series_id: media_response.media_reference.id }})
     // TODO attach series items
+    // const series_items = await this.client.forager.media.search({query: {series_id: this.media_reference.id }})
   }
 
   public img_fit_classes() {
@@ -151,8 +158,7 @@ export class MediaGroupRune extends MediaViewRune {
     media_list: []
   })
 
-  protected constructor(client: BaseController['client'], media_response: MediaResponse, search_params: SearchParams) {
-    // debugger
+  constructor(client: BaseController['client'], media_response: MediaGroupResponse, search_params: GroupSearchParams) {
     super(client, media_response)
 
     const {group_by, cursor, ...merged_search_params} = search_params
@@ -172,19 +178,22 @@ export class MediaGroupRune extends MediaViewRune {
       throw new Error(`unexpected search group`)
     }
 
-    this.client.forager.media.search(merged_search_params)
-      .then((result: {}) => {
+    // `merged_search_params` is the group-by query with its grouping fields removed, so
+    // it maps onto a standard media search that fetches the media under this group.
+    this.client.forager.media.search(merged_search_params as inputs.PaginatedSearch)
+      .then(result => {
         this.grouped_state.media_list = result.results
       })
   }
 
   get group_metadata() {
-    return this.media.group
+    if (this.media.media_type === 'grouped') return this.media.group
+    throw new Error(`group metadata is not available on ${this.media.media_type} responses`)
   }
 
   get preview_thumbnail(): string | undefined {
     const media_entry = this.grouped_state.media_list.at(0)
-    if (media_entry) {
+    if (media_entry && 'thumbnails' in media_entry) {
       return `/files/thumbnail/${media_entry.thumbnails.results[0].id}`
     }
     return undefined
@@ -195,7 +204,7 @@ export class MediaGroupRune extends MediaViewRune {
       return "w-full h-full"
     } else {
       const media = this.grouped_state.media_list[0]
-      if (media.media_file.width > media.media_file.height) {
+      if (media.media_type === 'media_file' && media.media_file.width > media.media_file.height) {
         // its long edge is wide
         return "w-full"
       } else {
@@ -207,3 +216,4 @@ export class MediaGroupRune extends MediaViewRune {
 }
 
 export type MediaViewRunes = MediaSeriesRune | MediaFileRune
+export type AnyMediaViewRune = MediaFileRune | MediaSeriesRune | MediaGroupRune

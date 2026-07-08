@@ -25,22 +25,25 @@ export class SettingsRune extends Rune {
     return this.#state.web.ui_defaults
   }
 
+  // NOTE: TypeScript does not narrow `value`/return types against the switched
+  // `path` because the generic `K` stays a union inside the body, so each branch
+  // asserts the concrete setting type it operates on.
   public set<K extends keyof MutatableSettings>(path: K, value: MutatableSettings[K]) {
     switch(path) {
       case 'ui.media_list.thumbnail_size': {
-        this.ui.media_list.thumbnail_size = value
+        this.ui.media_list.thumbnail_size = value as MutatableSettings['ui.media_list.thumbnail_size']
         break
       }
       case 'ui.media_list.thumbnail_shape': {
-        this.ui.media_list.thumbnail_shape = value
+        this.ui.media_list.thumbnail_shape = value as MutatableSettings['ui.media_list.thumbnail_shape']
         break
       }
       case 'ui.search.advanced_filters.hide': {
-        this.ui.search.advanced_filters.hide = value
+        this.ui.search.advanced_filters.hide = value as MutatableSettings['ui.search.advanced_filters.hide']
         break
       }
       case 'ui.sidebar.hide': {
-        this.ui.sidebar.hide = value
+        this.ui.sidebar.hide = value as MutatableSettings['ui.sidebar.hide']
         break
       }
       default: {
@@ -54,19 +57,19 @@ export class SettingsRune extends Rune {
     if (typeof value !== 'boolean') {
       throw new Error(`Unexpected value '${value}' for path '${path}'`)
     }
-    this.set(path, !value)
+    this.set(path, !value as MutatableSettings[K])
   }
 
   private get<K extends keyof MutatableSettings>(path: K): MutatableSettings[K] {
     switch(path) {
       case 'ui.media_list.thumbnail_size': {
-        return this.ui.media_list.thumbnail_size
+        return this.ui.media_list.thumbnail_size as MutatableSettings[K]
       }
       case 'ui.media_list.thumbnail_shape': {
-        return this.ui.media_list.thumbnail_shape
+        return this.ui.media_list.thumbnail_shape as MutatableSettings[K]
       }
       case 'ui.search.advanced_filters.hide': {
-        return this.ui.search.advanced_filters.hide
+        return this.ui.search.advanced_filters.hide as MutatableSettings[K]
       }
       default: {
         throw new Error(`Unexpected path '${path}'`)

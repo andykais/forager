@@ -1,7 +1,12 @@
 import {Rune} from '$lib/runes/rune.ts'
-import type { Forager, MediaResponse, outputs } from '@forager/core'
+import type { Forager, MediaResponse, MediaGroupResponse, inputs } from '@forager/core'
 import { MediaViewRune } from '.'
+import type { AnyMediaViewRune } from '.'
 
+
+type AnyMediaResponse = MediaResponse | MediaGroupResponse
+
+type GroupSearchParams = Parameters<Forager['media']['group']>[0]
 
 type Result =
   | ReturnType<Forager['media']['search']>
@@ -27,12 +32,12 @@ export type Input =
 interface MediaListState {
   loading: boolean
   content: Result | null
-  results: MediaViewRune[]
+  results: AnyMediaViewRune[]
 }
 
 export class MediaListRune extends Rune {
-  #saved_params_type: 'media' | 'group_by' = 'media'
-  #saved_params: {} | undefined
+  #saved_params_type: Input['type'] = 'media'
+  #saved_params: Partial<GroupSearchParams> = {}
   #prev_query_hash: string = ''
   #fetch_count = 0
   #has_more = true
@@ -47,7 +52,7 @@ export class MediaListRune extends Rune {
 
   get content(): Result | null { return this.#state.content }
 
-  get results(): Result['results'] { return this.#state.results }
+  get results(): AnyMediaViewRune[] { return this.#state.results }
 
   get total() { return this.#state.content?.total ?? 0 }
 
@@ -73,26 +78,26 @@ export class MediaListRune extends Rune {
     this.#fetch_count ++
     this.#state.loading = true
 
-    let fetch_params: Input['params'] | undefined = this.#saved_params
+    let fetch_params: Partial<GroupSearchParams> = this.#saved_params
     if (this.#cursor !== undefined) {
-      fetch_params = {...fetch_params, cursor: this.#cursor} as any
+      fetch_params = {...fetch_params, cursor: this.#cursor}
     }
 
     const params_type = params?.type ?? this.#saved_params_type
     this.#saved_params_type = params_type
     let content: Result
     if (params_type === 'media') {
-      content = await this.client.forager.media.search(fetch_params)
+      content = await this.client.forager.media.search(fetch_params as inputs.PaginatedSearch)
     }
     else if (params_type === 'group_by') {
       fetch_params.limit = fetch_params.limit ?? 30
-      content = await this.client.forager.media.group(fetch_params)
+      content = await this.client.forager.media.group(fetch_params as GroupSearchParams)
     } else {
       throw new Error('unimplemented')
     }
 
-    const results = content.results.map(result => {
-      return MediaViewRune.create(this.client, result, fetch_params)
+    const results = (content.results as AnyMediaResponse[]).map(result => {
+      return MediaViewRune.create(this.client, result, fetch_params as GroupSearchParams)
     })
 
     this.#cursor = content.cursor
@@ -112,7 +117,7 @@ export class MediaListRune extends Rune {
     }
   }
 
-  async fetch_tag_summary(params: Input) {
+  async fetch_tag_summary(params?: Input) {
     // NOTE this currently just does a "union". We want an "intersection" for this view. Otherwise our default view returns all tags!
     /*
 

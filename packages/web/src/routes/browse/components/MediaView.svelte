@@ -47,9 +47,9 @@
     }
   })
 
-  function video_loader(node: HTMLVideoElement) {
+  function video_loader(node: HTMLVideoElement, video_url: string | undefined) {
     return {
-      update(video_source_url: string) {
+      update(video_source_url: string | undefined) {
         animation_progress = 0
         node.load()
       }
@@ -109,7 +109,7 @@
             max={media_selections.current_selection.media_response.media_file.duration} value={animation_progress}></progress>
           {#if controller.runes.settings.ui.media_view.filmstrip.enabled}
             <div class="w-full flex flex-row justify-center gap-1 overflow-x-scroll" style="height: {controller.runes.settings.ui.media_view.filmstrip.thumbnail_size}px;">
-              {#each media_selections.current_selection.thumbnails.results as thumbnail, index}
+              {#each media_selections.current_selection.media_response.thumbnails.results as thumbnail, index}
                 <div class="h-full">
                   <img class="h-full" src="/files/thumbnail/{media_selections.current_selection.media_response.media_reference.id}?index={index}" alt="Thumbnail {index}"></div>
               {/each}

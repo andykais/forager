@@ -19,7 +19,7 @@ class BrowseController extends BaseController {
   public constructor(config: Config) {
     super(config)
 
-    const media_list_rune = new MediaListRune(this.client, this.settings)
+    const media_list_rune = new MediaListRune(this.client)
     this.runes = {
       media_list: media_list_rune,
       focus: create_focuser(),

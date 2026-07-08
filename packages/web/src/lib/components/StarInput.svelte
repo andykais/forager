@@ -5,16 +5,16 @@
 
   let {
     star,
-    value = $bindable<number>(),
+    value = $bindable<number | undefined>(),
     onclick,
   }: {
     star: number
-    value: number
+    value: number | undefined
     onclick: () => void
   } = $props()
 
   let icon_color = $derived.by(() => {
-    if (value >= star) {
+    if ((value ?? 0) >= star) {
       // starred
       return theme.colors.gray[400]
     } else {
