@@ -18,10 +18,10 @@ export abstract class BaseQueryParams<TParams extends Record<string, any>> exten
   public draft: TParams = $state() as TParams
   public current_serialized: string = '?'
 
-  constructor(client: BaseController['client']) {
+  constructor(client: BaseController['client'], defaults: TParams) {
     super(client)
-    this.current = { ...this.DEFAULTS }
-    this.draft = { ...this.DEFAULTS }
+    this.current = { ...defaults }
+    this.draft = { ...defaults }
 
     onMount(async () => {
       const params = this.parse_url(new URL(window.location.toString()))

@@ -26,8 +26,6 @@ abstract class BaseController {
     if (this.#config) return this.#config
     else throw new Error(`Controller::config not initialized`)
   }
-
-  abstract handlers: {}
 }
 
 export { BaseController }

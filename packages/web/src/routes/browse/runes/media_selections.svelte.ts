@@ -1,5 +1,4 @@
 import {Rune} from '$lib/runes/rune.ts'
-import type { Forager, MediaResponse } from '@forager/core'
 import type * as runes from '$lib/runes/index.ts'
 import type { BaseController } from '$lib/base_controller.ts'
 
@@ -26,13 +25,12 @@ export type ThumbnailSelections =
 
 export interface CurrentSelection {
   show: boolean
-  media_response: runes.MediaViewRunes | null
+  media_response: runes.AnyMediaViewRune | null
   result_index: number
 }
 
 const CURRENT_SELECTION_DEFAULTS: CurrentSelection = {
   show: false,
-  thumbnails: null,
   media_response: null,
   result_index: 0,
 }
@@ -40,7 +38,7 @@ export class MediaSelectionsRune extends Rune {
   #selected_thumbnails = $state<ThumbnailSelections>({type: 'none'})
   #current_selection = $state<CurrentSelection>({...CURRENT_SELECTION_DEFAULTS})
 
-  public constructor(client: BaseController['client'], media_list_rune: MediaListRune) {
+  public constructor(client: BaseController['client'], media_list_rune: runes.MediaListRune) {
     super(client)
   }
 
@@ -60,7 +58,7 @@ export class MediaSelectionsRune extends Rune {
     return false
   }
 
-  public async set_current_selection(media_response: runes.MediaViewRune, result_index: number) {
+  public async set_current_selection(media_response: runes.AnyMediaViewRune, result_index: number) {
     this.#current_selection.show
     if (this.is_currently_selected(media_response.media_reference.id)) {
       await this.open_media()
@@ -92,7 +90,7 @@ export class MediaSelectionsRune extends Rune {
     this.#current_selection.show = false
   }
 
-  public async next_media(results: MediaResponse[]) {
+  public async next_media(results: runes.AnyMediaViewRune[]) {
     let next_index = 0
     if (
       this.#selected_thumbnails.type === 'ids' && this.#selected_thumbnails.media_reference_ids.length <= 1
@@ -109,7 +107,7 @@ export class MediaSelectionsRune extends Rune {
     await this.view_media()
   }
 
-  async prev_media(results: MediaResponse[]) {
+  async prev_media(results: runes.AnyMediaViewRune[]) {
     let prev_index = 0
     if (
       this.#selected_thumbnails.type === 'ids' && this.#selected_thumbnails.media_reference_ids.length <= 1

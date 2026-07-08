@@ -29,8 +29,10 @@ if (!building) {
     forager.init()
   } else {
     if (env.FORAGER_INSTANCE) {
-      forager = env.FORAGER_INSTANCE
-      config = env.FORAGER_CONFIG
+      // In production the CLI injects a live Forager instance and parsed config
+      // through these env slots, so they are not the plain strings $env types them as.
+      forager = env.FORAGER_INSTANCE as unknown as Forager
+      config = env.FORAGER_CONFIG as unknown as Config
     } else {
       throw new Error(`FORAGER_INSTANCE must be passed to sveltekit hooks`)
     }

@@ -8,6 +8,7 @@
     ...props
   }: {
     title: string
+    height?: number
     children: SvelteHTMLElements['div']['children']
   } = $props()
 
