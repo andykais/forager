@@ -51,7 +51,6 @@
   {#each media_list.results as result, result_index}
     <div>
       <div 
-        type="button"
         class="inline-flex items-center justify-center p-1
                outline-none"
         use:scrollable={media_selections.current_selection.result_index === result_index}
@@ -131,7 +130,7 @@
               </SearchLink>
               <span>{result.group_metadata.count}</span>
           {:else}
-            UNEXPECTED MEDIA TYPE {result.media_type}
+            UNEXPECTED MEDIA TYPE {(result as { media_type: string }).media_type}
           {/if}
         </div>
         </div>

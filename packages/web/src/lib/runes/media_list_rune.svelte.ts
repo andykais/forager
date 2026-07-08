@@ -60,7 +60,7 @@ export class MediaListRune extends Rune {
     this.#has_more = true
     this.#cursor = undefined
     this.#fetch_count = 0
-    this.#saved_params = undefined
+    this.#saved_params = {}
     this.#state = {
       loading: false,
       results: [],

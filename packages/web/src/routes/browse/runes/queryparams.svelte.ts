@@ -122,7 +122,7 @@ export class QueryParamsManager extends Rune {
     // Parse each param with type coercion
     if (search) {
       for (const [key, val] of search.entries()) {
-        const params_key: keyof SearchParams = URL_PARAM_MAP_REVERSED[key] ?? key
+        const params_key = (URL_PARAM_MAP_REVERSED[key as keyof SearchParamsReversed] ?? key) as keyof SearchParams
 
         if (params_key === 'search_string') {
           params.search_string = val.replaceAll(',', ' ')
@@ -152,13 +152,13 @@ export class QueryParamsManager extends Rune {
   /**
    * Serialize SearchParams to URL string (for SearchLink components)
    */
-  public serialize(params: SearchParams): string {
+  public serialize(params: SearchParams): string | null {
     const url_params = new Map<string, string>()
 
     // Only include non-default values
     for (const [key, value] of Object.entries(params)) {
       if (value !== DEFAULTS[key as keyof SearchParams] && value !== undefined) {
-        const param_name = URL_PARAM_MAP[key as keyof SearchParams] ?? key
+        const param_name = (URL_PARAM_MAP as Partial<Record<keyof SearchParams, string>>)[key as keyof SearchParams] ?? key
 
         // Special encoding for tags (preserve : and ,)
         if (key === 'search_string') {
@@ -199,7 +199,7 @@ export class QueryParamsManager extends Rune {
     const serialized = this.serialize(params)
 
     if (this.current_serialized !== serialized) {
-      this.current_serialized = serialized
+      this.current_serialized = serialized ?? ''
       this.current = { ...params }
       if (serialized) {
         pushState(serialized, {})
@@ -224,9 +224,7 @@ export class QueryParamsManager extends Rune {
 
     // Handle boolean and numeric filters
     if (params.unread_only) {
-      if (params.unread_only === 'true' || params.unread_only === true) {
-        query.unread = true
-      }
+      query.unread = true
     }
 
     if (params.stars !== undefined) {
@@ -292,7 +290,7 @@ export class QueryParamsManager extends Rune {
     const params = { ...this.current }
 
     for (const [key, val] of Object.entries(partial_params)) {
-      const params_key: keyof SearchParams = URL_PARAM_MAP_REVERSED[key] ?? key
+      const params_key = (URL_PARAM_MAP_REVERSED[key as keyof SearchParamsReversed] ?? key) as keyof SearchParams
 
       if (params_key === 'search_string') {
         // Merge tags instead of replacing
