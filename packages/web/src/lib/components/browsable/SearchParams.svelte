@@ -4,12 +4,12 @@
   import Icon from '$lib/components/Icon.svelte'
   import { Filter, ArrowDown, ArrowUp } from '$lib/icons/mod.ts'
   import TagAutoCompleteInput from '$lib/components/TagAutoCompleteInput.svelte'
-  import type { BrowseLikeController } from '$lib/base_controller.ts'
+  import type { BrowsableController } from '$lib/base_controller.ts'
   import StarInput from '$lib/components/StarInput.svelte'
   import type { Snippet } from 'svelte'
 
   interface Props {
-    controller: BrowseLikeController
+    controller: BrowsableController
     /**
      * Renders route-specific <option> elements for the sort_by select.
      */

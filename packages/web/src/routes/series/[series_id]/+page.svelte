@@ -1,11 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state'
-  import MediaDetails from '$lib/components/browse_like/MediaDetails.svelte'
-  import MediaList from '$lib/components/browse_like/MediaList.svelte'
-  import MediaView from '$lib/components/browse_like/MediaView.svelte'
-  import Footer from '$lib/components/browse_like/Footer.svelte'
-  import SearchParams from '$lib/components/browse_like/SearchParams.svelte'
-  import Header from '$lib/components/Header.svelte'
+  import BrowsableShell from '$lib/components/browsable/BrowsableShell.svelte'
+  import type { MediaViewRune } from '$lib/runes/index.ts'
 
   import { SeriesController } from './controller.ts'
 
@@ -19,7 +15,7 @@
   }
 
   const controller = new SeriesController(props.data.config, series_id_number)
-  let { dimensions, focus, queryparams } = controller.runes
+  let { focus } = controller.runes
   focus.stack({ component: 'SeriesPage', focus: 'page' })
 
   let series_title = $state<string | undefined>(undefined)
@@ -53,21 +49,10 @@
   <option value="duration">Duration</option>
 {/snippet}
 
-<div class="h-dvh">
-  <Header title={page_title} bind:height={dimensions.heights.header}>
-    <SearchParams {controller} {sort_options} />
-  </Header>
-  <div class="grid grid-cols-[auto_1fr]">
-    <MediaDetails {controller} />
-    <div class="relative">
-      <MediaView {controller} />
-      <MediaList {controller} show_series_index />
-    </div>
-  </div>
-  <Footer {controller} bind:height={dimensions.heights.footer} />
-</div>
+{#snippet tile_footer(result: MediaViewRune)}
+  {#if result.series_index !== undefined}
+    <span title="Page in series">#{result.series_index}</span>
+  {/if}
+{/snippet}
 
-<svelte:window
-  on:keydown|capture={controller.keybinds.handler}
-  bind:innerHeight={dimensions.heights.screen}
-/>
+<BrowsableShell {controller} title={page_title} {sort_options} {tile_footer} />

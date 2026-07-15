@@ -1,10 +1,10 @@
 <script lang="ts">
-  import type { BrowseLikeController } from '$lib/base_controller.ts'
+  import type { BrowsableController } from '$lib/base_controller.ts'
   import type { SvelteHTMLElements, ClassValue } from 'svelte/elements'
 
   interface Props {
-    controller: BrowseLikeController
-    params: Partial<BrowseLikeController['runes']['queryparams']['DEFAULTS']>
+    controller: BrowsableController
+    params: BrowsableController['runes']['queryparams']['DEFAULTS']
     class?: ClassValue
     title?: string
     children: SvelteHTMLElements['div']['children']

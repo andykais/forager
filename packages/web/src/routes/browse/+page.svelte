@@ -1,11 +1,8 @@
 <script lang="ts">
-  import MediaDetails from '$lib/components/browse_like/MediaDetails.svelte'
-  import MediaList from '$lib/components/browse_like/MediaList.svelte'
-  import MediaView from '$lib/components/browse_like/MediaView.svelte'
-  import Footer from '$lib/components/browse_like/Footer.svelte'
-  import SearchParams from '$lib/components/browse_like/SearchParams.svelte'
-  import Header from '$lib/components/Header.svelte'
+  import BrowsableShell from '$lib/components/browsable/BrowsableShell.svelte'
   import SelectInput from '$lib/components/SelectInput.svelte'
+  import SearchLink from '$lib/components/browsable/SearchLink.svelte'
+  import { MediaSeriesRune, MediaGroupRune, type MediaViewRune } from '$lib/runes/index.ts'
 
   import { BrowseController } from './controller.ts'
 
@@ -13,7 +10,7 @@
   let props = $props()
 
   const controller = new BrowseController(props.data.config)
-  let { dimensions, focus, queryparams } = controller.runes
+  let { focus, queryparams } = controller.runes
   focus.stack({ component: 'BrowsePage', focus: 'page' })
 </script>
 
@@ -57,21 +54,27 @@
   {/if}
 {/snippet}
 
-<div class="h-dvh">
-  <Header title={queryparams.human_readable_summary || 'Forager'} bind:height={dimensions.heights.header}>
-    <SearchParams {controller} {sort_options} {extra_filters} />
-  </Header>
-  <div class="grid grid-cols-[auto_1fr]">
-    <MediaDetails {controller} />
-    <div class="relative">
-      <MediaView {controller} />
-      <MediaList {controller} show_series_link />
-    </div>
-  </div>
-  <Footer {controller} bind:height={dimensions.heights.footer} />
-</div>
+{#snippet tile_footer(result: MediaViewRune)}
+  {#if result instanceof MediaSeriesRune}
+    <a
+      class="text-green-300 hover:text-green-400 hover:underline"
+      href={`/series/${result.media_reference.id}`}
+      title="View this media series"
+      onclick={(e) => e.stopPropagation()}
+    >View series</a>
+  {:else if result instanceof MediaGroupRune}
+    <SearchLink
+      class="hover:text-green-500 hover:bg-gray-700 px-2 rounded-sm"
+      {controller}
+      params={queryparams.merge({ mode: 'media', tags: `${queryparams.current.group_by ?? ''}:${result.group_metadata.value}` })}
+    >{result.group_metadata.value}</SearchLink>
+  {/if}
+{/snippet}
 
-<svelte:window
-  on:keydown|capture={controller.keybinds.handler}
-  bind:innerHeight={dimensions.heights.screen}
+<BrowsableShell
+  {controller}
+  title={queryparams.human_readable_summary || 'Forager'}
+  {sort_options}
+  {extra_filters}
+  {tile_footer}
 />

@@ -23,28 +23,33 @@ export abstract class BaseQueryParams<TParams extends Record<string, any>> exten
     this.current = { ...this.DEFAULTS }
     this.draft = { ...this.DEFAULTS }
 
-    onMount(async () => {
-      const params = this.parse_url(new URL(window.location.toString()))
-      this.current = params
-      this.draft = { ...params }
-      await this.execute_search(params)
-
-      window.addEventListener('popstate', async () => {
+    onMount(() => {
+      const sync_from_url = async () => {
         const params = this.parse_url(new URL(window.location.toString()))
         this.current = params
         this.draft = { ...params }
         await this.execute_search(params)
-      })
+      }
+
+      sync_from_url()
+
+      // Keep state in sync with browser back/forward navigation.
+      window.addEventListener('popstate', sync_from_url)
+      return () => window.removeEventListener('popstate', sync_from_url)
     })
   }
 
   abstract get DEFAULTS(): TParams
   abstract get URL_PARAM_MAP(): Partial<Record<keyof TParams, string>>
 
-  protected get URL_PARAM_MAP_REVERSED(): Record<string, keyof TParams> {
+  // NOTE: typed as `Record<string, string>` (rather than `keyof TParams`) so
+  // that a subclass manager with extra params stays assignable to the shared
+  // `BrowsableQueryParams<BrowsableSearchParams>` contract. Callers cast the
+  // looked-up value back to `keyof TParams`.
+  protected get URL_PARAM_MAP_REVERSED(): Record<string, string> {
     return Object.fromEntries(
       Object.entries(this.URL_PARAM_MAP).map(([key, val]) => [val, key])
-    ) as Record<string, keyof TParams>
+    ) as Record<string, string>
   }
 
   protected parse_url(url: URL): TParams {
@@ -54,7 +59,7 @@ export abstract class BaseQueryParams<TParams extends Record<string, any>> exten
 
     if (search) {
       for (const [key, val] of search.entries()) {
-        const params_key: keyof TParams = this.URL_PARAM_MAP_REVERSED[key] ?? key
+        const params_key = (this.URL_PARAM_MAP_REVERSED[key] ?? key) as keyof TParams
         // @ts-ignore - dynamic assignment
         params[params_key] = val
       }

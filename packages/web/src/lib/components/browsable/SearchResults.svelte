@@ -1,27 +1,24 @@
 <script lang="ts">
-  import type { BrowseLikeController } from '$lib/base_controller.ts'
+  import type { Snippet } from 'svelte'
+  import type { BrowsableController } from '$lib/base_controller.ts'
+  import { MediaFileRune, MediaSeriesRune, MediaGroupRune, type MediaViewRune } from '$lib/runes/index.ts'
   import * as theme from '$lib/theme.ts'
   import { focusable, scrollable } from '$lib/actions/mod.ts'
   import Icon from '$lib/components/Icon.svelte'
-  import SearchLink from './SearchLink.svelte'
   import * as icons from '$lib/icons/mod.ts'
 
   interface Props {
-    controller: BrowseLikeController
+    controller: BrowsableController
     /**
-     * When true, display the series_index under each tile (for the series view).
+     * Optional per-tile footer, rendered under each tile with the tile's rune.
+     * Routes supply their own footer (e.g. a "View series" link on `/browse`,
+     * a `#index` label on `/series/<id>`), keeping this component route-agnostic.
      */
-    show_series_index?: boolean
-    /**
-     * When true, show a link under media-series tiles pointing to the series
-     * detail view. Defaults to false for routes that are themselves already a
-     * series view.
-     */
-    show_series_link?: boolean
+    tile_footer?: Snippet<[MediaViewRune]>
   }
 
-  let { controller, show_series_index = false, show_series_link = false }: Props = $props()
-  const { queryparams, settings, media_selections, media_list } = controller.runes
+  let { controller, tile_footer }: Props = $props()
+  const { settings, media_selections, media_list } = controller.runes
 
   const icon_size = 14
   const icon_color = theme.colors.green[200]
@@ -113,7 +110,7 @@
 
           <!-- info chips -->
           <div class="flex text-xs text-gray-400 justify-between p-0.5">
-            {#if result.media_type === 'media_file'}
+            {#if result instanceof MediaFileRune}
               {#if result.media_file.media_type === 'VIDEO'}
                 <span class="flex">
                   <Icon data={icons.PlayCircle} fill={icon_color} stroke="none" size={icon_size} />
@@ -131,34 +128,18 @@
               {:else}
                 unknown media type {result.media_file.media_type}
               {/if}
-            {:else if result.media_type === 'media_series'}
+            {:else if result instanceof MediaSeriesRune}
               <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
               <span>({result.media_reference.media_series_length})</span>
-            {:else if result.media_type === 'grouped'}
+            {:else if result instanceof MediaGroupRune}
               <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
-              <SearchLink
-                class="hover:text-green-500 hover:bg-gray-700 px-2 rounded-sm"
-                {controller} params={queryparams.merge({ mode: 'media', tags: `${queryparams.current.group_by ?? ''}:${result.group_metadata.value}` })}> {result.group_metadata.value}
-              </SearchLink>
               <span>{result.group_metadata.count}</span>
-            {:else}
-              UNEXPECTED MEDIA TYPE {result.media_type}
             {/if}
           </div>
 
-          <!-- series row: either a series_index label (series view) or a "View series" link (browse view) -->
-          {#if show_series_index && result.series_index !== undefined}
-            <div class="flex text-xs text-gray-400 justify-center p-0.5">
-              <span title="Page in series">#{result.series_index}</span>
-            </div>
-          {:else if show_series_link && result.media_type === 'media_series'}
+          {#if tile_footer}
             <div class="flex text-xs justify-center p-0.5">
-              <a
-                class="text-green-300 hover:text-green-400 hover:underline"
-                href={`/series/${result.media_reference.id}`}
-                title="View this media series"
-                onclick={(e) => e.stopPropagation()}
-              >View series</a>
+              {@render tile_footer(result)}
             </div>
           {/if}
         </div>

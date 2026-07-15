@@ -9,7 +9,10 @@ import {
   MediaSelectionsRune,
   type DimensionsRune,
 } from '$lib/runes/index.ts'
-import type { BaseQueryParams } from '$lib/runes/base_queryparams.svelte.ts'
+import type {
+  BrowsableQueryParams,
+  BrowsableSearchParams,
+} from '$lib/runes/browsable_queryparams.svelte.ts'
 import {Keybinds} from '$lib/keybinds.ts'
 
 
@@ -39,39 +42,23 @@ abstract class BaseController {
 
 
 /**
- * Minimal shape that a queryparams rune must implement to be usable by the
- * shared browse-like components (MediaList, MediaDetails, SearchResults, etc.).
+ * Shared controller shape used by the browsable routes (`/browse`,
+ * `/series/<id>`). Route-specific queryparams runes extend
+ * {@linkcode BrowsableSearchParams} with their own fields, but the core runes
+ * listed here are required so that the shared browsable components can operate
+ * uniformly across routes.
  */
-export interface BrowseLikeQueryParams<TParams extends Record<string, any> = Record<string, any>> {
-  current: TParams
-  draft: TParams
-  readonly DEFAULTS: TParams
-  readonly contextual_query: any
-  readonly human_readable_summary: string
-  serialize(params: TParams): string | null
-  goto(params: TParams): Promise<void>
-  submit(): Promise<void>
-  merge(partial: Partial<Record<string, any>>): TParams
-}
-
-
-/**
- * Shared controller shape used by the browse-like routes (`/browse`,
- * `/series/<id>`). Route-specific queryparams runes may extend the shape with
- * their own fields, but the core runes listed here are required so that shared
- * components can operate uniformly across routes.
- */
-abstract class BrowseLikeController extends BaseController {
+abstract class BrowsableController extends BaseController {
   abstract runes: {
     media_list: MediaListRune
     focus: ReturnType<typeof create_focuser>
     dimensions: DimensionsRune
     settings: SettingsRune
     media_selections: MediaSelectionsRune
-    queryparams: BrowseLikeQueryParams
+    queryparams: BrowsableQueryParams<BrowsableSearchParams>
   }
 
   handlers = {}
 }
 
-export { BaseController, BrowseLikeController }
+export { BaseController, BrowsableController }

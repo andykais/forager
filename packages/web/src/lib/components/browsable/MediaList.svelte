@@ -1,16 +1,16 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte'
   import Scroller from '$lib/components/Scroller.svelte'
   import SearchResults from './SearchResults.svelte'
-  import type { BrowseLikeController } from '$lib/base_controller.ts'
+  import type { BrowsableController } from '$lib/base_controller.ts'
+  import type { MediaViewRune } from '$lib/runes/index.ts'
 
   let {
     controller,
-    show_series_index = false,
-    show_series_link = false,
+    tile_footer,
   }: {
-    controller: BrowseLikeController
-    show_series_index?: boolean
-    show_series_link?: boolean
+    controller: BrowsableController
+    tile_footer?: Snippet<[MediaViewRune]>
   } = $props()
   let media_list_element: HTMLElement
 
@@ -62,6 +62,6 @@
     ]}
     style="height: {controller.runes.dimensions.heights.media_list}px"
   >
-    <SearchResults {controller} {show_series_index} {show_series_link} />
+    <SearchResults {controller} {tile_footer} />
   </Scroller>
 </div>

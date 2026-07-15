@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { BrowseLikeController } from '$lib/base_controller.ts'
+  import type { BrowsableController } from '$lib/base_controller.ts'
 
   interface Props {
-    controller: BrowseLikeController
+    controller: BrowsableController
   }
 
   // TODO wire this into settings

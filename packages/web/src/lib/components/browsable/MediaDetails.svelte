@@ -10,8 +10,8 @@
   import { MagnifyingGlassPlus, ArrowTopRightOnSquare, TrashOutline } from '$lib/icons/mod.ts'
   import * as parsers from '$lib/parsers.ts'
 
-  import type { BrowseLikeController } from '$lib/base_controller.ts'
-  let { controller }: { controller: BrowseLikeController } = $props()
+  import type { BrowsableController } from '$lib/base_controller.ts'
+  let { controller }: { controller: BrowsableController } = $props()
   let { dimensions, media_selections, settings, queryparams } = controller.runes
 
   let new_tag_str = $state<string>('')

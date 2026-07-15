@@ -1,8 +1,8 @@
 <script lang="ts">
   import * as theme from '$lib/theme.ts'
-  import type { BrowseLikeController } from '$lib/base_controller.ts'
+  import type { BrowsableController } from '$lib/base_controller.ts'
 
-  let { controller, height = $bindable() }: { controller: BrowseLikeController; height: number } = $props()
+  let { controller, height = $bindable() }: { controller: BrowsableController; height: number } = $props()
 
 
   function human_readable_number(n: number) {

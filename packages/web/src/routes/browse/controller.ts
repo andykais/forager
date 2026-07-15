@@ -1,5 +1,5 @@
 import type { Config } from '$lib/server/config.ts'
-import { BrowseLikeController } from '$lib/base_controller.ts'
+import { BrowsableController } from '$lib/base_controller.ts'
 import {
   create_focuser,
   SettingsRune,
@@ -10,7 +10,7 @@ import {
 import { QueryParamsManager } from './runes/queryparams.svelte.ts'
 
 
-class BrowseController extends BrowseLikeController {
+class BrowseController extends BrowsableController {
   runes: {
     media_list: MediaListRune
     focus: ReturnType<typeof create_focuser>
@@ -23,7 +23,7 @@ class BrowseController extends BrowseLikeController {
   public constructor(config: Config) {
     super(config)
 
-    const media_list_rune = new MediaListRune(this.client, this.settings)
+    const media_list_rune = new MediaListRune(this.client)
     this.runes = {
       media_list: media_list_rune,
       focus: create_focuser(),
