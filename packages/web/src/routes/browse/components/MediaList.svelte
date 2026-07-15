@@ -2,8 +2,9 @@
   import Scroller from '$lib/components/Scroller.svelte'
   import SearchResults from './SearchResults.svelte'
   import type { BrowseController } from '../controller.ts'
+  import { get_controller } from '$lib/contexts/controller.ts'
 
-  let {controller}: {controller: BrowseController} = $props()
+  const controller = get_controller<BrowseController>()
   let media_list_element: HTMLElement
 
   controller.keybinds.component_listen({
@@ -54,6 +55,6 @@
     ]}
     style="height: {controller.runes.dimensions.heights.media_list}px"
   >
-    <SearchResults {controller} />
+    <SearchResults />
   </Scroller>
 </div>

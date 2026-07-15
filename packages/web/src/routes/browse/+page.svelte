@@ -7,27 +7,28 @@
   import Header from '$lib/components/Header.svelte'
 
   import { BrowseController } from './controller.ts'
+  import { set_controller } from '$lib/contexts/controller.ts'
 
 	/** @type {import('./$types').PageProps} */
   let props  = $props()
 
-  const controller = new BrowseController(props.data.config)
+  const controller = set_controller(new BrowseController(props.data.config))
   let { dimensions, focus, queryparams } = controller.runes
   focus.stack({component: 'BrowsePage', focus: 'page'})
 </script>
 
 <div class="h-dvh">
   <Header title={queryparams.human_readable_summary || 'Forager'} bind:height={dimensions.heights.header} >
-    <SearchParams {controller} />
+    <SearchParams />
   </Header>
   <div class="grid grid-cols-[auto_1fr]">
-    <MediaDetails {controller} />
+    <MediaDetails />
     <div class="relative">
-      <MediaView {controller} />
-      <MediaList {controller} />
+      <MediaView />
+      <MediaList />
     </div>
   </div>
-  <Footer {controller} bind:height={dimensions.heights.footer} />
+  <Footer bind:height={dimensions.heights.footer} />
 </div>
 
 <svelte:window

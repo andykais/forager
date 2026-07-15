@@ -1,9 +1,6 @@
 <script lang="ts">
   import type { BrowseController } from '../controller.ts'
-
-  interface Props {
-    controller: BrowseController
-  }
+  import { get_controller } from '$lib/contexts/controller.ts'
 
   // TODO wire this into settings
   let show_controls = $state<boolean>(false);
@@ -13,7 +10,7 @@
     is_fullscreen = document.fullscreenElement === fullscreen_container
   }
 
-  let {controller}: Props = $props()
+  const controller = get_controller<BrowseController>()
   let paused = $state(false)
 
   const media_fit_classes = $derived.by(() => {

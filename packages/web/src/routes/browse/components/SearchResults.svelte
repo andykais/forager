@@ -5,12 +5,9 @@
   import Icon from '$lib/components/Icon.svelte'
   import SearchLink from './SearchLink.svelte'
   import * as icons from '$lib/icons/mod.ts'
+  import { get_controller } from '$lib/contexts/controller.ts'
 
-  interface Props {
-    controller: BrowseController
-  }
-
-  let {controller}: Props = $props()
+  const controller = get_controller<BrowseController>()
   const {queryparams, settings, media_selections, media_list} = controller.runes
 
   let tile_size = settings.ui.media_list.thumbnail_size
@@ -130,7 +127,7 @@
               <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
               <SearchLink
                 class="hover:text-green-500 hover:bg-gray-700 px-2 rounded-sm"
-                {controller} params={queryparams.merge({mode: 'media', tags: `${queryparams.current.group_by ?? ''}:${result.group_metadata.value}`})}> {result.group_metadata.value} 
+                params={queryparams.merge({mode: 'media', tags: `${queryparams.current.group_by ?? ''}:${result.group_metadata.value}`})}> {result.group_metadata.value} 
               </SearchLink>
               <span>{result.group_metadata.count}</span>
           {:else}

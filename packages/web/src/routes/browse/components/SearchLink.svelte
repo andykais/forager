@@ -1,19 +1,16 @@
 <script lang="ts">
   import type {BrowseController} from '../controller.ts'
   import type { SvelteHTMLElements, ClassValue } from 'svelte/elements';
+  import { get_controller } from '$lib/contexts/controller.ts'
 
   interface Props {
-    controller: BrowseController
     params: Partial<BrowseController['runes']['queryparams']['DEFAULTS']>
     class?: ClassValue
     title?: string
     children: SvelteHTMLElements['div']['children']
   }
-  let {params, controller, children, ...props}: Props = $props()
-  const {queryparams} = controller.runes
-
-  console.log({params})
-
+  let {params, children, ...props}: Props = $props()
+  const {queryparams} = get_controller<BrowseController>().runes
 </script>
 
 <a

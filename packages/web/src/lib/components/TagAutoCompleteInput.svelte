@@ -2,6 +2,7 @@
   import * as parsers from '$lib/parsers.ts'
   import type { Forager } from '@forager/core'
   import type { BaseController } from "$lib/base_controller.ts";
+  import { get_controller } from '$lib/contexts/controller.ts'
   import Tag from '$lib/components/Tag.svelte'
 
   const debounce = <Args>(fn: (...args: Args[]) => void, pause: number) => {
@@ -84,7 +85,6 @@
   type TagModel = Awaited<ReturnType<Forager['tag']['search']>>['results'][0]
 
   let {
-    controller,
     kind,
     sort_by = 'media_reference_count',
     search_string = $bindable(),
@@ -94,7 +94,6 @@
     contextual_query,
   }: {
     sort_by?: 'updated_at' | 'media_reference_count'
-    controller: BaseController
     search_string: string
     kind: 'search' | 'details'
     placeholder?: string
@@ -103,6 +102,8 @@
     // NOTE contextual_query works, but it is too slow on large tag/media_reference databases, so we need to rethink this
     contextual_query?: {}
   } = $props()
+
+  const controller = get_controller<BaseController>()
 
   let root_element: HTMLDivElement
   let input_element: HTMLInputElement

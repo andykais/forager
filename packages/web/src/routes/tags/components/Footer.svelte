@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { TagsController } from '../controller.ts'
+  import { get_controller } from '$lib/contexts/controller.ts'
 
-  let { controller }: { controller: TagsController } = $props()
-  const { queryparams } = controller.runes
+  const { queryparams } = get_controller<TagsController>().runes
 
   function human_readable_number(n: number) {
     const number_string = n.toString()

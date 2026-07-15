@@ -5,10 +5,10 @@
   import { Filter, ChevronUp, ChevronDown, ArrowDown, ArrowUp } from '$lib/icons/mod.ts'
   import TagAutoCompleteInput from "$lib/components/TagAutoCompleteInput.svelte";
   import type { BrowseController } from "../controller.ts";
+  import { get_controller } from '$lib/contexts/controller.ts'
   import StarInput from '$lib/components/StarInput.svelte'
 
-  let {controller}: {controller: BrowseController} = $props()
-
+  const controller = get_controller<BrowseController>()
   const {queryparams, media_selections, settings} = controller.runes
 
   async function update_search() {
@@ -28,7 +28,6 @@
   <div class="flex gap-2 p-3 justify-center items-center w-full">
     <div class="w-full grid grid-cols-[1fr_auto] gap-2">
       <TagAutoCompleteInput
-        {controller}
         bind:search_string={queryparams.draft.search_string}
         contextual_query={queryparams.contextual_query}
         kind="search"
