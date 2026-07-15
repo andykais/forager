@@ -1,8 +1,10 @@
 <script lang="ts">
   import * as theme from '$lib/theme.ts'
   import type { BrowseController } from '../controller.ts'
+  import { get_controller } from '$lib/contexts/controller.ts'
 
-  let {controller, height = $bindable()}: {controller: BrowseController, height: number} = $props()
+  let {height = $bindable()}: {height: number} = $props()
+  const controller = get_controller<BrowseController>()
 
 
   function human_readable_number(n: number) {

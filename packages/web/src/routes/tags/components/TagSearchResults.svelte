@@ -5,9 +5,9 @@
   import type { TagsController } from '../controller.ts'
   import { goto } from '$app/navigation';
   import Numeric from '$lib/components/Numeric.svelte';
+  import { get_controller } from '$lib/contexts/controller.ts'
 
-  let { controller }: { controller: TagsController } = $props()
-  const { queryparams } = controller.runes
+  const { queryparams } = get_controller<TagsController>().runes
 
   type SortBy = typeof queryparams.draft.sort_by
 

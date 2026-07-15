@@ -2,9 +2,7 @@
   import * as datetime from '@std/datetime'
   import type { Json } from '@andykais/ts-rpc/adapters/sveltekit.ts'
 
-  import { BrowseController } from '../controller.ts'
-  let {controller, ...props}: {
-    controller: BrowseController
+  let props: {
     label: string
     content: string | number | Date | null | Json
     type?: "text" | "datetime-local"
