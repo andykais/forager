@@ -22,7 +22,6 @@
 		"@std/path": "npm:@jsr/std__path@1.0.3",
 		"@std/yaml": "npm:@jsr/std__yaml@^1.0.5",
 		"@torm/sqlite": "npm:@jsr/torm__sqlite@^1.9.7",
-		"ts-pattern": "npm:ts-pattern@5.2.0",
 		"zod": "npm:zod@4.1.11"
 	},
 	"devDependencies": {

@@ -130,6 +130,8 @@ export class QueryParamsManager extends Rune {
           params.stars = parseInt(val)
         } else if (params_key === 'filepath') {
           params.filepath = decodeURIComponent(val)
+        } else if (params_key === 'unread_only') {
+          params.unread_only = val === 'true'
         } else if (params_key === 'media_type') {
           if (MEDIA_TYPE_FILTER_VALUES.has(val as MediaTypeFilter)) {
             params.media_type = val as MediaTypeFilter

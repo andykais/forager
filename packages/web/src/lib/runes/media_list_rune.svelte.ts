@@ -1,12 +1,10 @@
 import {Rune} from '$lib/runes/rune.ts'
 import type { Forager, MediaResponse, MediaGroupResponse, inputs } from '@forager/core'
 import { MediaViewRune } from '.'
-import type { AnyMediaViewRune } from '.'
+import type { AnyMediaViewRune, MediaSearchInput } from '.'
 
 
 type AnyMediaResponse = MediaResponse | MediaGroupResponse
-
-type GroupSearchParams = Parameters<Forager['media']['group']>[0]
 
 type Result =
   | ReturnType<Forager['media']['search']>
@@ -37,7 +35,7 @@ interface MediaListState {
 
 export class MediaListRune extends Rune {
   #saved_params_type: Input['type'] = 'media'
-  #saved_params: Partial<GroupSearchParams> = {}
+  #saved_params: MediaSearchInput = {}
   #prev_query_hash: string = ''
   #fetch_count = 0
   #has_more = true
@@ -78,7 +76,7 @@ export class MediaListRune extends Rune {
     this.#fetch_count ++
     this.#state.loading = true
 
-    let fetch_params: Partial<GroupSearchParams> = this.#saved_params
+    let fetch_params: MediaSearchInput = this.#saved_params
     if (this.#cursor !== undefined) {
       fetch_params = {...fetch_params, cursor: this.#cursor}
     }
@@ -91,13 +89,13 @@ export class MediaListRune extends Rune {
     }
     else if (params_type === 'group_by') {
       fetch_params.limit = fetch_params.limit ?? 30
-      content = await this.client.forager.media.group(fetch_params as GroupSearchParams)
+      content = await this.client.forager.media.group(fetch_params as inputs.PaginatedSearchGroupBy)
     } else {
       throw new Error('unimplemented')
     }
 
     const results = (content.results as AnyMediaResponse[]).map(result => {
-      return MediaViewRune.create(this.client, result, fetch_params as GroupSearchParams)
+      return MediaViewRune.create(this.client, result, fetch_params)
     })
 
     this.#cursor = content.cursor
