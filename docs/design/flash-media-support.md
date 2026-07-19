@@ -311,6 +311,20 @@ Verify Ruffle loads/plays the sample SWF in `/browse`, the list tile shows the t
 
 ---
 
+## Per-Phase Review Workflow
+
+Each phase in the [Implementation Order](#implementation-order) is developed, committed, and reviewed before moving on:
+
+1. **Implement** the phase and commit/push the changes on the feature branch.
+2. **Post a GitHub comment** on the PR summarizing what the phase did — the files touched, key decisions, and how it was verified (tests run, manual checks). One comment per completed phase.
+3. **Review** — a review subagent inspects the phase's changes and replies with feedback.
+4. **Address feedback** — apply the requested changes, commit/push, and reply on the thread noting how each point was resolved.
+5. Only after the phase's feedback is resolved do we proceed to the next phase.
+
+This keeps each phase independently reviewable and prevents feedback from one layer (e.g. core metadata) from compounding across later layers (CLI, web).
+
+---
+
 ## Future Considerations
 
 - **Additional SWF metadata.** Ruffle's demo (https://ruffle.rs/demo/) surfaces more fields than we extract initially. These could be captured later and stored on `media_reference.metadata` (or dedicated columns). Some are trivially in the fixed header; others require walking SWF tags:
