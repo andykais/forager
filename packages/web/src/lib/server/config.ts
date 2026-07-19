@@ -54,8 +54,8 @@ export const PackagesConfig = z.object({
       media_view: z.object({
         filmstrip: z.object({
           enabled: z.boolean().default(false),
-            thumbnail_size: z.number().default(100),
-        }).strict().optional().transform(f => f ?? {enabled: false, thumbnail_size: 100})
+          thumbnail_size: z.number().default(100),
+        }).strict().prefault({})
       }).strict().prefault({}),
     }).strict().prefault({}),
 

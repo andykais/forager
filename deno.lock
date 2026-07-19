@@ -1639,7 +1639,6 @@
             "npm:svelte-check@4.3.2",
             "npm:svelte@5.39.8",
             "npm:tailwindcss@4.1.14",
-            "npm:ts-pattern@5.2.0",
             "npm:typescript-svelte-plugin@0.3.50",
             "npm:typescript@5.9.3",
             "npm:vite@7.1.8",
