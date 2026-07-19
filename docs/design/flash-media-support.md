@@ -2,50 +2,22 @@
 
 ## Overview
 
-This document outlines the plan for adding **Flash** (`.swf` ShockWave Flash) as a first-class Forager media type, so that Flash games and animations can be ingested, tagged, searched, and browsed exactly like the existing `IMAGE` / `VIDEO` / `AUDIO` types. Flash content is rendered in the browser using the [Ruffle](https://ruffle.rs) Flash emulator (WebAssembly).
+This document outlines the plan for adding **Flash** (`.swf` ShockWave Flash) as a new Forager media type, so Flash games and animations can be ingested, tagged, searched, and browsed like the existing `IMAGE` / `VIDEO` / `AUDIO` types. Flash content is rendered in the browser using the self-hosted [Ruffle](https://ruffle.rs) emulator (WebAssembly).
 
-The work spans all three packages:
+`FLASH` is a new top-level `media_type` value (a fourth kind alongside `IMAGE`/`VIDEO`/`AUDIO`). `media_type` is cross-cutting — codec registry, processor, Zod enums, TS types, DB CHECK constraints, and the web/CLI filters all enumerate the kinds — so the change touches all three packages. Every site is catalogued in the [File Change Summary](#file-change-summary).
 
-- **`@forager/core`** — a new `FLASH` media type + `swf` codec, a dedicated processing path that does *not* rely on FFmpeg, support for caller-supplied thumbnails, a DB migration relaxing `media_file` CHECK constraints, and search/filter wiring.
-- **`@forager/web`** — a Ruffle-based player in the media viewer, MIME serving for `.swf`, a `Flash` search filter option, and list-view iconography.
-- **`@forager/cli`** — a `flash` value for `--media-type`, and `--thumbnail` flags on `create` so the required thumbnails can be supplied.
+The work spans:
 
-### Why Flash is fundamentally different from existing types
+- **`@forager/core`** — a `FLASH` media type + `swf` codec, an FFmpeg-free processing path that parses SWF metadata, caller-supplied thumbnails plus a generated default placeholder, and DB/search wiring.
+- **`@forager/web`** — a Ruffle player in the media viewer, `.swf` MIME serving, self-hosted Ruffle WASM bundled into the compiled binary, a `Flash` search filter, and list-view iconography.
+- **`@forager/cli`** — a `flash` value for `--media-type`, and `--thumbnail` flags on `create` / `reload`.
 
-Every current media type flows through a single ingestion path in `Actions.media_create()` (`packages/core/src/actions/lib/base.ts`) that assumes two things that are **false for SWF**:
+### Processing model
 
-1. **FFprobe can read the file.** `FileProcessor.get_info()` shells out to `ffprobe` and derives `media_type` from the reported `codec_name` via the `CODECS` registry (`packages/core/src/lib/file_processor.ts`). FFmpeg has no meaningful SWF demuxer for modern ActionScript/vector content — it cannot reliably report dimensions, framerate, or a codec we can map. SWF is a *container/bytecode* format, not a pixel/sample stream.
-2. **Thumbnails can be generated with FFmpeg.** `FileProcessor.create_thumbnails()` produces JPEGs from decoded frames. There is no FFmpeg path to rasterize a SWF stage. Per the task requirements, **thumbnails will instead be supplied alongside the file at creation time** (typically 1–2 images).
+SWF cannot flow through the existing FFprobe path (`FileProcessor.get_info()`) — FFmpeg has no usable SWF demuxer, and it cannot rasterize a SWF stage for thumbnails. Instead:
 
-So the core of this design is: **introduce a parallel, FFmpeg-free processing path for `FLASH`, and generalize `media_create` to accept externally-supplied thumbnails.**
-
-### Key Design Decision: `FLASH` is a new top-level `media_type` (not `VIDEO`)
-
-We add a fourth value to the `media_type` enum rather than shoehorning SWF into `VIDEO`. Rationale:
-
-- The web viewer must branch to a Ruffle player, not a `<video>` element — a distinct type keeps that branch explicit and type-safe.
-- `VIDEO` carries semantics (seekable timeline, keypoint thumbnails, filmstrip, real duration) that do not apply to interactive Flash.
-- Users expect to filter for "Flash" as its own category (`search --media-type flash`).
-
-The cost is that `media_type` is cross-cutting: codec registry → processor → Zod enums → TS types → DB CHECK constraints → web viewer/CLI filters all enumerate the three kinds today. All such sites are catalogued in the [File Change Summary](#file-change-summary).
-
-### Key Design Decision: Parse SWF metadata from the file header (no FFmpeg)
-
-The SWF file header is small, well-documented, and cheap to parse in pure TypeScript. It yields everything we need for a `media_file` row:
-
-- **Signature** (bytes 0–2): `FWS` (uncompressed), `CWS` (zlib/deflate compressed body), or `ZWS` (LZMA compressed body).
-- **Version** (byte 3), **file length** (bytes 4–7, little-endian u32).
-- **Frame size** — a `RECT` immediately after the 8-byte header, expressed in *twips* (1 twip = 1/20 px). Yields stage `width`/`height` in pixels.
-- **Frame rate** — 16-bit fixed-point (8.8), yields `framerate`.
-- **Frame count** — u16, yields `framecount`.
-
-For `CWS`, the body after the first 8 bytes is zlib-compressed; Deno's built-in `DecompressionStream('deflate')` can inflate enough bytes to read the header. `ZWS` (LZMA) has no built-in Deno decompressor — see [Open Questions](#open-questions--possible-issues). We only need to decompress the first few dozen bytes to read the `RECT` + rate + count.
-
-This keeps SWF ingestion dependency-free and deterministic, and avoids adding a native Flash runtime to the core package.
-
-### Key Design Decision: Caller-supplied thumbnails, generalized
-
-Rather than a Flash-only hack, we add a generic optional `thumbnails: string[]` (list of image filepaths) to `media.create`. When supplied, `media_create` imports those files into the checksum-sharded thumbnail folder instead of calling `FileProcessor.create_thumbnails()`. For `FLASH`, supplied thumbnails are **required** (there is no generator); for other types they remain optional and default to FFmpeg generation. This mirrors the existing `Thumbnails` return shape so the downstream `attach_thumbnails()` path is reused unchanged.
+- **Metadata** is read directly from the SWF file header in pure TypeScript: stage `width`/`height` (from the `RECT`, twips → px) and `framerate` (8.8 fixed-point). These are stored on the `media_file` row. Flash rows are `animated = false`, `audio = false`, `duration = 0`, `framecount = 0`; `framerate` is retained as informational metadata.
+- **Thumbnails** are supplied by the caller at creation (typically 1–2 images). When none are supplied, a simple default placeholder is generated at the SWF's aspect ratio (analogous to audio waveform thumbnails), so bulk `discover`/`ingest` of `.swf` files always succeeds.
 
 ---
 
@@ -60,229 +32,178 @@ Rather than a Flash-only hack, we add a generic optional `thumbnails: string[]` 
 CODECS.add_codec('FLASH', 'swf', 'application/x-shockwave-flash', ['swf'])
 ```
 
-This automatically:
-- adds `.swf` to the default filesystem receiver's `extensions` (`packages/core/src/lib/plugin_script.ts`), so `discover` picks up `.swf` files with no further change;
-- provides `content_type` (`application/x-shockwave-flash`) used by the web file server.
-
-`get_codec('swf')` will now resolve, but note the FFprobe path in `get_info()` will **not** be used for SWF (see Phase 3) — the codec entry primarily supplies `content_type` + extension metadata and lets the `FLASH` file-info object spread the same `codec_info` fields as other types.
+This adds `.swf` to the default filesystem receiver's `extensions` (`packages/core/src/lib/plugin_script.ts`), so `discover` picks up `.swf` files, and provides the `content_type` used by the web file server. The FFprobe path in `get_info()` is not used for SWF (see Phase 3); the codec entry supplies `content_type`/extension metadata and lets the Flash file-info object spread the same `codec_info` fields as other types.
 
 ---
 
-## Phase 2: Core — DB Migration (relax `media_file` CHECK constraints)
+## Phase 2: Core — DB Migration & Seed Parity
+
+### Modified file: `packages/core/src/db/migrations/seed_migration.ts`
+
+Update the `media_file` CHECK constraints so a fresh install matches the post-migration state (seed and latest migration are always kept in parity):
+
+```sql
+media_type TEXT NOT NULL CHECK( media_type IN ('IMAGE', 'VIDEO', 'AUDIO', 'FLASH') ),
+width  INTEGER CHECK (media_type IN ('IMAGE', 'VIDEO', 'FLASH') AND width  IS NOT NULL OR media_type = 'AUDIO'),
+height INTEGER CHECK (media_type IN ('IMAGE', 'VIDEO', 'FLASH') AND height IS NOT NULL OR media_type = 'AUDIO'),
+framerate  INTEGER NOT NULL CHECK (IIF(animated == 0, framerate == 0, 1) OR media_type IN ('AUDIO', 'FLASH')),
+framecount INTEGER NOT NULL CHECK (IIF(animated == 0, framerate == 0, 1) OR media_type IN ('AUDIO', 'FLASH')),
+duration   INTEGER NOT NULL CHECK (IIF(animated == 0, duration == 0, 1) OR media_type = 'AUDIO'),
+```
+
+Flash rows are `animated = false` with `framerate != 0`, so `FLASH` must be exempted from the framerate/framecount checks (as `AUDIO` is). `duration` stays `0`, which already satisfies the duration check without exemption. Width/height are required for `FLASH` (always known from the header).
 
 ### New file: `packages/core/src/db/migrations/migration_v12.ts`
 
-The current seed (`seed_migration.ts`, version 11) hardcodes CHECK constraints that reject a `FLASH` row:
+SQLite cannot `ALTER` a CHECK constraint in place, so — following `migration_v10.ts` / `migration_v11.ts` — this migration rebuilds `media_file`:
 
-```sql
-media_type TEXT NOT NULL CHECK( media_type IN ('IMAGE', 'VIDEO', 'AUDIO') ),
-width  INTEGER CHECK (media_type IN ('IMAGE', 'VIDEO') AND width  IS NOT NULL OR media_type = 'AUDIO'),
-height INTEGER CHECK (media_type IN ('IMAGE', 'VIDEO') AND height IS NOT NULL OR media_type = 'AUDIO'),
-framerate INTEGER NOT NULL CHECK (IIF(animated == 0, framerate == 0, 1) OR media_type = 'AUDIO'),
-framecount INTEGER NOT NULL CHECK (IIF(animated == 0, framerate == 0, 1) OR media_type = 'AUDIO'),
-duration INTEGER NOT NULL CHECK (IIF(animated == 0, duration == 0, 1) OR media_type = 'AUDIO'),
-```
-
-SQLite cannot `ALTER` a CHECK constraint in place, so — following the established pattern in `migration_v10.ts` / `migration_v11.ts` — this migration rebuilds `media_file`:
-
-1. `PRAGMA foreign_keys = OFF`, `BEGIN TRANSACTION`, `override TRANSACTION = false`.
-2. Create `media_file_new` with updated constraints:
-   - `media_type IN ('IMAGE', 'VIDEO', 'AUDIO', 'FLASH')`
-   - `width`/`height`: required for `IMAGE`/`VIDEO`/`FLASH`, nullable for `AUDIO` (FLASH stage size is known from the header; if header parsing yields no size, see Open Questions).
-   - `framerate`/`framecount`/`duration`: treat `FLASH` like `AUDIO` in the exemption (`... OR media_type IN ('AUDIO','FLASH')`), so a Flash row may carry a framerate/framecount from the SWF header while `duration` stays `0`.
-3. `INSERT INTO media_file_new SELECT ... FROM media_file` (column set unchanged).
+1. `override TRANSACTION = false`, `PRAGMA foreign_keys = OFF`, `BEGIN TRANSACTION`.
+2. `CREATE TABLE media_file_new (...)` with the updated constraints above (column shapes unchanged).
+3. `INSERT INTO media_file_new SELECT ... FROM media_file` (straight column-for-column copy).
 4. `DROP TABLE media_file`, `ALTER TABLE media_file_new RENAME TO media_file`.
 5. Recreate indexes `media_file_reference` and `media_filepath`.
 6. `PRAGMA foreign_key_check`, `COMMIT`, `PRAGMA foreign_keys = ON`.
-
-No column shape changes — only constraint predicates — so the copy is a straight column-for-column select.
 
 ### Modified file: `packages/core/src/db/migrations/mod.ts`
 
 Add `import './migration_v12.ts'`.
 
-### Note on the seed migration
-
-Per project convention we do **not** edit `seed_migration.ts` in place for existing installs; the v12 migration is the source of truth for upgrades. We should also bump the seed's constraint list in the same PR *only* if the team's convention is to keep a fresh install's seed in sync with the latest migration — confirm during review (see Open Questions).
-
 ---
 
-## Phase 3: Core — SWF Processing Path
+## Phase 3: Core — SWF Metadata Parsing
+
+### New file: `packages/core/src/lib/swf_header.ts`
+
+A dependency-free SWF header parser (kept standalone so the bit-level `RECT` reader is unit-testable). It:
+
+- reads the first ~4 KB of the file;
+- validates the signature: `FWS` (uncompressed) or `CWS` (zlib/deflate body); for `ZWS` (LZMA) it throws an unimplemented error with a comment noting LZMA is not native to Deno but could be supported with a custom decompressor:
+
+```typescript
+// SWF `ZWS` files are LZMA-compressed. Deno has no built-in LZMA decompressor
+// (DecompressionStream only supports gzip/deflate/deflate-raw). Supporting this
+// would require bundling a custom LZMA decompressor. Rejected for now.
+throw new errors.UnsupportedCodecError('LZMA-compressed SWF (ZWS) is not supported')
+```
+
+- for `CWS`, inflates the prefix via `DecompressionStream('deflate')` (only the header bytes are needed);
+- parses the `RECT` frame size (twips → px) → `width`/`height`, and the 8.8 fixed-point frame rate → `framerate`.
 
 ### Modified file: `packages/core/src/lib/file_processor.ts`
 
-Add a `FLASH` branch that bypasses FFprobe/FFmpeg entirely.
-
-#### `FileInfo` type
-
-Extend the `FileInfoBase.media_type` union to include `'FLASH'` and add a `FlashFileInfo` variant to the `FileInfo` union:
+- Extend `FileInfoBase.media_type` to include `'FLASH'` and add a `FlashFileInfo` variant:
 
 ```typescript
 interface FlashFileInfo extends FileInfoBase {
   media_type: 'FLASH'
   width: number
   height: number
-  animated: true      // Flash content is inherently animated/interactive
-  audio: false        // not introspected; SWF audio is emulator-internal
-  duration: 0         // no meaningful linear duration for interactive content
-  framerate: number   // from SWF header
-  framecount: number  // from SWF header
+  animated: false
+  audio: false
+  duration: 0
+  framerate: number   // from SWF header, stored as metadata
+  framecount: 0
 }
 ```
 
-#### `get_info()` dispatch
-
-At the top of `get_info()`, branch on file extension before invoking FFprobe:
+- Dispatch on extension at the top of `get_info()` before invoking FFprobe:
 
 ```typescript
 if (path.extname(this.#filepath).toLowerCase() === '.swf') {
   return await this.#get_swf_info()
 }
-// ...existing ffprobe path
 ```
 
-#### New private method: `#get_swf_info()`
-
-- Read the first N bytes of the file (enough to cover header + a modest compressed prefix, e.g. 4 KB).
-- Validate signature is `FWS` / `CWS` / `ZWS`; otherwise throw `errors.InvalidFileError`.
-- For `CWS`, inflate the prefix via `DecompressionStream('deflate')`; for `ZWS`, throw a clear `UnsupportedCodecError`/`InvalidFileError` (documented limitation) unless we bundle an LZMA decoder (Open Questions).
-- Parse the `RECT` frame size (twips → px), the 8.8 fixed-point frame rate, and the u16 frame count from the (decompressed) header.
-- Return a `FlashFileInfo` spreading `CODECS.get_codec('swf')` for `codec`/`content_type`/`media_type`.
-
-A small standalone helper module (e.g. `packages/core/src/lib/swf_header.ts`) is recommended so the bit-level `RECT` reader is unit-testable in isolation.
-
-#### Thumbnails
-
-`FileProcessor.create_thumbnails()` is **not** called for `FLASH`. Instead a new method imports supplied thumbnails (Phase 4). We deliberately do not add a `FLASH` branch inside `create_thumbnails()`; keeping generation and import separate avoids muddying the FFmpeg code paths.
+- Add `#get_swf_info()`, which calls the `swf_header.ts` parser and returns a `FlashFileInfo` spreading `CODECS.get_codec('swf')`.
 
 ---
 
-## Phase 4: Core — Supplied Thumbnails in `media_create`
+## Phase 4: Core — Thumbnails (supplied + default placeholder)
+
+### Modified file: `packages/core/src/lib/file_processor.ts`
+
+- **Supplied thumbnails** — add `import_thumbnails(supplied_filepaths: string[], checksum: string): Promise<Thumbnails>` that copies the provided images into the checksum-sharded destination folder (`{thumbnails.folder}/{checksum[0:2]}/{checksum}/`) using the existing zero-padded naming (`0000.jpg`, …), assigns synthetic strictly-increasing `media_timestamp`s (`0, 1, 2, …`), and returns the standard `Thumbnails` shape so `attach_thumbnails()` is reused unchanged.
+- **Default placeholder** — add a `FLASH` branch to `create_thumbnails()` that generates one placeholder image at the SWF's aspect ratio (scaled into the thumbnail max box), using an FFmpeg `lavfi` color source, mirroring the audio waveform approach:
+
+```
+ffmpeg -f lavfi -i color=c=<color>:s=<w>x<h> -frames:v 1 <out>.jpg
+```
 
 ### Modified file: `packages/core/src/actions/lib/base.ts`
 
-Generalize `media_create` to accept caller-supplied thumbnail image paths.
-
-#### New import/attach method
-
-Add a `FileProcessor.import_thumbnails(supplied_filepaths: string[], checksum: string): Promise<Thumbnails>` (or an equivalent helper in `base.ts`) that:
-
-1. Validates each supplied path exists and is a readable image.
-2. Copies them into the checksum-sharded destination folder `{thumbnails.folder}/{checksum[0:2]}/{checksum}/`, named with the existing zero-padded scheme (`0000.jpg`, `0001.jpg`, …).
-3. Assigns synthetic, strictly-increasing `media_timestamp`s (`0, 1, 2, …`) to satisfy the ordering invariants that `create_thumbnails` guarantees (first timestamp ≈ 0, monotonic increasing) and that search preview selection relies on.
-4. Returns the same `Thumbnails` shape (`{ source_folder, destination_folder, thumbnails: [{ destination_filepath, timestamp }] }`) so the existing `attach_thumbnails()` writes `media_thumbnail` rows with `kind: 'standard'` unchanged.
-
-#### `media_create` control flow
+In `media_create`, choose the thumbnail source:
 
 ```typescript
-const media_file_info = await file_processor.get_info()
-// ...duplicate check...
-
-const supplied_thumbnails = parsed.thumbnails // new optional param
-const thumbnails = supplied_thumbnails?.length
-  ? await file_processor.import_thumbnails(supplied_thumbnails, checksum)
+const thumbnails = parsed.thumbnails?.length
+  ? await file_processor.import_thumbnails(parsed.thumbnails, checksum)
   : await file_processor.create_thumbnails(media_file_info, checksum)
-
-if (media_file_info.media_type === 'FLASH' && !supplied_thumbnails?.length) {
-  throw new errors.BadInputError('FLASH media requires at least one supplied thumbnail')
-}
 ```
 
-The rest of the transaction (`MediaReference.create`, `MediaFile.create`, `attach_thumbnails`) is unchanged.
+For `FLASH`, `create_thumbnails()` produces the default placeholder; for other types it retains FFmpeg generation. The rest of the transaction is unchanged. Because Flash rows are `animated = false`, the existing preview-thumbnail selection (`media_file.animated && thumbnail_limit === 1`) already resolves to the first thumbnail — no special-casing needed.
+
+### `reload` accepts thumbnail overrides
+
+`media.reload` currently regenerates thumbnails. Extend it to accept an optional `thumbnails: string[]`: when provided, replace existing thumbnails via `import_thumbnails`; when omitted, regenerate (for Flash, the default placeholder).
 
 ### Modified file: `packages/core/src/inputs/media_reference_inputs.ts`
 
-- Add `'FLASH'` to the `MediaType` enum: `z.enum(['IMAGE', 'VIDEO', 'AUDIO', 'FLASH'])`.
-- Add a `MediaCreateOptions` (or extend the create signature) with `thumbnails: z.array(Filepath).optional()`. This is a *create option*, distinct from `MediaInfo` (which maps to `media_reference` columns).
-
-### Modified file: `packages/core/src/actions/media_actions.ts`
-
-Update the public `create` signature/docstring to accept the optional `thumbnails` argument and forward it to `media_create`. Also review the animated-preview thumbnail-selection branch (`media_file.animated && thumbnail_limit === 1`): for `FLASH` we want the **first** supplied thumbnail as the preview, not a `duration * threshold` timestamp (duration is 0 for Flash, so the existing logic already resolves to timestamp 0 — verify and add an explicit `FLASH` guard if needed).
+- `MediaType = z.enum(['IMAGE', 'VIDEO', 'AUDIO', 'FLASH'])`.
+- Add a create/reload option `thumbnails: z.array(Filepath).optional()` (a create option, distinct from `MediaInfo`).
 
 ### Modified files: type plumbing
 
-- `packages/core/src/models/media_reference.ts` — add `'FLASH'` to the `media_type` unions on `SelectManyFilters` and `SelectManySeriesFilters`.
-- `packages/core/src/inputs/media_series_inputs.ts` — inherits the updated `MediaType` (verify).
-- `packages/core/src/inputs/lib/inputs_types.ts` — expose any new create-options type.
+- `packages/core/src/actions/media_actions.ts` — `create`/`reload` accept and forward `thumbnails` (update docstrings).
+- `packages/core/src/models/media_reference.ts` — add `'FLASH'` to the `media_type` unions on `SelectManyFilters` / `SelectManySeriesFilters`.
+- `packages/core/src/inputs/media_series_inputs.ts` — inherits updated `MediaType` (verify).
+- `packages/core/src/inputs/lib/inputs_types.ts` — export the new create-options type.
 
 ---
 
 ## Phase 5: Core — Search, Keypoints, Views
 
-### Search (`packages/core/src/models/media_reference.ts`)
-
-The existing filter builder already handles arbitrary `media_type` values:
-
-```typescript
-if (params.media_type) builder.add_where_clause(`media_file.media_type = '${params.media_type}'`)
-```
-
-so `media_type: 'FLASH'` works once the enum allows it. Because we set `animated = true` on Flash rows, `{ animated: true }` will include Flash alongside video/gif — this is intentional and consistent with treating Flash as animated content.
-
-### Keypoints (`packages/core/src/actions/keypoint_actions.ts`)
-
-`create_thumbnails_at_timestamp()` throws for non-`VIDEO` media. Flash has no seekable timeline, so **keypoints remain unsupported for FLASH** — no change needed, but we should ensure the error message is sensible if a user attempts it.
-
-### Views (`packages/core/src/actions/view_actions.ts`)
-
-View tracking allows animated view fields only when `media_file.animated`. Since Flash is `animated: true`, view records behave like video. Confirm no assumptions about a finite `duration` break for Flash (duration is 0) — if the view logic divides by duration or requires `end_timestamp <= duration`, add a `FLASH` guard.
+- **Search** (`packages/core/src/models/media_reference.ts`): the filter builder already handles any `media_type`, so `media_type: 'FLASH'` works once the enum allows it. Flash is `animated = false`, so it is excluded from the "Animated" filter (intended).
+- **Keypoints** (`packages/core/src/actions/keypoint_actions.ts`): `create_thumbnails_at_timestamp()` throws for non-`VIDEO` media; Flash has no timeline, so keypoints remain unsupported. Confirm the error message is sensible.
+- **Views** (`packages/core/src/actions/view_actions.ts`): Flash is `animated = false` and `duration = 0`, so it tracks like a static image. Verify no view logic assumes a nonzero duration for Flash.
+- **Series**: a series may mix types; Flash items flow through the same viewer branch and should work with no series-specific changes (covered by a test).
 
 ---
 
-## Phase 6: Web — Ruffle Player in the Media Viewer
+## Phase 6: Web — Ruffle Player & Bundling
 
-### Dependency: add Ruffle
+### Self-hosted, pinned Ruffle under `static/wasm/ruffle/`
 
-Add the self-hosted Ruffle package to `packages/web/package.json`:
+Vendor a pinned Ruffle release (self-hosted; no CDN) into `packages/web/static/wasm/ruffle/`. Pinning is important because Ruffle is pre-1.0 and updates frequently.
 
-```json
-"@ruffle-rs/ruffle": "<pinned version>"
-```
+**Bundling into the compiled binary (`deno task compile`).** SvelteKit copies `static/` into the client build; the custom adapter (`packages/web/adapter/adapter.js`) walks the build's static dir and emits `bytes_imports.ts` with `type: 'bytes'` raw imports. Because `adapter/lib/mod.ts` imports `bytes_imports.ts`, and the CLI compiles `src/cli.ts` (which imports `@forager/web`), `deno compile` embeds these bytes into the binary. At runtime, `#ensure_static_assets_exist()` extracts them into the asset folder. To make this work for Ruffle:
 
-Ruffle ships a WASM binary plus a JS loader. In this SvelteKit + Vite + `@deno/vite-plugin` setup the loader is imported dynamically and the WASM asset must be resolvable at runtime. Two integration concerns:
-
-1. **Dev** (`deno run -A vite dev`): Vite must serve the `.wasm`. Import via `?url` / dynamic `import()` and configure Ruffle's `publicPath` accordingly.
-2. **Production** (custom Deno adapter, `packages/web/adapter/`): the adapter today serves only `/_app/*` + `/favicon.png` from the build output. The Ruffle WASM must either be emitted into the hashed `_app` asset pipeline by Vite, or the adapter must be extended to serve a `static/ruffle/` directory. This is the highest-risk integration point — see Open Questions.
+- **Serve the files.** `adapter/lib/mod.ts` currently routes only `/_app/*` and `/favicon.png` to `serveDir`. Add a `/wasm/*` route pattern to `#routes` + `#handle_request` so `serveDir` serves the Ruffle assets.
+- **Relax the asset-dir check.** `#check_asset_dir_contents()` asserts the root asset dir contains exactly `favicon.png` and `_app`; update it to also allow the `wasm` directory.
+- **Dev** serves `static/wasm/ruffle/*` at `/wasm/ruffle/*` automatically via SvelteKit.
 
 ### Modified file: `packages/web/src/routes/browse/components/MediaView.svelte`
 
-Add a fourth branch to the `media_file.media_type` chain:
+Add a `FLASH` branch to the `media_file.media_type` chain that mounts Ruffle (via a `use:ruffle_player` action or a small `RufflePlayer.svelte` component):
 
-```svelte
-{:else if ...media_file.media_type === 'FLASH'}
-  <div class="object-contain {media_fit_classes}" use:ruffle_player={media_url}></div>
-```
-
-A new Svelte action (`use:ruffle_player`) or a small `<RufflePlayer>` component:
-- lazy-loads the Ruffle library on first Flash view (`onMount` / dynamic import);
-- creates a player via `ruffle.newest().createPlayer()`, appends it to the container, and calls `player.load(media_url)` (the existing `/files/media_file/{id}` URL);
-- sizes the player to the container using the same `media_fit_classes` fit logic used by images/videos;
-- tears down the player on unmount / selection change to avoid leaking WASM instances.
-
-Playback keybinds (`PlayPauseMedia`, filmstrip, `currentTime` binding) are video-specific and are **not** wired to Ruffle initially; Ruffle provides its own on-canvas controls. Revisit if the team wants Forager keybinds to drive Ruffle (Open Questions).
+- lazy-load Ruffle on first Flash view;
+- configure `publicPath: '/wasm/ruffle/'` so Ruffle loads its own WASM locally;
+- fetch the SWF bytes from the existing same-origin `/files/media_file/{id}` route and hand Ruffle an `ArrayBuffer` (so Ruffle itself issues no external request), then size the player to the container using the shared `media_fit_classes` fit logic;
+- set Ruffle's `allowNetworking: 'none'` so the SWF content cannot make network requests. This is the simple, Ruffle-native way to satisfy "make no requests" — a document-level CSP `connect-src 'none'` is not viable because the browse page needs its own RPC (`/rpc/*`); loading the SWF as bytes + `allowNetworking: 'none'` achieves the same intent without a complex CSP.
+- tear down the player on unmount/selection change to avoid leaking WASM instances.
 
 ### Modified file: `packages/web/src/routes/files/media_file/[id]/+server.ts`
 
-Add a `FLASH` case to `get_mime_type()` returning `application/x-shockwave-flash` for codec `swf`. Range requests are unnecessary for SWF (Ruffle fetches the whole file), but the existing streaming response is fine.
+Add a `FLASH` case to `get_mime_type()` returning `application/x-shockwave-flash` for codec `swf`.
 
 ### Modified file: `packages/web/src/routes/browse/components/SearchResults.svelte`
 
-Add a `FLASH` branch to the list-view info-chip logic with a suitable icon (e.g. a "play"/"puzzle" glyph from the existing `icons` set) so Flash tiles are visually distinguishable. The thumbnail `<img>` itself already renders from the supplied `standard` thumbnail via `preview_thumbnail` with no change.
+Add a `FLASH` info-chip branch with a suitable icon so Flash tiles are distinguishable. The tile thumbnail `<img>` already renders the supplied/placeholder thumbnail with no change.
 
 ---
 
 ## Phase 7: Web — Search Filter Option
 
-### Modified file: `packages/web/src/routes/browse/components/SearchParams.svelte`
-
-Add `{label: 'Flash', value: 'flash'}` to the media-type `SelectInput` options.
-
-### Modified file: `packages/web/src/routes/browse/runes/queryparams.svelte.ts`
-
-- Extend `MediaTypeFilter` with `'flash'`.
-- Add `flash: 'FLASH'` to `MEDIA_TYPE_TO_CORE`.
-
-The existing translation (`query.media_type = MEDIA_TYPE_TO_CORE[params.media_type]`) then flows `flash` → `FLASH` into core search.
+- `packages/web/src/routes/browse/components/SearchParams.svelte` — add `{label: 'Flash', value: 'flash'}` to the media-type `SelectInput`.
+- `packages/web/src/routes/browse/runes/queryparams.svelte.ts` — extend `MediaTypeFilter` with `'flash'` and add `flash: 'FLASH'` to `MEDIA_TYPE_TO_CORE`.
 
 ---
 
@@ -290,29 +211,16 @@ The existing translation (`query.media_type = MEDIA_TYPE_TO_CORE[params.media_ty
 
 ### Modified file: `packages/cli/src/cli.ts`
 
-- Extend the enum type and mapping used by `search --media-type`:
+- Extend the `search --media-type` enum + mapping:
 
 ```typescript
 const MEDIA_TYPE_TYPE = new cliffy.EnumType(['image', 'video', 'audio', 'flash']);
 const MEDIA_TYPE_TO_CORE = { image: 'IMAGE', video: 'VIDEO', audio: 'AUDIO', flash: 'FLASH' } as const;
 ```
 
-- Add a repeatable `--thumbnail=<path>` option (Cliffy `collect: true`) to the `create` command so users can supply the required SWF thumbnails, forwarding them to core:
+- Add a repeatable `--thumbnail=<path>` option (Cliffy `collect: true`) to `create` (and the reload command, if exposed) so users can supply SWF thumbnails, forwarding them to `media.create` / `media.reload`. Supplying thumbnails is optional — a Flash file created without them gets the generated placeholder.
 
-```typescript
-.command('create <filepath>', 'add a file to the forager database')
-  .option('--title=<title>', '...')
-  .option('--tags=<tags>', '...')
-  .option('--thumbnail=<thumbnail>', 'Path to a thumbnail image. Repeatable. Required for .swf files', { collect: true })
-  .action(async (opts, filepath) => {
-    // ...
-    const result = await forager.media.create(filepath, { title: opts.title }, tags, /* editing */ undefined, { thumbnails: opts.thumbnail })
-  })
-```
-
-(Exact argument threading depends on the final `media.create` signature chosen in Phase 4.)
-
-`discover --exts=swf` already works once core recognizes SWF, but note that discovered/ingested Flash files have **no** supplied thumbnails — ingest of `.swf` without thumbnails will error (by design). This tension is called out in Open Questions.
+`discover --exts=swf` works once core recognizes SWF; ingested `.swf` files without supplied thumbnails receive the default placeholder.
 
 ---
 
@@ -320,31 +228,32 @@ const MEDIA_TYPE_TO_CORE = { image: 'IMAGE', video: 'VIDEO', audio: 'AUDIO', fla
 
 ### New fixtures: `lib/test/resources/`
 
-- A small, valid, **uncompressed (`FWS`)** sample SWF, e.g. `sample_flash.swf` — a minimal stage with a known frame size / rate / count so header-parsing assertions are deterministic. Keeping it uncompressed avoids depending on the zlib/LZMA path for the primary test.
-- One or two thumbnail images for it, e.g. `sample_flash.thumb.png` (and optionally a second) to exercise the 1–2 supplied-thumbnail case.
-- Optionally a `CWS` (zlib) variant to test the decompression branch.
+- A committed **public-domain** SWF, e.g. `sample_flash.swf` (uncompressed `FWS`, known frame size/rate so header-parsing assertions are deterministic).
+- One or two thumbnail images (e.g. `sample_flash.thumb.png`) to exercise the 1–2 supplied-thumbnail case.
+- Optionally a `CWS` (zlib) variant to test decompression.
 
 ### Modified file: `lib/test/lib/util.ts`
 
-Register the new resources in the `resource_file_mapper([...])` list (and, if useful, a `thumbnail_files` map) so tests reference them via `ctx.resources`.
+Register the new resources in `resource_file_mapper([...])` (and a thumbnail map if useful).
 
-### Core tests: `packages/core/test/media.test.ts` (and/or a new `flash.test.ts`)
+### Core tests: `packages/core/test/media.test.ts` (and/or new `flash.test.ts`)
 
-- **Create**: `forager.media.create(swf, {}, [], undefined, { thumbnails: [thumb] })` yields a `media_file` with `media_type: 'FLASH'`, `codec: 'swf'`, `content_type: 'application/x-shockwave-flash'`, parsed `width`/`height`/`framerate`/`framecount`, `animated: true`, `duration: 0`.
-- **Missing thumbnails**: creating a `.swf` without thumbnails throws `BadInputError`.
-- **Thumbnail rows**: `media_thumbnail` rows exist with `kind: 'standard'` and monotonic timestamps; the supplied images are copied into the checksum folder.
-- **Search**: `search({ query: { media_type: 'FLASH' } })` returns only Flash; `search({ query: { animated: true } })` includes Flash.
-- **Header parser unit tests**: `swf_header.ts` against `FWS` and `CWS` fixtures (and an assertion that `ZWS` throws a clear error, unless LZMA is bundled).
-- **Migration v12**: verify a `FLASH` row inserts successfully and the constraint predicates match expectations.
+- **Create with supplied thumbnails** → `media_type: 'FLASH'`, `codec: 'swf'`, parsed `width`/`height`/`framerate`, `animated: false`, `audio: false`, `duration: 0`, `framecount: 0`; `media_thumbnail` rows are the supplied images with monotonic timestamps.
+- **Create without thumbnails** → a single placeholder thumbnail at the SWF aspect ratio.
+- **Search** → `{ media_type: 'FLASH' }` returns only Flash; `{ animated: true }` excludes Flash.
+- **`reload` with thumbnail overrides** → replaces thumbnails.
+- **SWF header unit tests** → `FWS` and `CWS` fixtures; `ZWS` throws the unimplemented error.
+- **Migration v12 / seed parity** → a `FLASH` row inserts successfully; seed and v12 produce equivalent constraints.
+- **Series** → a series containing a Flash item searches/renders correctly.
 
 ### CLI tests: `packages/cli/test/cli.test.ts`
 
-- `create <swf> --thumbnail <img>` succeeds and the file is searchable.
-- `search --media-type flash` returns the Flash file; `--media-type garbage` still rejected by Cliffy.
+- `create <swf> --thumbnail <img>` succeeds and is searchable; `create <swf>` (no thumbnail) succeeds with a placeholder.
+- `search --media-type flash` returns the Flash file; `--media-type garbage` still rejected.
 
-### Web
+### Web (manual)
 
-Manual verification that Ruffle loads and plays the sample SWF in `/browse`, that the list tile shows the supplied thumbnail + Flash icon, and that the `Flash` filter narrows results. (Automated web coverage is out of scope per existing conventions.)
+Verify Ruffle loads/plays the sample SWF in `/browse`, the list tile shows the thumbnail + Flash icon, and the `Flash` filter narrows results.
 
 ---
 
@@ -354,33 +263,35 @@ Manual verification that Ruffle loads and plays the sample SWF in `/browse`, tha
 
 | File | Description |
 |------|-------------|
-| `packages/core/src/db/migrations/migration_v12.ts` | Rebuild `media_file` to allow `FLASH` and relax width/height/framerate/framecount/duration CHECKs |
-| `packages/core/src/lib/swf_header.ts` | Pure-TS SWF header parser (signature, frame size, rate, count) |
-| `lib/test/resources/sample_flash.swf` (+ thumbnail image(s)) | Test fixtures |
-| `packages/web/src/routes/browse/components/RufflePlayer.svelte` *(or a `use:ruffle_player` action)* | Mounts/tears down the Ruffle WASM player |
+| `packages/core/src/lib/swf_header.ts` | Pure-TS SWF header parser (signature, frame size, rate; rejects LZMA) |
+| `packages/core/src/db/migrations/migration_v12.ts` | Rebuild `media_file` to allow `FLASH` and relax width/height/framerate/framecount CHECKs |
+| `lib/test/resources/sample_flash.swf` (+ thumbnail image(s)) | Public-domain test fixtures |
+| `packages/web/static/wasm/ruffle/*` | Pinned, self-hosted Ruffle distribution |
+| `packages/web/src/routes/browse/components/RufflePlayer.svelte` *(or a `use:ruffle_player` action)* | Mounts/tears down the Ruffle player |
 | `packages/core/test/flash.test.ts` *(optional; may live in `media.test.ts`)* | Flash ingestion/search tests |
 
 ### Modified Files
 
 | File | Change |
 |------|--------|
-| `packages/core/src/lib/codecs.ts` | Add `'FLASH'` to unions; register `swf` codec + `application/x-shockwave-flash` + `.swf` |
-| `packages/core/src/lib/file_processor.ts` | `FlashFileInfo` variant; `.swf` dispatch in `get_info()`; `#get_swf_info()`; `import_thumbnails()` |
-| `packages/core/src/actions/lib/base.ts` | Supplied-thumbnail branch in `media_create`; FLASH requires thumbnails |
-| `packages/core/src/actions/media_actions.ts` | `create` accepts/forwards `thumbnails`; FLASH preview-thumbnail guard |
-| `packages/core/src/inputs/media_reference_inputs.ts` | `MediaType` gains `'FLASH'`; create-options `thumbnails` schema |
+| `packages/core/src/lib/codecs.ts` | Add `'FLASH'`; register `swf` codec + `application/x-shockwave-flash` + `.swf` |
+| `packages/core/src/lib/file_processor.ts` | `FlashFileInfo`; `.swf` dispatch in `get_info()`; `#get_swf_info()`; `import_thumbnails()`; FLASH placeholder branch in `create_thumbnails()` |
+| `packages/core/src/actions/lib/base.ts` | Thumbnail-source selection in `media_create` |
+| `packages/core/src/actions/media_actions.ts` | `create`/`reload` accept + forward `thumbnails` |
+| `packages/core/src/inputs/media_reference_inputs.ts` | `MediaType` gains `'FLASH'`; `thumbnails` create/reload option |
 | `packages/core/src/inputs/media_series_inputs.ts` | Inherit updated `MediaType` |
 | `packages/core/src/inputs/lib/inputs_types.ts` | Export new create-options type |
 | `packages/core/src/models/media_reference.ts` | `'FLASH'` in `media_type` filter unions |
+| `packages/core/src/db/migrations/seed_migration.ts` | Updated `media_file` CHECK constraints (parity with v12) |
 | `packages/core/src/db/migrations/mod.ts` | `import './migration_v12.ts'` |
-| `packages/web/package.json` | Add `@ruffle-rs/ruffle` |
-| `packages/web/src/routes/browse/components/MediaView.svelte` | `FLASH` branch mounting Ruffle |
+| `packages/web/package.json` | Pin Ruffle (self-hosted vendor step) |
+| `packages/web/adapter/lib/mod.ts` | Serve `/wasm/*`; relax `#check_asset_dir_contents` to allow the `wasm` dir |
+| `packages/web/src/routes/browse/components/MediaView.svelte` | `FLASH` branch mounting Ruffle (bytes load, `allowNetworking: 'none'`) |
 | `packages/web/src/routes/browse/components/SearchResults.svelte` | `FLASH` info-chip/icon branch |
 | `packages/web/src/routes/browse/components/SearchParams.svelte` | Add `Flash` filter option |
 | `packages/web/src/routes/browse/runes/queryparams.svelte.ts` | `MediaTypeFilter` + `MEDIA_TYPE_TO_CORE` gain `flash`/`FLASH` |
 | `packages/web/src/routes/files/media_file/[id]/+server.ts` | MIME mapping for `swf` |
-| `packages/web/adapter/` *(possibly)* | Serve Ruffle WASM in production builds |
-| `packages/cli/src/cli.ts` | `flash` in `--media-type`; `--thumbnail` on `create` |
+| `packages/cli/src/cli.ts` | `flash` in `--media-type`; `--thumbnail` on `create`/`reload` |
 | `lib/test/lib/util.ts` | Register SWF + thumbnail fixtures |
 | `packages/core/test/media.test.ts`, `packages/cli/test/cli.test.ts` | Flash tests |
 
@@ -389,42 +300,27 @@ Manual verification that Ruffle loads and plays the sample SWF in `/browse`, tha
 ## Implementation Order
 
 1. Codec registry (`FLASH` + `swf`) — Phase 1
-2. Migration v12 (relax constraints) — Phase 2
+2. Seed parity + migration v12 — Phase 2
 3. SWF header parser + `#get_swf_info()` — Phase 3
-4. Supplied-thumbnail generalization in `media_create` — Phase 4
+4. Thumbnails: supplied import + default placeholder; `media_create`/`reload` wiring — Phase 4
 5. Enum/type plumbing + search — Phases 4–5
 6. Core tests + fixtures (validate backend early) — Phase 9
 7. CLI (`--media-type flash`, `--thumbnail`) + CLI tests — Phase 8
-8. Web MIME serving + search filter — Phases 6–7
-9. Ruffle player integration + manual web verification — Phase 6
+8. Vendor + bundle Ruffle; adapter serving + compile embedding — Phase 6
+9. Ruffle player + MIME serving + search filter; manual web verification — Phases 6–7
 
 ---
 
-## Open Questions & Possible Issues
+## Future Considerations
 
-### Metadata & processing
+- **Keybind / playback integration.** Forager's `PlayPauseMedia`, filmstrip, and `currentTime` scrubbing are video-only. Wiring any of these to Ruffle's API is deferred; initially we rely on Ruffle's built-in on-canvas controls.
+- **LZMA (`ZWS`) support.** Rejected for now with an unimplemented error. Could be supported later by bundling a custom LZMA decompressor to inflate the header.
+- **Progressive/streamed SWF loading.** Ruffle loads the whole SWF into memory (fine for typical Flash games). Streaming is not needed today.
 
-1. **Compressed SWF (`CWS`/`ZWS`).** `FWS` and `CWS` (zlib) are readable with Deno's `DecompressionStream`. `ZWS` (LZMA) has no built-in Deno decompressor. Options: (a) bundle a small LZMA decoder, (b) reject `ZWS` with a clear error and require the uploader to recompress/decompress, or (c) make `width`/`height` optional for FLASH and fall back to the supplied thumbnail's dimensions when the header can't be read. Which do we want?
-2. **Duration/framerate semantics.** Many SWFs loop forever or are event-driven; `framecount`/`framerate` from the header rarely correspond to a real "length." We propose `duration = 0`, `animated = true`, and storing header `framerate`/`framecount` purely as metadata. Is that acceptable, or should Flash be non-`animated` (which would exclude it from the "Animated" filter)?
-3. **Width/height when unknown.** If we cannot parse the stage size, do we (a) store the primary thumbnail's dimensions, (b) allow `NULL` (requires the migration to make width/height nullable for FLASH and web grid aspect-ratio code to tolerate it), or (c) reject the file?
-4. **`audio` flag.** We propose `audio: false` because SWF audio is internal to the emulator and not introspected. Acceptable, or should we attempt detection?
+---
 
-### Thumbnails
+## Possible Issues / Risks
 
-5. **Required vs optional at ingest.** `create` can require `--thumbnail`, but `discover`/`ingest` have no way to supply per-file thumbnails, so bulk-ingesting a directory of `.swf` files would fail the "thumbnails required" rule. Options: allow FLASH with **zero** thumbnails (list view then shows a generic placeholder), add a plugin/receiver hook to supply thumbnails during ingest, or a naming convention (e.g. `game.swf` + `game.swf.png` sidecar auto-detected). Preference?
-6. **Thumbnail count & `media_timestamp`.** We assign synthetic timestamps `0,1,2,…` to supplied thumbnails. Since Flash has no timeline these are meaningless but satisfy ordering invariants and preview selection. Is a synthetic sequence fine, or should supplied thumbnails carry explicit ordering metadata?
-7. **`reload` behavior.** `media.reload` regenerates thumbnails via FFmpeg. For FLASH there's nothing to regenerate — should `reload` be a no-op for Flash, preserve existing supplied thumbnails, or accept new supplied thumbnails?
-
-### Web / Ruffle
-
-8. **WASM asset delivery in production.** The custom Deno adapter serves only `/_app/*` + `/favicon.png`. Confirming that Ruffle's `.wasm` is emitted into the hashed `_app` pipeline (or extending the adapter to serve a `static/ruffle/` dir) is the biggest integration risk. Which delivery mechanism does the team prefer?
-9. **Ruffle version pinning & bundling.** Ruffle is pre-1.0 and updates frequently. Pin a specific `@ruffle-rs/ruffle` release and self-host (no CDN) for offline/local-first use? 
-10. **Security / sandboxing.** SWF content is untrusted. Ruffle runs in-page WASM (no native Flash Player), which is far safer than the old plugin, but we should confirm CSP and that Ruffle can't reach Forager's RPC endpoints. Any CSP headers to add?
-11. **Keybind / playback integration.** Forager's `PlayPauseMedia`, filmstrip, and `currentTime` scrubbing are video-only. Do we want any of these wired to Ruffle's API, or rely solely on Ruffle's built-in controls initially?
-12. **Content Length / range.** Large SWFs load fully into Ruffle. Fine for typical Flash games (a few MB), but very large files have no progressive/streamed loading. Acceptable?
-
-### Cross-cutting
-
-13. **Seed migration parity.** Do we also update `seed_migration.ts`'s constraint list so fresh installs match post-v12 state, or keep the seed frozen and rely solely on the migration chain?
-14. **Series containing Flash.** A media series can mix types. Flash inside a series should "just work" via the same viewer branch — worth an explicit test, but any concerns with series thumbnails/preview for Flash items?
-15. **Sample SWF licensing.** The committed test fixture must be freely licensed (or hand-generated). Prefer generating a tiny SWF programmatically at build/test time, or committing a known public-domain sample?
+- **Ruffle WASM delivery is the biggest integration risk.** The custom Deno adapter and its runtime asset-serving/`#check_asset_dir_contents` invariant must be updated correctly for the WASM to load in both dev and the compiled binary. This needs end-to-end verification via `deno task compile`.
+- **Ruffle version churn.** Pinning + self-hosting mitigates this; upgrades are deliberate.
+- **Untrusted content.** SWFs are untrusted. Ruffle is in-page WASM (far safer than the legacy plugin); `allowNetworking: 'none'` + local byte-loading prevents network access from Flash content.
