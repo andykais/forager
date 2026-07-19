@@ -16,7 +16,7 @@ The work spans:
 
 SWF cannot flow through the existing FFprobe path (`FileProcessor.get_info()`) — FFmpeg has no usable SWF demuxer, and it cannot rasterize a SWF stage for thumbnails. Instead:
 
-- **Metadata** is read directly from the SWF file header in pure TypeScript: stage `width`/`height` (from the `RECT`, twips → px) and `framerate` (8.8 fixed-point). These are stored on the `media_file` row. Flash rows are `animated = false`, `audio = false`, `duration = 0`, `framecount = 0`; `framerate` is retained as informational metadata.
+- **Metadata** is read directly from the SWF file header in pure TypeScript: stage `width`/`height` (from the `RECT`, twips → px), `framerate` (8.8 fixed-point), and `framecount` (the `FrameCount` UI16). These are stored on the `media_file` row. Flash rows are `animated = false`, `audio = false`, `duration = 0`; `framerate` and `framecount` are retained as informational metadata. (Ruffle's demo surfaces additional fields — SWF version, target Flash Player version, ActionScript 3 flag, background color, uncompressed length — which are deferred; see [Future Considerations](#future-considerations).)
 - **Thumbnails** are supplied by the caller at creation (typically 1–2 images). When none are supplied, a simple default placeholder is generated at the SWF's aspect ratio (analogous to audio waveform thumbnails), so bulk `discover`/`ingest` of `.swf` files always succeeds.
 
 ---
@@ -87,7 +87,7 @@ throw new errors.UnsupportedCodecError('LZMA-compressed SWF (ZWS) is not support
 ```
 
 - for `CWS`, inflates the prefix via `DecompressionStream('deflate')` (only the header bytes are needed);
-- parses the `RECT` frame size (twips → px) → `width`/`height`, and the 8.8 fixed-point frame rate → `framerate`.
+- parses the `RECT` frame size (twips → px) → `width`/`height`, the 8.8 fixed-point frame rate → `framerate`, and the `FrameCount` UI16 → `framecount` (all in the fixed header, no tag parsing required).
 
 ### Modified file: `packages/core/src/lib/file_processor.ts`
 
@@ -101,8 +101,8 @@ interface FlashFileInfo extends FileInfoBase {
   animated: false
   audio: false
   duration: 0
-  framerate: number   // from SWF header, stored as metadata
-  framecount: 0
+  framerate: number    // from SWF header, stored as metadata
+  framecount: number   // from SWF header FrameCount, stored as metadata
 }
 ```
 
@@ -228,9 +228,9 @@ const MEDIA_TYPE_TO_CORE = { image: 'IMAGE', video: 'VIDEO', audio: 'AUDIO', fla
 
 ### New fixtures: `lib/test/resources/`
 
-- A committed **public-domain** SWF, e.g. `sample_flash.swf` (uncompressed `FWS`, known frame size/rate so header-parsing assertions are deterministic).
-- One or two thumbnail images (e.g. `sample_flash.thumb.png`) to exercise the 1–2 supplied-thumbnail case.
-- Optionally a `CWS` (zlib) variant to test decompression.
+- Ruffle's own demo animation, `logo-anim.swf`, committed from [`ruffle-rs/ruffle`](https://github.com/ruffle-rs/ruffle/blob/master/web/packages/demo/public/logo-anim.swf) (Ruffle is MIT/Apache-2.0). Header-parsing tests assert its known `width`/`height`/`framerate`/`framecount`. If this file is `CWS`, it also exercises the zlib decompression path.
+- One or two thumbnail images (e.g. `logo-anim.thumb.png`) to exercise the 1–2 supplied-thumbnail case.
+- Optionally a minimal uncompressed `FWS` fixture for isolated header-parse coverage.
 
 ### Modified file: `lib/test/lib/util.ts`
 
@@ -238,7 +238,7 @@ Register the new resources in `resource_file_mapper([...])` (and a thumbnail map
 
 ### Core tests: `packages/core/test/media.test.ts` (and/or new `flash.test.ts`)
 
-- **Create with supplied thumbnails** → `media_type: 'FLASH'`, `codec: 'swf'`, parsed `width`/`height`/`framerate`, `animated: false`, `audio: false`, `duration: 0`, `framecount: 0`; `media_thumbnail` rows are the supplied images with monotonic timestamps.
+- **Create with supplied thumbnails** → `media_type: 'FLASH'`, `codec: 'swf'`, parsed `width`/`height`/`framerate`/`framecount` (matching `logo-anim.swf`'s known values), `animated: false`, `audio: false`, `duration: 0`; `media_thumbnail` rows are the supplied images with monotonic timestamps.
 - **Create without thumbnails** → a single placeholder thumbnail at the SWF aspect ratio.
 - **Search** → `{ media_type: 'FLASH' }` returns only Flash; `{ animated: true }` excludes Flash.
 - **`reload` with thumbnail overrides** → replaces thumbnails.
@@ -263,9 +263,9 @@ Verify Ruffle loads/plays the sample SWF in `/browse`, the list tile shows the t
 
 | File | Description |
 |------|-------------|
-| `packages/core/src/lib/swf_header.ts` | Pure-TS SWF header parser (signature, frame size, rate; rejects LZMA) |
+| `packages/core/src/lib/swf_header.ts` | Pure-TS SWF header parser (signature, frame size, rate, count; rejects LZMA) |
 | `packages/core/src/db/migrations/migration_v12.ts` | Rebuild `media_file` to allow `FLASH` and relax width/height/framerate/framecount CHECKs |
-| `lib/test/resources/sample_flash.swf` (+ thumbnail image(s)) | Public-domain test fixtures |
+| `lib/test/resources/logo-anim.swf` (+ thumbnail image(s)) | Ruffle demo SWF fixture (from ruffle-rs/ruffle) + thumbnails |
 | `packages/web/static/wasm/ruffle/*` | Pinned, self-hosted Ruffle distribution |
 | `packages/web/src/routes/browse/components/RufflePlayer.svelte` *(or a `use:ruffle_player` action)* | Mounts/tears down the Ruffle player |
 | `packages/core/test/flash.test.ts` *(optional; may live in `media.test.ts`)* | Flash ingestion/search tests |
@@ -313,6 +313,9 @@ Verify Ruffle loads/plays the sample SWF in `/browse`, the list tile shows the t
 
 ## Future Considerations
 
+- **Additional SWF metadata.** Ruffle's demo (https://ruffle.rs/demo/) surfaces more fields than we extract initially. These could be captured later and stored on `media_reference.metadata` (or dedicated columns). Some are trivially in the fixed header; others require walking SWF tags:
+  - *Header-derivable:* SWF version (byte 3), uncompressed length (`FileLength` UI32), and target Flash Player version (a mapping from SWF version).
+  - *Requires tag parsing:* ActionScript 3 flag (`FileAttributes` tag), background color (`SetBackgroundColor` tag).
 - **Keybind / playback integration.** Forager's `PlayPauseMedia`, filmstrip, and `currentTime` scrubbing are video-only. Wiring any of these to Ruffle's API is deferred; initially we rely on Ruffle's built-in on-canvas controls.
 - **LZMA (`ZWS`) support.** Rejected for now with an unimplemented error. Could be supported later by bundling a custom LZMA decompressor to inflate the header.
 - **Progressive/streamed SWF loading.** Ruffle loads the whole SWF into memory (fine for typical Flash games). Streaming is not needed today.
