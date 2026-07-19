@@ -9,6 +9,7 @@ import type { BaseController } from '$lib/base_controller.ts'
 interface MutableSettings {
   'ui.media_list.thumbnail_size': Config['web']['ui_defaults']['media_list']['thumbnail_size']
   'ui.media_list.thumbnail_shape': Config['web']['ui_defaults']['media_list']['thumbnail_shape']
+  'ui.media_view.fit.mode': Config['web']['ui_defaults']['media_view']['fit']['mode']
   'ui.search.advanced_filters.hide': Config['web']['ui_defaults']['search']['advanced_filters']['hide']
   'ui.sidebar.hide': Config['web']['ui_defaults']['sidebar']['hide']
 }
@@ -46,6 +47,10 @@ export class SettingsRune extends Rune {
         this.ui.media_list.thumbnail_shape = update.value
         break
       }
+      case 'ui.media_view.fit.mode': {
+        this.ui.media_view.fit.mode = update.value
+        break
+      }
       case 'ui.search.advanced_filters.hide': {
         this.ui.search.advanced_filters.hide = update.value
         break
@@ -75,6 +80,9 @@ export class SettingsRune extends Rune {
       }
       case 'ui.media_list.thumbnail_shape': {
         return this.ui.media_list.thumbnail_shape as MutableSettings[K]
+      }
+      case 'ui.media_view.fit.mode': {
+        return this.ui.media_view.fit.mode as MutableSettings[K]
       }
       case 'ui.search.advanced_filters.hide': {
         return this.ui.search.advanced_filters.hide as MutableSettings[K]
