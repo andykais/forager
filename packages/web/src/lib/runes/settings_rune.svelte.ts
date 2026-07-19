@@ -2,6 +2,10 @@ import type { Config } from '$lib/server/config.ts'
 import { Rune } from './rune';
 import type { BaseController } from '$lib/base_controller.ts'
 
+
+// Note that this file in general is weird. Svelte runes specifically need static accessors and static getters, so we cannot just have generic key/value accessors.
+// I landed on this design, where all the accessors are explicit. It looks unnecessary, but in practice its still ergonomic to use outside this module, and updating it is very straight forward.
+
 interface MutableSettings {
   'ui.media_list.thumbnail_size': Config['web']['ui_defaults']['media_list']['thumbnail_size']
   'ui.media_list.thumbnail_shape': Config['web']['ui_defaults']['media_list']['thumbnail_shape']
@@ -31,9 +35,6 @@ export class SettingsRune extends Rune {
     return this.#state.web.ui_defaults
   }
 
-  // NOTE: TypeScript does not narrow `value`/return types against the switched
-  // `path` because the generic `K` stays a union inside the body, so each branch
-  // asserts the concrete setting type it operates on.
   public set<K extends keyof MutableSettings>(path: K, value: MutableSettings[K]) {
     const update = {path, value} as MutableSettingsUpdate
     switch(update.path) {
