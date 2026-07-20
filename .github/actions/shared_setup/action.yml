@@ -1,5 +1,3 @@
-# .github/actions/my-shared-steps/action.yml
-#
 name: 'Shared Steps'
 description: 'Runs checkout, setup, and custom logs'
 
@@ -21,15 +19,15 @@ runs:
     - name: Setup Deno
       uses: denoland/setup-deno@v2
       with:
-        deno-version: ${{ inputs.DENO_VERSION }}
+        deno-version: "${{ inputs.DENO_VERSION }}"
 
     - name: Setup FFmpeg
       uses: AnimMouse/setup-ffmpeg@v1
       with:
-        version: ${{ inputs.FFMPEG_VERSION }}
+        version: "${{ inputs.FFMPEG_VERSION }}"
 
     - name: Cache Deno dependencies 
       uses: actions/cache@v4
       with:
         path: ${{ inputs.DENO_DIR }}
-        key: ${{ 'deno:' + inputs.DENO_VERSION + ':ffmpeg:' inputs.FFMPEG_VERSION + ':deno.lock:' hashFiles('deno.lock') }}
+        key: "deno:${{ inputs.DENO_VERSION }}:deno.lock:${{ hashFiles('deno.lock') }}"
