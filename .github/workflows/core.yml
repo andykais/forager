@@ -19,8 +19,7 @@ jobs:
   test:
     strategy:
       matrix:
-        # os: [ubuntu-latest, macos-15-intel, windows-latest]
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, macos-15-intel, windows-latest]
 
     runs-on: ${{ matrix.os }}
 
