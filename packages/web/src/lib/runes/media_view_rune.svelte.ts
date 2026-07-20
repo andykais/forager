@@ -15,6 +15,12 @@ export class MediaViewRune extends Rune {
   media_type!: MediaResponse['media_type'] | 'grouped'
   state = $state<State>()
   current_view: model_types.View
+  /**
+   * Populated for results returned from `forager.series.search`, which carry a
+   * `series_index`. Set type-safely by {@linkcode MediaListRune} rather than
+   * cast, so the field is only present where core guarantees it.
+   */
+  series_index: number | undefined = undefined
 
   protected constructor(client: BaseController['client'], media_response: MediaResponse) {
     super(client)

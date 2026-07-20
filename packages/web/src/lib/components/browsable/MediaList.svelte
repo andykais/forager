@@ -1,9 +1,17 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte'
   import Scroller from '$lib/components/Scroller.svelte'
   import SearchResults from './SearchResults.svelte'
-  import type { BrowseController } from '../controller.ts'
+  import type { BrowsableController } from '$lib/base_controller.ts'
+  import type { MediaViewRune } from '$lib/runes/index.ts'
 
-  let {controller}: {controller: BrowseController} = $props()
+  let {
+    controller,
+    tile_footer,
+  }: {
+    controller: BrowsableController
+    tile_footer?: Snippet<[MediaViewRune]>
+  } = $props()
   let media_list_element: HTMLElement
 
   controller.keybinds.component_listen({
@@ -54,6 +62,6 @@
     ]}
     style="height: {controller.runes.dimensions.heights.media_list}px"
   >
-    <SearchResults {controller} />
+    <SearchResults {controller} {tile_footer} />
   </Scroller>
 </div>

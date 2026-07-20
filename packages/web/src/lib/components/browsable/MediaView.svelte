@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { BrowseController } from '../controller.ts'
+  import type { BrowsableController } from '$lib/base_controller.ts'
 
   interface Props {
-    controller: BrowseController
+    controller: BrowsableController
   }
 
   // TODO wire this into settings
@@ -88,7 +88,7 @@
       update(_video_source_url: string) {
         animation_progress = 0
         node.load()
-      }
+      },
     }
   }
 

@@ -6,6 +6,7 @@ import { MediaViewRune } from '.'
 type Result =
   | ReturnType<Forager['media']['search']>
   | ReturnType<Forager['media']['group']>
+  | ReturnType<Forager['series']['search']>
 
 interface SearchInput {
   type: 'media'
@@ -19,10 +20,15 @@ interface FilesystemInput {
   type: 'filesystem'
   params: {}
 }
+interface SeriesSearchInput {
+  type: 'series_search'
+  params: Parameters<Forager['series']['search']>[0]
+}
 export type Input =
   | SearchInput
   | GroupByInput
   | FilesystemInput
+  | SeriesSearchInput
 
 interface MediaListState {
   loading: boolean
@@ -31,7 +37,7 @@ interface MediaListState {
 }
 
 export class MediaListRune extends Rune {
-  #saved_params_type: 'media' | 'group_by' = 'media'
+  #saved_params_type: Input['type'] = 'media'
   #saved_params: {} | undefined
   #prev_query_hash: string = ''
   #fetch_count = 0
@@ -47,7 +53,7 @@ export class MediaListRune extends Rune {
 
   get content(): Result | null { return this.#state.content }
 
-  get results(): Result['results'] { return this.#state.results }
+  get results(): MediaViewRune[] { return this.#state.results }
 
   get total() { return this.#state.content?.total ?? 0 }
 
@@ -81,19 +87,27 @@ export class MediaListRune extends Rune {
     const params_type = params?.type ?? this.#saved_params_type
     this.#saved_params_type = params_type
     let content: Result
+    let results: MediaViewRune[]
     if (params_type === 'media') {
       content = await this.client.forager.media.search(fetch_params)
+      results = content.results.map(result => MediaViewRune.create(this.client, result, fetch_params))
     }
     else if (params_type === 'group_by') {
       fetch_params.limit = fetch_params.limit ?? 30
       content = await this.client.forager.media.group(fetch_params)
+      results = content.results.map(result => MediaViewRune.create(this.client, result, fetch_params))
+    } else if (params_type === 'series_search') {
+      // series responses carry a typed `series_index`; thread it onto the rune
+      // rather than casting when it is read back out.
+      content = await this.client.forager.series.search(fetch_params)
+      results = content.results.map(result => {
+        const rune = MediaViewRune.create(this.client, result, fetch_params)
+        rune.series_index = result.series_index
+        return rune
+      })
     } else {
       throw new Error('unimplemented')
     }
-
-    const results = content.results.map(result => {
-      return MediaViewRune.create(this.client, result, fetch_params)
-    })
 
     this.#cursor = content.cursor
     if (!this.#cursor) {

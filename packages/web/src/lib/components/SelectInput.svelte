@@ -5,9 +5,9 @@
   }
   interface Props {
     label: string
-    options: SelectOption
+    options: SelectOption[]
     value: string
-    onchange: () => void | undefined
+    onchange: (event?: Event) => unknown
   }
   let {
     label,

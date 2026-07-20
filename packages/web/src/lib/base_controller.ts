@@ -2,7 +2,17 @@ import * as svelte from 'svelte'
 import type {ApiSpec} from '$lib/api.ts'
 import * as rpc from '@andykais/ts-rpc/client.ts'
 import type { Config } from '$lib/server/config.ts'
-import {create_focuser, SettingsRune} from '$lib/runes/index.ts'
+import {
+  create_focuser,
+  SettingsRune,
+  MediaListRune,
+  MediaSelectionsRune,
+  type DimensionsRune,
+} from '$lib/runes/index.ts'
+import type {
+  BrowsableQueryParams,
+  BrowsableSearchParams,
+} from '$lib/runes/browsable_queryparams.svelte.ts'
 import {Keybinds} from '$lib/keybinds.ts'
 
 
@@ -30,4 +40,25 @@ abstract class BaseController {
   abstract handlers: {}
 }
 
-export { BaseController }
+
+/**
+ * Shared controller shape used by the browsable routes (`/browse`,
+ * `/series/<id>`). Route-specific queryparams runes extend
+ * {@linkcode BrowsableSearchParams} with their own fields, but the core runes
+ * listed here are required so that the shared browsable components can operate
+ * uniformly across routes.
+ */
+abstract class BrowsableController extends BaseController {
+  abstract runes: {
+    media_list: MediaListRune
+    focus: ReturnType<typeof create_focuser>
+    dimensions: DimensionsRune
+    settings: SettingsRune
+    media_selections: MediaSelectionsRune
+    queryparams: BrowsableQueryParams<BrowsableSearchParams>
+  }
+
+  handlers = {}
+}
+
+export { BaseController, BrowsableController }

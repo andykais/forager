@@ -1,3 +1,5 @@
+export type DimensionsRune = ReturnType<typeof create_dimensional_rune>
+
 export function create_dimensional_rune() {
   let heights = $state({
     screen: 0,
@@ -14,6 +16,6 @@ export function create_dimensional_rune() {
   return {
     get heights() {
       return heights
-    }
+    },
   }
 }

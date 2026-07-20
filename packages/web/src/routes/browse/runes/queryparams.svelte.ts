@@ -1,43 +1,18 @@
 import type { inputs } from '@forager/core'
 import type { MediaListRune } from '$lib/runes/index.ts'
 import type { BaseController } from '$lib/base_controller.ts'
-import * as parsers from '$lib/parsers.ts'
-import { onMount } from 'svelte'
-import { pushState } from '$app/navigation'
-import { Rune } from '$lib/runes/rune.ts'
+import {
+  BrowsableQueryParams,
+  type BrowsableSearchParams,
+  is_core_media_type,
+  MEDIA_TYPE_TO_CORE,
+} from '$lib/runes/browsable_queryparams.svelte.ts'
 
-type MediaTypeFilter = 'all' | 'animated' | 'image' | 'video' | 'audio'
+type SortBy = inputs.PaginatedSearch['sort_by']
 
-const MEDIA_TYPE_FILTER_VALUES = new Set<MediaTypeFilter>([
-  'all',
-  'animated',
-  'image',
-  'video',
-  'audio',
-])
-
-// maps the lowercase URL/UI value to the uppercase core enum value
-const MEDIA_TYPE_TO_CORE = {
-  image: 'IMAGE',
-  video: 'VIDEO',
-  audio: 'AUDIO',
-} as const satisfies Record<'image' | 'video' | 'audio', NonNullable<inputs.PaginatedSearch['query']>['media_type']>
-
-function is_core_media_type(v: MediaTypeFilter): v is keyof typeof MEDIA_TYPE_TO_CORE {
-  return v in MEDIA_TYPE_TO_CORE
-}
-
-interface SearchParams {
-  search_string: string
-  filepath: string | undefined
-  sort: inputs.PaginatedSearch['sort_by']
-  unread_only: boolean
+interface SearchParams extends BrowsableSearchParams<SortBy> {
   search_mode: 'media' | 'group_by' | 'filesystem'
   group_by: string | undefined
-  stars: number | undefined
-  stars_equality: 'gte' | 'eq' | undefined
-  order: 'desc' | 'asc'
-  media_type: MediaTypeFilter
 }
 
 const DEFAULTS: SearchParams = {
@@ -60,122 +35,28 @@ const URL_PARAM_MAP = {
   search_mode: 'mode',
   media_type: 'type',
 } as const satisfies Partial<Record<keyof SearchParams, string>>
-type UrlParamMap = typeof URL_PARAM_MAP
-
-type SearchParamsReversed = { [K in keyof UrlParamMap as UrlParamMap[K]]: K}
-const URL_PARAM_MAP_REVERSED = Object.fromEntries(
-  Object.entries(URL_PARAM_MAP).map(([key, val]) => [val, key])
-) as SearchParamsReversed
 
 /**
- * Manages browser URL query parameters and syncs them with search state.
- *
- * Two-state model:
- * - `current`: Committed params (matches URL, used for pagination)
- * - `draft`: Staging area for form edits (before submission)
- *
- * When URL changes externally (back/forward), draft resets to match current.
+ * Manages browser URL query parameters and syncs them with search state for the
+ * `/browse` route. Extends the shared browsable manager with the browse-only
+ * search-mode / group-by concepts.
  */
-export class QueryParamsManager extends Rune {
-  public DEFAULTS = DEFAULTS
-
-  /** Committed params (matches URL, used for pagination/search) */
-  public current: SearchParams = $state({ ...DEFAULTS })
-
-  /** Draft params (form staging, can differ from current) */
-  public draft: SearchParams = $state({ ...DEFAULTS })
-
-  public current_serialized: string = '?'
-
-  #media_list: MediaListRune
+export class QueryParamsManager extends BrowsableQueryParams<SearchParams> {
+  get DEFAULTS(): SearchParams { return DEFAULTS }
+  get URL_PARAM_MAP() { return URL_PARAM_MAP }
 
   constructor(client: BaseController['client'], media_list: MediaListRune) {
-    super(client)
-    this.#media_list = media_list
-
-    // Initialize from URL on mount
-    onMount(async () => {
-      const params = this.#parse_url(new URL(window.location.toString()))
-      this.current = params
-      this.draft = { ...params }  // Initialize draft
-      await this.#execute_search(params)
-
-      // Listen for browser back/forward
-      window.addEventListener('popstate', async () => {
-        const params = this.#parse_url(new URL(window.location.toString()))
-        this.current = params
-        this.draft = { ...params }  // Reset draft to match URL
-        await this.#execute_search(params)
-      })
-    })
+    super(client, media_list)
   }
 
-  /**
-   * Parse URL into SearchParams
-   */
-  #parse_url(url: URL): SearchParams {
-    const params: SearchParams = { ...DEFAULTS }
-    const search = url.searchParams
-
-    this.current_serialized = url.search
-
-    // Parse each param with type coercion
-    if (search) {
-      for (const [key, val] of search.entries()) {
-        const params_key: keyof SearchParams = URL_PARAM_MAP_REVERSED[key] ?? key
-
-        if (params_key === 'search_string') {
-          params.search_string = val.replaceAll(',', ' ')
-        } else if (params_key === 'stars') {
-          params.stars = parseInt(val)
-        } else if (params_key === 'filepath') {
-          params.filepath = decodeURIComponent(val)
-        } else if (params_key === 'media_type') {
-          if (MEDIA_TYPE_FILTER_VALUES.has(val as MediaTypeFilter)) {
-            params.media_type = val as MediaTypeFilter
-          }
-        } else {
-          // @ts-ignore - dynamic assignment
-          params[params_key] = val
-        }
-      }
-
-      // Infer search_mode from group_by presence
-      if (search.has('group_by')) {
-        params.search_mode = 'group_by'
-      }
+  protected override post_parse(params: SearchParams, url: URL): void {
+    // Infer search_mode from group_by presence
+    if (url.searchParams.has('group_by')) {
+      params.search_mode = 'group_by'
     }
-
-    return params
   }
 
-  /**
-   * Serialize SearchParams to URL string (for SearchLink components)
-   */
-  public serialize(params: SearchParams): string {
-    const url_params = new Map<string, string>()
-
-    // Only include non-default values
-    for (const [key, value] of Object.entries(params)) {
-      if (value !== DEFAULTS[key as keyof SearchParams] && value !== undefined) {
-        const param_name = URL_PARAM_MAP[key as keyof SearchParams] ?? key
-
-        // Special encoding for tags (preserve : and ,)
-        if (key === 'search_string') {
-          const encoded = encodeURIComponent(value.replaceAll(/\s/g, ','))
-            .replaceAll('%3A', ':')
-            .replaceAll('%2C', ',')
-          url_params.set(param_name, encoded)
-        } else if (key === 'filepath') {
-          if (value) {
-            url_params.set(param_name, encodeURIComponent(value))
-          }
-        } else {
-          url_params.set(param_name, String(value))
-        }
-      }
-    }
-
+  protected override post_serialize(url_params: Map<string, string>): void {
     if (url_params.get('mode') === 'group_by' && !url_params.has('group_by')) {
       url_params.set('group_by', '')
     }
@@ -184,68 +65,32 @@ export class QueryParamsManager extends Rune {
     if (['group_by', 'media'].includes(url_params.get('mode') ?? '')) {
       url_params.delete('mode')
     }
-
-    const query_string = Array.from(url_params.entries())
-      .map(([key, val]) => `${key}=${val}`)
-      .join('&')
-
-    return query_string ? '?' + query_string : null
   }
 
-  /**
-   * Update URL without executing search
-   */
-  #write_url(params: SearchParams): void {
-    const serialized = this.serialize(params)
-
-    if (this.current_serialized !== serialized) {
-      this.current_serialized = serialized
-      this.current = { ...params }
-      if (serialized) {
-        pushState(serialized, {})
-      } else {
-        // when we have empty query params, we do this to drop the "?" at the end of the url
-        pushState(window.location.pathname, {})
+  protected override merge_param(params: SearchParams, key: keyof SearchParams, val: unknown): void {
+    if (key === 'search_mode') {
+      params.search_mode = val as SearchParams['search_mode']
+      // Clear group_by if switching away from group_by mode
+      if (val !== 'group_by') {
+        params.group_by = undefined
       }
+    } else {
+      super.merge_param(params, key, val)
     }
   }
 
-  /**
-   * Execute search based on params
-   */
-  async #execute_search(params: SearchParams): Promise<void> {
-    this.#media_list.clear()
+  protected async execute_search(params: SearchParams): Promise<void> {
+    this.media_list.clear()
 
-    const tags = params.search_string.split(' ').filter((t) => t.length > 0)
+    const tags = this.parse_tags(params.search_string)
     const query: inputs.PaginatedSearch['query'] = {
       tags,
       filepath: params.filepath,
     }
+    this.apply_common_filters(query, params)
 
-    // Handle boolean and numeric filters
-    if (params.unread_only) {
-      if (params.unread_only === 'true' || params.unread_only === true) {
-        query.unread = true
-      }
-    }
-
-    if (params.stars !== undefined) {
-      query.stars = parseInt(String(params.stars))
-      query.stars_equality = params.stars_equality ?? 'gte'
-    }
-
-    // Handle media type filtering. The dropdown is mutually exclusive in the UI:
-    // 'animated' maps to query.animated, while 'image'/'video'/'audio' map to
-    // the canonical uppercase query.media_type filter on core.
-    if (params.media_type === 'animated') {
-      query.animated = true
-    } else if (params.media_type !== 'all') {
-      query.media_type = MEDIA_TYPE_TO_CORE[params.media_type]
-    }
-
-    // Execute appropriate search
     if (params.search_mode === 'media') {
-      await this.#media_list.paginate({
+      await this.media_list.paginate({
         type: 'media',
         params: {
           query,
@@ -254,7 +99,7 @@ export class QueryParamsManager extends Rune {
         },
       })
     } else if (params.search_mode === 'group_by') {
-      await this.#media_list.paginate({
+      await this.media_list.paginate({
         type: 'group_by',
         params: {
           group_by: {
@@ -268,88 +113,9 @@ export class QueryParamsManager extends Rune {
     }
   }
 
-  /**
-   * Submit draft params: update URL and execute search
-   */
-  public async submit(): Promise<void> {
-    this.#write_url(this.draft)
-    await this.#execute_search(this.draft)
-  }
-
-  /**
-   * Navigate to new params (updates draft, then submits)
-   */
-  public async goto(params: SearchParams): Promise<void> {
-    this.draft = { ...params }
-    await this.submit()
-  }
-
-  /**
-   * Merge partial params with current params
-   * Supports URL param names (e.g., 'tags') or internal names (e.g., 'search_string')
-   */
-  public merge(partial_params: Partial<Record<string, any>>): SearchParams {
-    const params = { ...this.current }
-
-    for (const [key, val] of Object.entries(partial_params)) {
-      const params_key: keyof SearchParams = URL_PARAM_MAP_REVERSED[key] ?? key
-
-      if (params_key === 'search_string') {
-        // Merge tags instead of replacing
-        const search_strings = new Set(params.search_string.split(/\s+/))
-        search_strings.add(val)
-        params.search_string = [...search_strings].join(' ').trim()
-      } else if (params_key === 'search_mode') {
-        params.search_mode = val
-        // Clear group_by if switching away from group_by mode
-        if (val !== 'group_by') {
-          params.group_by = undefined
-        }
-      } else {
-        // @ts-ignore - dynamic assignment
-        params[params_key] = val
-      }
-    }
-
-    return params
-  }
-
-  /**
-   * Extend current params with a tag
-   * Supports special 'group_by_tag' key for group-by searches
-   */
-  public extend(key: 'tag' | 'group_by_tag', value: string): SearchParams {
-    const params = { ...this.current }
-
-    // group_by_tag means we want to do a normal search including the group by tag
-    if (key === 'group_by_tag') {
-      if (params.search_mode !== 'group_by') {
-        throw new Error(
-          'unexpected code path. "group_by_tag" should only be used with search_mode "group_by"'
-        )
-      }
-      value = parsers.Tag.encode({ group: params.group_by, name: value })
-      key = 'tag'
-    }
-
-    if (key === 'tag') {
-      const search_strings = new Set(params.search_string.split(/\s+/))
-      search_strings.add(value)
-      params.search_string = [...search_strings].join(' ').trim()
-      return params
-    } else {
-      throw new Error('unimplemented')
-    }
-  }
-
-  /**
-   * Get contextual query for other components (e.g., tag autocomplete)
-   */
   public get contextual_query(): inputs.PaginatedSearch['query'] {
-    const current_tags = this.current.search_string.split(/\s+/).filter((t) => t.length > 0)
-    const draft_tags = new Set(
-      this.draft.search_string.split(/\s+/).filter((t) => t.length > 0),
-    )
+    const current_tags = this.parse_tags(this.current.search_string)
+    const draft_tags = new Set(this.parse_tags(this.draft.search_string))
     // Keep context in sync when tags are deleted from the draft input,
     // while avoiding unsaved/incomplete draft tags that may not exist yet.
     const tags = current_tags.filter((tag) => draft_tags.has(tag))
@@ -363,10 +129,7 @@ export class QueryParamsManager extends Rune {
     }
   }
 
-  /**
-   * Human-readable summary of current search
-   */
-  public get human_readable_summary(): string {
-    return this.current.search_string || 'All media'
+  protected override get empty_search_summary(): string {
+    return 'All media'
   }
 }
