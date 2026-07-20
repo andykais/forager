@@ -24,7 +24,7 @@ runs:
     - name: Setup FFmpeg
       uses: AnimMouse/setup-ffmpeg@v1
       with:
-        version: '8.1'
+        version: ${{ env.FFMPEG_VERSION }}
 
     - name: Cache Deno dependencies 
       uses: actions/cache@v4
