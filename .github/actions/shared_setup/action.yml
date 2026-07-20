@@ -34,3 +34,4 @@ runs:
 
     - name: Install deno dependencies
       run: deno install
+      shell: bash
