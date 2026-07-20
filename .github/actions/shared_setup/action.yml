@@ -24,10 +24,10 @@ runs:
     - name: Setup FFmpeg
       uses: AnimMouse/setup-ffmpeg@v1
       with:
-        version: "${{ env.FFMPEG_VERSION }}"
+        version: ${{ env.FFMPEG_VERSION }}
 
     - name: Cache Deno dependencies 
       uses: actions/cache@v4
       with:
         path: ${{ env.DENO_DIR }}
-        key: "${{ hashFiles(env.DENO_LOCKFILE) }}"
+        key: ${{ hashFiles(env.DENO_LOCKFILE) }}
