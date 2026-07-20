@@ -1,4 +1,5 @@
-name: CLI CI
+name: "CLI CI"
+description: 'Runs @forager/cli tests'
 
 
 permissions:

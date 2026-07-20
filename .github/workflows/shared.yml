@@ -1,0 +1,32 @@
+# .github/actions/my-shared-steps/action.yml
+name: 'Shared Steps'
+description: 'Runs checkout, setup, and custom logs'
+
+env:
+  DENO_DIR: deno_dependency_cache
+  DENO_VERSION: 2.9
+  DENO_LOCKFILE: ${{ github.workspace }}/deno.lock
+  FFMPEG_VERSION: 8.1
+
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup Deno
+      uses: denoland/setup-deno@v2
+      with:
+        deno-version: ${{ env.DENO_VERSION }}
+
+    - name: Setup FFmpeg
+      uses: AnimMouse/setup-ffmpeg@v1
+      with:
+        version: "${{ env.FFMPEG_VERSION }}"
+
+    - name: Cache Deno dependencies 
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.DENO_DIR }}
+        key: ${{ hashFiles(env.DENO_LOCKFILE) }}

@@ -1,4 +1,5 @@
 name: Web CI
+description: "Builds @forager/web"
 
 
 permissions:

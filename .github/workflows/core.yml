@@ -1,4 +1,5 @@
 name: Core CI
+description: "Runs @forager/core tests, publishes to jsr.io on main pushes"
 
 
 permissions:
@@ -26,24 +27,8 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Setup repo
-        uses: actions/checkout@v4
-
-      - name: Setup Deno
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: canary
-
-      - name: Setup FFmpeg
-        uses: AnimMouse/setup-ffmpeg@v1
-        with:
-          version: "8.1"
-
-      - name: Cache Deno dependencies 
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.DENO_DIR }}
-          key: ${{ hashFiles(env.DENO_LOCKFILE) }}
+      - name: setup
+        uses: './.github/workflows/shared.yml'
 
       - name: Lint
         run: deno task lint
