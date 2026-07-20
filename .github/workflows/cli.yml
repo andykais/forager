@@ -4,12 +4,12 @@ description: 'Runs @forager/cli tests'
 
 permissions:
   contents: read
-# on:
-#   push:
-#     branches: ["main"]
-#     tags: ["*"]
-#   pull_request:
-#     branches: ["main"]
+on:
+  push:
+    branches: ["main"]
+    tags: ["*"]
+  pull_request:
+    branches: ["main"]
 
 defaults:
   run:
@@ -38,25 +38,15 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Setup repo
-        uses: actions/checkout@v4
+      - name: checkout repository
+        uses: actions/checkout@v6
 
-      - name: Setup Deno
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: canary
-
-      - name: Setup FFMPEG
-        uses: AnimMouse/setup-ffmpeg@v1
-        with:
-          version: "8.1"
+      - name: setup
+        uses: './.github/actions/shared_setup'
 
       # - name: Lint
       # lint source code & jsr publish requirements. Currently disabled because we should get jsr published before addressing
       #   run: deno lint --ignore=deno_dependency_cache
-
-      - name: "Install dependencies"
-        run: deno install --allow-scripts
 
       - name: "Build @forager/web Dependency"
         run: deno task --cwd packages/web build
@@ -92,8 +82,8 @@ jobs:
       contents: write
 
     steps:
-      - name: Setup repo
-        uses: actions/checkout@v4
+      - name: checkout repository
+        uses: actions/checkout@v6
 
       - name: Download Artifacts (Compiled Binaries)
         uses: actions/download-artifact@v5

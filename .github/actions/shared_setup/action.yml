@@ -14,8 +14,7 @@ runs:
   using: 'composite'
   steps:
     - name: Checkout Code
-      uses: actions/checkout@v6
-
+      uses: actions/checkout@v4
 
     - name: Setup Deno
       uses: denoland/setup-deno@v2
@@ -28,7 +27,10 @@ runs:
         version: "${{ inputs.FFMPEG_VERSION }}"
 
     - name: Cache Deno dependencies 
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: ${{ inputs.DENO_DIR }}
         key: "deno:${{ inputs.DENO_VERSION }}:deno.lock:${{ hashFiles('deno.lock') }}"
+
+    - name: Install deno dependencies
+      run: deno install
