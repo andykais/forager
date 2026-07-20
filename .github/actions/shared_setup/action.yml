@@ -6,7 +6,7 @@ description: 'Runs checkout, setup, and custom logs'
 env:
   DENO_DIR: deno_dependency_cache
   DENO_VERSION: 2.9
-  DENO_LOCKFILE: ${{ github.workspace }}/deno.lock
+  DENO_LOCKFILE: deno.lock
   FFMPEG_VERSION: 8.1
 
 
@@ -30,4 +30,4 @@ runs:
       uses: actions/cache@v4
       with:
         path: ${{ env.DENO_DIR }}
-        key: ${{ hashFiles(env.DENO_LOCKFILE) }}
+        key: "${{ hashFiles(env.DENO_LOCKFILE) }}"
