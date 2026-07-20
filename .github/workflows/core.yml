@@ -26,6 +26,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+
       - name: setup
         uses: './.github/actions/shared_setup'
 
@@ -48,19 +49,10 @@ jobs:
       id-token: write
 
     steps:
-      - name: Setup repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Setup Deno
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: canary
-
-      - name: Cache Deno dependencies 
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.DENO_DIR }}
-          key: ${{ hashFiles(env.DENO_LOCKFILE) }}
+      - name: setup
+        uses: './.github/actions/shared_setup'
 
       - name: Publish package
         run: deno publish --allow-slow-types
