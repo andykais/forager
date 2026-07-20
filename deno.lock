@@ -66,10 +66,13 @@
     "jsr:@std/yaml@^1.0.5": "1.0.9",
     "jsr:@torm/sqlite@^1.9.7": "1.9.7",
     "npm:@deno/vite-plugin@1.0.6": "1.0.6_vite@7.1.8__@types+node@24.2.0__picomatch@4.0.3_@types+node@24.2.0",
+    "npm:@jsr/andykais__ts-rpc@~0.2.2": "0.2.4_@sveltejs+vite-plugin-svelte@6.2.1__svelte@5.39.8___acorn@8.15.0__vite@7.1.8___@types+node@24.2.0___picomatch@4.0.3__@types+node@24.2.0_svelte@5.39.8__acorn@8.15.0_vite@7.1.8__@types+node@24.2.0__picomatch@4.0.3_@types+node@24.2.0",
     "npm:@jsr/andykais__ts-rpc@~0.2.4": "0.2.4_@sveltejs+vite-plugin-svelte@6.2.1__svelte@5.39.8___acorn@8.15.0__vite@7.1.8___@types+node@24.2.0___picomatch@4.0.3__@types+node@24.2.0_svelte@5.39.8__acorn@8.15.0_vite@7.1.8__@types+node@24.2.0__picomatch@4.0.3_@types+node@24.2.0",
+    "npm:@jsr/cliffy__command@1.0.0-rc.8": "1.0.0-rc.8",
     "npm:@jsr/std__datetime@~0.225.3": "0.225.7",
     "npm:@jsr/std__fmt@0.225.6": "0.225.6",
     "npm:@jsr/std__fs@0.229.3": "0.229.3",
+    "npm:@jsr/std__http@0.224.5": "0.224.5",
     "npm:@jsr/std__log@~0.224.6": "0.224.14",
     "npm:@jsr/std__media-types@0.224.0": "0.224.0",
     "npm:@jsr/std__path@1.0.3": "1.0.3",
@@ -539,6 +542,38 @@
       ],
       "tarball": "https://npm.jsr.io/~/11/@jsr/andykais__ts-rpc/0.2.4.tgz"
     },
+    "@jsr/cliffy__command@1.0.0-rc.8": {
+      "integrity": "sha512-ayYncuw/PTIiceKKMEZPyv9Qu39Pt6bNTBariKjZi0th5Je4am6RNC+FSXEAHPJBH+bAY3S0lwaFsEGC9uPEmg==",
+      "dependencies": [
+        "@jsr/cliffy__flags",
+        "@jsr/cliffy__internal",
+        "@jsr/cliffy__table",
+        "@jsr/std__fmt@1.0.10",
+        "@jsr/std__text"
+      ],
+      "tarball": "https://npm.jsr.io/~/11/@jsr/cliffy__command/1.0.0-rc.8.tgz"
+    },
+    "@jsr/cliffy__flags@1.0.0-rc.8": {
+      "integrity": "sha512-gbIPx2XIxkNlAQikraWm4h+C77tHmE8NQhwIX6Qn2rrU32uh/Vg4OXklXvlrkfrcs3wMbOd/SZ9e/wVqM0H8/w==",
+      "dependencies": [
+        "@jsr/std__text"
+      ],
+      "tarball": "https://npm.jsr.io/~/11/@jsr/cliffy__flags/1.0.0-rc.8.tgz"
+    },
+    "@jsr/cliffy__internal@1.0.0-rc.8": {
+      "integrity": "sha512-xKIMr2v5+R5qNw7CWqic2ulhZE3cXPKB40rb5mibsUrtJkC55Ha/3PGgTm1W9SWH1+IqA/FfC2ikpjzCXSKVBw==",
+      "dependencies": [
+        "@jsr/std__fmt@1.0.10"
+      ],
+      "tarball": "https://npm.jsr.io/~/11/@jsr/cliffy__internal/1.0.0-rc.8.tgz"
+    },
+    "@jsr/cliffy__table@1.0.0-rc.8": {
+      "integrity": "sha512-7r94r56TLd17raKyZQHV3/qLngy2Lusuy4rjA/5QMDNM0lDIwZw67lmRMxpyX6+qzAxzRAJ8dtTvFSvGwrSqgg==",
+      "dependencies": [
+        "@jsr/std__fmt@1.0.10"
+      ],
+      "tarball": "https://npm.jsr.io/~/11/@jsr/cliffy__table/1.0.0-rc.8.tgz"
+    },
     "@jsr/oak__commons@0.10.2": {
       "integrity": "sha512-E7aBj8qrfgPiAhmXCTpq/ZhErnlbMwsG6WO2cthuXrwEDl5pNf90nTi6Q/Jjw0ngC/9ElfueXmGEuWydhGYJBQ==",
       "dependencies": [
@@ -800,6 +835,10 @@
       ],
       "tarball": "https://npm.jsr.io/~/11/@jsr/std__path/1.1.6.tgz"
     },
+    "@jsr/std__regexp@1.0.2": {
+      "integrity": "sha512-wvJnzBWsPW4YLdAhCSggh4NyNia/qtzsuJr0kSYuqUBtvOU/RsI/WKB5lu7ehlzuZ5Sy+efr0ACyogCCZmw0YQ==",
+      "tarball": "https://npm.jsr.io/~/11/@jsr/std__regexp/1.0.2.tgz"
+    },
     "@jsr/std__streams@0.223.0": {
       "integrity": "sha512-YfOfRTpnTocgC5h22aRMgu74ByBO6763PgwG2p7iFWYZFBRrDNW6WqYK1MFXcbU8VrwlgpUEvkS3Xk9dJnd+hw==",
       "dependencies": [
@@ -816,6 +855,13 @@
         "@jsr/std__io@0.224.9"
       ],
       "tarball": "https://npm.jsr.io/~/11/@jsr/std__streams/0.224.5.tgz"
+    },
+    "@jsr/std__text@1.0.19": {
+      "integrity": "sha512-OIXUoD4gty+GH+ZOpe7LT1jVr+31ctOoIoxBzLN1m3fvAOtqWyEz6Ap3NwDiuEgHpAIMz/O5L2SKDr0F2bChCA==",
+      "dependencies": [
+        "@jsr/std__regexp"
+      ],
+      "tarball": "https://npm.jsr.io/~/11/@jsr/std__text/1.0.19.tgz"
     },
     "@jsr/std__yaml@1.1.2": {
       "integrity": "sha512-R2U09+AG6VgFet8qmVhkFw1eKQKeG54RAejd64G5F0XrzMFmHp6KOMnabOdSowd7kj28wFt/x4XT2ARGZEEeVw==",
@@ -1623,14 +1669,6 @@
           "dependencies": [
             "npm:@deno/vite-plugin@1.0.6",
             "npm:@jsr/andykais__ts-rpc@~0.2.4",
-            "npm:@jsr/std__datetime@~0.225.3",
-            "npm:@jsr/std__fmt@0.225.6",
-            "npm:@jsr/std__fs@0.229.3",
-            "npm:@jsr/std__log@~0.224.6",
-            "npm:@jsr/std__media-types@0.224.0",
-            "npm:@jsr/std__path@1.0.3",
-            "npm:@jsr/std__yaml@^1.0.5",
-            "npm:@jsr/torm__sqlite@^1.9.7",
             "npm:@opentelemetry/api@1.9.0",
             "npm:@sveltejs/kit@2.43.7",
             "npm:@sveltejs/vite-plugin-svelte@6.2.1",
@@ -1641,8 +1679,7 @@
             "npm:tailwindcss@4.1.14",
             "npm:typescript-svelte-plugin@0.3.50",
             "npm:typescript@5.9.3",
-            "npm:vite@7.1.8",
-            "npm:zod@4.1.11"
+            "npm:vite@7.1.8"
           ]
         }
       },
