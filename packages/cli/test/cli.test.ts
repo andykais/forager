@@ -107,6 +107,84 @@ test('cli basics', async ctx => {
     ctx.assert.equals(garbage.code !== 0, true, 'expected --media-type=garbage to fail')
   })
 
+  await ctx.subtest('search --text filter', async () => {
+    // 'cronch' is only in the cat_cronch filepath, and 'cat cronch' is its title
+    const filepath_match = await forager_cli`--json --config ${config_path} search --text cronch`.json()
+    ctx.assert.search_result(filepath_match, {
+      total: 1,
+      results: [
+        {media_file: {filepath: ctx.resources.media_files['cat_cronch.mp4']}},
+      ]
+    })
+
+    // 'doodle' is only in the cat_doodle filepath
+    const doodle_match = await forager_cli`--json --config ${config_path} search --text doodle`.json()
+    ctx.assert.search_result(doodle_match, {
+      total: 1,
+      results: [
+        {media_file: {filepath: ctx.resources.media_files['cat_doodle.jpg']}},
+      ]
+    })
+
+    // every word is required, and these two words never appear together
+    const no_match = await forager_cli`--json --config ${config_path} search --text ${'cronch doodle'}`.json()
+    ctx.assert.search_result(no_match, {total: 0, results: []})
+  })
+
+  await ctx.subtest('search --text-field filter', async () => {
+    // 'cat' is in the cat_cronch title and in both filepaths
+    const all_fields = await forager_cli`--json --config ${config_path} search --text cat`.json()
+    ctx.assert.search_result(all_fields, {
+      total: 2,
+      results: [
+        {media_reference: {title: 'cat cronch'}},
+        {media_file: {filepath: ctx.resources.media_files['cat_doodle.jpg']}},
+      ]
+    })
+
+    // restricting to the title drops the media that only matched on its filepath
+    const title_only = await forager_cli`--json --config ${config_path} search --text cat --text-field title`.json()
+    ctx.assert.search_result(title_only, {
+      total: 1,
+      results: [
+        {media_reference: {title: 'cat cronch'}},
+      ]
+    })
+
+    // 'doodle' is in a filepath but in no title
+    const title_miss = await forager_cli`--json --config ${config_path} search --text doodle --text-field title`.json()
+    ctx.assert.search_result(title_miss, {total: 0, results: []})
+
+    const filepath_only = await forager_cli`--json --config ${config_path} search --text doodle --text-field filepath`.json()
+    ctx.assert.search_result(filepath_only, {
+      total: 1,
+      results: [
+        {media_file: {filepath: ctx.resources.media_files['cat_doodle.jpg']}},
+      ]
+    })
+
+    // the flag can be repeated to search several fields at once
+    const multiple_fields = await forager_cli`--json --config ${config_path} search --text doodle --text-field title --text-field filepath`.json()
+    ctx.assert.search_result(multiple_fields, {
+      total: 1,
+      results: [
+        {media_file: {filepath: ctx.resources.media_files['cat_doodle.jpg']}},
+      ]
+    })
+
+    // unknown fields should be rejected by cliffy's enum type
+    const garbage_field = await forager_cli`--json --config ${config_path} search --text cat --text-field garbage`
+      .stderr('piped')
+      .noThrow()
+    ctx.assert.equals(garbage_field.code !== 0, true, 'expected --text-field=garbage to fail')
+
+    // ...and a field is meaningless without any text to search for
+    const field_without_text = await forager_cli`--json --config ${config_path} search --text-field title`
+      .stderr('piped')
+      .noThrow()
+    ctx.assert.equals(field_without_text.code !== 0, true, 'expected --text-field without --text to fail')
+  })
+
   await ctx.subtest('delete subcommand', async () => {
     await forager_cli`--config ${config_path} delete --filepath ${ctx.resources.media_files["cat_cronch.mp4"]}`
     ctx.assert.throws(() => forager.media.get({filepath: ctx.resources.media_files["cat_cronch.mp4"]}), errors.NotFoundError)

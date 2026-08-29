@@ -5,12 +5,22 @@ import { ForagerHelpers } from './helpers.ts'
 
 const LOG_LEVEL_TYPE = new cliffy.EnumType(["DEBUG", "INFO", "ERROR", 'SILENT']);
 const MEDIA_TYPE_TYPE = new cliffy.EnumType(['image', 'video', 'audio']);
+const TEXT_SEARCH_FIELD_TYPE = new cliffy.EnumType(['title', 'description', 'filepath', 'metadata']);
 
 const MEDIA_TYPE_TO_CORE = {
   image: 'IMAGE',
   video: 'VIDEO',
   audio: 'AUDIO',
 } as const;
+
+type TextSearchField = typeof TEXT_SEARCH_FIELD_TYPE extends cliffy.EnumType<infer T> ? T : never
+
+/** Builds the core text_search filter. Without any --text-field, every indexed field is searched */
+function build_text_search(text: string | undefined, fields: TextSearchField[] | undefined) {
+  if (text === undefined) return undefined
+  if (fields === undefined || fields.length === 0) return text
+  return {query: text, fields}
+}
 
 
 const cli = new cliffy.Command()
@@ -48,10 +58,13 @@ const cli = new cliffy.Command()
 
   .command('search', 'search for media in the forager database')
     .type('media-type', MEDIA_TYPE_TYPE)
+    .type('text-field', TEXT_SEARCH_FIELD_TYPE)
     .option('--tags=<tags>', 'A comma separated list of tags to search with')
     .option('--filepath=<filepath>', 'A globpath to search for media files in the file system')
     .option('--media-reference-id=<media_reference_id:number>', 'A forager database media reference id')
     .option('--media-type=<media_type:media-type>', 'Restrict to a single media file kind (image, video, audio)')
+    .option('--text=<text>', 'A full text search over media title, description, filepath and metadata. All words must match, and a trailing * matches prefixes')
+    .option('--text-field=<field:text-field>', 'Restrict --text to a single field (title, description, filepath, metadata). Repeat to search several fields', {collect: true, depends: ['text']})
     .action(async opts => {
       const forager_helpers = new ForagerHelpers(opts)
       const forager = await forager_helpers.launch_forager()
@@ -61,6 +74,7 @@ const cli = new cliffy.Command()
           filepath: opts.filepath,
           tags: opts.tags?.split(','),
           media_type: opts.mediaType ? MEDIA_TYPE_TO_CORE[opts.mediaType] : undefined,
+          text_search: build_text_search(opts.text, opts.textField),
         }
       })
       forager_helpers.print_output(result)
