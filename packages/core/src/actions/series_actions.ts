@@ -176,6 +176,7 @@ class SeriesActions extends Actions {
       duration_max: query.duration?.max?.seconds,
       unread: query.unread,
       filepath: query.filepath,
+      text_search: query.text_search,
     })
 
     const results = this.#map_series_records_to_responses(records, parsed.thumbnail_limit, keypoint_tag_id)

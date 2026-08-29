@@ -1,7 +1,8 @@
 import * as torm from '@torm/sqlite'
 import * as errors from '~/lib/errors.ts'
 import { Model, field, PaginationVars, GroupByVars, type PaginatedResult } from '~/models/lib/base.ts'
-import { SQLBuilder } from '~/models/lib/sql_builder.ts'
+import { SQLBuilder, sql_string_literal } from '~/models/lib/sql_builder.ts'
+import { build_fts_match_expression, type TextSearchFilter } from '~/models/lib/full_text_search.ts'
 import { type outputs } from '~/inputs/mod.ts'
 import { TIMESTAMP_SQLITE } from "~/db/migrations/registry.ts"
 
@@ -28,6 +29,7 @@ export interface SelectManyFilters {
   duration_max: number | undefined
   unread: boolean | undefined
   filepath: string | undefined
+  text_search: TextSearchFilter | undefined
 }
 
 export interface SelectManySeriesFilters {
@@ -46,6 +48,7 @@ export interface SelectManySeriesFilters {
   duration_max: number | undefined
   unread: boolean | undefined
   filepath: string | undefined
+  text_search: TextSearchFilter | undefined
 }
 
 
@@ -508,6 +511,15 @@ ${group_builder.generate_sql()}
 
     if (params.unread === true) {
       builder.add_where_clause(`(media_reference.view_count IS NULL OR media_reference.view_count = 0)`)
+    }
+
+    if (params.text_search !== undefined) {
+      // matching against a subquery rather than joining media_reference_fts keeps the fts5 index
+      // lookup independent of the join order chosen for the rest of the query
+      const match_expression = sql_string_literal(build_fts_match_expression(params.text_search))
+      builder.add_where_clause(`media_reference.id IN (
+        SELECT rowid FROM media_reference_fts WHERE media_reference_fts MATCH ${match_expression}
+      )`)
     }
   }
 

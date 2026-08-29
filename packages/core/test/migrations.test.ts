@@ -105,4 +105,19 @@ test('migrate from v1 schema', async (ctx) => {
   await ctx.subtest('assert migrated schema has no diff with freshly seeded schema', async () => {
     ctx.assert.equals(v1_migration_info.schemas.tables, forager_new_info.schemas.tables)
   })
+
+  await ctx.subtest('full text search index is backfilled by the v12 migration', async () => {
+    ctx.assert.search_result(forager.media.search({query: {text_search: 'cronch'}}), {
+      total: 1,
+      results: [
+        {media_file: {filename: 'cat_cronch.mp4'}},
+      ],
+    })
+    ctx.assert.search_result(forager.media.search({query: {text_search: {query: 'koch', fields: ['filepath']}}}), {
+      total: 1,
+      results: [
+        {media_file: {filename: 'koch.tif'}},
+      ],
+    })
+  })
 })
