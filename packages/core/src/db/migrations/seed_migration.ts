@@ -1,10 +1,10 @@
 import * as torm from '@torm/sqlite'
-import { migrations, sql, TIMESTAMP_SQLITE, TIMESTAMP_COLUMN, TIMESTAMP_COLUMN_OPTIONAL } from './registry.ts'
+import { migrations, sql, TIMESTAMP_SQLITE, TIMESTAMP_COLUMN, TIMESTAMP_COLUMN_OPTIONAL, MEDIA_REFERENCE_FTS_SQL } from './registry.ts'
 
 
 @migrations.register()
 export class Migration extends torm.SeedMigration {
-  version = 11
+  version = 12
 
   sql = sql`
     CREATE TABLE media_file (
@@ -298,6 +298,9 @@ export class Migration extends torm.SeedMigration {
     CREATE INDEX filesystem_path_created_at ON filesystem_path (created_at, id);
     CREATE INDEX filesystem_path_ingested ON filesystem_path (ingested);
     CREATE INDEX filesystem_path_directory ON filesystem_path (directory);
+
+    -- full text search --
+    ${MEDIA_REFERENCE_FTS_SQL}
     `
 
 
