@@ -45,7 +45,7 @@
     </div>
   </div>
 
-  <div class="w-full grid grid-rows-2 justify-space-between items-center text-slate-950 gap-y-2 px-3 pb-3"
+  <div class="w-full grid grid-rows-3 justify-space-between items-center text-slate-950 gap-y-2 px-3 pb-3"
     style="display: {settings.ui.search.advanced_filters.hide ? 'none' : 'grid'}; grid-column: 1 / -1">
     <div class="flex flex-row justify-between gap-8">
         <div class="flex gap-1">
@@ -181,6 +181,31 @@
               bind:value={queryparams.draft.group_by}>
           </div>
         {/if}
+      </div>
+
+      <div class="flex flex-row gap-8 justify-between">
+        <div class="flex gap-2 items-center">
+          <label class="text-nowrap" for="text_search">Text Search:</label>
+          <input
+            class="rounded-lg py-1 px-3 text-slate-100 bg-gray-800 text-sm"
+            name="text_search"
+            type="text"
+            placeholder="words to search for..."
+            title="Full text search. Words are all required, and a trailing * matches prefixes"
+            bind:value={queryparams.draft.text_search}>
+          <SelectInput
+            label="in"
+            options={[
+              {label: 'All Fields',  value: 'all'},
+              {label: 'Title',       value: 'title'},
+              {label: 'Description', value: 'description'},
+              {label: 'Filepath',    value: 'filepath'},
+              {label: 'Metadata',    value: 'metadata'},
+            ]}
+            bind:value={queryparams.draft.text_search_field}
+            onchange={update_search}
+          />
+        </div>
       </div>
     </div>
   <input type="submit" hidden />

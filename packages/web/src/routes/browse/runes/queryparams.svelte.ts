@@ -27,9 +27,40 @@ function is_core_media_type(v: MediaTypeFilter): v is keyof typeof MEDIA_TYPE_TO
   return v in MEDIA_TYPE_TO_CORE
 }
 
+type TextSearchField = NonNullable<
+  Exclude<NonNullable<NonNullable<inputs.PaginatedSearch['query']>['text_search']>, string>['fields']
+>[number]
+
+/** 'all' searches every indexed field, anything else restricts the search to that single field */
+type TextSearchFieldFilter = 'all' | TextSearchField
+
+const TEXT_SEARCH_FIELD_FILTER_VALUES = new Set<TextSearchFieldFilter>([
+  'all',
+  'title',
+  'description',
+  'filepath',
+  'metadata',
+])
+
+// core indexes words made of letters and numbers, and rejects a text search that contains nothing
+// it can index. Applying the same rule here means punctuation-only input is treated as no filter
+// rather than failing the whole search
+const SEARCHABLE_TEXT = /[\p{L}\p{N}]/u
+
+/** Builds the core text_search filter, or undefined when there is nothing searchable to send */
+function build_text_search(
+  params: SearchParams,
+): NonNullable<inputs.PaginatedSearch['query']>['text_search'] {
+  if (!params.text_search || !SEARCHABLE_TEXT.test(params.text_search)) return undefined
+  if (params.text_search_field === 'all') return params.text_search
+  return { query: params.text_search, fields: [params.text_search_field] }
+}
+
 interface SearchParams {
   search_string: string
   filepath: string | undefined
+  text_search: string | undefined
+  text_search_field: TextSearchFieldFilter
   sort: inputs.PaginatedSearch['sort_by']
   unread_only: boolean
   search_mode: 'media' | 'group_by' | 'filesystem'
@@ -43,6 +74,8 @@ interface SearchParams {
 const DEFAULTS: SearchParams = {
   search_string: '',
   filepath: undefined,
+  text_search: undefined,
+  text_search_field: 'all',
   sort: 'source_created_at',
   order: 'desc',
   unread_only: false,
@@ -59,6 +92,8 @@ const URL_PARAM_MAP = {
   unread_only: 'unread',
   search_mode: 'mode',
   media_type: 'type',
+  text_search: 'text',
+  text_search_field: 'text_field',
 } as const satisfies Partial<Record<keyof SearchParams, string>>
 type UrlParamMap = typeof URL_PARAM_MAP
 
@@ -130,6 +165,12 @@ export class QueryParamsManager extends Rune {
           params.stars = parseInt(val)
         } else if (params_key === 'filepath') {
           params.filepath = decodeURIComponent(val)
+        } else if (params_key === 'text_search') {
+          params.text_search = decodeURIComponent(val)
+        } else if (params_key === 'text_search_field') {
+          if (TEXT_SEARCH_FIELD_FILTER_VALUES.has(val as TextSearchFieldFilter)) {
+            params.text_search_field = val as TextSearchFieldFilter
+          }
         } else if (params_key === 'media_type') {
           if (MEDIA_TYPE_FILTER_VALUES.has(val as MediaTypeFilter)) {
             params.media_type = val as MediaTypeFilter
@@ -166,7 +207,7 @@ export class QueryParamsManager extends Rune {
             .replaceAll('%3A', ':')
             .replaceAll('%2C', ',')
           url_params.set(param_name, encoded)
-        } else if (key === 'filepath') {
+        } else if (key === 'filepath' || key === 'text_search') {
           if (value) {
             url_params.set(param_name, encodeURIComponent(value))
           }
@@ -174,6 +215,11 @@ export class QueryParamsManager extends Rune {
           url_params.set(param_name, String(value))
         }
       }
+    }
+
+    // the chosen text search field is meaningless without any text to search for
+    if (!url_params.has('text')) {
+      url_params.delete('text_field')
     }
 
     if (url_params.get('mode') === 'group_by' && !url_params.has('group_by')) {
@@ -220,6 +266,7 @@ export class QueryParamsManager extends Rune {
     const query: inputs.PaginatedSearch['query'] = {
       tags,
       filepath: params.filepath,
+      text_search: build_text_search(params),
     }
 
     // Handle boolean and numeric filters
@@ -357,6 +404,7 @@ export class QueryParamsManager extends Rune {
     return {
       tags: tags.length > 0 ? tags : undefined,
       filepath: this.current.filepath,
+      text_search: build_text_search(this.current),
       unread: this.current.unread_only || undefined,
       animated: media_type === 'animated' ? true : undefined,
       media_type: is_core_media_type(media_type) ? MEDIA_TYPE_TO_CORE[media_type] : undefined,
