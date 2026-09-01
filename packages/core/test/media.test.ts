@@ -1213,6 +1213,25 @@ test('video media', async ctx => {
   })
 })
 
+test('animated webp media', async ctx => {
+  using forager = new Forager(ctx.get_test_config())
+  forager.init()
+
+  const media_nyan = await forager.media.create(ctx.resources.media_files['nyan_cat.webp'], {title: 'Nyan Cat'}, ['meme'])
+  ctx.assert.equals(media_nyan.media_file.media_type, 'IMAGE')
+  ctx.assert.equals(media_nyan.media_file.content_type, 'image/webp')
+  ctx.assert.equals(media_nyan.media_file.codec, 'webp')
+  ctx.assert.equals(media_nyan.media_file.width, 400)
+  ctx.assert.equals(media_nyan.media_file.height, 400)
+  ctx.assert.equals(media_nyan.media_file.animated, true)
+  ctx.assert.equals(media_nyan.media_file.duration, 0.84)
+  ctx.assert.equals(media_nyan.media_file.framecount, 12)
+  ctx.assert.equals(media_nyan.media_file.audio, false)
+  ctx.assert.equals(media_nyan.media_file.filepath, ctx.resources.media_files['nyan_cat.webp'])
+  // ffmpeg cannot generate thumbnails for animated webp
+  ctx.assert.equals(media_nyan.thumbnails.total, 0)
+})
+
 test('search query.animated', async ctx => {
   using forager = new Forager(ctx.get_test_config())
   forager.init()
