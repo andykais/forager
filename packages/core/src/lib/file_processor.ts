@@ -653,6 +653,9 @@ class FileProcessor {
     // TypeScript's DOM lib does not treat as assignable to the WritableStream<Uint8Array>
     // that pipeThrough infers. The pairing is valid at runtime (a Uint8Array is a
     // BufferSource), so bridge the lib-level mismatch explicitly.
+    // NOTE `deno check` passes without this, but @forager/web type-checks core's source
+    // under the DOM lib, where it does not. Removing this breaks `deno task --cwd
+    // packages/web check`.
     const decoder = new TextDecoderStream() as ReadableWritablePair<string, Uint8Array>
     const reader = stream.pipeThrough(decoder).getReader()
     let buffer = ''

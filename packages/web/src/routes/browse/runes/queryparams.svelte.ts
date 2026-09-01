@@ -8,13 +8,43 @@ import { Rune } from '$lib/runes/rune.ts'
 
 type MediaTypeFilter = 'all' | 'animated' | 'image' | 'video' | 'audio'
 
-const MEDIA_TYPE_FILTER_VALUES = new Set<MediaTypeFilter>([
-  'all',
-  'animated',
-  'image',
-  'video',
-  'audio',
-])
+/** 'count' is only valid for group_by searches, the rest are shared with media searches */
+type SortBy = NonNullable<inputs.PaginatedSearchGroupBy['sort_by']>
+type SearchMode = 'media' | 'group_by' | 'filesystem'
+type StarsEquality = 'gte' | 'eq'
+type Order = 'desc' | 'asc'
+
+// declared as Records rather than Sets so that a value added to any of the unions above
+// fails to compile until it is listed here too
+const MEDIA_TYPE_FILTER_VALUES: Record<MediaTypeFilter, true> = {
+  all: true,
+  animated: true,
+  image: true,
+  video: true,
+  audio: true,
+}
+const SORT_BY_VALUES: Record<SortBy, true> = {
+  count: true,
+  created_at: true,
+  updated_at: true,
+  source_created_at: true,
+  view_count: true,
+  last_viewed_at: true,
+  duration: true,
+}
+const SEARCH_MODE_VALUES: Record<SearchMode, true> = {
+  media: true,
+  group_by: true,
+  filesystem: true,
+}
+const STARS_EQUALITY_VALUES: Record<StarsEquality, true> = { gte: true, eq: true }
+const ORDER_VALUES: Record<Order, true> = { desc: true, asc: true }
+
+const is_media_type_filter = (v: string): v is MediaTypeFilter => v in MEDIA_TYPE_FILTER_VALUES
+const is_sort_by = (v: string): v is SortBy => v in SORT_BY_VALUES
+const is_search_mode = (v: string): v is SearchMode => v in SEARCH_MODE_VALUES
+const is_stars_equality = (v: string): v is StarsEquality => v in STARS_EQUALITY_VALUES
+const is_order = (v: string): v is Order => v in ORDER_VALUES
 
 // maps the lowercase URL/UI value to the uppercase core enum value
 const MEDIA_TYPE_TO_CORE = {
@@ -27,23 +57,25 @@ function is_core_media_type(v: MediaTypeFilter): v is keyof typeof MEDIA_TYPE_TO
   return v in MEDIA_TYPE_TO_CORE
 }
 
-interface SearchParams {
+export interface SearchParams {
   search_string: string
   filepath: string | undefined
-  sort: inputs.PaginatedSearch['sort_by']
+  sort: SortBy
   unread_only: boolean
-  search_mode: 'media' | 'group_by' | 'filesystem'
+  search_mode: SearchMode
   group_by: string | undefined
   stars: number | undefined
-  stars_equality: 'gte' | 'eq' | undefined
-  order: 'desc' | 'asc'
+  stars_equality: StarsEquality | undefined
+  order: Order
   media_type: MediaTypeFilter
 }
+
+const DEFAULTS_MEDIA_SORT = 'source_created_at' as const satisfies inputs.PaginatedSearch['sort_by']
 
 const DEFAULTS: SearchParams = {
   search_string: '',
   filepath: undefined,
-  sort: 'source_created_at',
+  sort: DEFAULTS_MEDIA_SORT,
   order: 'desc',
   unread_only: false,
   search_mode: 'media',
@@ -53,19 +85,22 @@ const DEFAULTS: SearchParams = {
   media_type: 'all',
 }
 
-// Map internal names to URL param names
+// Map internal names to URL param names. Every SearchParams key is listed, so adding a
+// param without deciding its URL name is a compile error.
 const URL_PARAM_MAP = {
   search_string: 'tags',
+  filepath: 'filepath',
+  sort: 'sort',
   unread_only: 'unread',
   search_mode: 'mode',
+  group_by: 'group_by',
+  stars: 'stars',
+  stars_equality: 'stars_equality',
+  order: 'order',
   media_type: 'type',
-} as const satisfies Partial<Record<keyof SearchParams, string>>
-type UrlParamMap = typeof URL_PARAM_MAP
+} as const satisfies Record<keyof SearchParams, string>
 
-type SearchParamsReversed = { [K in keyof UrlParamMap as UrlParamMap[K]]: K}
-const URL_PARAM_MAP_REVERSED = Object.fromEntries(
-  Object.entries(URL_PARAM_MAP).map(([key, val]) => [val, key])
-) as SearchParamsReversed
+const SEARCH_PARAMS_KEYS = Object.keys(URL_PARAM_MAP) as (keyof SearchParams)[]
 
 /**
  * Manages browser URL query parameters and syncs them with search state.
@@ -119,33 +154,65 @@ export class QueryParamsManager extends Rune {
 
     this.current_serialized = url.search
 
-    // Parse each param with type coercion
-    if (search) {
-      for (const [key, val] of search.entries()) {
-        const params_key = (URL_PARAM_MAP_REVERSED[key as keyof SearchParamsReversed] ?? key) as keyof SearchParams
+    // Only known params are read, and each is parsed explicitly. Values that don't match
+    // the expected shape are dropped in favor of the default rather than being passed
+    // through to core as raw strings.
+    for (const params_key of SEARCH_PARAMS_KEYS) {
+      const val = search.get(URL_PARAM_MAP[params_key])
+      if (val === null) continue
 
-        if (params_key === 'search_string') {
+      switch (params_key) {
+        case 'search_string': {
           params.search_string = val.replaceAll(',', ' ')
-        } else if (params_key === 'stars') {
-          params.stars = parseInt(val)
-        } else if (params_key === 'filepath') {
+          break
+        }
+        case 'filepath': {
           params.filepath = decodeURIComponent(val)
-        } else if (params_key === 'unread_only') {
+          break
+        }
+        case 'sort': {
+          if (is_sort_by(val)) params.sort = val
+          break
+        }
+        case 'unread_only': {
           params.unread_only = val === 'true'
-        } else if (params_key === 'media_type') {
-          if (MEDIA_TYPE_FILTER_VALUES.has(val as MediaTypeFilter)) {
-            params.media_type = val as MediaTypeFilter
-          }
-        } else {
-          // @ts-ignore - dynamic assignment
-          params[params_key] = val
+          break
+        }
+        case 'search_mode': {
+          if (is_search_mode(val)) params.search_mode = val
+          break
+        }
+        case 'group_by': {
+          params.group_by = val
+          break
+        }
+        case 'stars': {
+          const stars = parseInt(val)
+          if (!Number.isNaN(stars)) params.stars = stars
+          break
+        }
+        case 'stars_equality': {
+          if (is_stars_equality(val)) params.stars_equality = val
+          break
+        }
+        case 'order': {
+          if (is_order(val)) params.order = val
+          break
+        }
+        case 'media_type': {
+          if (is_media_type_filter(val)) params.media_type = val
+          break
+        }
+        default: {
+          const unhandled: never = params_key
+          throw new Error(`Unexpected search param '${unhandled}'`)
         }
       }
+    }
 
-      // Infer search_mode from group_by presence
-      if (search.has('group_by')) {
-        params.search_mode = 'group_by'
-      }
+    // Infer search_mode from group_by presence
+    if (search.has(URL_PARAM_MAP.group_by)) {
+      params.search_mode = 'group_by'
     }
 
     return params
@@ -245,11 +312,13 @@ export class QueryParamsManager extends Rune {
 
     // Execute appropriate search
     if (params.search_mode === 'media') {
+      // 'count' only exists for group_by searches, so fall back when leaving that mode
+      const sort_by = params.sort === 'count' ? DEFAULTS_MEDIA_SORT : params.sort
       await this.#media_list.paginate({
         type: 'media',
         params: {
           query,
-          sort_by: params.sort,
+          sort_by,
           order: params.order,
         },
       })
@@ -285,30 +354,21 @@ export class QueryParamsManager extends Rune {
   }
 
   /**
-   * Merge partial params with current params
-   * Supports URL param names (e.g., 'tags') or internal names (e.g., 'search_string')
+   * Merge partial params into the current params, keyed by internal param names.
+   * `search_string` is additive (tags accumulate) rather than replacing.
    */
-  public merge(partial_params: Partial<Record<string, any>>): SearchParams {
-    const params = { ...this.current }
+  public merge(partial_params: Partial<SearchParams>): SearchParams {
+    const params = { ...this.current, ...partial_params }
 
-    for (const [key, val] of Object.entries(partial_params)) {
-      const params_key = (URL_PARAM_MAP_REVERSED[key as keyof SearchParamsReversed] ?? key) as keyof SearchParams
+    if (partial_params.search_string !== undefined) {
+      const search_strings = new Set(this.current.search_string.split(/\s+/))
+      search_strings.add(partial_params.search_string)
+      params.search_string = [...search_strings].join(' ').trim()
+    }
 
-      if (params_key === 'search_string') {
-        // Merge tags instead of replacing
-        const search_strings = new Set(params.search_string.split(/\s+/))
-        search_strings.add(val)
-        params.search_string = [...search_strings].join(' ').trim()
-      } else if (params_key === 'search_mode') {
-        params.search_mode = val
-        // Clear group_by if switching away from group_by mode
-        if (val !== 'group_by') {
-          params.group_by = undefined
-        }
-      } else {
-        // @ts-ignore - dynamic assignment
-        params[params_key] = val
-      }
+    // Clear group_by if switching away from group_by mode
+    if (partial_params.search_mode !== undefined && partial_params.search_mode !== 'group_by') {
+      params.group_by = undefined
     }
 
     return params

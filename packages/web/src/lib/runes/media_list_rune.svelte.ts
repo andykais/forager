@@ -88,7 +88,9 @@ export class MediaListRune extends Rune {
       content = await this.client.forager.media.search(fetch_params as inputs.PaginatedSearch)
     }
     else if (params_type === 'group_by') {
-      fetch_params.limit = fetch_params.limit ?? 30
+      // NOTE not mutated in place: when there is no cursor, fetch_params still aliases
+      // #saved_params, and writing through it would leak into saved state
+      fetch_params = {...fetch_params, limit: fetch_params.limit ?? 30}
       content = await this.client.forager.media.group(fetch_params as inputs.PaginatedSearchGroupBy)
     } else {
       throw new Error('unimplemented')

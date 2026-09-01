@@ -15,7 +15,10 @@
   "imports": {
     "@std/datetime": "jsr:@std/datetime@^0.225.3",
     "@std/yaml": "jsr:@std/yaml@^1.0.5",
-    "@std/fmt": "jsr:@std/fmt@0.225.6",
+    // NOTE mapped as an explicit subpath rather than a bare "@std/fmt" or an "@std/fmt/"
+    // prefix: `jsrDepsInNodeModules` rewrites those to their npm form
+    // ("npm:@jsr/std__fmt@0.225.6/"), which cannot resolve a subpath. Any other
+    // @std/fmt subpath we start importing needs its own entry here.
     "@std/fmt/bytes": "jsr:@std/fmt@0.225.6/bytes",
     "@std/fs": "jsr:@std/fs@0.229.3",
     "@std/log": "jsr:@std/log@^0.224.6",

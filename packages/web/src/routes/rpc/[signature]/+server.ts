@@ -9,9 +9,6 @@ let API_SINGLETON: rpc.SvektekitRouterFunction | undefined
 
 
 export const PUT: RequestHandler = async (params) => {
-  if (API_SINGLETON === undefined) {
-    const context = params.locals
-    API_SINGLETON = rpc.adapt(Api, context)
-  }
-  return await API_SINGLETON!(params)
+  const api = API_SINGLETON ??= rpc.adapt(Api, params.locals)
+  return await api(params)
 }

@@ -11,17 +11,32 @@
 		"strict": true,
 		"moduleResolution": "bundler",
 
+    // `@forager/core` is a Deno project whose source is pulled into the program
+    // by the path mapping below. `verbatimModuleSyntax` is disabled so its
+    // (Deno-valid) value/type imports don't surface here, and `DOM.AsyncIterable`
+    // is added so async-iterable web streams (e.g. `for await (…of readable)`)
+    // type-check the same way they run under Deno.
+    "verbatimModuleSyntax": false,
+    "lib": ["esnext", "DOM", "DOM.Iterable", "DOM.AsyncIterable"],
+
     "plugins": [{
       "name": "typescript-svelte-plugin",
       "enabled": true,
       "assumeIsSvelteProject": true
     }],
 
+    // NOTE `paths` intentionally lives in svelte.config.js under `kit.alias`, which
+    // `svelte-kit sync` compiles into ./.svelte-kit/tsconfig.json for us. Declaring
+    // paths here instead would replace (not merge with) that generated mapping.
     "allowImportingTsExtensions": true
-	}
-	// Path aliases are handled by https://svelte.dev/docs/kit/configuration#alias
-	// except $lib which is handled by https://svelte.dev/docs/kit/configuration#files
-	//
-	// If you want to overwrite includes/excludes, make sure to copy over the relevant includes/excludes
-	// from the referenced tsconfig.json - TypeScript does not merge them in
+	},
+  // NOTE this only trims the `include` globs. Core files reached through an
+  // `import` are still part of the program and still report diagnostics, so core
+  // type errors can surface in this package's check.
+  "exclude": [
+    "node_modules/**",
+    "../node_modules/**",
+    "../../node_modules/**",
+    "../core/**"
+  ]
 }

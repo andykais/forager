@@ -16,10 +16,17 @@
 
   let new_tag_str = $state<string>('')
 
+  // this sidebar renders media reference data (tags, stars, title, file), which grouped
+  // results do not carry, so they are treated as having nothing to show
+  let selected_media = $derived.by(() => {
+    const selection = media_selections.current_selection.media_response
+    return selection?.media_type === 'grouped' ? undefined : selection
+  })
+
   type TagRecord = model_types.Tag
   let sorted_tags: [string, TagRecord[]][] = $derived.by(() => {
     const grouped_tags: Record<string, TagRecord[]> = {}
-    media_selections.current_selection.media_response?.tags.map(t => {
+    selected_media?.tags.map(t => {
       if (grouped_tags[t.group] === undefined) {
         grouped_tags[t.group] = []
       }
@@ -69,20 +76,20 @@
       if (new_tag_str) {
         tags = {add: [new_tag_str]}
       }
-      media_selections.current_selection.media_response!.update(media_info, tags)
+      selected_media?.update(media_info, tags)
       new_tag_str = ''
     }}
     >
-    {#if media_selections.current_selection.media_response}
+    {#if selected_media}
       <MediaDetailEntry
         {controller}
         label="Views"
-        content={media_selections.current_selection.media_response.media_reference.view_count}/>
+        content={selected_media.media_reference.view_count}/>
 
       <MediaDetailEntry
         {controller}
         label="Stars"
-        content={media_selections.current_selection.media_response.media_reference.stars}/>
+        content={selected_media.media_reference.stars}/>
 
       <label class="text-green-50" for="tags"><span>Tags</span></label>
       {#each sorted_tags as tag_group_entry, tag_entry_index (tag_group_entry[0])}
@@ -98,7 +105,7 @@
               title="Remove from media"
               type="button"
               onclick={async () => {
-                await media_selections.current_selection.media_response!.update(undefined, {remove: [`${tag.group}:${tag.name}`]})
+                await selected_media!.update(undefined, {remove: [`${tag.group}:${tag.name}`]})
               }}>
               <Icon class="stroke-green-50 hover:stroke-green-300" data={TrashOutline} stroke_width={1.5} size="20px" color="none" />
             </button>
@@ -106,7 +113,7 @@
               class="hover:cursor-pointer"
               title="Apply to search"
               {controller}
-              params={queryparams.merge({tags: parsers.Tag.encode(tag)})}>
+              params={queryparams.merge({search_string: parsers.Tag.encode(tag)})}>
               <Icon class="fill-green-50 hover:fill-green-300" data={MagnifyingGlassPlus} size="20px" color="none" />
             </SearchLink>
             <SearchLink
@@ -134,14 +141,14 @@
         editable
         hide_if_null
         label="Title"
-        content={media_selections.current_selection.media_response.media_reference.title}/>
+        content={selected_media.media_reference.title}/>
 
       <MediaDetailEntry
         {controller}
         editable
         hide_if_null
         label="Description"
-        content={media_selections.current_selection.media_response.media_reference.description}/>
+        content={selected_media.media_reference.description}/>
 
       <MediaDetailEntry
         {controller}
@@ -149,7 +156,7 @@
         hide_if_null
         label="Created"
         type="datetime-local"
-        content={media_selections.current_selection.media_response.media_reference.source_created_at}/>
+        content={selected_media.media_reference.source_created_at}/>
 
       <!-- TODO we should support datetimes in @andykais/ts-rpc -->
       <MediaDetailEntry
@@ -157,30 +164,30 @@
         editable
         label="Added"
         type="datetime-local"
-        content={media_selections.current_selection.media_response.media_reference.created_at}/>
+        content={selected_media.media_reference.created_at}/>
 
       <MediaDetailEntry
         {controller}
         hide_if_null
         label="Source URL"
-        content={media_selections.current_selection.media_response.media_reference.source_url}/>
+        content={selected_media.media_reference.source_url}/>
 
       <MediaDetailEntry
         {controller}
         hide_if_null
         label="Metadata"
-        content={media_selections.current_selection.media_response.media_reference.metadata}/>
+        content={selected_media.media_reference.metadata}/>
 
-      {#if media_selections.current_selection.media_response.media_type === 'media_file'}
+      {#if selected_media.media_type === 'media_file'}
         <MediaDetailEntry
           {controller}
           label="File"
-          content={media_selections.current_selection.media_response.media_file.filepath}/>
+          content={selected_media.media_file.filepath}/>
 
         <MediaDetailEntry
           {controller}
           label="Filename"
-          content={path.basename(media_selections.current_selection.media_response.media_file.filepath)}/>
+          content={path.basename(selected_media.media_file.filepath)}/>
       {/if}
 
     {:else}

@@ -48,7 +48,12 @@ export abstract class MediaViewRune<M extends AnyMediaResponse = AnyMediaRespons
     this.state!.media = media
   }
 
-  get media_reference(): model_types.MediaReference {
+  /**
+   * Grouped results have no reference of their own, and the media under a group may not
+   * be loaded yet, so this is optional on the base. Narrow on `media_type` (or use the
+   * file/series runes directly) to get a guaranteed reference.
+   */
+  get media_reference(): model_types.MediaReference | undefined {
     throw new Error(`media_reference is not available on ${this.media_type} media`)
   }
 
@@ -68,19 +73,21 @@ export abstract class MediaViewRune<M extends AnyMediaResponse = AnyMediaRespons
     throw new Error(`preview_thumbnail is not available on ${this.media_type} media`)
   }
 
-  public update(media_info?: inputs.MediaInfo, tags?: inputs.MediaReferenceUpdateTags): Promise<void> {
+  // NOTE these are async so that the base implementations reject rather than throwing
+  // synchronously past a caller's `.catch()`, which their declared types promise.
+  public async update(media_info?: inputs.MediaInfo, tags?: inputs.MediaReferenceUpdateTags): Promise<void> {
     throw new Error(`update is not available on ${this.media_type} media`)
   }
 
-  public star(stars: number): Promise<void> {
+  public async star(stars: number): Promise<void> {
     throw new Error(`star is not available on ${this.media_type} media`)
   }
 
-  public add_view(): Promise<void> {
+  public async add_view(): Promise<void> {
     throw new Error(`add_view is not available on ${this.media_type} media`)
   }
 
-  public load_detailed_view(): Promise<void> {
+  public async load_detailed_view(): Promise<void> {
     throw new Error(`load_detailed_view is not available on ${this.media_type} media`)
   }
 
@@ -229,29 +236,39 @@ export class MediaGroupRune extends MediaViewRune<MediaGroupResponse> {
     return this.media.group
   }
 
+  /**
+   * The media standing in for this group. Core supplies it on `group.media` when the
+   * search asks for `grouped_media`, otherwise we fall back to the list this rune
+   * fetches itself. Undefined until one of those has loaded.
+   */
+  get #representative_media(): MediaResponse | undefined {
+    return this.media.group.media?.at(0) ?? this.grouped_state.media_list.at(0)
+  }
+
+  override get media_reference(): model_types.MediaReference | undefined {
+    return this.#representative_media?.media_reference
+  }
+
   override get preview_thumbnail(): string | undefined {
-    const media_entry = this.grouped_state.media_list.at(0)
-    if (media_entry && 'thumbnails' in media_entry) {
+    const media_entry = this.#representative_media
+    if (media_entry) {
       return `/files/thumbnail/${media_entry.thumbnails.results[0].id}`
     }
     return undefined
   }
 
   public override img_fit_classes() {
-    if (this.grouped_state.media_list.length === 0) {
+    const media = this.#representative_media
+    if (media === undefined) {
       return "w-full h-full"
+    } else if (media.media_type === 'media_file' && (media.media_file.width ?? 0) > (media.media_file.height ?? 0)) {
+      // its long edge is wide
+      return "w-full"
     } else {
-      const media = this.grouped_state.media_list[0]
-      if (media.media_type === 'media_file' && (media.media_file.width ?? 0) > (media.media_file.height ?? 0)) {
-        // its long edge is wide
-        return "w-full"
-      } else {
-        // its long edge is tall
-        return "h-full"
-      }
+      // its long edge is tall
+      return "h-full"
     }
   }
 }
 
-export type MediaViewRunes = MediaSeriesRune | MediaFileRune
 export type AnyMediaViewRune = MediaFileRune | MediaSeriesRune | MediaGroupRune

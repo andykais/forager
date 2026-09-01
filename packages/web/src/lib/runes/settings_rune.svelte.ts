@@ -60,7 +60,9 @@ export class SettingsRune extends Rune {
         break
       }
       default: {
-        throw new Error(`Unexpected path '${path}'`)
+        // adding a MutableSettings key without a case above fails to compile here
+        const unhandled: never = update
+        throw new Error(`Unexpected path '${path}' (${JSON.stringify(unhandled)})`)
       }
     }
   }
@@ -74,21 +76,33 @@ export class SettingsRune extends Rune {
   }
 
   private get<K extends keyof MutableSettings>(path: K): MutableSettings[K] {
+    return this.#read(path) as MutableSettings[K]
+  }
+
+  // NOTE this is deliberately non-generic. With a plain union `path` narrows per case,
+  // so the default branch can assert exhaustiveness and adding a MutableSettings key
+  // without a case here fails to compile. Each case still reads exactly one setting,
+  // so a caller only subscribes to the value it asked for.
+  #read(path: keyof MutableSettings): MutableSettings[keyof MutableSettings] {
     switch(path) {
       case 'ui.media_list.thumbnail_size': {
-        return this.ui.media_list.thumbnail_size as MutableSettings[K]
+        return this.ui.media_list.thumbnail_size
       }
       case 'ui.media_list.thumbnail_shape': {
-        return this.ui.media_list.thumbnail_shape as MutableSettings[K]
+        return this.ui.media_list.thumbnail_shape
       }
       case 'ui.media_view.fit.mode': {
-        return this.ui.media_view.fit.mode as MutableSettings[K]
+        return this.ui.media_view.fit.mode
       }
       case 'ui.search.advanced_filters.hide': {
-        return this.ui.search.advanced_filters.hide as MutableSettings[K]
+        return this.ui.search.advanced_filters.hide
+      }
+      case 'ui.sidebar.hide': {
+        return this.ui.sidebar.hide
       }
       default: {
-        throw new Error(`Unexpected path '${path}'`)
+        const unhandled: never = path
+        throw new Error(`Unexpected path '${unhandled}'`)
       }
     }
   }
