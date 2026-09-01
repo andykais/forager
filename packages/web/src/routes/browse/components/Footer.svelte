@@ -65,7 +65,7 @@
         max={500}
         value={controller.runes.settings.ui.media_list.thumbnail_size}
         oninput={e => {
-          controller.runes.settings.set('ui.media_list.thumbnail_size', e.target.value)
+          controller.runes.settings.set('ui.media_list.thumbnail_size', Number(e.currentTarget.value))
         }}>
       <span>{controller.runes.settings.ui.media_list.thumbnail_size}px</span>
     </div>

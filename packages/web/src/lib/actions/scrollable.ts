@@ -1,4 +1,4 @@
-export function scrollable(node: HTMLElement) {
+export function scrollable(node: HTMLElement, _focused: boolean) {
   let is_visible = false
   const observer = new IntersectionObserver((entries) => {
     is_visible = entries[0].isIntersecting

@@ -17,7 +17,7 @@
   let parent_input = $state('')
 
   $effect(() => {
-    const slug = decodeURIComponent(page.params.slug)
+    const slug = decodeURIComponent(page.params.slug ?? '')
     controller.load(slug)
   })
 </script>
@@ -68,11 +68,11 @@
                 class="rounded-md py-1 px-3 text-slate-100 bg-gray-800 text-sm min-h-16"
                 bind:value={controller.draft.description}
               ></textarea>
-              <label class="text-slate-400 text-sm">Media</label>
+              <span class="text-slate-400 text-sm">Media</span>
               <span class="text-slate-300 text-sm"><Numeric number={controller.detail.tag.media_reference_count} /></span>
-              <label class="text-slate-400 text-sm">Unread</label>
+              <span class="text-slate-400 text-sm">Unread</span>
               <span class="text-slate-300 text-sm"><Numeric number={controller.detail.tag.unread_media_reference_count} /></span>
-              <label class="text-slate-400 text-sm">Created</label>
+              <span class="text-slate-400 text-sm">Created</span>
               <Datetime value={controller.detail.tag.created_at} class="text-slate-300 text-sm" />
             </div>
             <div class="flex gap-3 items-center">
@@ -148,7 +148,7 @@
             }
           }}>
             <div class="flex-grow">
-              <label class="text-slate-400 text-xs">Set this tag as an alias that hides the following tags:</label>
+              <span class="text-slate-400 text-xs">Set this tag as an alias that hides the following tags:</span>
               <TagAutoCompleteInput
                 {controller}
                 bind:search_string={alias_input}

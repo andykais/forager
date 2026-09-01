@@ -1,11 +1,11 @@
 <script lang="ts">
   import * as parsers from '$lib/parsers.ts'
-  import type { Forager } from '@forager/core'
+  import type { Forager, inputs } from '@forager/core'
   import type { BaseController } from "$lib/base_controller.ts";
   import Tag from '$lib/components/Tag.svelte'
 
   const debounce = <Args>(fn: (...args: Args[]) => void, pause: number) => {
-    let timer: number | undefined
+    let timer: ReturnType<typeof setTimeout> | undefined
     return (...args: Args[]) => {
       clearTimeout(timer)
       timer = setTimeout(() => {
@@ -46,7 +46,7 @@
       this.#last_query_hash = current_query_hash
 
       // TODO only do this when the query has changed. Currently any time we focus in/out of the browser tab, it will re-search
-      const search_options = {query:{tag_match}, sort_by}
+      const search_options: Parameters<typeof controller.client.forager.tag.search>[0] = {query:{tag_match}, sort_by}
       if (contextual_query) {
         search_options.contextual_query = contextual_query
       }
@@ -101,7 +101,7 @@
     input_classes?: string
     allow_multiple_tags?: boolean
     // NOTE contextual_query works, but it is too slow on large tag/media_reference databases, so we need to rethink this
-    contextual_query?: {}
+    contextual_query?: inputs.PaginatedSearch['query']
   } = $props()
 
   let root_element: HTMLDivElement
@@ -116,7 +116,7 @@
     text_position: 0,
     current_hover_selection_index: -1,
 
-    suggestion_buttons: [],
+    suggestion_buttons: [] as (HTMLButtonElement | null)[],
   })
 
   const tag_suggestions = new TagSuggestions()
@@ -139,7 +139,7 @@
         const length = tag_suggestions.state.length
         const index = input_state.current_hover_selection_index
         input_state.current_hover_selection_index = (index + 1) % length
-        input_state.suggestion_buttons[input_state.current_hover_selection_index].focus()
+        input_state.suggestion_buttons[input_state.current_hover_selection_index]?.focus()
       }
     },
     PrevTagSuggestion: e => {
@@ -147,7 +147,7 @@
         const length = tag_suggestions.state.length
         const index = input_state.current_hover_selection_index
         input_state.current_hover_selection_index = (index - 1 + length) % length
-        input_state.suggestion_buttons[input_state.current_hover_selection_index].focus()
+        input_state.suggestion_buttons[input_state.current_hover_selection_index]?.focus()
       }
     },
     Escape: e => {
@@ -185,7 +185,7 @@
     bind:this={input_element}
     list="taglist"
     onselectionchange={async e => {
-      input_state.text_position = e.target.selectionStart
+      input_state.text_position = e.currentTarget.selectionStart ?? 0
       input_state.lost_focus = false
       tag_suggestions.refresh()
       // await get_tag_suggestions_debounced(e.target.value, e.target.selectionStart)
@@ -193,7 +193,7 @@
     oninput={async e => {
       input_state.show_suggestions = true
       input_state.lost_focus = false
-      search_string = e.target.value
+      search_string = e.currentTarget.value
       tag_suggestions.refresh()
     }}
     onfocusin={async e => {
@@ -211,11 +211,11 @@
       tag_suggestions.refresh()
     }}
     onfocusout={(e: FocusEvent) => {
-      if (suggestions_element && suggestions_element.contains(e.relatedTarget)) {
+      if (suggestions_element && suggestions_element.contains(e.relatedTarget as Node | null)) {
       } else {
         input_state.show_suggestions = false
       }
-      controller.runes.focus.pop('TagAutoCompleteInput', kind)
+      controller.runes.focus.pop({component: 'TagAutoCompleteInput', focus: kind})
       input_state.lost_focus = true
     }}
     value={search_string}

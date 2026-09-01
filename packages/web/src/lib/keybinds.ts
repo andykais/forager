@@ -101,6 +101,8 @@ export class Keybinds {
   }
 
   public listen(event: KeybindAction, handler: KeybindActionListener) {
+    // keybind handlers receive the KeyboardEvent dispatched via CustomEvent detail,
+    // but the DOM addEventListener signature is typed against the base Event.
     this.emitter.addEventListener(event, handler as EventListener)
     return handler
   }

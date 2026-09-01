@@ -1,9 +1,9 @@
 <script lang="ts">
-  import type { Forager } from '@forager/core'
+  import type { model_types } from '@forager/core'
 	import type { ClassValue } from 'svelte/elements';
   import * as parsers from '$lib/parsers.ts'
 
-  type Tag = ReturnType<Forager['tag']['search']>['results'][0]
+  type Tag = model_types.Tag
   let props: {tag: Tag, transparent?: boolean; show_group?: boolean; hide_count?: boolean; class?: ClassValue} = $props()
 
   const tag_identifier = props.tag.group === '' || props.show_group === false

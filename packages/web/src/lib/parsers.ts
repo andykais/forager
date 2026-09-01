@@ -1,8 +1,10 @@
-import type { Forager } from '@forager/core'
-type TagModel = Awaited<ReturnType<Forager['tag']['search']>>['results'][0]
+interface TagEncodable {
+  group?: string | null
+  name: string
+}
 
 class Tag {
-  static encode(tag: TagModel) {
+  static encode(tag: TagEncodable) {
     if (tag.group) {
       return `${tag.group}:${tag.name}`
     } else {

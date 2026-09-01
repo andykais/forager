@@ -649,7 +649,12 @@ class FileProcessor {
   }
 
   async * #readlines(stream: ReadableStream<Uint8Array>) {
-    const reader = stream.pipeThrough(new TextDecoderStream()).getReader()
+    // TextDecoderStream types its writable side as WritableStream<BufferSource>, which
+    // TypeScript's DOM lib does not treat as assignable to the WritableStream<Uint8Array>
+    // that pipeThrough infers. The pairing is valid at runtime (a Uint8Array is a
+    // BufferSource), so bridge the lib-level mismatch explicitly.
+    const decoder = new TextDecoderStream() as ReadableWritablePair<string, Uint8Array>
+    const reader = stream.pipeThrough(decoder).getReader()
     let buffer = ''
     let read_result = await reader.read()
     while (!read_result.done) {

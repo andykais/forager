@@ -4,7 +4,7 @@
 
   interface Props {
     controller: BrowseController
-    params: Partial<BrowseController['runes']['queryparams']['DEFAULTS']>
+    params: BrowseController['runes']['queryparams']['DEFAULTS']
     class?: ClassValue
     title?: string
     children: SvelteHTMLElements['div']['children']
