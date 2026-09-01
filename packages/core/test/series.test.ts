@@ -523,3 +523,137 @@ test('series.search query.media_type filter', async ctx => {
     ]
   })
 })
+
+test('series.group groups media inside a series', async ctx => {
+  using forager = new Forager(ctx.get_test_config())
+  forager.init()
+
+  const media_doodle = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {}, ['artist:alice'])
+  const media_gif = await forager.media.create(ctx.resources.media_files['blink.gif'], {}, ['artist:alice'])
+  const media_video = await forager.media.create(ctx.resources.media_files['cat_cronch.mp4'], {}, ['artist:bob'])
+  // media outside the series, sharing a group value, must never leak into the results
+  const media_outside = await forager.media.create(ctx.resources.media_files['koch.tif'], {}, ['artist:alice'])
+
+  const series = forager.series.create({media_series_name: 'grouped_series'})
+  const series_id = series.media_reference.id
+  forager.series.add({series_id, media_reference_id: media_doodle.media_reference.id, series_index: 0})
+  forager.series.add({series_id, media_reference_id: media_gif.media_reference.id, series_index: 1})
+  forager.series.add({series_id, media_reference_id: media_video.media_reference.id, series_index: 2})
+
+  await ctx.subtest('groups are scoped to the series', () => {
+    ctx.assert.group_result(forager.series.group({
+      query: {series_id},
+      group_by: {tag_group: 'artist'},
+    }), {
+      total: 2,
+      results: [
+        // alice has 3 media overall, but only 2 inside this series
+        {media_type: 'grouped', group: {value: 'alice', count: 2}},
+        {media_type: 'grouped', group: {value: 'bob', count: 1}},
+      ]
+    })
+
+    // sanity check that the un-scoped media.group does count the outside media
+    ctx.assert.group_result(forager.media.group({
+      query: {series_id},
+      group_by: {tag_group: 'artist'},
+    }), {
+      total: 2,
+      results: [
+        {media_type: 'grouped', group: {value: 'alice', count: 2}},
+        {media_type: 'grouped', group: {value: 'bob', count: 1}},
+      ]
+    })
+  })
+
+  await ctx.subtest('with grouped_media limit', () => {
+    const grouped = forager.series.group({
+      query: {series_id},
+      group_by: {tag_group: 'artist'},
+      grouped_media: {limit: 10, sort_by: 'created_at', order: 'asc'},
+    })
+    ctx.assert.equals(grouped.results.length, 2)
+    ctx.assert.list_deep_partial(grouped.results[0].group.media!, [
+      {media_reference: {id: media_doodle.media_reference.id}},
+      {media_reference: {id: media_gif.media_reference.id}},
+    ])
+    // the media outside the series is excluded from the grouped media too
+    ctx.assert.equals(
+      grouped.results[0].group.media!.some(m => m.media_reference.id === media_outside.media_reference.id),
+      false,
+    )
+  })
+
+  await ctx.subtest('with a media_type filter', () => {
+    ctx.assert.group_result(forager.series.group({
+      query: {series_id, media_type: 'IMAGE'},
+      group_by: {tag_group: 'artist'},
+    }), {
+      total: 1,
+      results: [
+        {media_type: 'grouped', group: {value: 'alice', count: 2}},
+      ]
+    })
+
+    ctx.assert.group_result(forager.series.group({
+      query: {series_id, media_type: 'VIDEO'},
+      group_by: {tag_group: 'artist'},
+    }), {
+      total: 1,
+      results: [
+        {media_type: 'grouped', group: {value: 'bob', count: 1}},
+      ]
+    })
+  })
+
+  await ctx.subtest('with sort_by count and order', () => {
+    const groups_asc = forager.series.group({
+      query: {series_id},
+      group_by: {tag_group: 'artist'},
+      sort_by: 'count',
+      order: 'asc',
+    })
+    ctx.assert.list_deep_partial(groups_asc.results, [
+      {group: {value: 'bob', count: 1}},
+      {group: {value: 'alice', count: 2}},
+    ])
+  })
+
+  await ctx.subtest('pagination', () => {
+    const page_1 = forager.series.group({
+      query: {series_id},
+      group_by: {tag_group: 'artist'},
+      limit: 1,
+    })
+    ctx.assert.group_result(page_1, {
+      total: 2,
+      results: [{media_type: 'grouped', group: {value: 'alice', count: 2}}]
+    })
+    ctx.assert.not_equals(page_1.cursor, undefined)
+
+    const page_2 = forager.series.group({
+      query: {series_id},
+      group_by: {tag_group: 'artist'},
+      limit: 1,
+      cursor: page_1.cursor,
+    })
+    ctx.assert.group_result(page_2, {
+      total: 2,
+      results: [{media_type: 'grouped', group: {value: 'bob', count: 1}}]
+    })
+  })
+
+  await ctx.subtest('raises when series_id does not reference a series', () => {
+    // an existing media reference that is not a series
+    ctx.assert.throws(() => forager.series.group({
+      query: {series_id: media_doodle.media_reference.id},
+      group_by: {tag_group: 'artist'},
+    }), errors.BadInputError)
+
+    // a media reference that does not exist at all
+    ctx.assert.throws(() => forager.series.group({
+      query: {series_id: 999999},
+      group_by: {tag_group: 'artist'},
+    }), errors.NotFoundError)
+  })
+})

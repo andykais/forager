@@ -1,4 +1,4 @@
-import { Actions, type MediaSeriesResponse, type SeriesSearchResponse, type UpdateEditor } from '~/actions/lib/base.ts'
+import { Actions, type MediaGroupResponse, type MediaSeriesResponse, type SeriesSearchResponse, type UpdateEditor } from '~/actions/lib/base.ts'
 import { inputs, outputs, parsers } from '~/inputs/mod.ts'
 import type * as result_types from '~/models/lib/result_types.ts'
 import * as errors from '~/lib/errors.ts'
@@ -185,6 +185,16 @@ class SeriesActions extends Actions {
       cursor: records.cursor,
       results: results,
     }
+  }
+
+  /**
+    * Group the media inside a single series by the values of a tag group (e.g. group the media in a series by its "artist" tag).
+    *
+    * Mirrors {@linkcode MediaActions.prototype.group}, but every group is scoped to `query.series_id`.
+    */
+  public group = (params: inputs.SeriesSearchGroupBy): result_types.PaginatedResult<MediaGroupResponse> => {
+    const parsed = parsers.SeriesSearchGroupBy.parse(params)
+    return this.media_group(parsed)
   }
 
   #get_media_series_response(params: outputs.SeriesGet): MediaSeriesResponse {

@@ -56,6 +56,26 @@ export const SeriesSearch = PaginatedQuery.extend({
   order: z.enum(['desc', 'asc']).default('asc'),
 }).strict()
 
+/**
+ * Groups the media inside a single series by the values of a tag group.
+ *
+ * NOTE `sort_by` intentionally omits `series_index`: a group spans many series
+ * items, so it has no single index to sort on. Groups default to sorting by
+ * `count`, matching `PaginatedSearchGroupBy`.
+ */
+export const SeriesSearchGroupBy = SeriesSearch.extend({
+  group_by: z.object({
+    tag_group: z.string(),
+  }),
+  grouped_media: z.object({
+    limit: z.number().optional(),
+    sort_by: z.enum(['created_at', 'updated_at', 'source_created_at', 'view_count', 'last_viewed_at', 'duration']).default('source_created_at'),
+    order: SeriesSearch.shape.order,
+  }).prefault({}),
+  sort_by: z.enum(['count', 'created_at', 'updated_at', 'source_created_at', 'view_count', 'last_viewed_at', 'duration']).default('count'),
+  order: z.enum(['desc', 'asc']).default('desc'),
+})
+
 export const MediaSeriesInfo = MediaInfo.extend({
   media_series_name: z.string().optional(),
 })
