@@ -1302,6 +1302,282 @@ test('search query.media_type', async ctx => {
   })
 })
 
+test('search query.text_search', async ctx => {
+  using forager = new Forager(ctx.get_test_config())
+  forager.init()
+
+  const media_snowflake = await forager.media.create(ctx.resources.media_files['koch.tif'], {
+    title: 'Fractal Snowflake',
+    description: 'a recursive snowflake rendered as a tiff',
+    metadata: {artist: 'Helge von Koch', software: 'blender'},
+  }, ['artist:andrew'])
+  const media_cartoon = await forager.media.create(ctx.resources.media_files['ed-edd-eddy.png'], {
+    title: 'Cartoon Screengrab',
+    description: 'three boys loitering in a cul de sac',
+    metadata: {studio: 'a.k.a. Cartoon'},
+  }, ['artist:bob'])
+  const media_kitten = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {
+    title: 'Kitten Sketch',
+    description: 'a pencil drawing of a napping kitten',
+    metadata: {location: 'Montréal'},
+  }, ['artist:andrew'])
+
+  // a bare string searches every indexed field
+  await ctx.subtest('string shorthand searches all fields', () => {
+    // 'snowflake' appears in both the title and description of one media reference
+    ctx.assert.search_result(forager.media.search({query: {text_search: 'snowflake'}}), {
+      total: 1,
+      results: [{media_reference: {id: media_snowflake.media_reference.id}}],
+    })
+    // 'blender' only appears in metadata
+    ctx.assert.search_result(forager.media.search({query: {text_search: 'blender'}}), {
+      total: 1,
+      results: [{media_reference: {id: media_snowflake.media_reference.id}}],
+    })
+    // 'doodle' only appears in the filepath
+    ctx.assert.search_result(forager.media.search({query: {text_search: 'doodle'}}), {
+      total: 1,
+      results: [{media_reference: {id: media_kitten.media_reference.id}}],
+    })
+    // 'cartoon' appears in the title of one reference and the metadata of the same one
+    ctx.assert.search_result(forager.media.search({query: {text_search: 'cartoon'}}), {
+      total: 1,
+      results: [{media_reference: {id: media_cartoon.media_reference.id}}],
+    })
+    ctx.assert.search_result(forager.media.search({query: {text_search: 'nonexistent'}}), {
+      total: 0,
+      results: [],
+    })
+  })
+
+  await ctx.subtest('restricting the search to a single field', () => {
+    // 'kitten' is in both the title and the description
+    ctx.assert.search_result(forager.media.search({query: {text_search: {query: 'kitten', fields: ['title']}}}), {
+      total: 1,
+      results: [{media_reference: {id: media_kitten.media_reference.id}}],
+    })
+    // 'napping' is only in the description, so a title-only search misses it
+    ctx.assert.search_result(forager.media.search({query: {text_search: {query: 'napping', fields: ['title']}}}), {
+      total: 0,
+      results: [],
+    })
+    ctx.assert.search_result(forager.media.search({query: {text_search: {query: 'napping', fields: ['description']}}}), {
+      total: 1,
+      results: [{media_reference: {id: media_kitten.media_reference.id}}],
+    })
+    // metadata is indexed as raw json, so both keys and values are searchable
+    ctx.assert.search_result(forager.media.search({query: {text_search: {query: 'software', fields: ['metadata']}}}), {
+      total: 1,
+      results: [{media_reference: {id: media_snowflake.media_reference.id}}],
+    })
+    ctx.assert.search_result(forager.media.search({query: {text_search: {query: 'blender', fields: ['title', 'description']}}}), {
+      total: 0,
+      results: [],
+    })
+    // filepaths are tokenized on their separators
+    ctx.assert.search_result(forager.media.search({query: {text_search: {query: 'koch', fields: ['filepath']}}}), {
+      total: 1,
+      results: [{media_reference: {id: media_snowflake.media_reference.id}}],
+    })
+    // 'koch' is in the snowflake metadata too, so a metadata search finds the same reference
+    ctx.assert.search_result(forager.media.search({query: {text_search: {query: 'koch', fields: ['metadata']}}}), {
+      total: 1,
+      results: [{media_reference: {id: media_snowflake.media_reference.id}}],
+    })
+  })
+
+  await ctx.subtest('searching multiple fields at once', () => {
+    // 'eddy' is in the ed-edd-eddy filepath and 'screengrab' is in its title. Each term is required,
+    // so only a search that covers both fields matches
+    ctx.assert.search_result(forager.media.search({query: {text_search: {query: 'eddy screengrab', fields: ['title', 'filepath']}}}), {
+      total: 1,
+      results: [{media_reference: {id: media_cartoon.media_reference.id}}],
+    })
+    ctx.assert.search_result(forager.media.search({query: {text_search: {query: 'eddy screengrab', fields: ['title']}}}), {
+      total: 0,
+      results: [],
+    })
+  })
+
+  await ctx.subtest('multiple terms are required together', () => {
+    ctx.assert.search_result(forager.media.search({query: {text_search: 'fractal snowflake'}}), {
+      total: 1,
+      results: [{media_reference: {id: media_snowflake.media_reference.id}}],
+    })
+    // 'fractal' and 'kitten' each match a different media reference, so nothing matches both
+    ctx.assert.search_result(forager.media.search({query: {text_search: 'fractal kitten'}}), {
+      total: 0,
+      results: [],
+    })
+  })
+
+  await ctx.subtest('a trailing asterisk is a prefix search', () => {
+    ctx.assert.search_result(forager.media.search({query: {text_search: {query: 'snow*', fields: ['title']}}}), {
+      total: 1,
+      results: [{media_reference: {id: media_snowflake.media_reference.id}}],
+    })
+    // without the asterisk a partial word does not match
+    ctx.assert.search_result(forager.media.search({query: {text_search: {query: 'snow', fields: ['title']}}}), {
+      total: 0,
+      results: [],
+    })
+    // prefixes can match more than one media reference
+    ctx.assert.search_result(forager.media.search({query: {text_search: {query: 'c*', fields: ['title']}}}), {
+      total: 1,
+      results: [{media_reference: {id: media_cartoon.media_reference.id}}],
+    })
+  })
+
+  await ctx.subtest('searches ignore case and diacritics', () => {
+    ctx.assert.search_result(forager.media.search({query: {text_search: 'SNOWFLAKE'}}), {
+      total: 1,
+      results: [{media_reference: {id: media_snowflake.media_reference.id}}],
+    })
+    ctx.assert.search_result(forager.media.search({query: {text_search: {query: 'montreal', fields: ['metadata']}}}), {
+      total: 1,
+      results: [{media_reference: {id: media_kitten.media_reference.id}}],
+    })
+    ctx.assert.search_result(forager.media.search({query: {text_search: {query: 'Montréal', fields: ['metadata']}}}), {
+      total: 1,
+      results: [{media_reference: {id: media_kitten.media_reference.id}}],
+    })
+  })
+
+  await ctx.subtest('text search combines with other filters', () => {
+    // every resource lives in the same folder, so this term matches all three media references
+    ctx.assert.search_result(forager.media.search({query: {text_search: {query: 'resources', fields: ['filepath']}}}), {
+      total: 3,
+      results: [
+        {media_reference: {id: media_kitten.media_reference.id}},
+        {media_reference: {id: media_cartoon.media_reference.id}},
+        {media_reference: {id: media_snowflake.media_reference.id}},
+      ],
+    })
+    // ...and narrowing it with another filter applies both
+    ctx.assert.search_result(forager.media.search({
+      query: {text_search: {query: 'resources', fields: ['filepath']}, filepath: '*.png'},
+    }), {
+      total: 1,
+      results: [{media_reference: {id: media_cartoon.media_reference.id}}],
+    })
+  })
+
+  await ctx.subtest('fts5 syntax in user input is searched literally', () => {
+    // fts5 operators and column filters are searched as plain words instead of being interpreted.
+    // None of these match, because every term is required and no field contains these words
+    for (const query of ['AND', 'OR', 'NOT', 'NEAR', 'title:snowflake', 'snowflake OR kitten']) {
+      ctx.assert.equals(
+        forager.media.search({query: {text_search: query}}).total,
+        0,
+        `expected text search ${JSON.stringify(query)} to match nothing`,
+      )
+    }
+
+    // punctuation is not query syntax either, it is simply ignored by the tokenizer
+    for (const query of ['"snowflake', 'snowflake)', '(snowflake)', 'snowflake^']) {
+      ctx.assert.equals(
+        forager.media.search({query: {text_search: query}}).total,
+        1,
+        `expected text search ${JSON.stringify(query)} to match the snowflake media`,
+      )
+    }
+
+    // a term whose only content is punctuation is dropped rather than voiding the whole search
+    ctx.assert.search_result(forager.media.search({query: {text_search: 'snowflake -'}}), {
+      total: 1,
+      results: [{media_reference: {id: media_snowflake.media_reference.id}}],
+    })
+
+    // ...but a search with nothing searchable left is a bad input
+    ctx.assert.throws(() => forager.media.search({query: {text_search: '---'}}), errors.BadInputError)
+    ctx.assert.throws(() => forager.media.search({query: {text_search: ''}}), errors.BadInputError)
+  })
+
+  await ctx.subtest('group by search applies the text search filter', () => {
+    // baseline: every media reference is grouped by its artist tag
+    ctx.assert.group_result(forager.media.group({group_by: {tag_group: 'artist'}}), {
+      total: 2,
+      results: [
+        {media_type: 'grouped', group: {value: 'andrew', count: 2}},
+        {media_type: 'grouped', group: {value: 'bob', count: 1}},
+      ],
+    })
+
+    // a text search narrows the media that gets grouped, which changes the group counts
+    ctx.assert.group_result(forager.media.group({
+      group_by: {tag_group: 'artist'},
+      query: {text_search: 'snowflake'},
+    }), {
+      total: 1,
+      results: [
+        {media_type: 'grouped', group: {value: 'andrew', count: 1}},
+      ],
+    })
+
+    // ...and can filter every group away entirely
+    ctx.assert.group_result(forager.media.group({
+      group_by: {tag_group: 'artist'},
+      query: {text_search: {query: 'blender', fields: ['title']}},
+    }), {
+      total: 0,
+      results: [],
+    })
+  })
+
+  await ctx.subtest('the index tracks media info updates', () => {
+    forager.media.update(media_kitten.media_reference.id, {
+      title: 'Puppy Sketch',
+      description: 'a pencil drawing of a napping puppy',
+      metadata: {location: 'Toronto'},
+    })
+
+    ctx.assert.search_result(forager.media.search({query: {text_search: 'puppy'}}), {
+      total: 1,
+      results: [{media_reference: {id: media_kitten.media_reference.id}}],
+    })
+    ctx.assert.search_result(forager.media.search({query: {text_search: 'kitten'}}), {
+      total: 0,
+      results: [],
+    })
+    ctx.assert.search_result(forager.media.search({query: {text_search: {query: 'toronto', fields: ['metadata']}}}), {
+      total: 1,
+      results: [{media_reference: {id: media_kitten.media_reference.id}}],
+    })
+    ctx.assert.search_result(forager.media.search({query: {text_search: {query: 'montreal', fields: ['metadata']}}}), {
+      total: 0,
+      results: [],
+    })
+    // the filepath is untouched by a media info update
+    ctx.assert.search_result(forager.media.search({query: {text_search: {query: 'doodle', fields: ['filepath']}}}), {
+      total: 1,
+      results: [{media_reference: {id: media_kitten.media_reference.id}}],
+    })
+  })
+
+  await ctx.subtest('the index tracks media deletes', async () => {
+    await forager.media.delete({media_reference_id: media_cartoon.media_reference.id})
+
+    ctx.assert.search_result(forager.media.search({query: {text_search: 'screengrab'}}), {
+      total: 0,
+      results: [],
+    })
+    ctx.assert.search_result(forager.media.search({query: {text_search: {query: 'eddy', fields: ['filepath']}}}), {
+      total: 0,
+      results: [],
+    })
+
+    // re-adding the same file indexes it again. This also proves the deleted index row was removed,
+    // since a leftover row would collide with the new media reference id
+    const media_cartoon_again = await forager.media.create(ctx.resources.media_files['ed-edd-eddy.png'], {
+      title: 'Cartoon Screengrab',
+    })
+    ctx.assert.search_result(forager.media.search({query: {text_search: 'screengrab'}}), {
+      total: 1,
+      results: [{media_reference: {id: media_cartoon_again.media_reference.id}}],
+    })
+  })
+})
+
 test('audio media', async ctx => {
   using forager = new Forager(ctx.get_test_config())
   forager.init()

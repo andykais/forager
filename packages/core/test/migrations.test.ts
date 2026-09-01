@@ -3,7 +3,7 @@ import * as fs from '@std/fs'
 import * as path from '@std/path'
 import { Forager } from '~/mod.ts'
 
-const CURRENT_VERSION = 11
+const CURRENT_VERSION = 12
 
 test('migrate from v1 schema', async (ctx) => {
   const forager_v1_path = ctx.create_fixture_path('forager_v1')
@@ -72,6 +72,11 @@ test('migrate from v1 schema', async (ctx) => {
       next_version: 11,
       backup: true,
     },
+    {
+      start_version: 11,
+      next_version: 12,
+      backup: true,
+    },
   ]
   ctx.assert.equals(v1_migration_info.db.migration_operations, expected_migration_operations)
 
@@ -99,5 +104,20 @@ test('migrate from v1 schema', async (ctx) => {
 
   await ctx.subtest('assert migrated schema has no diff with freshly seeded schema', async () => {
     ctx.assert.equals(v1_migration_info.schemas.tables, forager_new_info.schemas.tables)
+  })
+
+  await ctx.subtest('full text search index is backfilled by the v12 migration', async () => {
+    ctx.assert.search_result(forager.media.search({query: {text_search: 'cronch'}}), {
+      total: 1,
+      results: [
+        {media_file: {filename: 'cat_cronch.mp4'}},
+      ],
+    })
+    ctx.assert.search_result(forager.media.search({query: {text_search: {query: 'koch', fields: ['filepath']}}}), {
+      total: 1,
+      results: [
+        {media_file: {filename: 'koch.tif'}},
+      ],
+    })
   })
 })

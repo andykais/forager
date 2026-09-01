@@ -523,3 +523,111 @@ test('series.search query.media_type filter', async ctx => {
     ]
   })
 })
+
+test('series.search query.text_search filter', async ctx => {
+  using forager = new Forager(ctx.get_test_config())
+  forager.init()
+
+  const media_kitten = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {
+    title: 'Kitten Sketch',
+    description: 'a pencil drawing of a napping kitten',
+  })
+  const media_blink = await forager.media.create(ctx.resources.media_files['blink.gif'], {
+    title: 'Blinking Eye',
+    metadata: {loop: 'seamless'},
+  })
+  const media_cronch = await forager.media.create(ctx.resources.media_files['cat_cronch.mp4'], {
+    title: 'Cat Cronch',
+    description: 'a cat eating loudly',
+  })
+
+  const series = forager.series.create({
+    media_series_name: 'assorted_animals',
+    title: 'Assorted Animals Collection',
+    description: 'a grab bag of critters',
+  })
+  forager.series.add({series_id: series.media_reference.id, media_reference_id: media_kitten.media_reference.id, series_index: 0})
+  forager.series.add({series_id: series.media_reference.id, media_reference_id: media_blink.media_reference.id, series_index: 1})
+  forager.series.add({series_id: series.media_reference.id, media_reference_id: media_cronch.media_reference.id, series_index: 2})
+
+  // baseline: all 3 items returned in series_index order
+  ctx.assert.series_search_result(forager.series.search({
+    query: {series_id: series.media_reference.id}
+  }), {
+    total: 3,
+    results: [
+      {media_reference: {id: media_kitten.media_reference.id}, series_index: 0},
+      {media_reference: {id: media_blink.media_reference.id}, series_index: 1},
+      {media_reference: {id: media_cronch.media_reference.id}, series_index: 2},
+    ]
+  })
+
+  // a bare string searches every indexed field. 'cat' is in the cronch title and in both filepaths
+  ctx.assert.series_search_result(forager.series.search({
+    query: {series_id: series.media_reference.id, text_search: 'cat'}
+  }), {
+    total: 2,
+    results: [
+      {media_reference: {id: media_kitten.media_reference.id}, series_index: 0},
+      {media_reference: {id: media_cronch.media_reference.id}, series_index: 2},
+    ]
+  })
+
+  // restricting to the title drops the media that only matched on its filepath
+  ctx.assert.series_search_result(forager.series.search({
+    query: {series_id: series.media_reference.id, text_search: {query: 'cat', fields: ['title']}}
+  }), {
+    total: 1,
+    results: [
+      {media_reference: {id: media_cronch.media_reference.id}, series_index: 2},
+    ]
+  })
+
+  // descriptions and metadata are searchable within a series too
+  ctx.assert.series_search_result(forager.series.search({
+    query: {series_id: series.media_reference.id, text_search: {query: 'napping', fields: ['description']}}
+  }), {
+    total: 1,
+    results: [
+      {media_reference: {id: media_kitten.media_reference.id}, series_index: 0},
+    ]
+  })
+  ctx.assert.series_search_result(forager.series.search({
+    query: {series_id: series.media_reference.id, text_search: {query: 'seamless', fields: ['metadata']}}
+  }), {
+    total: 1,
+    results: [
+      {media_reference: {id: media_blink.media_reference.id}, series_index: 1},
+    ]
+  })
+
+  // text search combines with the other series filters
+  ctx.assert.series_search_result(forager.series.search({
+    query: {series_id: series.media_reference.id, text_search: 'cat', media_type: 'VIDEO'}
+  }), {
+    total: 1,
+    results: [
+      {media_reference: {id: media_cronch.media_reference.id}, series_index: 2},
+    ]
+  })
+
+  // series references carry their own title and description, so they are indexed like any other
+  // media reference and are findable in a top level series search
+  ctx.assert.search_result(forager.media.search({query: {series: true, text_search: 'assorted'}}), {
+    total: 1,
+    results: [
+      {media_reference: {id: series.media_reference.id}},
+    ]
+  })
+  ctx.assert.search_result(forager.media.search({query: {series: true, text_search: {query: 'critters', fields: ['description']}}}), {
+    total: 1,
+    results: [
+      {media_reference: {id: series.media_reference.id}},
+    ]
+  })
+  // a series has no media file, so it never matches a filepath search
+  ctx.assert.search_result(forager.media.search({query: {series: true, text_search: {query: 'assorted', fields: ['filepath']}}}), {
+    total: 0,
+    results: [],
+  })
+})
