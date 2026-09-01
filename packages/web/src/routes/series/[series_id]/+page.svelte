@@ -1,7 +1,8 @@
 <script lang="ts">
   import { page } from '$app/state'
   import BrowsableShell from '$lib/components/browsable/BrowsableShell.svelte'
-  import type { MediaViewRune } from '$lib/runes/index.ts'
+  import GroupTileLink from '$lib/components/browsable/GroupTileLink.svelte'
+  import { MediaGroupRune, type MediaViewRune } from '$lib/runes/index.ts'
 
   import { SeriesController } from './controller.ts'
 
@@ -39,20 +40,12 @@
   )
 </script>
 
-{#snippet sort_options()}
-  <option value="series_index">Series Index</option>
-  <option value="source_created_at">Created At</option>
-  <option value="created_at">Added On</option>
-  <option value="updated_at">Updated At</option>
-  <option value="view_count">View Count</option>
-  <option value="last_viewed_at">Last Viewed</option>
-  <option value="duration">Duration</option>
-{/snippet}
-
 {#snippet tile_footer(result: MediaViewRune)}
-  {#if result.series_index !== undefined}
+  {#if result instanceof MediaGroupRune}
+    <GroupTileLink {controller} {result} />
+  {:else if result.series_index !== undefined}
     <span title="Page in series">#{result.series_index}</span>
   {/if}
 {/snippet}
 
-<BrowsableShell {controller} title={page_title} {sort_options} {tile_footer} />
+<BrowsableShell {controller} title={page_title} {tile_footer} />

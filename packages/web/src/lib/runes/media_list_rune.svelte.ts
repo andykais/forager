@@ -7,6 +7,7 @@ type Result =
   | ReturnType<Forager['media']['search']>
   | ReturnType<Forager['media']['group']>
   | ReturnType<Forager['series']['search']>
+  | ReturnType<Forager['series']['group']>
 
 interface SearchInput {
   type: 'media'
@@ -24,11 +25,16 @@ interface SeriesSearchInput {
   type: 'series_search'
   params: Parameters<Forager['series']['search']>[0]
 }
+interface SeriesGroupByInput {
+  type: 'series_group_by'
+  params: Parameters<Forager['series']['group']>[0]
+}
 export type Input =
   | SearchInput
   | GroupByInput
   | FilesystemInput
   | SeriesSearchInput
+  | SeriesGroupByInput
 
 interface MediaListState {
   loading: boolean
@@ -38,7 +44,10 @@ interface MediaListState {
 
 export class MediaListRune extends Rune {
   #saved_params_type: Input['type'] = 'media'
-  #saved_params: {} | undefined
+  // the accumulated params are re-sent verbatim on each page fetch, so they are
+  // kept loosely typed here; the per-action types are enforced at the
+  // paginate() call sites via `Input`
+  #saved_params: Record<string, any> = {}
   #prev_query_hash: string = ''
   #fetch_count = 0
   #has_more = true
@@ -61,7 +70,7 @@ export class MediaListRune extends Rune {
     this.#has_more = true
     this.#cursor = undefined
     this.#fetch_count = 0
-    this.#saved_params = undefined
+    this.#saved_params = {}
     this.#state = {
       loading: false,
       results: [],
@@ -79,9 +88,9 @@ export class MediaListRune extends Rune {
     this.#fetch_count ++
     this.#state.loading = true
 
-    let fetch_params: Input['params'] | undefined = this.#saved_params
+    let fetch_params: Record<string, any> = this.#saved_params
     if (this.#cursor !== undefined) {
-      fetch_params = {...fetch_params, cursor: this.#cursor} as any
+      fetch_params = {...fetch_params, cursor: this.#cursor}
     }
 
     const params_type = params?.type ?? this.#saved_params_type
@@ -95,6 +104,10 @@ export class MediaListRune extends Rune {
     else if (params_type === 'group_by') {
       fetch_params.limit = fetch_params.limit ?? 30
       content = await this.client.forager.media.group(fetch_params)
+      results = content.results.map(result => MediaViewRune.create(this.client, result, fetch_params))
+    } else if (params_type === 'series_group_by') {
+      fetch_params.limit = fetch_params.limit ?? 30
+      content = await this.client.forager.series.group(fetch_params)
       results = content.results.map(result => MediaViewRune.create(this.client, result, fetch_params))
     } else if (params_type === 'series_search') {
       // series responses carry a typed `series_index`; thread it onto the rune

@@ -12,21 +12,17 @@
   interface Props {
     controller: BrowsableController
     title: string
-    /** Route-specific <option> elements for the sort_by select. */
-    sort_options: Snippet
-    /** Optional route-specific filter controls (e.g. browse's search mode). */
-    extra_filters?: Snippet
     /** Optional per-tile footer (e.g. "View series" link, `#index` label). */
     tile_footer?: Snippet<[MediaViewRune]>
   }
 
-  let { controller, title, sort_options, extra_filters, tile_footer }: Props = $props()
+  let { controller, title, tile_footer }: Props = $props()
   const { dimensions } = controller.runes
 </script>
 
 <div class="h-dvh">
   <Header {title} bind:height={dimensions.heights.header}>
-    <SearchParams {controller} {sort_options} {extra_filters} />
+    <SearchParams {controller} />
   </Header>
   <div class="grid grid-cols-[auto_1fr]">
     <MediaDetails {controller} />

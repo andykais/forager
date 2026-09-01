@@ -8,12 +8,9 @@ import {
   MEDIA_TYPE_TO_CORE,
 } from '$lib/runes/browsable_queryparams.svelte.ts'
 
-type SortBy = inputs.PaginatedSearch['sort_by']
+type SortBy = inputs.PaginatedSearchGroupBy['sort_by']
 
-interface SearchParams extends BrowsableSearchParams<SortBy> {
-  search_mode: 'media' | 'group_by' | 'filesystem'
-  group_by: string | undefined
-}
+type SearchParams = BrowsableSearchParams<SortBy>
 
 const DEFAULTS: SearchParams = {
   search_string: '',
@@ -38,8 +35,7 @@ const URL_PARAM_MAP = {
 
 /**
  * Manages browser URL query parameters and syncs them with search state for the
- * `/browse` route. Extends the shared browsable manager with the browse-only
- * search-mode / group-by concepts.
+ * `/browse` route, searching across every media reference.
  */
 export class QueryParamsManager extends BrowsableQueryParams<SearchParams> {
   get DEFAULTS(): SearchParams { return DEFAULTS }
@@ -49,64 +45,31 @@ export class QueryParamsManager extends BrowsableQueryParams<SearchParams> {
     super(client, media_list)
   }
 
-  protected override post_parse(params: SearchParams, url: URL): void {
-    // Infer search_mode from group_by presence
-    if (url.searchParams.has('group_by')) {
-      params.search_mode = 'group_by'
-    }
-  }
-
-  protected override post_serialize(url_params: Map<string, string>): void {
-    if (url_params.get('mode') === 'group_by' && !url_params.has('group_by')) {
-      url_params.set('group_by', '')
-    }
-
-    // Omit redundant 'mode' param when it can be inferred
-    if (['group_by', 'media'].includes(url_params.get('mode') ?? '')) {
-      url_params.delete('mode')
-    }
-  }
-
-  protected override merge_param(params: SearchParams, key: keyof SearchParams, val: unknown): void {
-    if (key === 'search_mode') {
-      params.search_mode = val as SearchParams['search_mode']
-      // Clear group_by if switching away from group_by mode
-      if (val !== 'group_by') {
-        params.group_by = undefined
-      }
-    } else {
-      super.merge_param(params, key, val)
-    }
-  }
-
   protected async execute_search(params: SearchParams): Promise<void> {
     this.media_list.clear()
 
-    const tags = this.parse_tags(params.search_string)
     const query: inputs.PaginatedSearch['query'] = {
-      tags,
+      tags: this.parse_tags(params.search_string),
       filepath: params.filepath,
     }
     this.apply_common_filters(query, params)
 
-    if (params.search_mode === 'media') {
+    if (params.search_mode === 'group_by') {
       await this.media_list.paginate({
-        type: 'media',
+        type: 'group_by',
         params: {
+          group_by: { tag_group: params.group_by ?? '' },
           query,
           sort_by: params.sort,
           order: params.order,
         },
       })
-    } else if (params.search_mode === 'group_by') {
+    } else {
       await this.media_list.paginate({
-        type: 'group_by',
+        type: 'media',
         params: {
-          group_by: {
-            tag_group: params.group_by ?? '',
-          },
           query,
-          sort_by: params.sort,
+          sort_by: params.sort as inputs.PaginatedSearch['sort_by'],
           order: params.order,
         },
       })
@@ -127,9 +90,5 @@ export class QueryParamsManager extends BrowsableQueryParams<SearchParams> {
       animated: media_type === 'animated' ? true : undefined,
       media_type: is_core_media_type(media_type) ? MEDIA_TYPE_TO_CORE[media_type] : undefined,
     }
-  }
-
-  protected override get empty_search_summary(): string {
-    return 'All media'
   }
 }

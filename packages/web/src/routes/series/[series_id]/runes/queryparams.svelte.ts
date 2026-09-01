@@ -4,11 +4,13 @@ import type { BaseController } from '$lib/base_controller.ts'
 import {
   BrowsableQueryParams,
   type BrowsableSearchParams,
+  COMMON_SORT_OPTIONS,
   is_core_media_type,
   MEDIA_TYPE_TO_CORE,
+  type SortOption,
 } from '$lib/runes/browsable_queryparams.svelte.ts'
 
-type SortBy = inputs.SeriesSearch['sort_by']
+type SortBy = inputs.SeriesSearch['sort_by'] | inputs.SeriesSearchGroupBy['sort_by']
 
 type SearchParams = BrowsableSearchParams<SortBy>
 
@@ -18,6 +20,8 @@ const DEFAULTS: SearchParams = {
   sort: 'series_index',
   order: 'asc',
   unread_only: false,
+  search_mode: 'media',
+  group_by: undefined,
   stars: undefined,
   stars_equality: undefined,
   media_type: 'all',
@@ -26,8 +30,15 @@ const DEFAULTS: SearchParams = {
 const URL_PARAM_MAP = {
   search_string: 'tags',
   unread_only: 'unread',
+  search_mode: 'mode',
   media_type: 'type',
 } as const satisfies Partial<Record<keyof SearchParams, string>>
+
+/** Only a series can be ordered by each item's position within it. */
+const SERIES_SORT_OPTIONS: readonly SortOption[] = [
+  { value: 'series_index', label: 'Series Index' },
+  ...COMMON_SORT_OPTIONS,
+]
 
 /**
  * Manages browser URL query parameters for a media series detail view. Extends
@@ -48,6 +59,10 @@ export class SeriesQueryParamsManager extends BrowsableQueryParams<SearchParams>
     return this.#series_id
   }
 
+  protected override get flat_sort_options(): readonly SortOption[] {
+    return SERIES_SORT_OPTIONS
+  }
+
   protected async execute_search(params: SearchParams): Promise<void> {
     this.media_list.clear()
 
@@ -59,14 +74,26 @@ export class SeriesQueryParamsManager extends BrowsableQueryParams<SearchParams>
     }
     this.apply_common_filters(query, params)
 
-    await this.media_list.paginate({
-      type: 'series_search',
-      params: {
-        query,
-        sort_by: params.sort,
-        order: params.order,
-      },
-    })
+    if (params.search_mode === 'group_by') {
+      await this.media_list.paginate({
+        type: 'series_group_by',
+        params: {
+          group_by: { tag_group: params.group_by ?? '' },
+          query,
+          sort_by: params.sort as inputs.SeriesSearchGroupBy['sort_by'],
+          order: params.order,
+        },
+      })
+    } else {
+      await this.media_list.paginate({
+        type: 'series_search',
+        params: {
+          query,
+          sort_by: params.sort as inputs.SeriesSearch['sort_by'],
+          order: params.order,
+        },
+      })
+    }
   }
 
   public get contextual_query(): inputs.SeriesSearch['query'] {
