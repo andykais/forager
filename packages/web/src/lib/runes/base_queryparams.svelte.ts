@@ -17,9 +17,14 @@ export abstract class BaseQueryParams<TParams extends Record<string, any>> exten
   public current: TParams = $state() as TParams
   public draft: TParams = $state() as TParams
   public current_serialized: string = '?'
+  // NOTE assigned from the constructor rather than declared as an abstract getter:
+  // TypeScript forbids reading an abstract member from the base constructor (ts2715),
+  // and the defaults are needed here to seed `current`/`draft`.
+  public readonly DEFAULTS: TParams
 
   constructor(client: BaseController['client'], defaults: TParams) {
     super(client)
+    this.DEFAULTS = defaults
     this.current = { ...defaults }
     this.draft = { ...defaults }
 
@@ -38,7 +43,6 @@ export abstract class BaseQueryParams<TParams extends Record<string, any>> exten
     })
   }
 
-  abstract get DEFAULTS(): TParams
   abstract get URL_PARAM_MAP(): Partial<Record<keyof TParams, string>>
 
   protected get URL_PARAM_MAP_REVERSED(): Record<string, keyof TParams> {

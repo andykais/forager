@@ -51,16 +51,20 @@ export class MediaSelectionsRune extends Rune {
   }
 
 
-  private is_currently_selected(media_reference_id: number) {
-    if (this.#current_selection.media_response?.media_reference.id === media_reference_id) {
-      return true
-    }
-    return false
+  private is_currently_selected(media_response: runes.AnyMediaViewRune) {
+    const current = this.#current_selection.media_response
+    if (!current) return false
+    // grouped results have no media reference until their media loads, so fall back to
+    // rune identity, which is what distinguishes one tile from another anyway
+    if (current === media_response) return true
+    const current_media_reference_id = current.media_reference?.id
+    return current_media_reference_id !== undefined
+      && current_media_reference_id === media_response.media_reference?.id
   }
 
   public async set_current_selection(media_response: runes.AnyMediaViewRune, result_index: number) {
     this.#current_selection.show
-    if (this.is_currently_selected(media_response.media_reference.id)) {
+    if (this.is_currently_selected(media_response)) {
       await this.open_media()
     } else {
       this.#current_selection.media_response = media_response
