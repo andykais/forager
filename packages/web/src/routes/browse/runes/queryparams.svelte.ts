@@ -53,6 +53,17 @@ const DEFAULTS: SearchParams = {
   media_type: 'all',
 }
 
+/**
+ * 'count' is only a valid sort for group_by searches. Params that leave group_by
+ * mode fall back to the default sort so we never link to a search core rejects.
+ */
+function normalize_sort(params: SearchParams): SearchParams {
+  if (params.sort === 'count' && params.search_mode !== 'group_by') {
+    return { ...params, sort: DEFAULTS.sort }
+  }
+  return params
+}
+
 // Map internal names to URL param names
 const URL_PARAM_MAP = {
   search_string: 'tags',
@@ -272,6 +283,7 @@ export class QueryParamsManager extends Rune {
    * Submit draft params: update URL and execute search
    */
   public async submit(): Promise<void> {
+    this.draft = normalize_sort(this.draft)
     this.#write_url(this.draft)
     await this.#execute_search(this.draft)
   }
@@ -311,7 +323,7 @@ export class QueryParamsManager extends Rune {
       }
     }
 
-    return params
+    return normalize_sort(params)
   }
 
   /**
