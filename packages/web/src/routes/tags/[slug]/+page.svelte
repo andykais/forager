@@ -7,10 +7,11 @@
   import { XCircle, ArrowTopRightOnSquare } from '$lib/icons/mod.ts'
   import TagAutoCompleteInput from '$lib/components/TagAutoCompleteInput.svelte'
   import { TagDetailController } from './controller.svelte.ts'
+  import { set_controller } from '$lib/contexts/controller.ts'
   import Numeric from '$lib/components/Numeric.svelte';
 
   let props = $props()
-  const controller = new TagDetailController(props.data.config)
+  const controller = set_controller(new TagDetailController(props.data.config))
 
   let alias_input = $state('')
   let child_input = $state('')
@@ -150,7 +151,6 @@
             <div class="flex-grow">
               <label class="text-slate-400 text-xs">Set this tag as an alias that hides the following tags:</label>
               <TagAutoCompleteInput
-                {controller}
                 bind:search_string={alias_input}
                 kind="details"
                 placeholder="set alias for this tag..."
@@ -200,7 +200,6 @@
             }}>
               <div class="flex-grow">
                 <TagAutoCompleteInput
-                  {controller}
                   bind:search_string={parent_input}
                   kind="details"
                   placeholder="add parent tag..."
@@ -246,7 +245,6 @@
             }}>
               <div class="flex-grow">
                 <TagAutoCompleteInput
-                  {controller}
                   bind:search_string={child_input}
                   kind="details"
                   placeholder="add child tag..."

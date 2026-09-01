@@ -11,7 +11,9 @@
   import * as parsers from '$lib/parsers.ts'
 
   import { BrowseController } from '../controller.ts'
-  let {controller}: {controller: BrowseController} = $props()
+  import { get_controller } from '$lib/contexts/controller.ts'
+
+  const controller = get_controller<BrowseController>()
   let {dimensions, media_selections, settings, queryparams} = controller.runes
 
   let new_tag_str = $state<string>('')
@@ -74,14 +76,10 @@
     }}
     >
     {#if media_selections.current_selection.media_response}
-      <MediaDetailEntry
-        {controller}
-        label="Views"
+      <MediaDetailEntry        label="Views"
         content={media_selections.current_selection.media_response.media_reference.view_count}/>
 
-      <MediaDetailEntry
-        {controller}
-        label="Stars"
+      <MediaDetailEntry        label="Stars"
         content={media_selections.current_selection.media_response.media_reference.stars}/>
 
       <label class="text-green-50" for="tags"><span>Tags</span></label>
@@ -104,24 +102,18 @@
             </button>
             <SearchLink
               class="hover:cursor-pointer"
-              title="Apply to search"
-              {controller}
-              params={queryparams.merge({tags: parsers.Tag.encode(tag)})}>
+              title="Apply to search"              params={queryparams.merge({tags: parsers.Tag.encode(tag)})}>
               <Icon class="fill-green-50 hover:fill-green-300" data={MagnifyingGlassPlus} size="20px" color="none" />
             </SearchLink>
             <SearchLink
               class="hover:cursor-pointer"
-              title="Start new search"
-              {controller}
-              params={{...queryparams.DEFAULTS, search_string: parsers.Tag.encode(tag)}}>
+              title="Start new search"              params={{...queryparams.DEFAULTS, search_string: parsers.Tag.encode(tag)}}>
               <Icon class="fill-green-50 hover:fill-green-300" data={ArrowTopRightOnSquare} size="20px" color="none" />
             </SearchLink>
           </div>
         {/each}
       {/each}
-      <TagAutoCompleteInput
-        {controller}
-        sort_by="updated_at"
+      <TagAutoCompleteInput        sort_by="updated_at"
         bind:search_string={new_tag_str}
         placeholder=""
         kind="details"
@@ -129,57 +121,41 @@
       />
       <input type="submit" class='hidden'>
 
-      <MediaDetailEntry
-        {controller}
-        editable
+      <MediaDetailEntry        editable
         hide_if_null
         label="Title"
         content={media_selections.current_selection.media_response.media_reference.title}/>
 
-      <MediaDetailEntry
-        {controller}
-        editable
+      <MediaDetailEntry        editable
         hide_if_null
         label="Description"
         content={media_selections.current_selection.media_response.media_reference.description}/>
 
-      <MediaDetailEntry
-        {controller}
-        editable
+      <MediaDetailEntry        editable
         hide_if_null
         label="Created"
         type="datetime-local"
         content={media_selections.current_selection.media_response.media_reference.source_created_at}/>
 
       <!-- TODO we should support datetimes in @andykais/ts-rpc -->
-      <MediaDetailEntry
-        {controller}
-        editable
+      <MediaDetailEntry        editable
         label="Added"
         type="datetime-local"
         content={media_selections.current_selection.media_response.media_reference.created_at}/>
 
-      <MediaDetailEntry
-        {controller}
-        hide_if_null
+      <MediaDetailEntry        hide_if_null
         label="Source URL"
         content={media_selections.current_selection.media_response.media_reference.source_url}/>
 
-      <MediaDetailEntry
-        {controller}
-        hide_if_null
+      <MediaDetailEntry        hide_if_null
         label="Metadata"
         content={media_selections.current_selection.media_response.media_reference.metadata}/>
 
       {#if media_selections.current_selection.media_response.media_type === 'media_file'}
-        <MediaDetailEntry
-          {controller}
-          label="File"
+        <MediaDetailEntry          label="File"
           content={media_selections.current_selection.media_response.media_file.filepath}/>
 
-        <MediaDetailEntry
-          {controller}
-          label="Filename"
+        <MediaDetailEntry          label="Filename"
           content={path.basename(media_selections.current_selection.media_response.media_file.filepath)}/>
       {/if}
 
