@@ -6,22 +6,12 @@
   import TagAutoCompleteInput from '$lib/components/TagAutoCompleteInput.svelte'
   import type { BrowsableController } from '$lib/base_controller.ts'
   import StarInput from '$lib/components/StarInput.svelte'
-  import type { Snippet } from 'svelte'
 
   interface Props {
     controller: BrowsableController
-    /**
-     * Renders route-specific <option> elements for the sort_by select.
-     */
-    sort_options: Snippet
-    /**
-     * Renders an optional trailing block for additional route-specific
-     * controls in the filter row (e.g. search_mode select, group_by input).
-     */
-    extra_filters?: Snippet
   }
 
-  let { controller, sort_options, extra_filters }: Props = $props()
+  let { controller }: Props = $props()
 
   const { queryparams, media_selections, settings } = controller.runes
 
@@ -68,7 +58,9 @@
             name="sort_by"
             bind:value={queryparams.draft.sort}
             onchange={update_search}>
-            {@render sort_options()}
+            {#each queryparams.sort_options as option (option.value)}
+              <option value={option.value}>{option.label}</option>
+            {/each}
           </select>
           <button
             class="hover:cursor-pointer"
@@ -162,8 +154,26 @@
             bind:value={queryparams.draft.filepath}>
         </div>
 
-        {#if extra_filters}
-          {@render extra_filters()}
+        <SelectInput
+          label="Search Mode"
+          options={[
+            { label: 'Media', value: 'media' },
+            { label: 'Grouped', value: 'group_by' },
+          ]}
+          bind:value={queryparams.draft.search_mode}
+          onchange={update_search}
+        />
+
+        {#if queryparams.draft.search_mode === 'group_by'}
+          <div class="flex gap-2">
+            <label class="" for="group_by">Group By:</label>
+            <input
+              class="rounded-lg py-1 px-3 text-slate-100 bg-gray-800 text-sm"
+              name="group_by"
+              type="text"
+              placeholder="artist..."
+              bind:value={queryparams.draft.group_by}>
+          </div>
         {/if}
       </div>
     </div>

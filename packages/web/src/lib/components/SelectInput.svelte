@@ -4,7 +4,7 @@
     value: string
   }
   interface Props {
-    label: string
+    label?: string
     options: SelectOption[]
     value: string
     onchange: (event?: Event) => unknown

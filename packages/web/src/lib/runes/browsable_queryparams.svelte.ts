@@ -28,6 +28,27 @@ export function is_core_media_type(v: MediaTypeFilter): v is keyof typeof MEDIA_
   return v in MEDIA_TYPE_TO_CORE
 }
 
+/** Every browsable route can either list media or group it by a tag group. */
+export type SearchMode = 'media' | 'group_by'
+
+export interface SortOption {
+  value: string
+  label: string
+}
+
+/** Sort options valid for any browsable route in either search mode. */
+export const COMMON_SORT_OPTIONS: readonly SortOption[] = [
+  { value: 'source_created_at', label: 'Created At' },
+  { value: 'created_at', label: 'Added On' },
+  { value: 'updated_at', label: 'Updated At' },
+  { value: 'view_count', label: 'View Count' },
+  { value: 'last_viewed_at', label: 'Last Viewed' },
+  { value: 'duration', label: 'Duration' },
+]
+
+/** Only groups can be sorted by how many media they contain. */
+const GROUP_SORT_OPTION: SortOption = { value: 'count', label: 'Count' }
+
 /**
  * Concrete set of filters shared by every browsable route (`/browse`,
  * `/series/<id>`). The shared browsable components bind directly to these
@@ -46,6 +67,8 @@ export interface BrowsableSearchParams<TSort extends string = string> {
   stars: number | undefined
   stars_equality: 'gte' | 'eq' | undefined
   media_type: MediaTypeFilter
+  search_mode: SearchMode
+  group_by: string | undefined
 }
 
 /** Common filter fields every core query object accepts. */
@@ -87,8 +110,14 @@ export abstract class BrowsableQueryParams<
       this.parse_param(params, params_key, val)
     }
 
+    // a group_by param implies grouped mode, so `?group_by=artist` is a valid
+    // shorthand for `?mode=group_by&group_by=artist`
+    if (url.searchParams.has('group_by')) {
+      params.search_mode = 'group_by'
+    }
+
     this.post_parse(params, url)
-    return params
+    return this.normalize(params)
   }
 
   protected parse_param(params: TParams, key: keyof TParams, val: string): void {
@@ -150,8 +179,16 @@ export abstract class BrowsableQueryParams<
     }
   }
 
-  /** Hook for route-specific serialization tweaks. */
-  protected post_serialize(_url_params: Map<string, string>): void {}
+  protected post_serialize(url_params: Map<string, string>): void {
+    if (url_params.get('mode') === 'group_by' && !url_params.has('group_by')) {
+      url_params.set('group_by', '')
+    }
+
+    // 'mode' is redundant when it can be inferred from group_by's presence
+    if (['group_by', 'media'].includes(url_params.get('mode') ?? '')) {
+      url_params.delete('mode')
+    }
+  }
 
   /**
    * Merge partial params (URL param names or internal names) with the current
@@ -163,7 +200,9 @@ export abstract class BrowsableQueryParams<
       const params_key = (this.URL_PARAM_MAP_REVERSED[key] ?? key) as keyof TParams
       this.merge_param(params, params_key, val)
     }
-    return params
+    // merged params are handed straight to serialize()/goto(), so they must be
+    // self-consistent (e.g. switching to 'media' mode drops a stale group_by)
+    return this.normalize(params)
   }
 
   protected merge_param(params: TParams, key: keyof TParams, val: unknown): void {
@@ -175,6 +214,50 @@ export abstract class BrowsableQueryParams<
       // @ts-ignore - dynamic assignment
       params[key] = val
     }
+  }
+
+  /** Sort options offered for a given set of params, which depends on search mode. */
+  public sort_options_for(params: TParams): readonly SortOption[] {
+    if (params.search_mode === 'group_by') {
+      return [GROUP_SORT_OPTION, ...COMMON_SORT_OPTIONS]
+    }
+    return this.flat_sort_options
+  }
+
+  /** Sort options offered for the params currently staged in the form. */
+  public get sort_options(): readonly SortOption[] {
+    return this.sort_options_for(this.draft)
+  }
+
+  /** Sort options offered when listing media rather than grouping it. */
+  protected get flat_sort_options(): readonly SortOption[] {
+    return COMMON_SORT_OPTIONS
+  }
+
+  /**
+   * Coerce params into a self-consistent state. Search mode and sort are
+   * independent controls, so toggling one can leave the other holding a value
+   * the underlying core action would reject (e.g. sorting grouped results by
+   * `series_index`, or listing media sorted by `count`).
+   */
+  protected normalize(params: TParams): TParams {
+    if (params.search_mode !== 'group_by') {
+      params.group_by = undefined
+    }
+
+    const valid_sorts = new Set(this.sort_options_for(params).map((option) => option.value))
+    if (!valid_sorts.has(params.sort)) {
+      params.sort = params.search_mode === 'group_by'
+        ? (GROUP_SORT_OPTION.value as TParams['sort'])
+        : this.DEFAULTS.sort
+    }
+
+    return params
+  }
+
+  public override async submit(): Promise<void> {
+    this.draft = this.normalize({ ...this.draft })
+    await super.submit()
   }
 
   protected parse_tags(search_string: string): string[] {
