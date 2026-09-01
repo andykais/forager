@@ -301,9 +301,13 @@ export class QueryParamsManager extends Rune {
         params.search_string = [...search_strings].join(' ').trim()
       } else if (params_key === 'search_mode') {
         params.search_mode = val
-        // Clear group_by if switching away from group_by mode
+        // Clear group_by only params if switching away from group_by mode
         if (val !== 'group_by') {
           params.group_by = undefined
+          // 'count' sorting only exists on group_by searches, core rejects it elsewhere
+          if (params.sort === 'count') {
+            params.sort = DEFAULTS.sort
+          }
         }
       } else {
         // @ts-ignore - dynamic assignment
