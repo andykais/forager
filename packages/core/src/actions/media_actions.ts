@@ -1,4 +1,4 @@
-import { Actions, type MediaFileResponse, type MediaSeriesResponse, type MediaResponse, type MediaGroupResponse, type CreateEditor, type UpdateEditor } from '~/actions/lib/base.ts'
+import { Actions, type MediaFileResponse, type MediaResponse, type MediaGroupResponse, type CreateEditor, type UpdateEditor } from '~/actions/lib/base.ts'
 import { type inputs, parsers } from '~/inputs/mod.ts'
 import type * as result_types from '~/models/lib/result_types.ts'
 import { errors } from "~/mod.ts";
@@ -98,7 +98,7 @@ class MediaActions extends Actions {
       filepath: query.filepath,
     })
 
-    const results = this.#map_media_records_to_media_responses(records, parsed.thumbnail_limit, keypoint_tag_id)
+    const results = this.map_media_records_to_media_responses(records, parsed.thumbnail_limit, keypoint_tag_id)
 
     return {
       total: records.total,
@@ -107,133 +107,12 @@ class MediaActions extends Actions {
     }
   }
 
-  #map_media_records_to_media_responses(records: ReturnType<Actions['models']['MediaReference']['select_many']>, thumbnail_limit: number, keypoint_tag_id: number | undefined): MediaResponse[] {
-    const results: (MediaFileResponse | MediaSeriesResponse)[] =  records.results.map(row => {
-      const tags = this.models.Tag.select_all({media_reference_id: row.id})
-
-      if (row.media_series_reference) {
-        const thumbnails = this.models.MediaThumbnail.select_many({series_id: row.id, limit: thumbnail_limit})
-        return {
-          media_type: 'media_series',
-          media_reference: row,
-          tags,
-          thumbnails,
-        }
-      } else {
-        const media_file = this.models.MediaFile.select_one({media_reference_id: row.id}, {or_raise: true})
-
-        let thumbnail_timestamp_threshold: number | undefined
-        if (keypoint_tag_id) {
-          thumbnail_timestamp_threshold = this.models.MediaKeypoint.select_one({tag_id: keypoint_tag_id, media_reference_id: row.id}, {or_raise: true}).media_timestamp
-        } else if (media_file.animated && thumbnail_limit === 1) {
-          thumbnail_timestamp_threshold = media_file.duration * (this.ctx.config.thumbnails.preview_duration_threshold / 100)
-        }
-
-        const thumbnails = this.models.MediaThumbnail.select_many({media_file_id: media_file.id, limit: thumbnail_limit, timestamp_threshold: thumbnail_timestamp_threshold})
-        return {
-          media_type: 'media_file',
-          media_reference: row,
-          media_file,
-          tags,
-          thumbnails,
-        }
-      }
-    })
-    return results
-  }
-
+  /**
+    * Group media references by the values of a tag group (e.g. group every media reference by its "artist" tag).
+    */
   group = (params: inputs.PaginatedSearchGroupBy): result_types.PaginatedResult<MediaGroupResponse> => {
     const parsed = parsers.PaginatedSearchGroupBy.parse(params ?? {})
-    const { query } = parsed
-
-    const tag_ids: number[] | undefined = query.tags
-      ?.map(tag => this.models.Tag.select_one({name: tag.name, group: tag.group }, {or_raise: true}).id)
-      .filter((tag): tag is number => tag !== undefined)
-
-    let keypoint_tag_id: number | undefined
-    if (query.keypoint) {
-      keypoint_tag_id = this.models.Tag.select_one({name: query.keypoint.name, group: query.keypoint.group}, {or_raise: true}).id
-    }
-
-    let series_id: number | undefined
-    if (query.series_id) {
-      // ensure that a series id actually exists and is a series id
-      this.models.MediaReference.select_one_media_series({id: query.series_id})
-      series_id = query.series_id
-    }
-
-    const tag_group = this.models.TagGroup.select_one({name: parsed.group_by.tag_group}, {or_raise: true})
-    const group_by = { tag_group_id: tag_group.id }
-    const records = this.models.MediaReference.select_many_group_by_tags({
-      id: query.media_reference_id,
-      series_id,
-      series: query.series,
-      tag_ids,
-      keypoint_tag_id,
-      cursor: parsed.cursor,
-      limit: parsed.limit,
-      sort_by: parsed.sort_by,
-      animated: parsed.query.animated,
-      media_type: parsed.query.media_type,
-      group_by,
-      order: parsed.order,
-      stars: query.stars,
-      stars_equality: query.stars_equality,
-      duration_min: query.duration?.min?.seconds,
-      duration_max: query.duration?.max?.seconds,
-      unread: query.unread,
-      filepath: query.filepath,
-    })
-
-    const results = records.results.map(record => {
-      const merged_tag_ids: number[] = []
-      const grouped_tag_id = this.models.Tag.select_one({name: record.group_value, group: parsed.group_by.tag_group}, {or_raise: true}).id
-      if (tag_ids) {
-        merged_tag_ids.push(...tag_ids)
-      }
-      merged_tag_ids.push(grouped_tag_id)
-
-      let media: MediaResponse[] | undefined
-      if (parsed.grouped_media.limit) {
-        const records = this.models.MediaReference.select_many({
-          id: query.media_reference_id,
-          series: query.series,
-          series_id,
-          tag_ids: merged_tag_ids,
-          keypoint_tag_id,
-          cursor: undefined,
-          limit: parsed.grouped_media.limit,
-          sort_by: parsed.grouped_media.sort_by,
-          animated: parsed.query.animated,
-          media_type: parsed.query.media_type,
-          order: parsed.grouped_media.order,
-          stars: query.stars,
-          stars_equality: query.stars_equality,
-          duration_min: query.duration?.min?.seconds,
-          duration_max: query.duration?.max?.seconds,
-          unread: query.unread,
-          filepath: query.filepath,
-        })
-        media = this.#map_media_records_to_media_responses(records, parsed.thumbnail_limit, keypoint_tag_id)
-      }
-
-      const { group_value, count_value, ...fields } = record
-      return {
-        media_type: 'grouped' as const,
-        group: {
-          value: group_value,
-          count: count_value,
-          ...fields,
-          media,
-        },
-      }
-    })
-
-    return {
-      total: records.total,
-      cursor: records.cursor,
-      results,
-    }
+    return this.media_group(parsed)
   }
 
   /**

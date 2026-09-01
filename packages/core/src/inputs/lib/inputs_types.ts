@@ -28,6 +28,7 @@ export type TagDetail = import('~/actions/tag_actions.ts').TagDetail
 export type SeriesItem = z.input<typeof parsers.SeriesItem>
 export type SeriesGet = z.input<typeof parsers.SeriesGet>
 export type SeriesSearch = z.input<typeof parsers.SeriesSearch>
+export type SeriesSearchGroupBy = z.input<typeof parsers.SeriesSearchGroupBy>
 
 export type FileSystemDiscover = z.input<typeof parsers.FileSystemDiscover>
 export type FileSystemSearch = z.input<typeof parsers.FileSystemSearch>
