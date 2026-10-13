@@ -106,15 +106,12 @@ const FFProbeOutput = z.object({
     FFProbeOutputSubtitleStream,
     FFProbeOutputAttachmentStream,
     FFProbeOutputUnknownStream,
-  ]).array().min(1)
-}).passthrough()
-
-const FFProbePacketsOutput = z.object({
+  ]).array().min(1),
   packets: z.object({
     pts_time: z.coerce.number(),
     duration_time: z.coerce.number(),
-  }).array(),
-})
+  }).array().optional(),
+}).passthrough()
 
 
 function throw_contextually() {
@@ -239,6 +236,12 @@ class FileProcessor {
     if (!filepath_exists) {
       throw new errors.FileNotFound(`Cannot process file because it does not exist`)
     }
+    let show_entries = 'format=duration,stream=duration,width,height,display_aspect_ratio,codec_type,codec_name,nb_read_packets,r_frame_rate,avg_frame_rate:stream_tags=rotate'
+    if (path.extname(this.#filepath).toLowerCase() === '.webp') {
+      // ffprobe reports no stream or format duration for animated webp, only per-frame timestamps.
+      // We only request packets for webp because printing every packet of a long video is very large
+      show_entries += ':packet=pts_time,duration_time'
+    }
     const ffprobe_command = [
       'ffprobe',
       '-v', 'error',
@@ -246,7 +249,7 @@ class FileProcessor {
       '-print_format', 'json',
       '-show_streams',
       '-count_packets',
-      '-show_entries', 'format=duration,stream=duration,width,height,display_aspect_ratio,codec_type,codec_name,nb_read_packets,r_frame_rate,avg_frame_rate:stream_tags=rotate',
+      '-show_entries', show_entries,
       '-i', this.#filepath
     ]
     this.#error_context.commands_ran.push(ffprobe_command)
@@ -306,12 +309,15 @@ class FileProcessor {
           height = rotated_size.height
 
           if (stream.codec_name === 'webp_anim') {
-            // ffprobe reports no stream or format duration for animated webp, only per-frame timestamps.
-            // Each frame is exactly one packet, so the packets give us an exact duration and framecount
-            const packets = await this.#get_packets_info()
+            const last_packet = ffprobe_data.packets?.at(-1)
+            if (last_packet === undefined) {
+              throw new errors.UnExpectedError(`No packets found for animated webp ${this.#filepath}`)
+            }
             animated = true
-            duration = packets.duration
-            framecount = packets.count
+            // ffprobe prints timestamps with microsecond precision, so we round away float error from the addition
+            duration = Number((last_packet.pts_time + last_packet.duration_time).toFixed(6))
+            // each animated webp frame is exactly one packet
+            framecount = stream.nb_read_packets
             framerate = framecount / duration
           } else if (media_type === 'VIDEO' || stream.codec_name === 'gif') {
             if (stream.duration !== undefined) {
@@ -382,35 +388,6 @@ class FileProcessor {
     } as FileInfo // we use "as" here because typescript gets confused about unions
     this.#error_context.file_info = file_info
     return file_info
-  }
-
-  async #get_packets_info(): Promise<{ duration: number; count: number }> {
-    const command = [
-      'ffprobe',
-      '-v', 'error',
-      '-pattern_type', 'none',
-      '-select_streams', 'v:0',
-      '-print_format', 'json',
-      '-show_entries', 'packet=pts_time,duration_time',
-      '-i', this.#filepath,
-    ]
-    this.#error_context.commands_ran.push(command)
-    const output = await new Deno.Command('ffprobe', {
-      args: command.slice(1),
-      stdout: 'piped',
-      stderr: 'piped',
-    }).output()
-    if (!output.success) {
-      throw new errors.SubprocessError(output, 'reading packet durations failed')
-    }
-    const { packets } = FFProbePacketsOutput.parse(JSON.parse(this.#decoder.decode(output.stdout)))
-    const last_packet = packets.at(-1)
-    if (last_packet === undefined) {
-      throw new errors.UnExpectedError(`No packets found for ${this.#filepath}`)
-    }
-    // ffprobe prints timestamps with microsecond precision, so we round away float error from the addition
-    const duration = Number((last_packet.pts_time + last_packet.duration_time).toFixed(6))
-    return { duration, count: packets.length }
   }
 
   /* Our architecture stores files on disk outside of the database and uses a "Content-addressed storage" approach.
