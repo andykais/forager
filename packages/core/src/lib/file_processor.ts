@@ -513,7 +513,7 @@ class FileProcessor {
 
         let error_string = ''
         // TODO use the input timestamp in a progress meter
-        for await (const line of this.#readlines(proc.stderr)) {
+        for await (const line of FileProcessor.read_lines(proc.stderr)) {
           if (line.includes('Parsed_showinfo') && line.includes(' n: ')) {
             const pts_time_str = line.match(/pts_time:(?<pts_time>\d+([.]\d*)?)/)?.groups?.pts_time
             if (pts_time_str === undefined) {
@@ -649,12 +649,14 @@ class FileProcessor {
     }
   }
 
-  async * #readlines(stream: ReadableStream<Uint8Array>) {
+  static async * read_lines(stream: ReadableStream<Uint8Array>) {
     const reader = stream.pipeThrough(new TextDecoderStream()).getReader()
     let buffer = ''
-    let read_result = await reader.read()
-    while (!read_result.done) {
-      read_result = await reader.read()
+    while (true) {
+      const read_result = await reader.read()
+      if (read_result.done) {
+        break
+      }
       buffer += read_result.value ?? ''
       const lines = buffer.split('\n')
 
@@ -662,9 +664,7 @@ class FileProcessor {
       for (let i = 0; i < lines.length - 1; i++) {
         yield lines[i]
       }
-      if (lines.length > 0) {
-        buffer = lines.at(-1)!
-      }
+      buffer = lines.at(-1)!
     }
 
     if (buffer.length > 0) {
