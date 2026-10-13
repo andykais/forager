@@ -21,7 +21,18 @@ export interface FileSystemReceiverContext {
   entry: fs.WalkEntry
   forager: Forager
   logger: Logger
-  add(ctx: FileSystemReceiverContext, filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.TagList, series?: inputs.MediaSeriesBulk): Promise<void>
+  add(ctx: FileSystemReceiverContext, filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.TagList, series?: inputs.MediaSeriesBulk, editing?: ReceiverEditing): Promise<void>
+}
+
+/**
+ * Editing options for media added by a {@linkcode FileSystemReceiver}. These are passed through to media create/update calls as-is.
+ * When omitted, no editing options are sent and the `editing` block from the forager config applies.
+ */
+export interface ReceiverEditing {
+  /** Identifier of the editor, can be used to distinguish where a particular media metadata field or tag came from */
+  editor?: string
+  /** Overwrite edits of other editors when updating existing media. Defaults to false when an editor is supplied, so only tags and fields previously written by this editor are replaced */
+  overwrite?: boolean
 }
 
 export abstract class FileSystemReceiver {
@@ -32,8 +43,8 @@ export abstract class FileSystemReceiver {
 
   public abstract foreach(ctx: FileSystemReceiverContext): Promise<void>
 
-  protected async add(ctx: FileSystemReceiverContext, filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.TagList, series?: inputs.MediaSeriesBulk) {
-    return ctx.add(ctx, filepath, media_info, tags, series)
+  protected async add(ctx: FileSystemReceiverContext, filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.TagList, series?: inputs.MediaSeriesBulk, editing?: ReceiverEditing) {
+    return ctx.add(ctx, filepath, media_info, tags, series, editing)
   }
 
   /** @internal */

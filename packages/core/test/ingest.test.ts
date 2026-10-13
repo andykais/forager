@@ -1,6 +1,6 @@
 import { test } from 'forager-test'
 import * as path from '@std/path'
-import { Forager, type MediaFileResponse } from '~/mod.ts'
+import { Forager, FileSystemReceiver, PluginScript, type FileSystemReceiverContext, type ReceiverEditing, type MediaFileResponse } from '~/mod.ts'
 
 test('ingest actions', async ctx => {
   using forager = new Forager(ctx.get_test_config())
@@ -35,6 +35,128 @@ test('ingest actions', async ctx => {
     ctx.resources.media_files['ed-edd-eddy.png'],
     ctx.resources.media_files["cat_doodle.jpg"]
   ])
+})
+
+
+class TifReceiver extends FileSystemReceiver {
+  override name = 'tif_scraper'
+  override extensions = ['tif']
+  tags: string[] = []
+  editing?: ReceiverEditing
+  override foreach = async (ctx: FileSystemReceiverContext) => {
+    await this.add(ctx, ctx.entry.path, {title: 'scraped'}, this.tags, undefined, this.editing)
+  }
+}
+
+test('ingest editing', async ctx => {
+  const receiver = new TifReceiver()
+  const plugin_script = new PluginScript()
+  plugin_script.recievers.unshift(receiver)
+  using forager = new Forager(ctx.get_test_config(), plugin_script)
+  forager.init()
+
+  const filepath = ctx.resources.media_files['koch.tif']
+  const tif_glob = ctx.resources.resources_directory + path.SEPARATOR + '*.tif'
+  const by_name = (a: {name: string}, b: {name: string}) => a.name.localeCompare(b.name)
+
+  const manual_media = await forager.media.create(filepath, {}, ['manual_tag'], {editor: 'manual'})
+  const media_reference_id = manual_media.media_reference.id
+
+  await ctx.subtest('ingest over existing media preserves tags from other editors', async () => {
+    receiver.tags = ['scraper_1']
+    receiver.editing = {editor: 'tif_scraper', overwrite: false}
+    await forager.filesystem.discover({path: tif_glob})
+    const ingest = await forager.ingest.start()
+    ctx.assert.equals(ingest.stats.updated, 1)
+
+    const media = forager.media.get({media_reference_id}) as MediaFileResponse
+    ctx.assert.equals(media.media_reference.title, 'scraped')
+    ctx.assert.list_partial(media.tags, [{name: 'manual_tag'}, {name: 'scraper_1'}], by_name)
+    ctx.assert.equals(media.edit_log![0].editor, 'tif_scraper')
+    ctx.assert.equals(media.edit_log![0].changes.tags, {added: ['scraper_1'], removed: []})
+  })
+
+  await ctx.subtest('reingest only replaces tags owned by the receiver', async () => {
+    receiver.tags = ['scraper_2']
+    await forager.filesystem.discover({path: tif_glob, reingest: true})
+    await forager.ingest.start()
+
+    const media = forager.media.get({media_reference_id}) as MediaFileResponse
+    ctx.assert.list_partial(media.tags, [{name: 'manual_tag'}, {name: 'scraper_2'}], by_name)
+    ctx.assert.equals(media.edit_log![0].editor, 'tif_scraper')
+    ctx.assert.equals(media.edit_log![0].changes.tags, {added: ['scraper_2'], removed: ['scraper_1']})
+  })
+
+  await ctx.subtest('a different editor keeps tags from the previous receiver editor', async () => {
+    receiver.tags = ['custom_1']
+    receiver.editing = {editor: 'custom_editor', overwrite: false}
+    await forager.filesystem.discover({path: tif_glob, reingest: true})
+    await forager.ingest.start()
+
+    const media = forager.media.get({media_reference_id}) as MediaFileResponse
+    ctx.assert.list_partial(media.tags, [{name: 'custom_1'}, {name: 'manual_tag'}, {name: 'scraper_2'}], by_name)
+    ctx.assert.equals(media.edit_log![0].editor, 'custom_editor')
+  })
+
+  await ctx.subtest('receiver can overwrite edits by others', async () => {
+    receiver.tags = ['overwrite_1']
+    receiver.editing = {editor: 'tif_scraper', overwrite: true}
+    await forager.filesystem.discover({path: tif_glob, reingest: true})
+    await forager.ingest.start()
+
+    const media = forager.media.get({media_reference_id}) as MediaFileResponse
+    ctx.assert.list_partial(media.tags, [{name: 'overwrite_1'}])
+    ctx.assert.equals(media.edit_log![0].editor, 'tif_scraper')
+  })
+
+  await ctx.subtest('receiver without editing options does not record an editor', async () => {
+    receiver.tags = ['no_editor_1']
+    receiver.editing = undefined
+    const edit_log_count = (forager.media.get({media_reference_id}) as MediaFileResponse).edit_log!.length
+    await forager.filesystem.discover({path: tif_glob, reingest: true})
+    await forager.ingest.start()
+
+    const media = forager.media.get({media_reference_id}) as MediaFileResponse
+    ctx.assert.list_partial(media.tags, [{name: 'no_editor_1'}])
+    ctx.assert.equals(media.edit_log!.length, edit_log_count)
+  })
+})
+
+test('ingest editing on created media', async ctx => {
+  const receiver = new TifReceiver()
+  receiver.tags = ['created_tag']
+  receiver.editing = {editor: 'custom_editor'}
+  const plugin_script = new PluginScript()
+  plugin_script.recievers.unshift(receiver)
+  using forager = new Forager(ctx.get_test_config(), plugin_script)
+  forager.init()
+
+  await forager.filesystem.discover({path: ctx.resources.resources_directory + path.SEPARATOR + '*.tif'})
+  const ingest = await forager.ingest.start()
+  ctx.assert.equals(ingest.stats.created, 1)
+
+  const media = forager.media.get({filepath: ctx.resources.media_files['koch.tif']}) as MediaFileResponse
+  ctx.assert.equals(media.media_reference.editors, ['custom_editor'])
+  ctx.assert.list_partial(media.tags, [{name: 'created_tag'}])
+  ctx.assert.list_partial(media.edit_log!, [{editor: 'custom_editor', operation_type: 'CREATE'}])
+})
+
+test('ingest without editing on created media', async ctx => {
+  const receiver = new TifReceiver()
+  receiver.tags = ['created_tag']
+  const plugin_script = new PluginScript()
+  plugin_script.recievers.unshift(receiver)
+  using forager = new Forager(ctx.get_test_config(), plugin_script)
+  forager.init()
+
+  await forager.filesystem.discover({path: ctx.resources.resources_directory + path.SEPARATOR + '*.tif'})
+  const ingest = await forager.ingest.start()
+  ctx.assert.equals(ingest.stats.created, 1)
+
+  const media = forager.media.get({filepath: ctx.resources.media_files['koch.tif']}) as MediaFileResponse
+  ctx.assert.equals(media.media_reference.editors, null)
+  ctx.assert.list_partial(media.tags, [{name: 'created_tag'}])
+  ctx.assert.equals(media.edit_log!.length, 0)
 })
 
 

@@ -150,7 +150,9 @@ class FileSystemActions extends Actions {
   }
 
   #is_glob(globpath: string): boolean {
-    if (!path.isGlob(globpath)) {
+    // isGlob treats "\" as an escape character, but on windows it is the path separator (e.g. "C:\media\*.jpg")
+    const glob_check_path = Deno.build.os === 'windows' ? globpath.replaceAll('\\', '/') : globpath
+    if (!path.isGlob(glob_check_path)) {
       return false
     }
     if (globpath.includes('?') && !globpath.includes('*')) {

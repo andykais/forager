@@ -130,7 +130,9 @@ class IngestActions extends Actions<IngestEvents> {
     return { stats }
   }
 
-  async #add_media_file(ctx: plugin.FileSystemReceiverContext, filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.TagList): Promise<AddMediaFileAck> {
+  async #add_media_file(ctx: plugin.FileSystemReceiverContext, filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.TagList, editing?: plugin.ReceiverEditing): Promise<AddMediaFileAck> {
+    const create_editing = editing?.editor !== undefined ? { editor: editing.editor } : undefined
+
     if (ctx.default_metadata?.media_info) {
       media_info = {...ctx.default_metadata.media_info as inputs.MediaInfo, ...media_info}
     }
@@ -143,7 +145,7 @@ class IngestActions extends Actions<IngestEvents> {
       const existing_media = ctx.forager.media.get({filepath})
       if (media_info || tags) {
         // const media_file = this.models.MediaFile.select_one({filepath: e.filepath}, {or_raise: true})
-        ctx.forager.media.update(existing_media.media_reference.id, media_info, tags)
+        ctx.forager.media.update(existing_media.media_reference.id, media_info, tags, editing)
         ctx.logger.info(`Updated existing file ${ctx.entry.path}`)
         return {media_reference_id: existing_media.media_reference.id, status: 'updated'}
       } else {
@@ -156,7 +158,7 @@ class IngestActions extends Actions<IngestEvents> {
     }
 
     try {
-      const created_media = await ctx.forager.media.create(filepath, media_info, tags, {editor: ctx.receiver.name})
+      const created_media = await ctx.forager.media.create(filepath, media_info, tags, create_editing)
       return {media_reference_id: created_media.media_reference.id, checksum: created_media.media_file.checksum, status: 'created'}
     } catch (e) {
       let file_identifier = filepath
@@ -176,11 +178,11 @@ class IngestActions extends Actions<IngestEvents> {
         if (e instanceof errors.MediaAlreadyExistsError) {
           const {media_reference} = ctx.forager.media.get({filepath: e.filepath})
           // const media_file = this.models.MediaFile.select_one({filepath: e.filepath}, {or_raise: true})
-          const updated_media = ctx.forager.media.update(media_reference.id, media_info, tags, {editor: ctx.receiver.name})
+          const updated_media = ctx.forager.media.update(media_reference.id, media_info, tags, editing)
           return {media_reference_id: updated_media.media_reference.id, status: 'updated', checksum: updated_media.media_file.checksum}
         } else if (e instanceof errors.SeriesAlreadyExistsError) {
           const {media_reference} = ctx.forager.series.get({series_name: e.media_series_name})
-          const updated_media = ctx.forager.series.update(media_reference.id, media_info, tags, {editor: ctx.receiver.name})
+          const updated_media = ctx.forager.series.update(media_reference.id, media_info, tags, editing)
           return {media_reference_id: updated_media.media_reference.id, status: 'updated' }
         } else {
           throw new Error(`unexpected code path for error ${e.constructor.name}: ${e}`)
@@ -225,8 +227,8 @@ class IngestActions extends Actions<IngestEvents> {
       }
   }
 
-  async #add(ctx: plugin.FileSystemReceiverContext, filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.TagList, series?: inputs.MediaSeriesBulk) {
-    const media_file_ack = await this.#add_media_file(ctx, filepath, media_info, tags)
+  async #add(ctx: plugin.FileSystemReceiverContext, filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.TagList, series?: inputs.MediaSeriesBulk, editing?: plugin.ReceiverEditing) {
+    const media_file_ack = await this.#add_media_file(ctx, filepath, media_info, tags, editing)
 
     this.models.FilesystemPath.update({
       id: ctx.file_id,

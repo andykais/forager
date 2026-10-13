@@ -23,7 +23,7 @@ export const CreateEditing = Editing.extend({
 
 
 export const UpdateEditing = Editing.extend({
-  overwrite: z.boolean().default(true)
+  overwrite: z.boolean().optional()
 }).optional()
 .refine(editing => {
   if (editing?.overwrite === false && editing.editor === undefined) {
