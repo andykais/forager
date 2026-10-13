@@ -25,13 +25,13 @@ export interface FileSystemReceiverContext {
 }
 
 /**
- * Editing options for media added by a {@linkcode FileSystemReceiver}.
- * Defaults to `{editor: receiver.name, overwrite: false}`, so a receiver only replaces tags and fields it previously wrote.
+ * Editing options for media added by a {@linkcode FileSystemReceiver}. These are passed through to media create/update calls as-is.
+ * When omitted, no editing options are sent and the `editing` block from the forager config applies.
  */
 export interface ReceiverEditing {
-  /** Identifier of the editor, defaults to the receiver name */
+  /** Identifier of the editor, can be used to distinguish where a particular media metadata field or tag came from */
   editor?: string
-  /** Overwrite edits of other editors when updating existing media, defaults to false */
+  /** Overwrite edits of other editors when updating existing media. Set to false to only replace tags and fields previously written by this editor */
   overwrite?: boolean
 }
 
