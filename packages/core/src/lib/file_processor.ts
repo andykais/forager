@@ -6,7 +6,6 @@ import z from 'zod'
 import { Context } from '~/context.ts'
 import { CODECS } from './codecs.ts'
 import * as errors from './errors.ts'
-import { get_webp_file_info } from './file_processor_webp_shim.ts'
 
 
 interface FileInfoBase {
@@ -109,6 +108,13 @@ const FFProbeOutput = z.object({
     FFProbeOutputUnknownStream,
   ]).array().min(1)
 }).passthrough()
+
+const FFProbePacketsOutput = z.object({
+  packets: z.object({
+    pts_time: z.coerce.number(),
+    duration_time: z.coerce.number(),
+  }).array(),
+})
 
 
 function throw_contextually() {
@@ -253,9 +259,6 @@ class FileProcessor {
     const output = await cmd.output()
 
     if (!output.success) {
-      if (path.extname(this.#filepath) === '.webp') {
-        return get_webp_file_info(this.#filepath)
-      }
       const command = ffprobe_command.join(' ')
       const stdout = this.#decoder.decode(output.stdout)
       const stderr = this.#decoder.decode(output.stderr)
@@ -302,7 +305,15 @@ class FileProcessor {
           width = rotated_size.width
           height = rotated_size.height
 
-          if (media_type === 'VIDEO' || stream.codec_name === 'gif') {
+          if (stream.codec_name === 'webp_anim') {
+            // ffprobe reports no stream or format duration for animated webp, only per-frame timestamps.
+            // Each frame is exactly one packet, so the packets give us an exact duration and framecount
+            const packets = await this.#get_packets_info()
+            animated = true
+            duration = packets.duration
+            framecount = packets.count
+            framerate = framecount / duration
+          } else if (media_type === 'VIDEO' || stream.codec_name === 'gif') {
             if (stream.duration !== undefined) {
               duration = Math.max(duration, stream.duration)
             }
@@ -328,7 +339,7 @@ class FileProcessor {
     if (animated && ffprobe_data.format.duration) {
       duration = Math.max(duration, ffprobe_data.format.duration)
     }
-    if (animated) {
+    if (animated && codec_info.codec !== 'webp_anim') {
       const framecount_guess = Math.floor(framerate * duration)
       framecount = Math.min(...[framecount, framecount_guess].filter(n => !Number.isNaN(n)))
 
@@ -353,9 +364,6 @@ class FileProcessor {
     }
 
     if (media_type !== 'AUDIO' && width === 0 || height === 0) {
-      if (path.extname(this.#filepath) === '.webp') {
-        return get_webp_file_info(this.#filepath)
-      }
       throw new errors.InvalidFileError(`Invalid file`, new Error(`width: ${width} and height: ${height} values cannot be zero`))
     }
 
@@ -374,6 +382,35 @@ class FileProcessor {
     } as FileInfo // we use "as" here because typescript gets confused about unions
     this.#error_context.file_info = file_info
     return file_info
+  }
+
+  async #get_packets_info(): Promise<{ duration: number; count: number }> {
+    const command = [
+      'ffprobe',
+      '-v', 'error',
+      '-pattern_type', 'none',
+      '-select_streams', 'v:0',
+      '-print_format', 'json',
+      '-show_entries', 'packet=pts_time,duration_time',
+      '-i', this.#filepath,
+    ]
+    this.#error_context.commands_ran.push(command)
+    const output = await new Deno.Command('ffprobe', {
+      args: command.slice(1),
+      stdout: 'piped',
+      stderr: 'piped',
+    }).output()
+    if (!output.success) {
+      throw new errors.SubprocessError(output, 'reading packet durations failed')
+    }
+    const { packets } = FFProbePacketsOutput.parse(JSON.parse(this.#decoder.decode(output.stdout)))
+    const last_packet = packets.at(-1)
+    if (last_packet === undefined) {
+      throw new errors.UnExpectedError(`No packets found for ${this.#filepath}`)
+    }
+    // ffprobe prints timestamps with microsecond precision, so we round away float error from the addition
+    const duration = Number((last_packet.pts_time + last_packet.duration_time).toFixed(6))
+    return { duration, count: packets.length }
   }
 
   /* Our architecture stores files on disk outside of the database and uses a "Content-addressed storage" approach.
@@ -404,18 +441,6 @@ class FileProcessor {
   public async create_thumbnails(file_info: FileInfo, checksum: string): Promise<Thumbnails> {
     // TODO make previews a supported field
     // assuming that 1/4 of the way into a video is a good preview position
-
-    // FFmpeg cannot decode animated WebP files, so we skip thumbnail generation.
-    // See https://trac.ffmpeg.org/ticket/4907
-    if (file_info.codec === 'webp' && file_info.animated) {
-      const tmp_folder = await Deno.makeTempDir({prefix: 'forager-thumbnails-'})
-      const thumbnail_destination_folder = path.join(this.#ctx.config.thumbnails.folder, this.get_storage_folder(checksum))
-      return {
-        source_folder: tmp_folder,
-        destination_folder: thumbnail_destination_folder,
-        thumbnails: [],
-      }
-    }
 
     const tmp_folder = await Deno.makeTempDir({prefix: 'forager-thumbnails-'})
     const thumbnail_timestamps: number[] = []
@@ -690,4 +715,3 @@ class FileProcessor {
 }
 
 export { FileProcessor }
-export type { FileInfo }
