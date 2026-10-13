@@ -141,9 +141,17 @@
   }
 
   function is_active() {
-    return !media_selections.current_selection.show
-      && strip_element !== undefined
-      && strip_element.contains(document.activeElement)
+    if (media_selections.current_selection.show || strip_element === undefined) return false
+    if (strip_element.contains(document.activeElement)) return true
+    // when nothing has focus, the selected filmstrip receives filmstrip keybinds
+    const nothing_focused = document.activeElement === null || document.activeElement === document.body
+    return nothing_focused && is_selected
+  }
+
+  function focus_strip(e: MouseEvent) {
+    if (!strip_element || !(e.target instanceof Element)) return
+    if (strip_element.contains(e.target) || e.target.closest('a')) return
+    strip_element.focus({preventScroll: true})
   }
 
   function filmstrip_handler(action: () => void) {
@@ -189,6 +197,8 @@
   data-filmstrip-index={result_index}
   use:scrollable={is_selected}
   use:visible={load}
+  onclick={focus_strip}
+  role="presentation"
 >
   <div class="flex items-center gap-1 text-xs text-gray-400 pb-1 pl-7">
     {#if result.media_type === 'media_file'}
