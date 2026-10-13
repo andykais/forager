@@ -4,6 +4,13 @@
 
   let {controller, height = $bindable()}: {controller: BrowseController, height: number} = $props()
 
+  const MAX_FILMSTRIP_ROW_OPTION = 6
+  // the configured row count is always selectable, even if it is above the default options
+  const filmstrip_row_options = $derived(Array.from(
+    {length: Math.max(MAX_FILMSTRIP_ROW_OPTION, controller.runes.settings.ui.media_list.filmstrip.rows)},
+    (_, index) => index + 1
+  ))
+
 
   function human_readable_number(n: number) {
     const number_string = n.toString()
@@ -54,7 +61,7 @@
   bind:clientHeight={height}
 >
 
-  <div class="grid grid-cols-[1fr_auto_auto_auto] gap-4 justify-between">
+  <div class="grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 justify-between">
     <div class="w-full grid grid-cols-[auto_1fr_auto] gap-4 items-center" style="--slider-thumb-color: {theme.colors.green[300]}; --slider-thumb-color-hover: {theme.colors.green[500]}">
       <label for="thumbnail-size">Thumbnail Size</label>
       <input
@@ -70,8 +77,38 @@
       <span>{controller.runes.settings.ui.media_list.thumbnail_size}px</span>
     </div>
 
+    <div class="flex items-center gap-1">
+      layout:
+      <button
+        title="Toggle tiles vs filmstrip layout"
+        class="rounded-sm bg-gray-800 px-2 text-slate-400 hover:bg-gray-600"
+        onclick={() => {
+          const updated_organization = controller.runes.settings.ui.media_list.organization === 'tiles'
+            ? 'filmstrip'
+            : 'tiles'
+          controller.runes.settings.set('ui.media_list.organization', updated_organization)
+        }}
+      >{controller.runes.settings.ui.media_list.organization}</button>
+      {#if controller.runes.settings.ui.media_list.organization === 'filmstrip'}
+        <label for="filmstrip-rows">rows:</label>
+        <select
+          id="filmstrip-rows"
+          title="Number of filmstrip rows"
+          class="rounded-sm bg-gray-800 px-1 text-slate-400 hover:bg-gray-600"
+          value={controller.runes.settings.ui.media_list.filmstrip.rows}
+          onchange={e => {
+            controller.runes.settings.set('ui.media_list.filmstrip.rows', parseInt(e.currentTarget.value))
+          }}
+        >
+          {#each filmstrip_row_options as rows}
+            <option value={rows}>{rows}</option>
+          {/each}
+        </select>
+      {/if}
+    </div>
+
     <div>
-      tiles:
+      shape:
       <button
         title="Toggle thumbnail shape"
         class="rounded-sm bg-gray-800 px-2 text-slate-400 hover:bg-gray-600"

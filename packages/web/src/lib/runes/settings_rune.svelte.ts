@@ -5,6 +5,8 @@ import type { BaseController } from '$lib/base_controller.ts'
 interface MutatableSettings {
   'ui.media_list.thumbnail_size': Config['web']['ui_defaults']['media_list']['thumbnail_size']
   'ui.media_list.thumbnail_shape': Config['web']['ui_defaults']['media_list']['thumbnail_shape']
+  'ui.media_list.organization': Config['web']['ui_defaults']['media_list']['organization']
+  'ui.media_list.filmstrip.rows': Config['web']['ui_defaults']['media_list']['filmstrip']['rows']
   'ui.media_view.fit.mode': Config['web']['ui_defaults']['media_view']['fit']['mode']
   'ui.search.advanced_filters.hide': Config['web']['ui_defaults']['search']['advanced_filters']['hide']
   'ui.sidebar.hide': Config['web']['ui_defaults']['sidebar']['hide']
@@ -34,6 +36,17 @@ export class SettingsRune extends Rune {
       }
       case 'ui.media_list.thumbnail_shape': {
         this.ui.media_list.thumbnail_shape = value
+        break
+      }
+      case 'ui.media_list.organization': {
+        this.ui.media_list.organization = value
+        break
+      }
+      case 'ui.media_list.filmstrip.rows': {
+        if (!Number.isInteger(value) || value < 1) {
+          throw new Error(`Unexpected value '${value}' for path '${path}'`)
+        }
+        this.ui.media_list.filmstrip.rows = value
         break
       }
       case 'ui.media_view.fit.mode': {
@@ -69,6 +82,12 @@ export class SettingsRune extends Rune {
       }
       case 'ui.media_list.thumbnail_shape': {
         return this.ui.media_list.thumbnail_shape
+      }
+      case 'ui.media_list.organization': {
+        return this.ui.media_list.organization
+      }
+      case 'ui.media_list.filmstrip.rows': {
+        return this.ui.media_list.filmstrip.rows
       }
       case 'ui.search.advanced_filters.hide': {
         return this.ui.search.advanced_filters.hide

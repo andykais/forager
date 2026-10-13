@@ -38,7 +38,11 @@ export const PackagesConfig = z.object({
 
       media_list: z.object({
         thumbnail_size: z.number().default(110),
-        thumbnail_shape: z.enum(['square', 'original']).prefault('original')
+        thumbnail_shape: z.enum(['square', 'original']).prefault('original'),
+        organization: z.enum(['tiles', 'filmstrip']).default('tiles'),
+        filmstrip: z.object({
+          rows: z.number().int().min(1).default(1),
+        }).strict().prefault({}),
       }).strict().prefault({}),
 
       sidebar: z.object({
@@ -51,16 +55,20 @@ export const PackagesConfig = z.object({
         }).strict().prefault({}),
       }).strict().prefault({}),
 
-      media_view: z.object({
-        fit: z.object({
-          mode: z.enum(['original', 'fill']).default('original'),
-          edge: z.enum(['width', 'height']).default('height'),
-        }).strict().prefault({}),
-        filmstrip: z.object({
-          enabled: z.boolean().default(false),
-            thumbnail_size: z.number().default(100),
-        }).strict().optional().transform(f => f ?? {enabled: false})
-      }).strict().prefault({}),
+      media_view: z.preprocess(
+        // `media_view.filmstrip` was removed but `forager init` wrote it into existing config files, so it is discarded rather than rejected
+        media_view => {
+          if (media_view === null || typeof media_view !== 'object' || !('filmstrip' in media_view)) return media_view
+          const { filmstrip: _legacy_filmstrip, ...rest } = media_view
+          return rest
+        },
+        z.object({
+          fit: z.object({
+            mode: z.enum(['original', 'fill']).default('original'),
+            edge: z.enum(['width', 'height']).default('height'),
+          }).strict().prefault({}),
+        }).strict(),
+      ).prefault({}),
     }).strict().prefault({}),
 
     shortcuts: z.object({
@@ -84,6 +92,15 @@ export const PackagesConfig = z.object({
       PlayPauseMedia: Keybind('Space'),
       ToggleVideoMute: Keybind('KeyM'),
       ToggleMediaControls: Keybind('Ctrl-C'),
+
+      FilmstripNextItem: Keybind('ArrowRight'),
+      FilmstripPrevItem: Keybind('ArrowLeft'),
+      FilmstripNextPage: Keybind('PageDown'),
+      FilmstripPrevPage: Keybind('PageUp'),
+      FilmstripEnd: Keybind('Ctrl-ArrowRight'),
+      FilmstripStart: Keybind('Ctrl-ArrowLeft'),
+      NextFilmstrip: Keybind('Ctrl-PageDown'),
+      PrevFilmstrip: Keybind('Ctrl-PageUp'),
 
       Search: Keybind('Slash'),
       AddTag: Keybind('Ctrl-M'),
