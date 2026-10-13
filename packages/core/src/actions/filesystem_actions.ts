@@ -68,9 +68,7 @@ class FileSystemActions extends Actions {
       } else {
         stats.ignored.files ++
       }
-      if (progress % 100 === 0) {
-        this.ctx.logger.info(`Discovered ${stats.created.files} new files, ${stats.existing.files} existing files, ignored ${stats.ignored.files} files.`)
-      }
+      this.ctx.logger.info(`Discovered ${stats.created.files} new files, ${stats.existing.files} existing files, ignored ${stats.ignored.files} files.`)
       progress ++
     }
 

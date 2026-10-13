@@ -116,9 +116,23 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
       if (existing_media_file.filepath === parsed.filepath) {
         throw new errors.MediaAlreadyExistsError(filepath, checksum, existing_media_file.media_reference_id)
       } else {
-        // an non-transactional step to exit early if we find the hash existing.
-        // this just is a way to skip the video preview early
-        throw new errors.DuplicateMediaError(filepath, checksum, existing_media_file.filepath, existing_media_file.media_reference_id)
+        const old_file_exists = await fs.exists(existing_media_file.filepath)
+        if (old_file_exists) {
+          // an non-transactional step to exit early if we find the hash existing.
+          // this just is a way to skip the video preview early
+          throw new errors.DuplicateMediaError(filepath, checksum, existing_media_file.filepath, existing_media_file.media_reference_id)
+        } else {
+          // TODO we may want to move this behind a flag for filesystem ingest, or a config flag
+          // I worry that we may end up replacing files on the fly when we don't want to
+          this.ctx.logger.warn(`File ${filepath} has a duplicate checksum in the database at ${existing_media_file.filepath}. This existing file is missing, so the path is being updated to the new one.`)
+          this.models.MediaFile.update_filepath({ id: existing_media_file.id, filepath: filepath })
+          const output_result = this.get_media_file_result({
+            media_reference_id: existing_media_file.media_reference_id,
+            media_file_id: existing_media_file.id,
+            thumbnail_limit: 1,
+          })
+          return output_result
+        }
       }
     }
     const [file_size, thumbnails] = await Promise.all([

@@ -74,6 +74,11 @@ class MediaFile extends Model {
     MediaFile.params.media_reference_id,
   ]}) RETURNING ${MediaFile.result.id}`
 
+  #update_filepath_by_id = this.query.exec`
+    UPDATE media_file SET
+      filepath = ${MediaFile.params.filepath}
+    WHERE id = ${MediaFile.params.id}`
+
   #delete_by_id = this.query.exec`
     DELETE FROM media_file
     WHERE id = ${MediaFile.params.id}`
@@ -101,6 +106,8 @@ class MediaFile extends Model {
   public select_one = this.select_one_fn(this.#select_one_impl.bind(this))
 
   public create = this.create_fn(this.#create)
+
+  public update_filepath = this.#update_filepath_by_id
 
   public delete = this.delete_fn(this.#delete_by_id)
 }
