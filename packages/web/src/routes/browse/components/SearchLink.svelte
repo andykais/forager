@@ -12,8 +12,6 @@
   let {params, controller, children, ...props}: Props = $props()
   const {queryparams} = controller.runes
 
-  console.log({params})
-
 </script>
 
 <a

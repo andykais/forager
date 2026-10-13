@@ -2,5 +2,5 @@ packages/*/deno_dependency_cache
 node_modules
 
 # release output (binaries, changelog.md)
-releases
+/releases
 .env

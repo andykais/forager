@@ -4,7 +4,10 @@
   import { focusable, scrollable } from '$lib/actions/mod.ts'
   import Icon from '$lib/components/Icon.svelte'
   import SearchLink from './SearchLink.svelte'
+  import * as datetime from '@std/datetime'
+  import Datetime from '$lib/components/Datetime.svelte'
   import * as icons from '$lib/icons/mod.ts'
+  import MediaTileInfoTable from './MediaTileInfoTable.svelte';
 
   interface Props {
     controller: BrowseController
@@ -28,6 +31,22 @@
     }
     const hours = minutes / 60
     return `${hours.toFixed(2)}h`
+  }
+
+  function format_human_readable_datetime(date_str: string) {
+    const date = new Date(date_str)
+    return datetime.format(date, 'yyyy-MM-dd')
+  }
+  interface SearchResultGroupMetadata {}
+  function format_human_readable_grouped_datetime(group_metadata: SearchResultGroupMetadata) {
+    const date_str = group_metadata[grouped_datetime(group_metadata)]
+    return format_human_readable_datetime(date_str)
+  }
+
+  function grouped_datetime(group_metadata: SearchResultGroupMetadata) {
+    return typeof group_metadata[controller.runes.queryparams.current.sort] === 'string'
+      ? controller.runes.queryparams.current.sort
+      : 'created_at'
   }
 </script>
 
@@ -127,12 +146,28 @@
               <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
               <span>({result.media_reference.media_series_length})</span>
           {:else if result.media_type === 'grouped'}
-              <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
-              <SearchLink
-                class="hover:text-green-500 hover:bg-gray-700 px-2 rounded-sm"
-                {controller} params={queryparams.merge({mode: 'media', tags: `${queryparams.current.group_by ?? ''}:${result.group_metadata.value}`})}> {result.group_metadata.value} 
-              </SearchLink>
-              <span>{result.group_metadata.count}</span>
+              <MediaTileInfoTable
+                {controller}
+                entries={[
+                  { name: 'tag_group',
+                    title: 'Tag Group',
+                    icon: icons.Copy,
+                    value:result.group_metadata.value,
+                    stat: result.group_metadata.count,
+                    queryparams: queryparams.merge({mode: 'media', tags: `${queryparams.current.group_by ?? ''}:${result.group_metadata.value}`}),
+                    enabled: controller.runes.settings.ui.media_list.info_tiles.tag_group.enabled,
+                    order: controller.runes.settings.ui.media_list.info_tiles.tag_group.order,
+                  },
+                  {
+                    name: 'sort_top',
+                    title: `Top ${grouped_datetime(result.group_metadata)} date`,
+                    icon: controller.runes.queryparams.current.order === 'desc' ? icons.ArrowDown : icons.ArrowUp,
+                    value: format_human_readable_grouped_datetime(result.group_metadata),
+                    enabled: controller.runes.settings.ui.media_list.info_tiles.sort_top.enabled,
+                    order: controller.runes.settings.ui.media_list.info_tiles.sort_top.order,
+                  },
+                ]}
+              />
           {:else}
             UNEXPECTED MEDIA TYPE {result.media_type}
           {/if}
