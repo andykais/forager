@@ -93,6 +93,17 @@ test('migrate from v1 schema', async (ctx) => {
     ]
   })
 
+  await ctx.subtest('existing media files are migrated to media filepaths', () => {
+    for (const result of forager.media.search().results) {
+      if (result.media_type !== 'media_file') throw new Error('expected a media file')
+      const media = forager.media.get({filepath: result.media_file.filepath})
+      if (media.media_type !== 'media_file') throw new Error('expected a media file')
+      ctx.assert.equals(media.media_reference.id, result.media_reference.id)
+      ctx.assert.equals(media.media_file.md5checksum, null)
+      ctx.assert.list_partial(media.filepaths!, [{filepath: result.media_file.filepath, filename: result.media_file.filename}])
+    }
+  })
+
   // check if the schemas are identical between a freshly seeded database, and a database migrated from v1
   const forager_new = new Forager({
     database: {folder: forager_new_path, backups: true},

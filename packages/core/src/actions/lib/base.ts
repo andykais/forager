@@ -130,7 +130,7 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
 
     const existing_media_file = this.models.MediaFile.select_one({checksum})
     if (existing_media_file) {
-      return await this.#media_create_duplicate(existing_media_file, {...parsed, filename: media_file_info.filename, checksum, md5checksum})
+      return await this.#media_create_duplicate(existing_media_file, {...parsed, filepath: media_file_info.filepath, filename: media_file_info.filename, checksum, md5checksum})
     }
 
     const [file_size, thumbnails] = await Promise.all([
