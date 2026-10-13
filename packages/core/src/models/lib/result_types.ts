@@ -5,6 +5,7 @@ export type MediaReference = InferSchemaTypes<typeof models.MediaReference.resul
 export type MediaReferenceTag = InferSchemaTypes<typeof models.MediaReferenceTag.result>
 export type MediaSeriesItem = InferSchemaTypes<typeof models.MediaSeriesItem.result>
 export type MediaFile = InferSchemaTypes<typeof models.MediaFile.result>
+export type MediaFilepath = InferSchemaTypes<typeof models.MediaFilepath.result>
 export type MediaThumbnail = InferSchemaTypes<typeof models.MediaThumbnail.result>
 export type TagGroup = InferSchemaTypes<typeof models.TagGroup.result>
 export type Tag = InferSchemaTypes<typeof models.Tag.result> & {group: TagGroup['name']; color: TagGroup['color']}

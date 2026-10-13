@@ -3,7 +3,7 @@ import * as fs from '@std/fs'
 import * as path from '@std/path'
 import { Forager } from '~/mod.ts'
 
-const CURRENT_VERSION = 11
+const CURRENT_VERSION = 12
 
 test('migrate from v1 schema', async (ctx) => {
   const forager_v1_path = ctx.create_fixture_path('forager_v1')
@@ -72,6 +72,11 @@ test('migrate from v1 schema', async (ctx) => {
       next_version: 11,
       backup: true,
     },
+    {
+      start_version: 11,
+      next_version: 12,
+      backup: true,
+    },
   ]
   ctx.assert.equals(v1_migration_info.db.migration_operations, expected_migration_operations)
 
@@ -86,6 +91,17 @@ test('migrate from v1 schema', async (ctx) => {
       {media_file: {filename: "ed-edd-eddy.png"}},
       {media_file: {filename: "koch.tif"}},
     ]
+  })
+
+  await ctx.subtest('existing media files are migrated to media filepaths', () => {
+    for (const result of forager.media.search().results) {
+      if (result.media_type !== 'media_file') throw new Error('expected a media file')
+      const media = forager.media.get({filepath: result.media_file.filepath})
+      if (media.media_type !== 'media_file') throw new Error('expected a media file')
+      ctx.assert.equals(media.media_reference.id, result.media_reference.id)
+      ctx.assert.equals(media.media_file.md5checksum, null)
+      ctx.assert.list_partial(media.filepaths!, [{filepath: result.media_file.filepath, filename: result.media_file.filename}])
+    }
   })
 
   // check if the schemas are identical between a freshly seeded database, and a database migrated from v1

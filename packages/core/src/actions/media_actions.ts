@@ -37,6 +37,7 @@ class MediaActions extends Actions {
       if (result.media_type === 'media_file') {
         this.models.MediaReferenceTag.delete({media_reference_id: result.media_reference.id}, {expected_deletes: result.tags.length})
         this.models.MediaThumbnail.delete({media_file_id: result.media_file.id}, {expected_deletes: result.thumbnails.total})
+        this.models.MediaFilepath.delete({media_file_id: result.media_file.id}, {expected_deletes: result.filepaths?.length})
         this.models.MediaFile.delete({id: result.media_file.id}, {expected_deletes: 1})
         this.models.MediaKeypoint.delete({media_reference_id: result.media_reference.id})
         this.models.MediaSeriesItem.delete({media_reference_id: result.media_reference.id})

@@ -10,6 +10,7 @@ class MediaFile extends Model {
     thumbnail_directory_path: field.string(),
     file_size_bytes:          field.number(),
     checksum:                 field.string(),
+    md5checksum:              field.string().optional(),
     media_type:               field.string(),  // TODO enum support
     codec:                    field.string(),
     content_type:             field.string(),
@@ -32,7 +33,8 @@ class MediaFile extends Model {
 
   #select_by_filepath = this.query`
     SELECT ${MediaFile.result['*']} FROM media_file
-    WHERE filepath = ${MediaFile.params.filepath}`
+    INNER JOIN media_filepath ON media_filepath.media_file_id = media_file.id
+    WHERE media_filepath.filepath = ${MediaFile.params.filepath}`
 
   #select_by_checksum = this.query`
     SELECT ${MediaFile.result['*']} FROM media_file
@@ -44,6 +46,7 @@ class MediaFile extends Model {
     thumbnail_directory_path,
     file_size_bytes,
     checksum,
+    md5checksum,
     media_type,
     content_type,
     codec,
@@ -61,6 +64,7 @@ class MediaFile extends Model {
     MediaFile.params.thumbnail_directory_path,
     MediaFile.params.file_size_bytes,
     MediaFile.params.checksum,
+    MediaFile.params.md5checksum,
     MediaFile.params.media_type,
     MediaFile.params.content_type,
     MediaFile.params.codec,
@@ -76,7 +80,13 @@ class MediaFile extends Model {
 
   #update_filepath_by_id = this.query.exec`
     UPDATE media_file SET
-      filepath = ${MediaFile.params.filepath}
+      filepath = ${MediaFile.params.filepath},
+      filename = ${MediaFile.params.filename}
+    WHERE id = ${MediaFile.params.id}`
+
+  #update_md5checksum_by_id = this.query.exec`
+    UPDATE media_file SET
+      md5checksum = ${MediaFile.params.md5checksum}
     WHERE id = ${MediaFile.params.id}`
 
   #delete_by_id = this.query.exec`
@@ -108,6 +118,8 @@ class MediaFile extends Model {
   public create = this.create_fn(this.#create)
 
   public update_filepath = this.#update_filepath_by_id
+
+  public update_md5checksum = this.#update_md5checksum_by_id
 
   public delete = this.delete_fn(this.#delete_by_id)
 }

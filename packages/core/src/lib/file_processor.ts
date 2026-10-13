@@ -383,12 +383,23 @@ class FileProcessor {
   }
 
   public async get_checksum() {
-    const hash = node_crypto.createHash('sha256')
+    const { checksum } = await this.get_checksums()
+    return checksum
+  }
+
+  /** computes the sha256 checksum (forager's primary identifier for a file) and the md5 checksum in a single read of the file */
+  public async get_checksums() {
+    const sha256_hash = node_crypto.createHash('sha256')
+    const md5_hash = node_crypto.createHash('md5')
     using file = await Deno.open(this.#filepath)
     for await (const chunk of file.readable) {
-      hash.update(chunk)
+      sha256_hash.update(chunk)
+      md5_hash.update(chunk)
     }
-    return hash.digest('hex')
+    return {
+      checksum: sha256_hash.digest('hex'),
+      md5checksum: md5_hash.digest('hex'),
+    }
   }
 
   public async get_size() {

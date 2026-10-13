@@ -4,7 +4,7 @@ import { migrations, sql, TIMESTAMP_SQLITE, TIMESTAMP_COLUMN, TIMESTAMP_COLUMN_O
 
 @migrations.register()
 export class Migration extends torm.SeedMigration {
-  version = 11
+  version = 12
 
   sql = sql`
     CREATE TABLE media_file (
@@ -15,6 +15,7 @@ export class Migration extends torm.SeedMigration {
       -- mime_type TEXT NOT NULL,
       file_size_bytes INTEGER NOT NULL,
       checksum TEXT NOT NULL UNIQUE,
+      md5checksum TEXT,
 
       -- image,video,audio
       media_type TEXT NOT NULL CHECK( media_type IN ('IMAGE', 'VIDEO', 'AUDIO') ),
@@ -35,6 +36,18 @@ export class Migration extends torm.SeedMigration {
 
       media_reference_id INTEGER NOT NULL,
       FOREIGN KEY (media_reference_id) REFERENCES media_reference(id)
+    );
+
+    -- every known location of a media file. media_file.filepath is a denormalized reference to the first filepath found
+    CREATE TABLE media_filepath (
+      id INTEGER PRIMARY KEY NOT NULL,
+      media_file_id INTEGER NOT NULL,
+      filepath TEXT NOT NULL,
+      filename TEXT NOT NULL,
+      updated_at ${TIMESTAMP_COLUMN},
+      created_at ${TIMESTAMP_COLUMN},
+
+      FOREIGN KEY (media_file_id) REFERENCES media_file(id)
     );
 
     CREATE TABLE media_thumbnail (
@@ -291,7 +304,10 @@ export class Migration extends torm.SeedMigration {
     CREATE INDEX tag_parent_child_slug ON tag_parent (child_tag_slug);
     CREATE INDEX tag_parent_slug ON tag_parent (parent_tag_slug);
     CREATE UNIQUE INDEX media_file_reference ON media_file (media_reference_id);
-    CREATE UNIQUE INDEX media_filepath ON media_file (filepath);
+    CREATE UNIQUE INDEX media_file_filepath ON media_file (filepath);
+    CREATE INDEX media_file_md5checksum ON media_file (md5checksum);
+    CREATE UNIQUE INDEX media_filepath_lookup ON media_filepath (filepath);
+    CREATE INDEX media_filepath_media_file ON media_filepath (media_file_id);
     CREATE INDEX media_reference_edit_log ON edit_log (media_reference_id, created_at);
     CREATE UNIQUE INDEX filesystem_path_lookup ON filesystem_path (filepath);
     CREATE UNIQUE INDEX filesystem_path_priority ON filesystem_path (ingest_priority) WHERE directory = 0;

@@ -30,7 +30,16 @@ export interface MediaFileResponse {
   tags: result_types.Tag[]
   thumbnails: result_types.PaginatedResult<result_types.MediaThumbnail>
   edit_log?: result_types.EditLog[]
+  /** Every known filepath of the media file. The first filepath found is also stored on `media_file.filepath` */
+  filepaths?: result_types.MediaFilepath[]
 }
+
+/**
+ * - `created`: a new media file was created
+ * - `linked`: the file is a duplicate of an existing media file, so its filepath was added to the existing media file
+ * - `moved`: the file is a duplicate of an existing media file whose filepath no longer exists, so the existing media file was moved to the new filepath
+ */
+type MediaCreateStatus = 'created' | 'linked' | 'moved'
 
 /**
  * Structure returned from {@linkcode MediaActions.prototype.search}. Can be either a media series or an individual media file.
@@ -99,6 +108,14 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
   }
 
   protected async media_create(filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.MediaReferenceUpdateTags, editing?: CreateEditor): Promise<MediaFileResponse> {
+    const { media } = await this.media_create_with_status(filepath, media_info, tags, editing)
+    return media
+  }
+
+  /**
+   * Same as {@linkcode Actions.prototype.media_create}, but also reports whether a new media file was created, or the filepath was attached to an existing media file with the same checksum.
+   */
+  protected async media_create_with_status(filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.MediaReferenceUpdateTags, editing?: CreateEditor): Promise<{status: MediaCreateStatus; media: MediaFileResponse}> {
     const start_time = performance.now()
     const parsed = {
       filepath: parsers.Filepath.parse(filepath),
@@ -109,32 +126,13 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
 
     const file_processor = new FileProcessor(this.ctx, filepath)
     const media_file_info = await file_processor.get_info()
-    const checksum = await file_processor.get_checksum()
+    const { checksum, md5checksum } = await file_processor.get_checksums()
 
     const existing_media_file = this.models.MediaFile.select_one({checksum})
     if (existing_media_file) {
-      if (existing_media_file.filepath === parsed.filepath) {
-        throw new errors.MediaAlreadyExistsError(filepath, checksum, existing_media_file.media_reference_id)
-      } else {
-        const old_file_exists = await fs.exists(existing_media_file.filepath)
-        if (old_file_exists) {
-          // an non-transactional step to exit early if we find the hash existing.
-          // this just is a way to skip the video preview early
-          throw new errors.DuplicateMediaError(filepath, checksum, existing_media_file.filepath, existing_media_file.media_reference_id)
-        } else {
-          // TODO we may want to move this behind a flag for filesystem ingest, or a config flag
-          // I worry that we may end up replacing files on the fly when we don't want to
-          this.ctx.logger.warn(`File ${filepath} has a duplicate checksum in the database at ${existing_media_file.filepath}. This existing file is missing, so the path is being updated to the new one.`)
-          this.models.MediaFile.update_filepath({ id: existing_media_file.id, filepath: filepath })
-          const output_result = this.get_media_file_result({
-            media_reference_id: existing_media_file.media_reference_id,
-            media_file_id: existing_media_file.id,
-            thumbnail_limit: 1,
-          })
-          return output_result
-        }
-      }
+      return await this.#media_create_duplicate(existing_media_file, {...parsed, filepath: media_file_info.filepath, filename: media_file_info.filename, checksum, md5checksum})
     }
+
     const [file_size, thumbnails] = await Promise.all([
       file_processor.get_size(),
       file_processor.create_thumbnails(media_file_info, checksum)
@@ -154,8 +152,15 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
         thumbnail_directory_path: thumbnails.destination_folder,
         file_size_bytes: file_size,
         checksum,
+        md5checksum,
         media_reference_id: media_reference.id,
       })!
+
+      this.models.MediaFilepath.create({
+        media_file_id: media_file.id,
+        filepath: media_file_info.filepath,
+        filename: media_file_info.filename,
+      })
 
       // NOTE that on create calls, we ignore tags.remove. This is mostly an implementation detail, since tags.remove is not exposed to the forager.media.create action
       const tag_edits = this.manage_media_tags(media_reference.id, {...parsed.tags, remove: []}, parsed.editing)
@@ -184,7 +189,77 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
     })
     const creation_duration = performance.now() - start_time
     this.ctx.logger.info(`Created ${parsed.filepath} (type: ${output_result.media_file.media_type} size: ${fmt_bytes.format(output_result.media_file.file_size_bytes)}) in ${this.format_duration(creation_duration)}`)
-    return output_result
+    return { status: 'created', media: output_result }
+  }
+
+  /**
+   * Attaches a new filepath to a media file that already exists with the same checksum.
+   * Any media info and tags passed along are applied to the existing media reference like an update.
+   */
+  async #media_create_duplicate(existing_media_file: result_types.MediaFile, params: {
+    filepath: string
+    filename: string
+    checksum: string
+    md5checksum: string
+    media_info: outputs.MediaInfo
+    tags: outputs.MediaReferenceUpdateTags
+    editing: UpdateEditor | undefined
+  }): Promise<{status: MediaCreateStatus; media: MediaFileResponse}> {
+    const { media_reference_id } = existing_media_file
+    const existing_media_filepath = this.models.MediaFilepath.select_one({filepath: params.filepath})
+    if (existing_media_filepath) {
+      if (existing_media_filepath.media_file_id !== existing_media_file.id) {
+        const media_file_at_filepath = this.models.MediaFile.select_one({filepath: params.filepath}, {or_raise: true})
+        throw new errors.ChecksumMismatchError(params.filepath, media_file_at_filepath.checksum, params.checksum)
+      }
+      throw new errors.MediaAlreadyExistsError(params.filepath, params.checksum, media_reference_id)
+    }
+
+    const primary_file_exists = await fs.exists(existing_media_file.filepath)
+
+    // TODO media reference tags do not track which filepath they came from, so tags from a duplicate filepath can only be added, never replaced.
+    // In the future we may want media_reference_tag to store its filepath source so we can merge tags better.
+    const tags: outputs.MediaReferenceUpdateTags = {
+      add: [...(params.tags.replace ?? []), ...params.tags.add],
+      remove: [],
+    }
+    const has_updates = Object.keys(params.media_info).length > 0 || tags.add.length > 0
+
+    const transaction = this.ctx.db.transaction_sync(() => {
+      if (primary_file_exists) {
+        this.ctx.logger.info(`File ${params.filepath} has a duplicate checksum in the database at ${existing_media_file.filepath}. Adding it as another filepath of the existing media file.`)
+        this.models.MediaFilepath.create({
+          media_file_id: existing_media_file.id,
+          filepath: params.filepath,
+          filename: params.filename,
+        })
+      } else {
+        // TODO we may want to move this behind a flag for filesystem ingest, or a config flag
+        // I worry that we may end up replacing files on the fly when we don't want to
+        this.ctx.logger.warn(`File ${params.filepath} has a duplicate checksum in the database at ${existing_media_file.filepath}. This existing file is missing, so the path is being updated to the new one.`)
+        const primary_media_filepath = this.models.MediaFilepath.select_one({filepath: existing_media_file.filepath}, {or_raise: true})
+        this.models.MediaFilepath.update_filepath({id: primary_media_filepath.id, filepath: params.filepath, filename: params.filename})
+        this.models.MediaFile.update_filepath({id: existing_media_file.id, filepath: params.filepath, filename: params.filename})
+      }
+
+      if (existing_media_file.md5checksum === null) {
+        this.models.MediaFile.update_md5checksum({id: existing_media_file.id, md5checksum: params.md5checksum})
+      }
+
+      if (has_updates) {
+        this.#media_update_records(media_reference_id, params.media_info, tags, params.editing)
+      }
+    })
+    transaction()
+
+    return {
+      status: primary_file_exists ? 'linked' : 'moved',
+      media: this.get_media_file_result({
+        media_reference_id,
+        media_file_id: existing_media_file.id,
+        thumbnail_limit: 1,
+      }),
+    }
   }
 
   protected media_update(media_reference_id: number, media_info?: inputs.MediaInfo, tags?: inputs.MediaReferenceUpdateTags, editing?: UpdateEditor) {
@@ -196,38 +271,7 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
     }
 
     const transaction = this.ctx.db.transaction_sync(() => {
-      const media_info_updates = {...parsed.media_info}
-
-      // when overwrite is false, we will only overwrite fields that are already owned by this editor (or by no editors at all)
-      if (parsed.editing?.overwrite === false) {
-        const media_info_last_editors = this.models.EditLog.get_media_info_last_editors({media_reference_id})
-        const media_info_update_fields = Object.keys(media_info_updates) as (keyof outputs.MediaInfo)[]
-        for (const media_info_field of media_info_update_fields) {
-          if (media_info_last_editors[media_info_field] && media_info_last_editors[media_info_field] !== parsed.editing.editor) {
-            delete media_info_updates[media_info_field]
-          }
-        }
-
-      }
-
-      this.models.MediaReference.update({
-        id: media_reference_id,
-        ...media_info_updates,
-      })
-
-      const tag_changes = this.manage_media_tags(media_reference_id, parsed.tags, parsed.editing)
-
-      if (parsed.editing?.editor) {
-        this.models.EditLog.create({
-          media_reference_id: media_reference_id,
-          operation_type: 'UPDATE',
-          editor: parsed.editing?.editor,
-          changes: {
-            media_info: media_info_updates,
-            tags: tag_changes,
-          }
-        })
-      }
+      this.#media_update_records(media_reference_id, parsed.media_info, parsed.tags, parsed.editing)
     })
 
     transaction()
@@ -239,6 +283,42 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
       media_file_id: media_file.id,
       thumbnail_limit: 1,
     })
+  }
+
+  /** applies media info and tag updates to a media reference. Must be called inside a transaction */
+  #media_update_records(media_reference_id: number, media_info: outputs.MediaInfo, tags: outputs.MediaReferenceUpdateTags, editing: UpdateEditor | undefined) {
+    const media_info_updates = {...media_info}
+
+    // when overwrite is false, we will only overwrite fields that are already owned by this editor (or by no editors at all)
+    if (editing?.overwrite === false) {
+      const media_info_last_editors = this.models.EditLog.get_media_info_last_editors({media_reference_id})
+      const media_info_update_fields = Object.keys(media_info_updates) as (keyof outputs.MediaInfo)[]
+      for (const media_info_field of media_info_update_fields) {
+        if (media_info_last_editors[media_info_field] && media_info_last_editors[media_info_field] !== editing.editor) {
+          delete media_info_updates[media_info_field]
+        }
+      }
+
+    }
+
+    this.models.MediaReference.update({
+      id: media_reference_id,
+      ...media_info_updates,
+    })
+
+    const tag_changes = this.manage_media_tags(media_reference_id, tags, editing)
+
+    if (editing?.editor) {
+      this.models.EditLog.create({
+        media_reference_id: media_reference_id,
+        operation_type: 'UPDATE',
+        editor: editing.editor,
+        changes: {
+          media_info: media_info_updates,
+          tags: tag_changes,
+        }
+      })
+    }
   }
 
   protected media_get(params: {
@@ -275,6 +355,7 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
         tags: this.models.Tag.select_all({media_reference_id: media_reference.id}),
         thumbnails: this.models.MediaThumbnail.select_many({media_file_id: media_file.id, limit: thumbnail_limit}),
         edit_log: this.models.EditLog.select_many({ media_reference_id: media_reference.id }),
+        filepaths: this.models.MediaFilepath.select_many({ media_file_id: media_file.id }),
       }
     }
   }
@@ -361,7 +442,7 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
       tags: this.models.Tag.select_all({media_reference_id: media_reference_id}),
       thumbnails: this.models.MediaThumbnail.select_many({media_file_id: media_file_id, limit: thumbnail_limit}),
       edit_log: this.models.EditLog.select_many({ media_reference_id: media_reference_id }),
-
+      filepaths: this.models.MediaFilepath.select_many({ media_file_id: media_file_id }),
     }
   }
 
