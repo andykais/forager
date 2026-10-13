@@ -147,3 +147,51 @@ test('media edit log', async (ctx) => {
     ctx.assert.equals(media_generated_art.media_reference.source_created_at, source_created_at)
   })
 })
+
+test('editor replace ownership', async (ctx) => {
+  using forager = new Forager(ctx.get_test_config())
+  forager.init()
+  const by_slug = (a: {group: string, name: string}, b: {group: string, name: string}) => `${a.group}:${a.name}`.localeCompare(`${b.group}:${b.name}`)
+
+  const media = await forager.media.create(ctx.resources.media_files['koch.tif'], {}, ['no_editor_tag'])
+  const id = media.media_reference.id
+  forager.media.update(id, {title: 'bar title'}, {add: ['bar_tag']}, {editor: 'bar'})
+
+  await ctx.subtest('replace with an editor keeps tags from other editors and tags without an editor', () => {
+    const updated = forager.media.update(id, {}, ['my:tag'], {editor: 'foo'})
+    ctx.assert.list_partial(updated.tags, [
+      {group: '', name: 'bar_tag'},
+      {group: '', name: 'no_editor_tag'},
+      {group: 'my', name: 'tag'},
+    ], by_slug)
+    ctx.assert.equals(updated.edit_log![0].changes.tags, {added: ['my:tag'], removed: []})
+  })
+
+  await ctx.subtest('replace with an editor replaces tags owned by that editor', () => {
+    const updated = forager.media.update(id, {}, ['my:other_tag'], {editor: 'foo', overwrite: false})
+    ctx.assert.list_partial(updated.tags, [
+      {group: '', name: 'bar_tag'},
+      {group: '', name: 'no_editor_tag'},
+      {group: 'my', name: 'other_tag'},
+    ], by_slug)
+    ctx.assert.equals(updated.edit_log![0].changes.tags, {added: ['my:other_tag'], removed: ['my:tag']})
+  })
+
+  await ctx.subtest('an editor does not overwrite media info fields owned by other editors by default', () => {
+    const updated = forager.media.update(id, {title: 'foo title', description: 'foo description'}, undefined, {editor: 'foo'})
+    ctx.assert.equals(updated.media_reference.title, 'bar title')
+    ctx.assert.equals(updated.media_reference.description, 'foo description')
+  })
+
+  await ctx.subtest('overwrite replaces tags and media info from all editors', () => {
+    const updated = forager.media.update(id, {title: 'foo title'}, ['my:tag'], {editor: 'foo', overwrite: true})
+    ctx.assert.equals(updated.media_reference.title, 'foo title')
+    ctx.assert.list_partial(updated.tags, [{group: 'my', name: 'tag'}])
+  })
+
+  await ctx.subtest('replace without an editor replaces all tags', () => {
+    forager.media.update(id, {}, {add: ['bar_tag']}, {editor: 'bar'})
+    const updated = forager.media.update(id, {}, ['no_editor_tag'])
+    ctx.assert.list_partial(updated.tags, [{group: '', name: 'no_editor_tag'}])
+  })
+})
