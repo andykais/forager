@@ -31,7 +31,7 @@ export interface FileSystemReceiverContext {
 export interface ReceiverEditing {
   /** Identifier of the editor, can be used to distinguish where a particular media metadata field or tag came from */
   editor?: string
-  /** Overwrite edits of other editors when updating existing media. Set to false to only replace tags and fields previously written by this editor */
+  /** Overwrite edits of other editors when updating existing media. Defaults to false when an editor is supplied, so only tags and fields previously written by this editor are replaced */
   overwrite?: boolean
 }
 

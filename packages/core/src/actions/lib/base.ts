@@ -79,11 +79,16 @@ export interface MediaGroupResponse {
 
 
 export interface EditInfo {
+  /** Identifier of the editor, used to track which editor wrote a media info field or tag */
   editor?: string
 }
 
 export interface CreateEditor extends EditInfo {}
 export interface UpdateEditor extends EditInfo {
+  /**
+   * Overwrite media info fields and tags written by other editors (including tags written without an editor).
+   * Defaults to false when an editor is supplied. Without an editor, updates always overwrite.
+   */
   overwrite?: boolean
 }
 
@@ -198,8 +203,8 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
     const transaction = this.ctx.db.transaction_sync(() => {
       const media_info_updates = {...parsed.media_info}
 
-      // when overwrite is false, we will only overwrite fields that are already owned by this editor (or by no editors at all)
-      if (parsed.editing?.overwrite === false) {
+      // unless overwrite is set, an editor will only overwrite fields that are already owned by this editor (or by no editors at all)
+      if (parsed.editing?.editor !== undefined && parsed.editing.overwrite !== true) {
         const media_info_last_editors = this.models.EditLog.get_media_info_last_editors({media_reference_id})
         const media_info_update_fields = Object.keys(media_info_updates) as (keyof outputs.MediaInfo)[]
         for (const media_info_field of media_info_update_fields) {
@@ -370,7 +375,7 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
     const tags_removed = new Set<string>()
     const tags_existing = new Map<string, TagJoin>()
     const editor = editing?.editor
-    const overwrite_edits_by_others = editing && 'overwrite' in editing && editing.overwrite
+    const overwrite_edits_by_others = editor === undefined || (editing !== undefined && 'overwrite' in editing && editing.overwrite === true)
 
     const existing_tags = this.models.Tag.select_all({media_reference_id: media_reference_id})
     for (const tag of existing_tags) {
@@ -380,7 +385,7 @@ abstract class Actions<Events extends EmitterEvents = {}> extends Emitter<Events
     if (tags.replace) {
       // remove all existing tags matching the editing stragegy first
       for (const [tag_slug, tag] of tags_existing.entries()) {
-        if (editor === undefined || tag.editor === null || tag.editor === editor || overwrite_edits_by_others) {
+        if (tag.editor === editor || overwrite_edits_by_others) {
           this.models.MediaReferenceTag.delete({media_reference_id, tag_id: tag.id})
           tags_removed.add(tag_slug)
         }
