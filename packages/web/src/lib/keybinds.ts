@@ -18,6 +18,14 @@ type KeybindAction =
   | 'ToggleVideoMute'
   | 'ToggleMediaControls'
   | 'ToggleSidebar'
+  | 'FilmstripNextItem'
+  | 'FilmstripPrevItem'
+  | 'FilmstripNextPage'
+  | 'FilmstripPrevPage'
+  | 'FilmstripEnd'
+  | 'FilmstripStart'
+  | 'NextFilmstrip'
+  | 'PrevFilmstrip'
   | 'Star0'
   | 'Star1'
   | 'Star2'
@@ -34,7 +42,8 @@ type KeybindActionListener = (e: KeybindActionEvent) => void
 export class Keybinds {
   public emitter: EventTarget
   public disabled: boolean
-  #keybind_mapper: Map<string, KeybindAction> | undefined
+  // a single key combo may trigger several actions, each listener decides if it applies in the current context
+  #keybind_mapper: Map<string, KeybindAction[]> | undefined
   #config: Config | undefined
 
   // this function is for some user ergonomics.
@@ -78,10 +87,13 @@ export class Keybinds {
     this.disabled = false
     this.#config = config
 
-    this.#keybind_mapper = new Map<string, KeybindAction>()
+    this.#keybind_mapper = new Map<string, KeybindAction[]>()
     for (const [keyboard_action, keyboard_shortcuts] of Object.entries(this.#config.web.shortcuts)) {
       for (const keyboard_shortcut of keyboard_shortcuts) {
-        this.#keybind_mapper.set(this.#get_keybind_code(keyboard_shortcut), keyboard_action as KeybindAction)
+        const code = this.#get_keybind_code(keyboard_shortcut)
+        const actions = this.#keybind_mapper.get(code) ?? []
+        actions.push(keyboard_action as KeybindAction)
+        this.#keybind_mapper.set(code, actions)
       }
     }
   }
@@ -127,8 +139,8 @@ export class Keybinds {
     if (e.altKey) keys_down.push('Alt')
     keys_down.push(last_keycode)
     const code = this.#get_keybind_code(keys_down.join('-'))
-    const action = this.#keybind_mapper.get(code)
-    if (action) {
+    const actions = this.#keybind_mapper.get(code) ?? []
+    for (const action of actions) {
       this.emitter.dispatchEvent(new CustomEvent(action, {
         detail: {
           data: { keyboard_event: e }
