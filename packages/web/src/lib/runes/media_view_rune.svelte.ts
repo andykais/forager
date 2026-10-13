@@ -192,10 +192,10 @@ export class MediaGroupRune extends MediaViewRune {
   }
 
   public img_fit_classes() {
-    if (this.grouped_state.media_list.length === 0) {
+    const media = this.grouped_state.media_list.at(0)
+    if (media === undefined || media.media_type !== 'media_file') {
       return "w-full h-full"
     } else {
-      const media = this.grouped_state.media_list[0]
       if (media.media_file.width > media.media_file.height) {
         // its long edge is wide
         return "w-full"
