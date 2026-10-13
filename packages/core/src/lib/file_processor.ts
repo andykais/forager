@@ -228,6 +228,7 @@ class FileProcessor {
   @throw_contextually()
   public async get_info(): Promise<FileInfo> {
     const filepath_exists = await fs.exists(this.#filepath) 
+    console.log({filepath: this.#filepath})
     if (!filepath_exists) {
       throw new errors.FileNotFound(`Cannot process file because it does not exist`)
     }
@@ -476,7 +477,7 @@ class FileProcessor {
           '-v', 'info',
           // '-an', // As an input option, blocks all audio streams of a file from being filtered or being  automatically  selected or mapped for any output.
           '-i', this.#filepath,
-          '-vsync', 'passthrough',
+          '-fps_mode', 'passthrough',
           // '-ignore_loop', '0',
           '-vf', [
             ...(
