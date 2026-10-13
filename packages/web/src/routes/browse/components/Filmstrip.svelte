@@ -48,20 +48,27 @@
 
   const cell_size = $derived(settings.ui.media_list.thumbnail_size)
   const step = $derived(cell_size + GAP)
-  const rows = $derived(kind === 'single' ? 1 : settings.ui.media_list.filmstrip.rows)
+  const configured_rows = $derived(kind === 'single' ? 1 : settings.ui.media_list.filmstrip.rows)
   const visible_columns = $derived(Math.max(1, Math.floor((viewport_width + GAP) / step)))
-  const strip_height = $derived(rows * cell_size + (rows - 1) * GAP)
-  const page_limit = $derived(Math.max(MIN_PAGE_LIMIT, visible_columns * rows * 2))
+  const page_limit = $derived(Math.max(MIN_PAGE_LIMIT, visible_columns * configured_rows * 2))
   const is_selected = $derived(media_selections.current_selection.result_index === result_index)
-  const img_classes = $derived(settings.ui.media_list.thumbnail_shape === 'square' ? 'object-cover' : 'object-contain')
+  const img_classes = $derived(settings.ui.media_list.thumbnail_shape === 'square'
+    ? 'w-full h-full object-cover'
+    : 'max-w-full max-h-full object-contain')
 
   const video_thumbnails = $derived.by(() => {
     if (kind !== 'video') return []
     const all_thumbnails = result.state.full_thumbnails?.results ?? result.thumbnails.results
-    const count = visible_columns * rows
+    const count = visible_columns * configured_rows
     if (all_thumbnails.length <= count) return all_thumbnails
     return Array.from({length: count}, (_, index) => all_thumbnails[Math.floor(index * all_thumbnails.length / count)])
   })
+
+  // videos with fewer thumbnails than the configured rows can hold only take up the rows they fill
+  const rows = $derived(kind === 'video'
+    ? Math.max(1, Math.min(configured_rows, Math.ceil(video_thumbnails.length / visible_columns)))
+    : configured_rows)
+  const strip_height = $derived(rows * cell_size + (rows - 1) * GAP)
 
   const can_scroll_left = $derived(scroll_state.left > 1)
   const at_end = $derived(scroll_state.left + scroll_state.client >= scroll_state.width - 1)
@@ -189,7 +196,8 @@
     return `${minutes}:${remainder}`
   }
 
-  const thumbnail_classes = "w-full h-full rounded-md shadow shadow-gray-900 hover:outline-2 hover:outline-slate-400"
+  const thumbnail_classes = "rounded-md shadow shadow-gray-900 hover:outline-2 hover:outline-slate-400"
+  const thumbnail_button_classes = "flex items-center justify-center overflow-hidden"
 </script>
 
 <div
@@ -269,6 +277,7 @@
             type="button"
             tabindex="-1"
             title="Open"
+            class={thumbnail_button_classes}
             onclick={() => media_selections.open_entry(result, result_index)}
           >
             <img class="{thumbnail_classes} {img_classes}" src={result.preview_thumbnail} alt="Thumbnail for {result.media_reference.title ?? 'media'}" />
@@ -283,7 +292,7 @@
             <button
               type="button"
               tabindex="-1"
-              class="relative"
+              class="relative {thumbnail_button_classes}"
               title="Play from {format_timestamp(thumbnail.media_timestamp)}"
               onclick={() => media_selections.open_entry(result, result_index, {seek_to: thumbnail.media_timestamp})}
             >
@@ -304,6 +313,7 @@
               type="button"
               tabindex="-1"
               title={entry.media_reference.title ?? `Entry ${entry_index + 1}`}
+              class={thumbnail_button_classes}
               onclick={() => media_selections.open_entry(entry, result_index)}
             >
               <img class="{thumbnail_classes} {img_classes}" src={entry.preview_thumbnail} alt="Thumbnail for {entry.media_reference.title ?? 'media'}" />
