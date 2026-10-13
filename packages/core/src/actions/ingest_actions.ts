@@ -156,18 +156,19 @@ class IngestActions extends Actions<IngestEvents> {
     }
 
     try {
-      const created_media = await ctx.forager.media.create(filepath, media_info, tags, {editor: ctx.receiver.name})
-      return {media_reference_id: created_media.media_reference.id, checksum: created_media.media_file.checksum, status: 'created'}
+      const { status, media } = await this.media_create_with_status(filepath, media_info, tags, {editor: ctx.receiver.name})
+      return {
+        media_reference_id: media.media_reference.id,
+        checksum: media.media_file.checksum,
+        status: status === 'created' ? 'created' : 'duplicate',
+      }
     } catch (e) {
       let file_identifier = filepath
       if (filepath !== ctx.entry.path) {
         file_identifier = `${filepath} from ${ctx.entry.path}`
       }
 
-      if (e instanceof errors.DuplicateMediaError) {
-        ctx.logger.warn(`${file_identifier} has a duplicate checksum (${e.checksum}) to ${e.existing_media_filepath}, skipping`)
-        return {media_reference_id: e.media_reference_id, checksum: e.checksum, status: 'duplicate'}
-      } else if (e instanceof errors.AlreadyExistsError) {
+      if (e instanceof errors.AlreadyExistsError) {
         if (!media_info || !tags) {
           ctx.logger.info(`${e.identifier} already exists in database, skipping`)
           return {media_reference_id: e.media_reference_id, status: 'existing'}

@@ -465,7 +465,7 @@ ${group_builder.generate_sql()}
       }
 
       if (params.filepath) {
-        builder.add_where_clause(`media_file.filepath GLOB '${params.filepath}'`)
+        builder.add_where_clause(`EXISTS (SELECT 1 FROM media_filepath WHERE media_filepath.media_file_id = media_file.id AND media_filepath.filepath GLOB '${params.filepath}')`)
       }
 
       if (params.duration_min !== undefined) {
