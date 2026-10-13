@@ -20,6 +20,8 @@
   const {settings, media_selections, queryparams} = controller.runes
 
   const GAP = 4
+  // matches the strip's border-2, used to line the arrows up with the top row of thumbnails
+  const STRIP_BORDER = 2
   const MIN_PAGE_LIMIT = 30
   const icon_size = 14
   const icon_color = theme.colors.green[200]
@@ -198,6 +200,7 @@
 
   const thumbnail_classes = "rounded-md shadow shadow-gray-900 hover:outline-2 hover:outline-slate-400"
   const thumbnail_button_classes = "flex items-center justify-center overflow-hidden"
+  const arrow_button_classes = "w-5 h-5 flex items-center justify-center rounded-full bg-gray-800 hover:bg-gray-600 disabled:opacity-25 disabled:hover:bg-gray-800 disabled:cursor-default"
 </script>
 
 <div
@@ -208,51 +211,7 @@
   onclick={focus_strip}
   role="presentation"
 >
-  <div class="flex items-center gap-1 text-xs text-gray-400 pb-1 pl-7">
-    {#if result.media_type === 'media_file'}
-      {#if result.media_file.media_type === 'VIDEO'}
-        <Icon data={icons.PlayCircle} fill={icon_color} stroke="none" size={icon_size} />
-        {#if result.media_file.audio}
-          <Icon data={icons.Music} fill={icon_color} stroke="none" size={icon_size} />
-        {/if}
-      {:else if result.media_file.media_type === 'IMAGE' && result.media_file.content_type === 'image/gif'}
-        <Icon data={icons.Gif} fill={icon_color} stroke="none" size={icon_size} />
-      {:else if result.media_file.media_type === 'IMAGE'}
-        <Icon data={icons.Photo} fill={icon_color} stroke="none" size={icon_size} />
-      {:else if result.media_file.media_type === 'AUDIO'}
-        <Icon data={icons.Music} fill={icon_color} stroke="none" size={icon_size} />
-      {/if}
-      <span class="truncate">{result.media_reference.title ?? path.basename(result.media_file.filepath)}</span>
-      {#if result.media_file.media_type === 'VIDEO'}
-        <span>{human_readable_duration(result.media_file.duration)}</span>
-      {/if}
-    {:else if result.media_type === 'media_series'}
-      <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
-      <span class="truncate">{result.media_reference.media_series_name ?? result.media_reference.title ?? 'Series'}</span>
-      <span>({result.media_reference.media_series_length})</span>
-    {:else if result.media_type === 'grouped'}
-      <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
-      <SearchLink
-        class="hover:text-green-500 hover:bg-gray-700 px-1 rounded-sm"
-        {controller}
-        params={queryparams.merge({mode: 'media', tags: `${queryparams.current.group_by ?? ''}:${result.group_metadata.value}`})}
-      >{result.group_metadata.value}</SearchLink>
-      <span>({result.group_metadata.count})</span>
-    {/if}
-  </div>
-
-  <div class="grid grid-cols-[auto_1fr_auto] gap-1 items-center">
-    <button
-      type="button"
-      title="Previous page"
-      class="w-6 flex items-center justify-center rounded-sm bg-gray-800 hover:bg-gray-600 disabled:opacity-25 disabled:hover:bg-gray-800 disabled:cursor-default"
-      style="height: {strip_height}px"
-      disabled={!can_scroll_left}
-      onclick={() => scroll_page(-1)}
-    >
-      <Icon data={icons.ChevronLeft} fill={icon_color} stroke="none" size={16} />
-    </button>
-
+  <div class="grid grid-cols-[1fr_auto] gap-2 items-start">
     <div
       bind:this={strip_element}
       bind:clientWidth={viewport_width}
@@ -326,16 +285,59 @@
       {/if}
     </div>
 
-    <button
-      type="button"
-      title="Next page"
-      class="w-6 flex items-center justify-center rounded-sm bg-gray-800 hover:bg-gray-600 disabled:opacity-25 disabled:hover:bg-gray-800 disabled:cursor-default"
-      style="height: {strip_height}px"
-      disabled={!can_scroll_right}
-      onclick={() => scroll_page(1)}
-    >
-      <Icon data={icons.ChevronRight} fill={icon_color} stroke="none" size={16} />
-    </button>
+    <div class="flex items-center gap-1" style="height: {cell_size + STRIP_BORDER * 2}px">
+      <button
+        type="button"
+        title="Previous page"
+        class={arrow_button_classes}
+        disabled={!can_scroll_left}
+        onclick={() => scroll_page(-1)}
+      >
+        <Icon data={icons.ChevronLeft} fill={icon_color} stroke="none" size={12} />
+      </button>
+      <button
+        type="button"
+        title="Next page"
+        class={arrow_button_classes}
+        disabled={!can_scroll_right}
+        onclick={() => scroll_page(1)}
+      >
+        <Icon data={icons.ChevronRight} fill={icon_color} stroke="none" size={12} />
+      </button>
+    </div>
+  </div>
+
+  <div class="flex items-center gap-1 text-xs text-gray-400 pt-1">
+    {#if result.media_type === 'media_file'}
+      {#if result.media_file.media_type === 'VIDEO'}
+        <Icon data={icons.PlayCircle} fill={icon_color} stroke="none" size={icon_size} />
+        {#if result.media_file.audio}
+          <Icon data={icons.Music} fill={icon_color} stroke="none" size={icon_size} />
+        {/if}
+      {:else if result.media_file.media_type === 'IMAGE' && result.media_file.content_type === 'image/gif'}
+        <Icon data={icons.Gif} fill={icon_color} stroke="none" size={icon_size} />
+      {:else if result.media_file.media_type === 'IMAGE'}
+        <Icon data={icons.Photo} fill={icon_color} stroke="none" size={icon_size} />
+      {:else if result.media_file.media_type === 'AUDIO'}
+        <Icon data={icons.Music} fill={icon_color} stroke="none" size={icon_size} />
+      {/if}
+      <span class="truncate">{result.media_reference.title ?? path.basename(result.media_file.filepath)}</span>
+      {#if result.media_file.media_type === 'VIDEO'}
+        <span>{human_readable_duration(result.media_file.duration)}</span>
+      {/if}
+    {:else if result.media_type === 'media_series'}
+      <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
+      <span class="truncate">{result.media_reference.media_series_name ?? result.media_reference.title ?? 'Series'}</span>
+      <span>({result.media_reference.media_series_length})</span>
+    {:else if result.media_type === 'grouped'}
+      <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
+      <SearchLink
+        class="hover:text-green-500 hover:bg-gray-700 px-1 rounded-sm"
+        {controller}
+        params={queryparams.merge({mode: 'media', tags: `${queryparams.current.group_by ?? ''}:${result.group_metadata.value}`})}
+      >{result.group_metadata.value}</SearchLink>
+      <span>({result.group_metadata.count})</span>
+    {/if}
   </div>
 </div>
 
