@@ -28,6 +28,8 @@ export interface CurrentSelection {
   show: boolean
   media_response: runes.MediaViewRunes | null
   result_index: number
+  /** timestamp (in seconds) that a video should start at when it is opened */
+  seek_to: number | undefined
 }
 
 const CURRENT_SELECTION_DEFAULTS: CurrentSelection = {
@@ -35,6 +37,7 @@ const CURRENT_SELECTION_DEFAULTS: CurrentSelection = {
   thumbnails: null,
   media_response: null,
   result_index: 0,
+  seek_to: undefined,
 }
 export class MediaSelectionsRune extends Rune {
   #selected_thumbnails = $state<ThumbnailSelections>({type: 'none'})
@@ -70,6 +73,25 @@ export class MediaSelectionsRune extends Rune {
     }
   }
 
+  /** select a search result without opening it */
+  public select_media(media_response: runes.MediaViewRune, result_index: number) {
+    this.#current_selection.result_index = result_index
+    // grouped results are not media references, so there are no media details to show for them
+    this.#current_selection.media_response = media_response.media_type === 'grouped' ? null : media_response
+  }
+
+  /**
+   * open a specific media reference in the media view.
+   * The media reference does not need to be a top level search result (e.g. a series item or group entry),
+   * result_index refers to the search result it belongs to.
+   */
+  public async open_entry(media_response: runes.MediaViewRune, result_index: number, options?: {seek_to?: number}) {
+    this.#current_selection.media_response = media_response
+    this.#current_selection.result_index = result_index
+    this.#current_selection.seek_to = options?.seek_to
+    await this.open_media()
+  }
+
   public async view_media() {
     await this.#current_selection.media_response?.load_detailed_view()
     if (this.#current_selection.show) {
@@ -90,6 +112,14 @@ export class MediaSelectionsRune extends Rune {
 
   public close_media = () => {
     this.#current_selection.show = false
+    this.#current_selection.seek_to = undefined
+  }
+
+  /** consume the pending seek timestamp so it is only applied once */
+  public take_seek_to(): number | undefined {
+    const seek_to = this.#current_selection.seek_to
+    this.#current_selection.seek_to = undefined
+    return seek_to
   }
 
   public async next_media(results: MediaResponse[]) {

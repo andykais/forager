@@ -74,9 +74,6 @@
     },
   })
 
-  let filmstrip_thumbnails
-  let filmstrip_height = 50
-
   $effect(() => {
     if (!dialog.open && controller.runes.media_selections.current_selection.show) {
       dialog.show()
@@ -140,6 +137,12 @@
             bind:currentTime={animation_progress}
             controls={show_controls}
             use:video_loader={media_url}
+            onloadedmetadata={e => {
+              const seek_to = controller.runes.media_selections.take_seek_to()
+              if (seek_to !== undefined) {
+                e.currentTarget.currentTime = seek_to
+              }
+            }}
             >
             <source src={media_url}>
             <track kind="captions"/> <!-- this exists purely to quiet down an A11y rule -->
@@ -148,14 +151,6 @@
             class="w-full h-1 absolute bottom-0"
             style="width: {animation_width}px"
             max={controller.runes.media_selections.current_selection.media_response.media_file.duration} value={animation_progress}></progress>
-          {#if controller.runes.settings.ui.media_view.filmstrip.enabled}
-            <div class="w-full flex flex-row justify-center gap-1 overflow-x-scroll" style="height: {controller.runes.settings.ui.media_view.filmstrip.thumbnail_size}px;">
-              {#each controller.runes.media_selections.current_selection.thumbnails.results as thumbnail, index (thumbnail.id)}
-                <div class="h-full">
-                  <img class="h-full" src="/files/thumbnail/{controller.runes.media_selections.current_selection.media_response.media_reference.id}?index={index}" alt="Thumbnail {index}"></div>
-              {/each}
-            </div>
-          {/if}
         {:else if controller.runes.media_selections.current_selection.media_response.media_file.media_type === 'AUDIO'}
           <img
             class="object-contain {media_fit_classes}"

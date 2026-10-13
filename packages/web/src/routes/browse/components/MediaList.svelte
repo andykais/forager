@@ -1,13 +1,20 @@
 <script lang="ts">
   import Scroller from '$lib/components/Scroller.svelte'
   import SearchResults from './SearchResults.svelte'
+  import FilmstripList from './FilmstripList.svelte'
   import type { BrowseController } from '../controller.ts'
 
   let {controller}: {controller: BrowseController} = $props()
   let media_list_element: HTMLElement
 
+  // in filmstrip mode the arrow keys scroll the focused filmstrip (see Filmstrip.svelte) unless media is open
+  const filmstrip_navigation_active = () =>
+    controller.runes.settings.ui.media_list.organization === 'filmstrip'
+      && !controller.runes.media_selections.current_selection.show
+
   controller.keybinds.component_listen({
     NextMedia: () => {
+      if (filmstrip_navigation_active()) return
       if (document.activeElement instanceof HTMLInputElement) {
         if (media_list_element.contains(document.activeElement)) {}
         else return
@@ -15,6 +22,7 @@
       controller.runes.media_selections.next_media(controller.runes.media_list.results)
     },
     PrevMedia: () => {
+      if (filmstrip_navigation_active()) return
       if (document.activeElement instanceof HTMLInputElement) {
         if (media_list_element.contains(document.activeElement)) {}
         else return
@@ -54,6 +62,10 @@
     ]}
     style="height: {controller.runes.dimensions.heights.media_list}px"
   >
-    <SearchResults {controller} />
+    {#if controller.runes.settings.ui.media_list.organization === 'filmstrip'}
+      <FilmstripList {controller} />
+    {:else}
+      <SearchResults {controller} />
+    {/if}
   </Scroller>
 </div>
