@@ -150,12 +150,13 @@ export class MediaGroupRune extends MediaViewRune {
   grouped_state = $state<GroupState>({
     media_list: []
   })
+  /** search params for the media inside this group (used by the filmstrip view to paginate group entries) */
+  readonly entries_search_params: Parameters<BaseController['client']['forager']['media']['search']>[0]
 
   protected constructor(client: BaseController['client'], media_response: MediaResponse, search_params: SearchParams) {
-    // debugger
     super(client, media_response)
 
-    const {group_by, cursor, ...merged_search_params} = search_params
+    const {group_by, cursor, limit, ...merged_search_params} = search_params
 
     if (group_by['tag_group'] !== undefined) {
       merged_search_params.query = {...merged_search_params.query}
@@ -167,12 +168,12 @@ export class MediaGroupRune extends MediaViewRune {
       if (merged_search_params.sort_by === 'count') {
         merged_search_params.sort_by = 'created_at'
       }
-      merged_search_params.limit = 1 // TODO until we implement a filmstrip render, we only need one image
     } else {
       throw new Error(`unexpected search group`)
     }
+    this.entries_search_params = merged_search_params
 
-    this.client.forager.media.search(merged_search_params)
+    this.client.forager.media.search({...merged_search_params, limit: 1})
       .then((result: {}) => {
         this.grouped_state.media_list = result.results
       })
