@@ -165,8 +165,10 @@ export class MediaGroupRune extends MediaViewRune {
           : []
       const tag = `${group_by.tag_group}:${media_response.group.value}`
       merged_search_params.query.tags.push(tag)
+      // 'count' sorting only exists on group_by searches, so fall back to the default media search sort
       if (merged_search_params.sort_by === 'count') {
-        merged_search_params.sort_by = 'created_at'
+        delete merged_search_params.sort_by
+        delete merged_search_params.order
       }
     } else {
       throw new Error(`unexpected search group`)

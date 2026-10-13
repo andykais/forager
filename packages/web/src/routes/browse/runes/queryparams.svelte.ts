@@ -304,9 +304,11 @@ export class QueryParamsManager extends Rune {
         // Clear group_by only params if switching away from group_by mode
         if (val !== 'group_by') {
           params.group_by = undefined
-          // 'count' sorting only exists on group_by searches, core rejects it elsewhere
+          // 'count' sorting only exists on group_by searches, core rejects it elsewhere.
+          // The order was chosen for the count sort, so drop it along with the sort
           if (params.sort === 'count') {
             params.sort = DEFAULTS.sort
+            params.order = DEFAULTS.order
           }
         }
       } else {
