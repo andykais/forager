@@ -19,9 +19,39 @@ runs:
         deno-version: "${{ inputs.DENO_VERSION }}"
 
     - name: Setup FFmpeg
+      if: runner.os != 'macOS'
       uses: AnimMouse/setup-ffmpeg@v1
       with:
         version: "${{ inputs.FFMPEG_VERSION }}"
+
+    # AnimMouse/setup-ffmpeg downloads macOS builds from evermeet.cx without retrying, and evermeet's mirror
+    # rate limits back to back downloads (HTTP 429), so we download, retry, and cache the macOS binaries ourselves
+    - name: Cache FFmpeg (macOS)
+      if: runner.os == 'macOS'
+      id: ffmpeg_cache_macos
+      uses: actions/cache@v6
+      with:
+        path: ~/ffmpeg_bin
+        key: "ffmpeg:${{ inputs.FFMPEG_VERSION }}:${{ runner.os }}:${{ runner.arch }}"
+
+    - name: Download FFmpeg (macOS)
+      if: runner.os == 'macOS' && steps.ffmpeg_cache_macos.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        mkdir -p ~/ffmpeg_bin
+        for binary in ffmpeg ffprobe; do
+          curl --fail --silent --show-error --location --retry 10 --retry-delay 30 --retry-all-errors \
+            --output "$RUNNER_TEMP/$binary.zip" "https://evermeet.cx/$binary/$binary-${{ inputs.FFMPEG_VERSION }}.zip"
+          unzip -o "$RUNNER_TEMP/$binary.zip" "$binary" -d ~/ffmpeg_bin
+        done
+        chmod +x ~/ffmpeg_bin/ffmpeg ~/ffmpeg_bin/ffprobe
+
+    - name: Add FFmpeg to PATH (macOS)
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        echo ~/ffmpeg_bin >> "$GITHUB_PATH"
+        ~/ffmpeg_bin/ffprobe -version | head -n 1
 
     - name: Cache Deno dependencies 
       uses: actions/cache@v6
