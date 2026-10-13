@@ -6,7 +6,7 @@ inputs:
   DENO_VERSION:
     default: '2.9'
   FFMPEG_VERSION:
-    default: '8.1'
+    default: '9.0'
   DENO_DIR:
     default: 'deno_dependency_cache'
 
