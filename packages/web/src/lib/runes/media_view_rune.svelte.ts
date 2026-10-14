@@ -3,7 +3,7 @@ import type { MediaResponse, MediaFileResponse, MediaSeriesResponse, MediaGroupR
 import type { BaseController } from '$lib/base_controller.ts'
 
 
-type AnyMediaResponse = MediaResponse | MediaGroupResponse
+export type AnyMediaResponse = MediaResponse | MediaGroupResponse
 
 /**
  * The search/group params that produced a given result. These are threaded straight

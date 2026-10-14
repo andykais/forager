@@ -1,10 +1,8 @@
 import {Rune} from '$lib/runes/rune.ts'
-import type { Forager, MediaResponse, MediaGroupResponse, inputs } from '@forager/core'
+import type { Forager, inputs } from '@forager/core'
 import { MediaViewRune } from '.'
-import type { AnyMediaViewRune, MediaSearchInput } from '.'
+import type { AnyMediaResponse, AnyMediaViewRune, MediaSearchInput } from '.'
 
-
-type AnyMediaResponse = MediaResponse | MediaGroupResponse
 
 type Result =
   | ReturnType<Forager['media']['search']>
