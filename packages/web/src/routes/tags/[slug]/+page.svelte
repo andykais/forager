@@ -11,6 +11,8 @@
   import Numeric from '$lib/components/Numeric.svelte';
 
   let props = $props()
+  // the controller is created once per page, from the config the page was loaded with
+  // svelte-ignore state_referenced_locally
   const controller = contexts.controller.set(new TagDetailController(props.data.config))
 
   let alias_input = $state('')

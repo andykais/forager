@@ -20,7 +20,7 @@
     return props.content
   })
 
-  let display_inline = ['Views', 'Stars'].includes(props.label)
+  let display_inline = $derived(['Views', 'Stars'].includes(props.label))
 </script>
 
 {#if !(props.hide_if_null && props.content === null)}

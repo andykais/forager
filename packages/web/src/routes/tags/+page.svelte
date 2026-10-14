@@ -8,6 +8,8 @@
 
 	/** @type {import('./$types').PageProps} */
   let props = $props()
+  // the controller is created once per page, from the config the page was loaded with
+  // svelte-ignore state_referenced_locally
   contexts.controller.set(new TagsController(props.data.config))
 </script>
 

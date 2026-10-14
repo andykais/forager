@@ -6,9 +6,9 @@
   type Tag = model_types.Tag
   let props: {tag: Tag, transparent?: boolean; show_group?: boolean; hide_count?: boolean; class?: ClassValue} = $props()
 
-  const tag_identifier = props.tag.group === '' || props.show_group === false
+  const tag_identifier = $derived(props.tag.group === '' || props.show_group === false
     ? `${props.tag.name}`
-    : parsers.Tag.encode(props.tag)
+    : parsers.Tag.encode(props.tag))
 
   let color_style = $derived.by(() => {
     if (props.transparent) {
