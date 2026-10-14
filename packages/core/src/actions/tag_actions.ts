@@ -85,6 +85,7 @@ class TagActions extends Actions {
         duration_min: parsed.contextual_query.duration?.min?.seconds,
         duration_max: parsed.contextual_query.duration?.max?.seconds,
         unread: parsed.contextual_query.unread,
+        text_search: parsed.contextual_query.text_search,
         tag_ids: tag_ids,
       }
     }

@@ -179,4 +179,9 @@ ${sql}
   }
 }
 
-export { SQLBuilder }
+/** Renders a string as a sqlite string literal so that it can be inlined into a query fragment. */
+function sql_string_literal(value: string) {
+  return `'${value.replaceAll("'", "''")}'`
+}
+
+export { SQLBuilder, sql_string_literal }

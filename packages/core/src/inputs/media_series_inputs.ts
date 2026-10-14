@@ -1,7 +1,7 @@
 import z from 'zod'
 import { PaginatedQuery } from '~/lib/inputs_base.ts'
 import { Tag } from './tag_inputs.ts'
-import {MediaInfo, MediaType} from './media_reference_inputs.ts'
+import {MediaInfo, MediaType, TextSearch} from './media_reference_inputs.ts'
 
 const Duration = z.object({
   seconds: z.number().optional(),
@@ -38,6 +38,8 @@ export const SeriesSearchQuery = z.object({
   animated: z.boolean().optional(),
   media_type: MediaType.optional(),
   filepath: z.string().optional(),
+  /** a full text search across the media reference title, description, filepath and metadata */
+  text_search: TextSearch.optional(),
   tags: z.array(Tag).optional(),
   keypoint: Tag.optional(),
   stars: z.number().gte(0).lte(5).optional(),

@@ -50,6 +50,32 @@ const Duration = z.object({
 
 export const MediaType = z.enum(['IMAGE', 'VIDEO', 'AUDIO'])
 
+/** The media reference fields covered by the full text search index */
+export const TEXT_SEARCH_FIELDS = ['title', 'description', 'filepath', 'metadata'] as const
+
+export const TextSearchField = z.enum(TEXT_SEARCH_FIELDS)
+
+/**
+ * A full text search over a media reference's text fields.
+ *
+ * A bare string searches every indexed field. Pass an object with `fields` to restrict the search
+ * to a subset of them.
+ */
+export const TextSearch = z.union([
+  z.string(),
+  z.object({
+    query: z.string(),
+    fields: z.array(TextSearchField).nonempty().optional(),
+  }).strict(),
+]).transform(input => {
+  const { query, fields } = typeof input === 'string'
+    ? { query: input, fields: undefined }
+    : input
+  // dedupe so that {fields: ['title', 'title']} cannot produce a duplicated fts5 column filter
+  const deduped_fields = TEXT_SEARCH_FIELDS.filter(field => fields === undefined || fields.includes(field))
+  return { query, fields: deduped_fields }
+})
+
 export const MediaReferenceQuery = z.object({
   series_id: z.number().optional(),
   series: z.boolean().optional(),
@@ -57,6 +83,8 @@ export const MediaReferenceQuery = z.object({
   media_type: MediaType.optional(),
   /** filepath can be an exact path or a glob */
   filepath: z.string().optional(),
+  /** a full text search across the media reference title, description, filepath and metadata */
+  text_search: TextSearch.optional(),
   media_reference_id: z.number().optional(),
   tags: z.array(Tag).optional(),
   keypoint: Tag.optional(),

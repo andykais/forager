@@ -96,6 +96,7 @@ class MediaActions extends Actions {
       duration_max: query.duration?.max?.seconds,
       unread: query.unread,
       filepath: query.filepath,
+      text_search: query.text_search,
     })
 
     const results = this.#map_media_records_to_media_responses(records, parsed.thumbnail_limit, keypoint_tag_id)
@@ -183,6 +184,7 @@ class MediaActions extends Actions {
       duration_max: query.duration?.max?.seconds,
       unread: query.unread,
       filepath: query.filepath,
+      text_search: query.text_search,
     })
 
     const results = records.results.map(record => {
@@ -213,6 +215,7 @@ class MediaActions extends Actions {
           duration_max: query.duration?.max?.seconds,
           unread: query.unread,
           filepath: query.filepath,
+          text_search: query.text_search,
         })
         media = this.#map_media_records_to_media_responses(records, parsed.thumbnail_limit, keypoint_tag_id)
       }
