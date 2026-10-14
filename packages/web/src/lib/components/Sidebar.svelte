@@ -27,6 +27,8 @@
     screen: 0,
     button: 0,
     sidebar_max: 0,
+    // only the initial width comes from props, dragging the sidebar owns it afterwards
+    // svelte-ignore state_referenced_locally
     sidebar: props.width,
 
     mouse_button_offset: 0,

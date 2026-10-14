@@ -4,10 +4,10 @@
     value: string
   }
   interface Props {
-    label: string
-    options: SelectOption
+    label?: string
+    options: SelectOption[]
     value: string
-    onchange: () => void | undefined
+    onchange?: (e: Event) => void
   }
   let {
     label,

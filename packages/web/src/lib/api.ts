@@ -18,11 +18,37 @@ class ForagerTagApi extends rpc.ApiController<Context> {
   parent_delete = this.context.forager.tag.parent_delete
 }
 
+class ForagerMediaApi extends rpc.ApiController<Context> {
+  create = this.context.forager.media.create
+  update = this.context.forager.media.update
+  upsert = this.context.forager.media.upsert
+  delete = this.context.forager.media.delete
+  search = this.context.forager.media.search
+  group = this.context.forager.media.group
+  get = this.context.forager.media.get
+  thumbnail = this.context.forager.media.thumbnail
+  reload = this.context.forager.media.reload
+}
+
+class ForagerSeriesApi extends rpc.ApiController<Context> {
+  create = this.context.forager.series.create
+  update = this.context.forager.series.update
+  upsert = this.context.forager.series.upsert
+  add = this.context.forager.series.add
+  get = this.context.forager.series.get
+  search = this.context.forager.series.search
+}
+
+class ForagerViewsApi extends rpc.ApiController<Context> {
+  start = this.context.forager.views.start
+  update = this.context.forager.views.update
+}
+
 class ForagerApi extends rpc.ApiController<Context> {
-  media = this.context.forager.media
-  series = this.context.forager.series
+  media = this.module(ForagerMediaApi)
+  series = this.module(ForagerSeriesApi)
   tag = this.module(ForagerTagApi)
-  views = this.context.forager.views
+  views = this.module(ForagerViewsApi)
 
 }
 

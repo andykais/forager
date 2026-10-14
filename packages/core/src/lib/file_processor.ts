@@ -668,7 +668,11 @@ class FileProcessor {
   }
 
   static async * read_lines(stream: ReadableStream<Uint8Array>) {
-    const reader = stream.pipeThrough(new TextDecoderStream()).getReader()
+    // NOTE `deno check` passes without this cast, but @forager/web type-checks core's source
+    // under TypeScript's DOM lib, which types TextDecoderStream's writable side as
+    // WritableStream<BufferSource> and rejects piping a Uint8Array stream into it.
+    const decoder = new TextDecoderStream() as ReadableWritablePair<string, Uint8Array>
+    const reader = stream.pipeThrough(decoder).getReader()
     let buffer = ''
     while (true) {
       const read_result = await reader.read()

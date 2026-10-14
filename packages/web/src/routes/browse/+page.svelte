@@ -12,6 +12,8 @@
 	/** @type {import('./$types').PageProps} */
   let props  = $props()
 
+  // the controller is created once per page, from the config the page was loaded with
+  // svelte-ignore state_referenced_locally
   const controller = contexts.controller.set(new BrowseController(props.data.config))
   let { dimensions, focus, queryparams } = controller.runes
   focus.stack({component: 'BrowsePage', focus: 'page'})

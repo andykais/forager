@@ -51,7 +51,6 @@
   {#each media_list.results as result, result_index}
     <div>
       <div 
-        type="button"
         class="inline-flex items-center justify-center p-1
                outline-none"
         use:scrollable={media_selections.current_selection.result_index === result_index}
@@ -127,11 +126,11 @@
               <Icon data={icons.Copy} fill={icon_color} stroke="none" size={icon_size} />
               <SearchLink
                 class="hover:text-green-500 hover:bg-gray-700 px-2 rounded-sm"
-                params={queryparams.merge({mode: 'media', tags: `${queryparams.current.group_by ?? ''}:${result.group_metadata.value}`})}> {result.group_metadata.value} 
+                params={queryparams.merge({search_mode: 'media', search_string: `${queryparams.current.group_by ?? ''}:${result.group_metadata.value}`})}> {result.group_metadata.value} 
               </SearchLink>
               <span>{result.group_metadata.count}</span>
           {:else}
-            UNEXPECTED MEDIA TYPE {result.media_type}
+            UNEXPECTED MEDIA TYPE {(result as { media_type: string }).media_type}
           {/if}
         </div>
         </div>

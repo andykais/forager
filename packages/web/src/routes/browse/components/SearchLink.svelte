@@ -1,10 +1,11 @@
 <script lang="ts">
   import type {BrowseController} from '../controller.ts'
+  import type { SearchParams } from '../runes/queryparams.svelte.ts'
   import type { SvelteHTMLElements, ClassValue } from 'svelte/elements';
   import * as contexts from '$lib/contexts/index.ts'
 
   interface Props {
-    params: Partial<BrowseController['runes']['queryparams']['DEFAULTS']>
+    params: SearchParams
     class?: ClassValue
     title?: string
     children: SvelteHTMLElements['div']['children']

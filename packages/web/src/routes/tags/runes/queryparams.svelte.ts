@@ -29,11 +29,10 @@ export class TagQueryParams extends BaseQueryParams<SearchParams> {
   public loading: boolean = $state(false)
   #has_more: boolean = false
 
-  get DEFAULTS() { return DEFAULTS }
   get URL_PARAM_MAP() { return URL_PARAM_MAP }
 
   constructor(client: BaseController['client']) {
-    super(client)
+    super(client, DEFAULTS)
   }
 
   #build_search_options(params: SearchParams, limit: number) {

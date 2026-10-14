@@ -1,5 +1,4 @@
 import {Rune} from '$lib/runes/rune.ts'
-import type { Forager, MediaResponse } from '@forager/core'
 import type * as runes from '$lib/runes/index.ts'
 import type { BaseController } from '$lib/base_controller.ts'
 
@@ -26,13 +25,12 @@ export type ThumbnailSelections =
 
 export interface CurrentSelection {
   show: boolean
-  media_response: runes.MediaViewRunes | null
+  media_response: runes.AnyMediaViewRune | null
   result_index: number
 }
 
 const CURRENT_SELECTION_DEFAULTS: CurrentSelection = {
   show: false,
-  thumbnails: null,
   media_response: null,
   result_index: 0,
 }
@@ -40,7 +38,7 @@ export class MediaSelectionsRune extends Rune {
   #selected_thumbnails = $state<ThumbnailSelections>({type: 'none'})
   #current_selection = $state<CurrentSelection>({...CURRENT_SELECTION_DEFAULTS})
 
-  public constructor(client: BaseController['client'], media_list_rune: MediaListRune) {
+  public constructor(client: BaseController['client'], media_list_rune: runes.MediaListRune) {
     super(client)
   }
 
@@ -53,16 +51,20 @@ export class MediaSelectionsRune extends Rune {
   }
 
 
-  private is_currently_selected(media_reference_id: number) {
-    if (this.#current_selection.media_response?.media_reference.id === media_reference_id) {
-      return true
-    }
-    return false
+  private is_currently_selected(media_response: runes.AnyMediaViewRune) {
+    const current = this.#current_selection.media_response
+    if (!current) return false
+    // grouped results have no media reference until their media loads, so fall back to
+    // rune identity, which is what distinguishes one tile from another anyway
+    if (current === media_response) return true
+    const current_media_reference_id = current.media_reference?.id
+    return current_media_reference_id !== undefined
+      && current_media_reference_id === media_response.media_reference?.id
   }
 
-  public async set_current_selection(media_response: runes.MediaViewRune, result_index: number) {
+  public async set_current_selection(media_response: runes.AnyMediaViewRune, result_index: number) {
     this.#current_selection.show
-    if (this.is_currently_selected(media_response.media_reference.id)) {
+    if (this.is_currently_selected(media_response)) {
       await this.open_media()
     } else {
       this.#current_selection.media_response = media_response
@@ -82,9 +84,10 @@ export class MediaSelectionsRune extends Rune {
   }
 
   public async open_media() {
-    if (this.#current_selection.media_response) {
-      this.#current_selection.show = true
-    }
+    const media_response = this.#current_selection.media_response
+    // a group has no single media to view, its tile link navigates into the group instead
+    if (!media_response || media_response.media_type === 'grouped') return
+    this.#current_selection.show = true
     await this.view_media()
   }
 
@@ -92,7 +95,7 @@ export class MediaSelectionsRune extends Rune {
     this.#current_selection.show = false
   }
 
-  public async next_media(results: MediaResponse[]) {
+  public async next_media(results: runes.AnyMediaViewRune[]) {
     let next_index = 0
     if (
       this.#selected_thumbnails.type === 'ids' && this.#selected_thumbnails.media_reference_ids.length <= 1
@@ -109,7 +112,7 @@ export class MediaSelectionsRune extends Rune {
     await this.view_media()
   }
 
-  async prev_media(results: MediaResponse[]) {
+  async prev_media(results: runes.AnyMediaViewRune[]) {
     let prev_index = 0
     if (
       this.#selected_thumbnails.type === 'ids' && this.#selected_thumbnails.media_reference_ids.length <= 1
