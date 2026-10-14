@@ -650,12 +650,12 @@ web:
 
 **Core CI** (`.github/workflows/core.yml`)
 - Triggers: Push/PR to main
-- Matrix: Ubuntu (latest), macOS (15-intel), Windows (latest)
+- Matrix: Ubuntu (latest), macOS (15), Windows (latest)
 - Jobs: Lint, Test, Publishing checks (dry-run), Publish to JSR
 
 **CLI CI** (`.github/workflows/cli.yml`)
 - Triggers: Push/PR to main, tags
-- Matrix: Ubuntu (latest), macOS (15-intel) - Windows disabled due to path resolution
+- Matrix: Ubuntu (latest), macOS (15) - Windows disabled due to path resolution
 - Jobs: Test, Compile binaries, Create releases
 
 **Web CI** (`.github/workflows/web.yml`)
