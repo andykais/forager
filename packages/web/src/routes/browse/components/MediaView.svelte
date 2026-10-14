@@ -25,10 +25,6 @@
     return 'h-full w-auto max-w-full'
   })
 
-  let {controller}: Props = $props()
-  const {media_selections} = controller.runes
-  let paused = $state(false)
-
   controller.keybinds.component_listen({
     Escape: () => {
       if (document.fullscreenElement === fullscreen_container) {
@@ -86,7 +82,7 @@
 
   function video_loader(node: HTMLVideoElement, video_url: string | undefined) {
     return {
-      update(video_source_url: string | undefined) {
+      update(_video_source_url: string | undefined) {
         animation_progress = 0
         node.load()
       }

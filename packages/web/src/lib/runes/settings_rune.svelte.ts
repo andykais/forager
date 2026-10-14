@@ -48,7 +48,7 @@ export class SettingsRune extends Rune {
         break
       }
       case 'ui.media_view.fit.mode': {
-        this.ui.media_view.fit.mode = value
+        this.ui.media_view.fit.mode = update.value
         break
       }
       case 'ui.search.advanced_filters.hide': {
@@ -91,14 +91,14 @@ export class SettingsRune extends Rune {
       case 'ui.media_list.thumbnail_shape': {
         return this.ui.media_list.thumbnail_shape
       }
+      case 'ui.media_view.fit.mode': {
+        return this.ui.media_view.fit.mode
+      }
       case 'ui.search.advanced_filters.hide': {
         return this.ui.search.advanced_filters.hide
       }
       case 'ui.sidebar.hide': {
         return this.ui.sidebar.hide
-      }
-      case 'ui.media_view.fit.mode': {
-        return this.ui.media_view.fit.mode
       }
       default: {
         const unhandled: never = path
