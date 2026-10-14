@@ -668,13 +668,9 @@ class FileProcessor {
   }
 
   static async * read_lines(stream: ReadableStream<Uint8Array>) {
-    // TextDecoderStream types its writable side as WritableStream<BufferSource>, which
-    // TypeScript's DOM lib does not treat as assignable to the WritableStream<Uint8Array>
-    // that pipeThrough infers. The pairing is valid at runtime (a Uint8Array is a
-    // BufferSource), so bridge the lib-level mismatch explicitly.
-    // NOTE `deno check` passes without this, but @forager/web type-checks core's source
-    // under the DOM lib, where it does not. Removing this breaks `deno task --cwd
-    // packages/web check`.
+    // NOTE `deno check` passes without this cast, but @forager/web type-checks core's source
+    // under TypeScript's DOM lib, which types TextDecoderStream's writable side as
+    // WritableStream<BufferSource> and rejects piping a Uint8Array stream into it.
     const decoder = new TextDecoderStream() as ReadableWritablePair<string, Uint8Array>
     const reader = stream.pipeThrough(decoder).getReader()
     let buffer = ''
