@@ -84,9 +84,10 @@ export class MediaSelectionsRune extends Rune {
   }
 
   public async open_media() {
-    if (this.#current_selection.media_response) {
-      this.#current_selection.show = true
-    }
+    const media_response = this.#current_selection.media_response
+    // a group has no single media to view, its tile link navigates into the group instead
+    if (!media_response || media_response.media_type === 'grouped') return
+    this.#current_selection.show = true
     await this.view_media()
   }
 
