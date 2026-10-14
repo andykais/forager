@@ -25,9 +25,8 @@
     return selection?.media_type === 'grouped' ? undefined : selection
   })
 
-  type TagRecord = model_types.Tag
-  let sorted_tags: [string, TagRecord[]][] = $derived.by(() => {
-    const grouped_tags: Record<string, TagRecord[]> = {}
+  let sorted_tags: [string, model_types.Tag[]][] = $derived.by(() => {
+    const grouped_tags: Record<string, model_types.Tag[]> = {}
     selected_media?.tags.map(t => {
       if (grouped_tags[t.group] === undefined) {
         grouped_tags[t.group] = []

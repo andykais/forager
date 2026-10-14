@@ -1,5 +1,5 @@
 import {Rune} from '$lib/runes/rune.ts'
-import type { MediaResponse, MediaFileResponse, MediaSeriesResponse, MediaGroupResponse, Forager, inputs, model_types } from '@forager/core'
+import type { MediaResponse, MediaFileResponse, MediaSeriesResponse, MediaGroupResponse, inputs, model_types } from '@forager/core'
 import type { BaseController } from '$lib/base_controller.ts'
 
 
@@ -10,9 +10,7 @@ export type AnyMediaResponse = MediaResponse | MediaGroupResponse
  * through from the media list without favoring one search variant over another; the
  * rune that needs them (the grouped rune) narrows to the shape it requires.
  */
-export type MediaSearchInput =
-  | NonNullable<Parameters<Forager['media']['search']>[0]>
-  | Parameters<Forager['media']['group']>[0]
+export type MediaSearchInput = inputs.PaginatedSearch | inputs.PaginatedSearchGroupBy
 
 
 interface State<M extends AnyMediaResponse> {
