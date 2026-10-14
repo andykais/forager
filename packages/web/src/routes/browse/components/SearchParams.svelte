@@ -5,10 +5,10 @@
   import { Filter, ChevronUp, ChevronDown, ArrowDown, ArrowUp } from '$lib/icons/mod.ts'
   import TagAutoCompleteInput from "$lib/components/TagAutoCompleteInput.svelte";
   import type { BrowseController } from "../controller.ts";
-  import { get_controller } from '$lib/contexts/controller.ts'
+  import * as contexts from '$lib/contexts/index.ts'
   import StarInput from '$lib/components/StarInput.svelte'
 
-  const controller = get_controller<BrowseController>()
+  const controller = contexts.controller.get<BrowseController>()
   const {queryparams, media_selections, settings} = controller.runes
 
   async function update_search() {

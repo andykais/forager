@@ -7,11 +7,11 @@
   import { XCircle, ArrowTopRightOnSquare } from '$lib/icons/mod.ts'
   import TagAutoCompleteInput from '$lib/components/TagAutoCompleteInput.svelte'
   import { TagDetailController } from './controller.svelte.ts'
-  import { set_controller } from '$lib/contexts/controller.ts'
+  import * as contexts from '$lib/contexts/index.ts'
   import Numeric from '$lib/components/Numeric.svelte';
 
   let props = $props()
-  const controller = set_controller(new TagDetailController(props.data.config))
+  const controller = contexts.controller.set(new TagDetailController(props.data.config))
 
   let alias_input = $state('')
   let child_input = $state('')

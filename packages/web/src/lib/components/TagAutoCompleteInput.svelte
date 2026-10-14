@@ -2,7 +2,7 @@
   import * as parsers from '$lib/parsers.ts'
   import type { Forager } from '@forager/core'
   import type { BaseController } from "$lib/base_controller.ts";
-  import { get_controller } from '$lib/contexts/controller.ts'
+  import * as contexts from '$lib/contexts/index.ts'
   import Tag from '$lib/components/Tag.svelte'
 
   const debounce = <Args>(fn: (...args: Args[]) => void, pause: number) => {
@@ -103,7 +103,7 @@
     contextual_query?: {}
   } = $props()
 
-  const controller = get_controller<BaseController>()
+  const controller = contexts.controller.get<BaseController>()
 
   let root_element: HTMLDivElement
   let input_element: HTMLInputElement

@@ -2,9 +2,9 @@
   import Scroller from '$lib/components/Scroller.svelte'
   import SearchResults from './SearchResults.svelte'
   import type { BrowseController } from '../controller.ts'
-  import { get_controller } from '$lib/contexts/controller.ts'
+  import * as contexts from '$lib/contexts/index.ts'
 
-  const controller = get_controller<BrowseController>()
+  const controller = contexts.controller.get<BrowseController>()
   let media_list_element: HTMLElement
 
   controller.keybinds.component_listen({

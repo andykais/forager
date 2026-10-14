@@ -11,9 +11,9 @@
   import * as parsers from '$lib/parsers.ts'
 
   import { BrowseController } from '../controller.ts'
-  import { get_controller } from '$lib/contexts/controller.ts'
+  import * as contexts from '$lib/contexts/index.ts'
 
-  const controller = get_controller<BrowseController>()
+  const controller = contexts.controller.get<BrowseController>()
   let {dimensions, media_selections, settings, queryparams} = controller.runes
 
   let new_tag_str = $state<string>('')

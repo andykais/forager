@@ -7,12 +7,12 @@
   import Header from '$lib/components/Header.svelte'
 
   import { BrowseController } from './controller.ts'
-  import { set_controller } from '$lib/contexts/controller.ts'
+  import * as contexts from '$lib/contexts/index.ts'
 
 	/** @type {import('./$types').PageProps} */
   let props  = $props()
 
-  const controller = set_controller(new BrowseController(props.data.config))
+  const controller = contexts.controller.set(new BrowseController(props.data.config))
   let { dimensions, focus, queryparams } = controller.runes
   focus.stack({component: 'BrowsePage', focus: 'page'})
 </script>

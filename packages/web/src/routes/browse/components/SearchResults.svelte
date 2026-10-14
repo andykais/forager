@@ -5,9 +5,9 @@
   import Icon from '$lib/components/Icon.svelte'
   import SearchLink from './SearchLink.svelte'
   import * as icons from '$lib/icons/mod.ts'
-  import { get_controller } from '$lib/contexts/controller.ts'
+  import * as contexts from '$lib/contexts/index.ts'
 
-  const controller = get_controller<BrowseController>()
+  const controller = contexts.controller.get<BrowseController>()
   const {queryparams, settings, media_selections, media_list} = controller.runes
 
   let tile_size = settings.ui.media_list.thumbnail_size
