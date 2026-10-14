@@ -3,19 +3,20 @@
   import TagSearchResults from './components/TagSearchResults.svelte'
   import Footer from './components/Footer.svelte'
   import { TagsController } from './controller.ts'
+  import * as contexts from '$lib/contexts/index.ts'
   import Header from '$lib/components/Header.svelte'
 
 	/** @type {import('./$types').PageProps} */
   let props = $props()
-  const controller = new TagsController(props.data.config)
+  contexts.controller.set(new TagsController(props.data.config))
 </script>
 
 <div class="h-dvh flex flex-col">
   <Header title="Tag Search">
-    <TagSearchParams {controller} />
+    <TagSearchParams />
   </Header>
   <div class="flex-grow overflow-y-auto">
-    <TagSearchResults {controller} />
+    <TagSearchResults />
   </div>
-  <Footer {controller} />
+  <Footer />
 </div>

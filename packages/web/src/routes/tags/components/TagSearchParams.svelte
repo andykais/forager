@@ -3,9 +3,9 @@
   import { ArrowDown, ArrowUp } from '$lib/icons/mod.ts'
   import * as theme from '$lib/theme.ts'
   import type { TagsController } from '../controller.ts'
+  import * as contexts from '$lib/contexts/index.ts'
 
-  let { controller }: { controller: TagsController } = $props()
-  const { queryparams } = controller.runes
+  const { queryparams } = contexts.controller.get<TagsController>().runes
 
   const icon_color = theme.colors.gray[800]
   const icon_size = '22px'
