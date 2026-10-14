@@ -1213,6 +1213,31 @@ test('video media', async ctx => {
   })
 })
 
+test('animated webp media', async ctx => {
+  using forager = new Forager(ctx.get_test_config())
+  forager.init()
+
+  const media_nyan = await forager.media.create(ctx.resources.media_files['nyan_cat.webp'], {title: 'Nyan Cat'}, ['meme'])
+  ctx.assert.equals(media_nyan.media_file.media_type, 'IMAGE')
+  ctx.assert.equals(media_nyan.media_file.content_type, 'image/webp')
+  ctx.assert.equals(media_nyan.media_file.codec, 'webp_anim')
+  ctx.assert.equals(media_nyan.media_file.width, 400)
+  ctx.assert.equals(media_nyan.media_file.height, 400)
+  ctx.assert.equals(media_nyan.media_file.animated, true)
+  ctx.assert.equals(media_nyan.media_file.duration, 0.84)
+  ctx.assert.equals(media_nyan.media_file.framecount, 12)
+  ctx.assert.equals(media_nyan.media_file.audio, false)
+  ctx.assert.equals(media_nyan.media_file.filepath, ctx.resources.media_files['nyan_cat.webp'])
+
+  // fewer frames than the thumbnail cap, so every frame becomes a thumbnail
+  const thumbnails = forager.media.get({media_reference_id: media_nyan.media_reference.id}).thumbnails
+  ctx.assert.equals(thumbnails.total, 12)
+  ctx.assert.equals(
+    thumbnails.results.map(thumbnail => thumbnail.media_timestamp),
+    [0, 0.07, 0.14, 0.21, 0.28, 0.35, 0.42, 0.49, 0.56, 0.63, 0.7, 0.77],
+  )
+})
+
 test('search query.animated', async ctx => {
   using forager = new Forager(ctx.get_test_config())
   forager.init()

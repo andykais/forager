@@ -106,7 +106,11 @@ const FFProbeOutput = z.object({
     FFProbeOutputSubtitleStream,
     FFProbeOutputAttachmentStream,
     FFProbeOutputUnknownStream,
-  ]).array().min(1)
+  ]).array().min(1),
+  packets: z.object({
+    pts_time: z.coerce.number(),
+    duration_time: z.coerce.number(),
+  }).array().optional(),
 }).passthrough()
 
 
@@ -232,6 +236,12 @@ class FileProcessor {
     if (!filepath_exists) {
       throw new errors.FileNotFound(`Cannot process file because it does not exist`)
     }
+    let show_entries = 'format=duration,stream=duration,width,height,display_aspect_ratio,codec_type,codec_name,nb_read_packets,r_frame_rate,avg_frame_rate:stream_tags=rotate'
+    if (path.extname(this.#filepath).toLowerCase() === '.webp') {
+      // ffprobe reports no stream or format duration for animated webp, only per-frame timestamps.
+      // We only request packets for webp because printing every packet of a long video is very large
+      show_entries += ':packet=pts_time,duration_time'
+    }
     const ffprobe_command = [
       'ffprobe',
       '-v', 'error',
@@ -239,7 +249,7 @@ class FileProcessor {
       '-print_format', 'json',
       '-show_streams',
       '-count_packets',
-      '-show_entries', 'format=duration,stream=duration,width,height,display_aspect_ratio,codec_type,codec_name,nb_read_packets,r_frame_rate,avg_frame_rate:stream_tags=rotate',
+      '-show_entries', show_entries,
       '-i', this.#filepath
     ]
     this.#error_context.commands_ran.push(ffprobe_command)
@@ -298,7 +308,18 @@ class FileProcessor {
           width = rotated_size.width
           height = rotated_size.height
 
-          if (media_type === 'VIDEO' || stream.codec_name === 'gif') {
+          if (stream.codec_name === 'webp_anim') {
+            const last_packet = ffprobe_data.packets?.at(-1)
+            if (last_packet === undefined) {
+              throw new errors.UnExpectedError(`No packets found for animated webp ${this.#filepath}`)
+            }
+            animated = true
+            // ffprobe prints timestamps with microsecond precision, so we round away float error from the addition
+            duration = Number((last_packet.pts_time + last_packet.duration_time).toFixed(6))
+            // each animated webp frame is exactly one packet
+            framecount = stream.nb_read_packets
+            framerate = framecount / duration
+          } else if (media_type === 'VIDEO' || stream.codec_name === 'gif') {
             if (stream.duration !== undefined) {
               duration = Math.max(duration, stream.duration)
             }
@@ -324,7 +345,7 @@ class FileProcessor {
     if (animated && ffprobe_data.format.duration) {
       duration = Math.max(duration, ffprobe_data.format.duration)
     }
-    if (animated) {
+    if (animated && codec_info.codec !== 'webp_anim') {
       const framecount_guess = Math.floor(framerate * duration)
       framecount = Math.min(...[framecount, framecount_guess].filter(n => !Number.isNaN(n)))
 
@@ -349,9 +370,6 @@ class FileProcessor {
     }
 
     if (media_type !== 'AUDIO' && width === 0 || height === 0) {
-      if (path.extname(this.#filepath) === '.webp') {
-        throw new errors.InvalidFileError(`webp decoding is not yet supported by ffmpeg. See here https://trac.ffmpeg.org/ticket/4907`, new Error(`width: ${width} and height: ${height} values cannot be zero`))
-      }
       throw new errors.InvalidFileError(`Invalid file`, new Error(`width: ${width} and height: ${height} values cannot be zero`))
     }
 

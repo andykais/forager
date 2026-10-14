@@ -6,7 +6,10 @@ inputs:
   DENO_VERSION:
     default: '2.9'
   FFMPEG_VERSION:
-    default: '8.1'
+    default: '9.0'
+  # macOS arm builds come from osxexperts.net, which names releases differently (e.g. ffmpeg9arm.zip)
+  FFMPEG_VERSION_MACOS:
+    default: '9'
   DENO_DIR:
     default: 'deno_dependency_cache'
 
@@ -21,7 +24,7 @@ runs:
     - name: Setup FFmpeg
       uses: AnimMouse/setup-ffmpeg@v1
       with:
-        version: "${{ inputs.FFMPEG_VERSION }}"
+        version: "${{ runner.os == 'macOS' && inputs.FFMPEG_VERSION_MACOS || inputs.FFMPEG_VERSION }}"
 
     - name: Cache Deno dependencies 
       uses: actions/cache@v6
