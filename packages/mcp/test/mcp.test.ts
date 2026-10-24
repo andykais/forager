@@ -1,13 +1,21 @@
 import * as path from '@std/path'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { Forager } from '@forager/core'
 import { test } from 'forager-test'
-import { ForagerMcpServer, type McpConfigInput, type InteractionLogEntry, TOOL_NAMES, HTTP_PATH } from '../src/mod.ts'
+import { ForagerMcpServer, type McpConfigInput, TOOL_NAMES, HTTP_PATH } from '../src/mod.ts'
 
 
 type TestContext = Parameters<Parameters<typeof test>[1]>[0]
+
+interface AuditLogEntry {
+  timestamp: string
+  level: string
+  logger: string
+  message: string
+  editor: string
+  [field: string]: any
+}
 
 
 async function launch_mcp(ctx: TestContext, config: Partial<McpConfigInput> = {}) {
@@ -16,12 +24,12 @@ async function launch_mcp(ctx: TestContext, config: Partial<McpConfigInput> = {}
   const log_filepath = ctx.create_fixture_path('logs/mcp.jsonl')
   const server = new ForagerMcpServer({
     forager,
-    config: {editor: 'claude', log: {filepath: log_filepath}, ...config},
+    config: {editor: 'ai', http: {port: 0}, log: {filepath: log_filepath}, ...config},
   })
-  const [client_transport, server_transport] = InMemoryTransport.createLinkedPair()
+  const address = server.start()
+  const url = new URL(HTTP_PATH, `http://${address.hostname}:${address.port}`)
   const client = new Client({name: 'forager-test-client', version: '0.0.0'})
-  await server.start_stdio(server_transport)
-  await client.connect(client_transport)
+  await client.connect(new StreamableHTTPClientTransport(url))
 
   async function call(name: string, args: Record<string, unknown> = {}) {
     const result = await client.callTool({name, arguments: args})
@@ -32,7 +40,7 @@ async function launch_mcp(ctx: TestContext, config: Partial<McpConfigInput> = {}
     return {result: JSON.parse(content[0].text)}
   }
 
-  async function read_log(): Promise<InteractionLogEntry[]> {
+  async function read_log(): Promise<AuditLogEntry[]> {
     const contents = await Deno.readTextFile(log_filepath)
     return contents.trim().split('\n').map(line => JSON.parse(line))
   }
@@ -40,6 +48,7 @@ async function launch_mcp(ctx: TestContext, config: Partial<McpConfigInput> = {}
   return {
     forager,
     client,
+    url,
     call,
     read_log,
     async [Symbol.asyncDispose]() {
@@ -138,6 +147,12 @@ test('mcp search tools', async ctx => {
     ctx.assert.equals(error?.startsWith('ToolInputError'), true)
   })
 
+  await ctx.subtest('only the mcp path is served', async () => {
+    const response = await fetch(new URL('/other', mcp.url))
+    await response.body?.cancel()
+    ctx.assert.equals(response.status, 404)
+  })
+
   await ctx.subtest('tools outside the whitelist cannot be called', async () => {
     const { error } = await call('media_create', {filepath: ctx.resources.media_files['blink.gif']})
     ctx.assert.equals(error?.startsWith('ToolNotAllowedError'), true)
@@ -157,7 +172,7 @@ test('mcp write tools', async ctx => {
       tags: ['animal:cat', 'Drawing Style:sketch'],
     })
     ctx.assert.equals(result.title, 'doodle')
-    ctx.assert.equals(result.editors, ['claude'])
+    ctx.assert.equals(result.editors, ['ai'])
     ctx.assert.equals(result.tags.sort(), ['animal:cat', 'drawing_style:sketch'])
     const media = forager.media.get({media_reference_id: result.media_reference_id})
     ctx.assert.equals(new Date(media.media_reference.source_created_at!).toISOString(), '2024-01-01T00:00:00.000Z')
@@ -192,9 +207,9 @@ test('mcp write tools', async ctx => {
 
   await ctx.subtest('every interaction is logged', async () => {
     const log = await mcp.read_log()
-    ctx.assert.equals(log.map(entry => entry.event).slice(0, 2), ['server_start', 'initialize'])
-    ctx.assert.equals(log.every(entry => entry.editor === 'claude' && typeof entry.timestamp === 'string'), true)
-    const tool_calls = log.filter(entry => entry.event === 'tool_call')
+    ctx.assert.equals(log.map(entry => entry.message).slice(0, 2), ['server_start', 'initialize'])
+    ctx.assert.equals(log.every(entry => entry.editor === 'ai' && entry.logger === 'forager.mcp.audit' && typeof entry.timestamp === 'string'), true)
+    const tool_calls = log.filter(entry => entry.message === 'tool_call')
     ctx.assert.equals(tool_calls.map(entry => [entry.tool, entry.status]), [
       ['media_create', 'success'],
       ['media_create', 'error'],
@@ -207,8 +222,8 @@ test('mcp write tools', async ctx => {
       media_info: {title: 'doodle', source_created_at: '2024-01-01T00:00:00Z'},
       tags: ['animal:cat', 'Drawing Style:sketch'],
     })
-    ctx.assert.equals((tool_calls[0].result as any).title, 'doodle')
-    ctx.assert.equals(tool_calls[1].error?.name, 'ToolInputError')
+    ctx.assert.equals(tool_calls[0].result.title, 'doodle')
+    ctx.assert.equals(tool_calls[1].error.name, 'ToolInputError')
   })
 })
 
@@ -253,62 +268,10 @@ test('mcp config validation', ctx => {
   forager.init()
   try {
     ctx.assert.throws(() => new ForagerMcpServer({forager, config: {log: {filepath: path.join(ctx.fixture_folder, 'mcp.jsonl')}}}), Error, 'An editor is required')
-    ctx.assert.throws(() => new ForagerMcpServer({forager, config: {editor: 'claude'}}), Error, 'A log filepath is required')
-    ctx.assert.throws(() => new ForagerMcpServer({forager, config: {editor: 'claude', tools: ['delete_media' as any], log: {filepath: 'mcp.jsonl'}}}))
+    ctx.assert.throws(() => new ForagerMcpServer({forager, config: {editor: 'ai'}}), Error, 'A log filepath is required')
+    ctx.assert.throws(() => new ForagerMcpServer({forager, config: {editor: 'ai', tools: ['delete_media' as any], log: {filepath: 'mcp.jsonl'}}}))
   } finally {
     forager.close()
   }
 })
 
-
-test('mcp http transport', async ctx => {
-  const forager = new Forager(ctx.get_test_config())
-  forager.init()
-  await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {}, ['animal:cat'])
-  const log_filepath = ctx.create_fixture_path('logs/mcp.jsonl')
-  const server = new ForagerMcpServer({
-    forager,
-    config: {editor: 'claude', tools: ['media_search', 'media_update'], http: {port: 0, token: 'secret'}, log: {filepath: log_filepath}},
-  })
-  const address = server.start_http()
-  const url = new URL(HTTP_PATH, `http://${address.hostname}:${address.port}`)
-
-  try {
-    await ctx.subtest('requests without the bearer token are rejected', async () => {
-      const response = await fetch(url, {method: 'POST', headers: {'content-type': 'application/json'}, body: '{}'})
-      await response.body?.cancel()
-      ctx.assert.equals(response.status, 401)
-
-      const not_found = await fetch(new URL('/other', url), {headers: {authorization: 'Bearer secret'}})
-      await not_found.body?.cancel()
-      ctx.assert.equals(not_found.status, 404)
-    })
-
-    await ctx.subtest('a streamable http client can call tools', async () => {
-      const transport = new StreamableHTTPClientTransport(url, {requestInit: {headers: {authorization: 'Bearer secret'}}})
-      const client = new Client({name: 'forager-http-client', version: '0.0.0'})
-      await client.connect(transport)
-      try {
-        const tools: {name: string}[] = (await client.listTools()).tools
-        ctx.assert.equals(tools.map(tool => tool.name), ['media_search', 'media_update'])
-
-        const searched = await client.callTool({name: 'media_search', arguments: {query: {tags: ['animal:cat']}}})
-        const result = JSON.parse((searched.content as {text: string}[])[0].text)
-        ctx.assert.equals(result.total, 1)
-
-        const updated = await client.callTool({name: 'media_update', arguments: {media_reference_id: result.results[0].media_reference_id, media_info: {title: 'over http'}}})
-        ctx.assert.equals(JSON.parse((updated.content as {text: string}[])[0].text).title, 'over http')
-      } finally {
-        await client.close()
-      }
-    })
-  } finally {
-    await server.close()
-    forager.close()
-  }
-
-  const log: InteractionLogEntry[] = (await Deno.readTextFile(log_filepath)).trim().split('\n').map(line => JSON.parse(line))
-  ctx.assert.equals(log.map(entry => entry.event), ['server_start', 'unauthorized', 'initialize', 'list_tools', 'tool_call', 'tool_call', 'server_stop'])
-  ctx.assert.equals(log[0].transport, 'http')
-  ctx.assert.equals(log[0].authenticated, true)
-})

@@ -27,9 +27,8 @@ This is a **Deno-based monorepo** with four main packages:
 
 4. **@forager/mcp** (`packages/mcp/`) - Model Context Protocol server
    - Tools mirror core actions (`media_search`, `media_create`, ...) and reuse core parsers for their input schemas
-   - Launched with `forager mcp`, over stdio or streamable http (`--transport http`)
-   - Configured by the `mcp` section of forager.yml (editor, tool whitelist, allowed tags, json lines interaction log)
-   - with the stdio transport, stdout is reserved for the mcp protocol, never `console.log` from code reachable by the server
+   - Launched with `forager mcp`, served over streamable http at `/mcp`
+   - Configured by the `mcp` section of forager.yml (editor, tool whitelist, allowed tags, http hostname/port, json lines audit log)
 
 ## Technology Stack
 
@@ -118,7 +117,7 @@ lib/               # Utilities
 ├── plugin_script.ts      # Plugin system
 ├── codecs.ts             # Supported media codecs
 ├── errors.ts             # Error hierarchy
-├── logger.ts             # Logging
+├── logger.ts             # Logging (Logger, ConsoleSink, JsonLinesFileSink), exported as @forager/core/logger
 └── text_processor.ts
 
 context.ts         # Application context (DI container)

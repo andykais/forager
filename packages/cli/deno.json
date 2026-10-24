@@ -27,7 +27,7 @@
       "write": true,
       "read": true,
       "env": ["HOME", "NODE_ENV", "FORAGER_CONFIG"],
-      "net": true
+      "net": ["0.0.0.0", "127.0.0.1", "localhost"]
     },
     "test": {
       "run": ["deno"],

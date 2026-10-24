@@ -5,28 +5,20 @@
 A [Model Context Protocol](https://modelcontextprotocol.io) server that lets an agent search and tag media in a forager database. Media files and thumbnails are returned as filepaths, so it assumes the agent can read the local disk.
 
 ## Usage
-The server runs in one of two transports.
-
-**http**: the agent connects over the network, e.g. when the agent runs in a container and forager runs on the host. Clients connect to `http://<hostname>:<port>/mcp` using [streamable http](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#streamable-http).
+The server speaks [streamable http](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#streamable-http) at `http://<hostname>:<port>/mcp`. Listen on `0.0.0.0` so agents running in containers can reach it:
 ```bash
-forager mcp --transport http --hostname 0.0.0.0 --port 8001 --editor claude
+forager mcp --hostname 0.0.0.0 --port 8001 --editor ai
 ```
-An example pi `mcp.json` (pi-mcp-adapter) pointing a containerized agent at the host:
+An example pi `mcp.json` (pi-mcp-adapter) for an agent in a container:
 ```json
 {
   "mcpServers": {
-    "forager": {
-      "url": "http://host.docker.internal:8001/mcp",
-      "headers": {"Authorization": "Bearer ${FORAGER_MCP_TOKEN}"}
-    }
+    "forager": {"url": "http://host.containers.internal:8001/mcp"}
   }
 }
 ```
 
-**stdio**: the agent launches `forager mcp` itself as a subprocess on the same machine.
-```bash
-claude mcp add forager -- forager mcp --editor claude
-```
+There is no authentication. Only expose the server on networks where every client is trusted (e.g. an isolated podman network).
 
 Media and thumbnails are returned as filepaths, so the agent needs the same paths mounted that forager sees.
 
@@ -35,17 +27,15 @@ Media and thumbnails are returned as filepaths, so the agent needs the same path
 | --- | --- | --- |
 | `--editor` | `mcp.editor` | **Required.** Recorded on every create/update/upsert the server makes |
 | `--tools` | `mcp.tools` | Whitelist of tools the server exposes. Defaults to the read-only search tools |
-| `--log-file` | `mcp.log.filepath` | A json lines file recording every interaction. Defaults to `<config dir>/logs/mcp.jsonl` |
-| `--transport` | | `stdio` (default) or `http` |
-| `--hostname` | `mcp.http.hostname` | Interface the http transport listens on. Defaults to `127.0.0.1`. Use `0.0.0.0` to accept connections from containers or other machines |
-| `--port` | `mcp.http.port` | Port the http transport listens on. Defaults to `8001` |
-| | `mcp.http.token` | When set, http requests must send `Authorization: Bearer <token>`. Strongly recommended when listening on anything other than localhost |
+| `--hostname` | `mcp.http.hostname` | Interface to listen on. Defaults to `127.0.0.1`. Use `0.0.0.0` to accept connections from containers |
+| `--port` | `mcp.http.port` | Port to listen on. Defaults to `8001` |
+| `--log-file` | `mcp.log.filepath` | A json lines audit log recording every interaction. Defaults to `<config dir>/logs/mcp.jsonl` |
 | | `mcp.tags.allowed` | Restricts which tags can be added. `any` (default), `existing` (only tags already in the database), or a list of `group:name` shorthands. `group:*` allows every tag in a group |
 | | `mcp.overwrite` | Allow overwriting media info and tags written by other editors. Defaults to `false` |
 
 ```yaml
 mcp:
-  editor: claude
+  editor: ai
   tools:
     - media_search
     - media_group
@@ -60,7 +50,6 @@ mcp:
   http:
     hostname: 0.0.0.0
     port: 8001
-    token: a-long-random-secret
   log:
     filepath: /home/me/.config/forager/logs/mcp.jsonl
 ```
@@ -81,5 +70,5 @@ Each tool is named after the `@forager/core` action it calls, and takes the same
 ### Pagination
 Search tools return `{total, cursor, results}`. When `cursor` is present, the agent calls the tool again with the same arguments plus that `cursor` to fetch the next page. `limit` defaults to 25 and is capped at 100 to keep pages from flooding the agent's context.
 
-### Interaction log
-Every line in the log file is a json object with a `timestamp`, `editor` and `event` (`server_start`, `initialize`, `list_tools`, `tool_call`, `unauthorized`, `server_stop`). Tool calls also record the `tool`, `arguments`, `status`, `duration_ms`, and either the `result` or the `error`.
+### Audit log
+Every line in the log file is a json object written by the `@forager/core/logger` json lines sink: `timestamp`, `level`, `logger` (`forager.mcp.audit`), `message`, and `editor`, plus fields specific to the message. Messages are `server_start`, `initialize`, `list_tools`, `tool_call` and `server_stop`. Tool calls also record the `tool`, `arguments`, `status`, `duration_ms`, and either the `result` or the `error`.

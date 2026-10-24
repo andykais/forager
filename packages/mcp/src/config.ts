@@ -32,14 +32,13 @@ export const ToolName = z.enum(TOOL_NAMES)
  * @example
  * ```yaml
  * mcp:
- *   editor: claude
+ *   editor: ai
  *   tools: [media_search, tag_search, media_update]
  *   tags:
  *     allowed: existing  # or a list like ['genre:drama', 'animal:*']
  *   http:
  *     hostname: 0.0.0.0
  *     port: 8001
- *     token: a-long-random-secret
  *   log:
  *     filepath: /home/me/.config/forager/logs/mcp.jsonl
  * ```
@@ -64,17 +63,14 @@ export const McpConfig = z.object({
     allowed: z.union([z.literal('any'), z.literal('existing'), z.string().array()]).default('any'),
   }).strict().prefault({}),
 
-  /** Settings used when serving mcp over http (`forager mcp --transport http`) */
   http: z.object({
-    /** Interface to listen on. Use 0.0.0.0 to accept connections from other machines or containers */
+    /** Interface to listen on. Use 0.0.0.0 to accept connections from containers or other machines */
     hostname: z.string().default('127.0.0.1'),
     port: z.number().int().min(0).max(65535).default(8001),
-    /** When set, every request must send an `Authorization: Bearer <token>` header */
-    token: z.string().min(1).optional(),
   }).strict().prefault({}),
 
   log: z.object({
-    /** Path to a json lines file that records every interaction with the mcp server. Defaults to <config dir>/logs/mcp.jsonl when launched via the cli */
+    /** Path to a json lines audit log that records every interaction with the mcp server. Defaults to <config dir>/logs/mcp.jsonl when launched via the cli */
     filepath: z.string().optional(),
   }).strict().prefault({}),
 }).strict()
