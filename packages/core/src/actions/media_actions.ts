@@ -18,13 +18,17 @@ class MediaActions extends Actions {
     return this.media_update(media_reference_id, media_info, tags, editing)
   }
 
-  upsert = async (filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.MediaReferenceUpdateTags): Promise<MediaFileResponse> => {
+  /**
+    * Create media, or update it if a media file with the same checksum already exists. The `editing.overwrite` option only applies to the update.
+    */
+  upsert = async (filepath: string, media_info?: inputs.MediaInfo, tags?: inputs.MediaReferenceUpdateTags, editing?: UpdateEditor): Promise<MediaFileResponse> => {
     try {
-      return await this.media_create(filepath, media_info, tags)
+      const create_editing = editing?.editor === undefined ? undefined : {editor: editing.editor}
+      return await this.media_create(filepath, media_info, tags, create_editing)
     } catch (e) {
       if (e instanceof errors.MediaAlreadyExistsError) {
         const media_file = this.models.MediaFile.select_one({checksum: e.checksum}, {or_raise: true})
-        return this.update(media_file.media_reference_id, media_info, tags)
+        return this.update(media_file.media_reference_id, media_info, tags, editing)
       }
       throw e
     }

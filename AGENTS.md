@@ -8,7 +8,7 @@ This document provides comprehensive guidance for AI assistants working on the F
 
 ### Core Components
 
-This is a **Deno-based monorepo** with three main packages:
+This is a **Deno-based monorepo** with four main packages:
 
 1. **@forager/core** (`packages/core/`) - TypeScript library providing core media management logic
    - Database operations, file processing, media ingestion
@@ -16,7 +16,7 @@ This is a **Deno-based monorepo** with three main packages:
    - Version: 0.7.29
 
 2. **@forager/cli** (`packages/cli/`) - Command-line interface built with Cliffy
-   - Commands: `init`, `search`, `discover`, `create`, `delete`, `gui`
+   - Commands: `init`, `search`, `discover`, `create`, `delete`, `gui`, `mcp`
    - Compiles to standalone binaries (Linux, macOS, Windows)
    - Version: 0.4.6
 
@@ -24,6 +24,11 @@ This is a **Deno-based monorepo** with three main packages:
    - Built with Svelte 5 (using modern runes API)
    - Provides browsing, viewing, and editing capabilities
    - Version: 0.0.13
+
+4. **@forager/mcp** (`packages/mcp/`) - Model Context Protocol server
+   - Tools mirror core actions (`media_search`, `media_create`, ...) and reuse core parsers for their input schemas
+   - Launched with `forager mcp`, served over streamable http at `/mcp`
+   - Configured by the `mcp` section of forager.yml (editor, tool whitelist, allowed tags, http hostname/port, json lines audit log)
 
 ## Technology Stack
 
@@ -112,7 +117,7 @@ lib/               # Utilities
 ├── plugin_script.ts      # Plugin system
 ├── codecs.ts             # Supported media codecs
 ├── errors.ts             # Error hierarchy
-├── logger.ts             # Logging
+├── logger.ts             # Logging (Logger, ConsoleSink, JsonLinesFileSink), exported as @forager/core/logger
 └── text_processor.ts
 
 context.ts         # Application context (DI container)

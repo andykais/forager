@@ -9,7 +9,8 @@ export const JsonDictionary = z.record(z.string(), z.json())
 
 export const PaginatedQuery = z.object({
   limit: z.number().default(100),
-  cursor: z.record(z.string(), z.union([z.string(), z.number(), z.null()])).optional(),
+  cursor: z.record(z.string(), z.union([z.string(), z.number(), z.null()])).optional()
+    .describe('The cursor returned by a previous search. Pass it back unchanged to fetch the next page. Omit for the first page'),
 }).strict()
 
 

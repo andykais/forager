@@ -6,13 +6,13 @@ import { MediaReferenceQuery } from '~/inputs/media_reference_inputs.ts'
 
 export const TagSearch  = PaginatedQuery.extend({
   query: z.object({
-    tag_match: TagShorthand.pipe(TagMatchObject),
+    tag_match: TagShorthand.pipe(TagMatchObject).describe('Match tags by "group:name" shorthand. Names match by prefix unless they contain a "*" wildcard (e.g. "genre:dr" or "genre:*ama")'),
   }).strict()
     .optional()
     .transform(q => {
       return {...q}
     }),
-  contextual_query: MediaReferenceQuery,
+  contextual_query: MediaReferenceQuery.describe('Only return tags on media matching this query'),
   include_unreferenced_tags: z.boolean().optional().default(false),
   limit: z.number().optional().default(10),
   sort_by: z.enum(['created_at', 'updated_at', 'media_reference_count', 'unread_media_reference_count']).default('media_reference_count'),

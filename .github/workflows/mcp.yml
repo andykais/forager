@@ -1,0 +1,37 @@
+name: MCP CI
+description: "Runs @forager/mcp tests"
+
+
+permissions:
+  contents: read
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+defaults:
+  run:
+    working-directory: './packages/mcp/'
+
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-15]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+
+      - name: setup
+        uses: './.github/actions/shared_setup'
+
+      - name: Lint
+        run: deno task lint
+
+      - name: Test
+        run: deno task test

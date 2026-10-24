@@ -15,7 +15,8 @@
   },
 
   "imports": {
-    "@cliffy/command": "jsr:@cliffy/command@1.0.0-rc.8"
+    "@cliffy/command": "jsr:@cliffy/command@1.0.0-rc.8",
+    "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@1.32.1"
   },
 
   "exports": "./src/cli.ts",
@@ -26,13 +27,14 @@
       "write": true,
       "read": true,
       "env": ["HOME", "NODE_ENV", "FORAGER_CONFIG"],
-      "net": ["127.0.0.1:8000"]
+      "net": ["0.0.0.0", "127.0.0.1", "localhost"]
     },
     "test": {
       "run": ["deno"],
       "write": true,
       "read": true,
-      "env": true
+      "env": true,
+      "net": ["127.0.0.1"]
     }
   },
 

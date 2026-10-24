@@ -5,6 +5,8 @@ import { Config } from '../src/inputs.ts'
 import { errors, Forager } from '@forager/core'
 import * as yaml from '@std/yaml'
 import { test } from 'forager-test'
+import { Client } from '@modelcontextprotocol/sdk/client/index.js'
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 
 import '../src/cli.ts'
 
@@ -146,4 +148,102 @@ test('cli filesystem discover subcommand', async ctx => {
       total: 6,
     })
   }, {ignore: true}) // NOTE that we skip this for now, because we need to wire up a `forager ingest` command
+})
+
+test('cli mcp subcommand', async ctx => {
+  const forager_config: z.input<typeof Config> = {
+    core: {
+      database: {
+        folder: ctx.create_fixture_path('database'),
+      },
+      thumbnails: {
+        folder: ctx.create_fixture_path('thumbnails'),
+      },
+      logger: {level: 'INFO'},
+    },
+    web: {
+      asset_folder: ctx.create_fixture_path('assets'),
+      logger: {level: 'ERROR'},
+    },
+    mcp: {
+      editor: 'config-editor',
+      tools: ['media_search'],
+      tags: {allowed: ['animal:*']},
+    },
+  }
+  const config_path = ctx.create_fixture_path('forager.yml')
+  await Deno.writeTextFile(config_path, yaml.stringify(forager_config))
+
+  const cli_entrypoint = path.join(path.resolve(import.meta.dirname!, '..'), 'src/cli.ts')
+  const log_filepath = ctx.create_fixture_path('logs/mcp.jsonl')
+  const read_log = async () => (await Deno.readTextFile(log_filepath)).trim().split('\n').map(line => JSON.parse(line))
+
+  async function launch_mcp(flags: string[]) {
+    const listener = Deno.listen({hostname: '127.0.0.1', port: 0})
+    const port = (listener.addr as Deno.NetAddr).port
+    listener.close()
+
+    const process = new Deno.Command(Deno.execPath(), {
+      args: ['run', '-A', '--unstable-raw-imports', cli_entrypoint, '--config', config_path, 'mcp', '--port', String(port), ...flags],
+      stdout: 'piped',
+      stderr: 'null',
+    }).spawn()
+    const stdout = process.stdout.pipeThrough(new TextDecoderStream()).getReader()
+    let output = ''
+    while (!output.includes('listening on')) {
+      const { value, done } = await stdout.read()
+      if (done) throw new Error(`forager mcp exited before listening. Output: ${output}`)
+      output += value
+    }
+    const url = `http://127.0.0.1:${port}/mcp`
+    ctx.assert.equals(output.includes(url), true)
+
+    const client = new Client({name: 'forager-cli-test', version: '0.0.0'})
+    await client.connect(new StreamableHTTPClientTransport(new URL(url)))
+    return {
+      client,
+      async [Symbol.asyncDispose]() {
+        await client.close()
+        process.kill('SIGTERM')
+        await process.status
+        await stdout.cancel()
+      },
+    }
+  }
+
+  await ctx.subtest('cli flags', async () => {
+    {
+      await using mcp = await launch_mcp(['--editor', 'ai', '--tools', 'media_search,media_create'])
+      const { client } = mcp
+
+      const { tools } = await client.listTools()
+      ctx.assert.equals(tools.map((tool: {name: string}) => tool.name), ['media_search', 'media_create'])
+
+      const created = await client.callTool({name: 'media_create', arguments: {filepath: ctx.resources.media_files['cat_doodle.jpg'], tags: ['animal:cat']}})
+      ctx.assert.equals(created.isError, undefined)
+      // mcp.tags.allowed from the config file still applies
+      const disallowed = await client.callTool({name: 'media_create', arguments: {filepath: ctx.resources.media_files['koch.tif'], tags: ['math']}})
+      ctx.assert.equals(disallowed.isError, true)
+
+      const searched = await client.callTool({name: 'media_search', arguments: {}})
+      const search_result = JSON.parse((searched.content as {text: string}[])[0].text)
+      ctx.assert.equals(search_result.total, 1)
+      ctx.assert.equals(search_result.results[0].editors, ['ai'])
+    }
+
+    const log = await read_log()
+    ctx.assert.equals(log.map(entry => entry.message), ['server_start', 'initialize', 'list_tools', 'tool_call', 'tool_call', 'tool_call', 'server_stop'])
+    ctx.assert.equals(log.every(entry => entry.editor === 'ai'), true)
+  })
+
+  await ctx.subtest('config file defaults', async () => {
+    {
+      await using mcp = await launch_mcp([])
+      const { tools } = await mcp.client.listTools()
+      ctx.assert.equals(tools.map((tool: {name: string}) => tool.name), ['media_search'])
+    }
+    const log = await read_log()
+    ctx.assert.equals(log.at(-1).message, 'server_stop')
+    ctx.assert.equals(log.at(-1).editor, 'config-editor')
+  })
 })

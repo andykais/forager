@@ -93,5 +93,6 @@ export function tag_slug_format(tag: {group?: string; name: string}) {
 }
 
 export const Tag = TagObject.or(TagShorthand.pipe(TagObject))
+  .describe('A tag object, or a tag in "group:name" shorthand (e.g. "genre:drama"). A tag without a group is just "name"')
 
 export const TagList = z.array(Tag)
