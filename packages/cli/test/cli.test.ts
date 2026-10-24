@@ -7,6 +7,7 @@ import * as yaml from '@std/yaml'
 import { test } from 'forager-test'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 
 import '../src/cli.ts'
 
@@ -167,7 +168,7 @@ test('cli mcp subcommand', async ctx => {
     },
     mcp: {
       editor: 'config-editor',
-      tools: ['search_media'],
+      tools: ['media_search'],
       tags: {allowed: ['animal:*']},
     },
   }
@@ -177,22 +178,22 @@ test('cli mcp subcommand', async ctx => {
   const cli_entrypoint = path.join(path.resolve(import.meta.dirname!, '..'), 'src/cli.ts')
   const transport = new StdioClientTransport({
     command: Deno.execPath(),
-    args: ['run', '-A', '--unstable-raw-imports', cli_entrypoint, '--config', config_path, 'mcp', '--editor', 'claude', '--tools', 'search_media,create_media'],
+    args: ['run', '-A', '--unstable-raw-imports', cli_entrypoint, '--config', config_path, 'mcp', '--editor', 'claude', '--tools', 'media_search,media_create'],
     stderr: 'ignore',
   })
   const client = new Client({name: 'forager-cli-test', version: '0.0.0'})
   await client.connect(transport)
 
   const { tools } = await client.listTools()
-  ctx.assert.equals(tools.map((tool: {name: string}) => tool.name), ['search_media', 'create_media'])
+  ctx.assert.equals(tools.map((tool: {name: string}) => tool.name), ['media_search', 'media_create'])
 
   // forager logs at INFO level during create, which must not corrupt the mcp protocol on stdout
-  const created = await client.callTool({name: 'create_media', arguments: {filepath: ctx.resources.media_files['cat_doodle.jpg'], tags: ['animal:cat']}})
+  const created = await client.callTool({name: 'media_create', arguments: {filepath: ctx.resources.media_files['cat_doodle.jpg'], tags: ['animal:cat']}})
   ctx.assert.equals(created.isError, undefined)
-  const disallowed = await client.callTool({name: 'create_media', arguments: {filepath: ctx.resources.media_files['koch.tif'], tags: ['math']}})
+  const disallowed = await client.callTool({name: 'media_create', arguments: {filepath: ctx.resources.media_files['koch.tif'], tags: ['math']}})
   ctx.assert.equals(disallowed.isError, true)
 
-  const searched = await client.callTool({name: 'search_media', arguments: {}})
+  const searched = await client.callTool({name: 'media_search', arguments: {}})
   const search_result = JSON.parse((searched.content as {text: string}[])[0].text)
   ctx.assert.equals(search_result.total, 1)
   ctx.assert.equals(search_result.results[0].editors, ['claude'])
@@ -203,4 +204,40 @@ test('cli mcp subcommand', async ctx => {
   const log = (await Deno.readTextFile(log_filepath)).trim().split('\n').map(line => JSON.parse(line))
   ctx.assert.equals(log.map(entry => entry.event), ['server_start', 'initialize', 'list_tools', 'tool_call', 'tool_call', 'tool_call', 'server_stop'])
   ctx.assert.equals(log.every(entry => entry.editor === 'claude'), true)
+
+  await ctx.subtest('http transport', async () => {
+    const listener = Deno.listen({hostname: '127.0.0.1', port: 0})
+    const port = (listener.addr as Deno.NetAddr).port
+    listener.close()
+
+    const process = new Deno.Command(Deno.execPath(), {
+      args: ['run', '-A', '--unstable-raw-imports', cli_entrypoint, '--config', config_path, 'mcp', '--transport', 'http', '--port', String(port)],
+      stdout: 'piped',
+      stderr: 'null',
+    }).spawn()
+    const stdout = process.stdout.pipeThrough(new TextDecoderStream()).getReader()
+    try {
+      let output = ''
+      while (!output.includes('listening on')) {
+        const { value, done } = await stdout.read()
+        if (done) throw new Error(`forager mcp exited before listening. Output: ${output}`)
+        output += value
+      }
+      ctx.assert.equals(output.includes(`http://127.0.0.1:${port}/mcp`), true)
+
+      const http_client = new Client({name: 'forager-cli-http-test', version: '0.0.0'})
+      await http_client.connect(new StreamableHTTPClientTransport(new URL(`http://127.0.0.1:${port}/mcp`)))
+      // the editor and tools come from the config file when no flags are passed
+      const http_tools: {name: string}[] = (await http_client.listTools()).tools
+      ctx.assert.equals(http_tools.map(tool => tool.name), ['media_search'])
+      await http_client.close()
+    } finally {
+      process.kill('SIGTERM')
+      await process.status
+      await stdout.cancel()
+    }
+    const http_log = (await Deno.readTextFile(log_filepath)).trim().split('\n').map(line => JSON.parse(line))
+    ctx.assert.equals(http_log.at(-1).event, 'server_stop')
+    ctx.assert.equals(http_log.at(-1).editor, 'config-editor')
+  })
 })

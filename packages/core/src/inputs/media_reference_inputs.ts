@@ -51,15 +51,15 @@ const Duration = z.object({
 export const MediaType = z.enum(['IMAGE', 'VIDEO', 'AUDIO'])
 
 export const MediaReferenceQuery = z.object({
-  series_id: z.number().optional(),
-  series: z.boolean().optional(),
+  series_id: z.number().optional().describe('Only match media inside this series'),
+  series: z.boolean().optional().describe('Only match media series (not individual media files)'),
   animated: z.boolean().optional(),
   media_type: MediaType.optional(),
   /** filepath can be an exact path or a glob */
-  filepath: z.string().optional(),
+  filepath: z.string().optional().describe('An exact filepath, or a glob (e.g. "/media/photos/*")'),
   media_reference_id: z.number().optional(),
-  tags: z.array(Tag).optional(),
-  keypoint: Tag.optional(),
+  tags: z.array(Tag).optional().describe('Only match media that has every one of these tags'),
+  keypoint: Tag.optional().describe('Only match media with a video keypoint tagged with this tag'),
   stars: z.number().gte(0).lte(5).optional(),
   stars_equality: z.enum(['gte', 'eq']).default(('gte')),
   duration: z.object({
@@ -72,7 +72,7 @@ export const MediaReferenceQuery = z.object({
 
 export const PaginatedSearch = PaginatedQuery.extend({
   query: MediaReferenceQuery.prefault({}),
-  thumbnail_limit: z.number().default(1),
+  thumbnail_limit: z.number().default(1).describe('Number of thumbnails to return per result'),
   sort_by: z.enum(['created_at', 'updated_at', 'source_created_at', 'view_count', 'last_viewed_at', 'duration']).default('source_created_at'),
   order: z.enum(['desc', 'asc']).default('desc'),
 }).strict()
@@ -83,7 +83,7 @@ export const PaginatedSearchGroupBy = PaginatedSearch.extend({
     tag_group: z.string(),
   }),
   grouped_media: z.object({
-    limit: z.number().optional(),
+    limit: z.number().optional().describe('Number of media to return under each group'),
     sort_by: PaginatedSearch.shape.sort_by,
     order: PaginatedSearch.shape.order,
   }).prefault({}),

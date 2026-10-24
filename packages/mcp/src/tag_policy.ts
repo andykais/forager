@@ -22,11 +22,10 @@ class TagPolicy {
   }
 
   /** Throws a BadInputError listing every tag that is not allowed */
-  enforce(tags: string[]) {
+  enforce(tags: {slug: string; group: string}[]) {
     if (this.#allowed === 'any') return
 
     const disallowed = tags
-      .map(tag_shorthand => parsers.Tag.parse(tag_shorthand))
       .filter(tag => !this.#is_allowed(tag))
       .map(tag => tag.slug)
 

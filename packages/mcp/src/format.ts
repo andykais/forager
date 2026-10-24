@@ -1,4 +1,4 @@
-import { type Forager, type MediaResponse, type MediaGroupResponse, type model_types, errors } from '@forager/core'
+import type { Forager, MediaResponse, MediaGroupResponse, model_types } from '@forager/core'
 
 
 /**
@@ -8,34 +8,10 @@ import { type Forager, type MediaResponse, type MediaGroupResponse, type model_t
 type PaginatedResult<T> = model_types.PaginatedResult<T>
 type TagSearchResultItem = ReturnType<Forager['tag']['search']>['results'][number]
 
-export interface Page<T> {
-  total: number
-  /** Pass this back as `cursor` to fetch the next page. null when there are no more results */
-  next_cursor: string | null
-  results: T[]
-}
-
-
-export function encode_cursor(cursor: PaginatedResult<unknown>['cursor']): string | null {
-  if (cursor === undefined) return null
-  return btoa(JSON.stringify(cursor))
-}
-
-
-export function decode_cursor(cursor: string | undefined): PaginatedResult<unknown>['cursor'] {
-  if (cursor === undefined) return undefined
-  try {
-    return JSON.parse(atob(cursor))
-  } catch {
-    throw new errors.BadInputError(`Invalid cursor "${cursor}". Use the next_cursor value from a previous response`)
-  }
-}
-
-
-export function format_page<T, R>(page: PaginatedResult<T>, format: (result: T) => R): Page<R> {
+export function format_page<T, R>(page: PaginatedResult<T>, format: (result: T) => R) {
   return {
     total: page.total,
-    next_cursor: encode_cursor(page.cursor),
+    cursor: page.cursor,
     results: page.results.map(format),
   }
 }

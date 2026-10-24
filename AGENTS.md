@@ -26,9 +26,10 @@ This is a **Deno-based monorepo** with four main packages:
    - Version: 0.0.13
 
 4. **@forager/mcp** (`packages/mcp/`) - Model Context Protocol server
-   - Search/create/update/upsert tools for agents, launched with `forager mcp` over stdio
+   - Tools mirror core actions (`media_search`, `media_create`, ...) and reuse core parsers for their input schemas
+   - Launched with `forager mcp`, over stdio or streamable http (`--transport http`)
    - Configured by the `mcp` section of forager.yml (editor, tool whitelist, allowed tags, json lines interaction log)
-   - stdout is reserved for the mcp protocol, never `console.log` from code reachable by the server
+   - with the stdio transport, stdout is reserved for the mcp protocol, never `console.log` from code reachable by the server
 
 ## Technology Stack
 

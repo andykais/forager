@@ -2,12 +2,13 @@ import * as cliffy from '@cliffy/command'
 import * as web from '@forager/web'
 import process from 'node:process'
 import * as path from '@std/path'
-import { ForagerMcpServer, type ToolName } from '@forager/mcp'
+import { ForagerMcpServer, HTTP_PATH, type ToolName } from '@forager/mcp'
 import deno_json from '../deno.json' with { type: "json" };
 import { ForagerHelpers } from './helpers.ts'
 
 const LOG_LEVEL_TYPE = new cliffy.EnumType(["DEBUG", "INFO", "ERROR", 'SILENT']);
 const MEDIA_TYPE_TYPE = new cliffy.EnumType(['image', 'video', 'audio']);
+const MCP_TRANSPORT_TYPE = new cliffy.EnumType(['stdio', 'http']);
 
 const MEDIA_TYPE_TO_CORE = {
   image: 'IMAGE',
@@ -135,18 +136,24 @@ const cli = new cliffy.Command()
       await server.start()
     })
 
-  .command('mcp', 'launch a model context protocol (mcp) server over stdio')
+  .command('mcp', 'launch a model context protocol (mcp) server')
+    .type('mcp-transport', MCP_TRANSPORT_TYPE)
+    .option('--transport=<transport:mcp-transport>', 'stdio when the agent launches forager itself, http when the agent connects from another machine or container', {default: 'stdio' as const})
+    .option('--hostname=<hostname>', 'The interface the http transport listens on. Overrides mcp.http.hostname in the config file')
+    .option('--port=<port:number>', 'The port the http transport listens on. Overrides mcp.http.port in the config file')
     .option('--editor=<editor>', 'The editor recorded on every write made through the mcp server. Required here or as mcp.editor in the config file')
     .option('--tools=<tools>', 'A comma separated whitelist of tools the mcp server exposes. Overrides mcp.tools in the config file')
     .option('--log-file=<log_file>', 'A json lines file recording every mcp interaction. Overrides mcp.log.filepath in the config file. Defaults to <config dir>/logs/mcp.jsonl')
     .action(async (opts) => {
-      // stdout is reserved for mcp protocol messages, so any other output (forager logs, migration messages) is sent to stderr
-      console.log = console.error
-      console.info = console.error
-      console.debug = console.error
+      if (opts.transport === 'stdio') {
+        // stdout is reserved for mcp protocol messages, so any other output (forager logs, migration messages) is sent to stderr
+        console.log = console.error
+        console.info = console.error
+        console.debug = console.error
+      }
 
-      // prompting would read from stdin, which is also reserved for the mcp protocol
-      const forager_helpers = new ForagerHelpers({...opts, prompt: false})
+      // prompting would read from stdin, which is reserved for the mcp protocol when using stdio
+      const forager_helpers = new ForagerHelpers({...opts, prompt: opts.transport !== 'stdio'})
       const forager = await forager_helpers.launch_forager()
       const mcp_config = forager_helpers.config.mcp
       const default_log_filepath = path.join(path.dirname(path.resolve(forager_helpers.config_filepath)), 'logs', 'mcp.jsonl')
@@ -157,6 +164,11 @@ const cli = new cliffy.Command()
           ...mcp_config,
           editor: opts.editor ?? mcp_config?.editor,
           tools: opts.tools?.split(',') as ToolName[] | undefined ?? mcp_config?.tools,
+          http: {
+            ...mcp_config?.http,
+            hostname: opts.hostname ?? mcp_config?.http.hostname,
+            port: opts.port ?? mcp_config?.http.port,
+          },
           log: {filepath: opts.logFile ?? mcp_config?.log.filepath ?? default_log_filepath},
         },
       })
@@ -166,14 +178,21 @@ const cli = new cliffy.Command()
         forager.close()
         Deno.exit(0)
       }
-      process.stdin.on('end', shutdown)
       Deno.addSignalListener('SIGINT', shutdown)
       if (Deno.build.os !== 'windows') {
         Deno.addSignalListener('SIGTERM', shutdown)
       }
 
-      await server.start()
+      if (opts.transport === 'stdio') {
+        process.stdin.on('end', shutdown)
+        await server.start_stdio()
+      } else {
+        const address = server.start_http()
+        console.log(`forager mcp server listening on http://${address.hostname}:${address.port}${HTTP_PATH}`)
+        if (server.config.http.token === undefined) {
+          console.warn(`mcp.http.token is not set, so any client that can reach this address can use the mcp server`)
+        }
+      }
     })
-
 
 await cli.parse()

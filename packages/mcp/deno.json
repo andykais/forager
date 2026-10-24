@@ -18,7 +18,8 @@
       "run": ["ffprobe", "ffmpeg"],
       "read": true,
       "write": true,
-      "env": true
+      "env": true,
+      "net": ["127.0.0.1"]
     }
   },
 

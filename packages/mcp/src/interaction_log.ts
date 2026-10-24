@@ -3,7 +3,7 @@ import * as path from '@std/path'
 
 /** An interaction with the mcp server */
 export interface InteractionLogEvent {
-  event: 'server_start' | 'server_stop' | 'initialize' | 'list_tools' | 'tool_call'
+  event: 'server_start' | 'server_stop' | 'initialize' | 'list_tools' | 'tool_call' | 'unauthorized'
   tool?: string
   arguments?: unknown
   status?: 'success' | 'error'
