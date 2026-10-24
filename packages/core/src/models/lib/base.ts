@@ -1,4 +1,5 @@
-import { Vars, schema, field, Model as DriverModel, type Statement } from '@torm/sqlite'
+import { Vars, schema, field, Model as DriverModel, type Statement, type Fields } from '@torm/sqlite'
+import { TimedStatement } from './timed_statement.ts'
 import { NotFoundError } from '~/lib/errors.ts'
 import { errors } from "~/mod.ts";
 export type { PaginatedResult } from './result_types.ts'
@@ -37,7 +38,21 @@ interface SelectOneFnOverrides<P, R> {
   (params: P, options: SelectOneOptionsRaiseOnUndefined): NonNullable<R>
 }
 
+interface QueryTimeoutTorm {
+  query_timeout: number
+}
+
 abstract class Model extends DriverModel {
+
+  protected override create_stmt = <P extends Fields, R extends Fields>(sql: string, params: P, result: R): TimedStatement<P, R> => {
+    return new TimedStatement(sql, params, result, () => {
+      const query_timeout = (this.torm as Partial<QueryTimeoutTorm> | undefined)?.query_timeout
+      if (query_timeout === undefined) {
+        throw new errors.UnExpectedError(`${this.constructor.name} was initialized without a query_timeout`)
+      }
+      return query_timeout
+    })
+  }
 
   protected select_one_fn<P, R>(fn: (params: P) => R): SelectOneFnOverrides<P, R> {
     const overloaded_fn = (params: P, options?: SelectOneOptions): R => {

@@ -17,7 +17,7 @@ export interface DatabaseInfo {
 class ForagerTorm extends torm.Torm {
   models: ModelsBuilder<typeof forager_models>
 
-  public constructor(database_path: string) {
+  public constructor(database_path: string, public query_timeout: number) {
     super(database_path, {migrations})
 
     this.models = Object.fromEntries(Object.entries(forager_models).map(entry => {
@@ -37,7 +37,7 @@ class Database {
     this.#ctx = ctx
     this.sqlite_path = path.join(ctx.config.database.folder, ctx.config.database.filename)
     this.sqlite_backups_folder = path.join(ctx.config.database.folder, 'backups')
-    this.#torm = new ForagerTorm(this.sqlite_path)
+    this.#torm = new ForagerTorm(this.sqlite_path, ctx.config.database.query_timeout)
   }
 
   public init(): torm.InitInfo {
