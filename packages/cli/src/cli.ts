@@ -1,5 +1,8 @@
 import * as cliffy from '@cliffy/command'
 import * as web from '@forager/web'
+import process from 'node:process'
+import * as path from '@std/path'
+import { ForagerMcpServer, type ToolName } from '@forager/mcp'
 import deno_json from '../deno.json' with { type: "json" };
 import { ForagerHelpers } from './helpers.ts'
 
@@ -129,6 +132,46 @@ const cli = new cliffy.Command()
         }
       })
       await server.init()
+      await server.start()
+    })
+
+  .command('mcp', 'launch a model context protocol (mcp) server over stdio')
+    .option('--editor=<editor>', 'The editor recorded on every write made through the mcp server. Required here or as mcp.editor in the config file')
+    .option('--tools=<tools>', 'A comma separated whitelist of tools the mcp server exposes. Overrides mcp.tools in the config file')
+    .option('--log-file=<log_file>', 'A json lines file recording every mcp interaction. Overrides mcp.log.filepath in the config file. Defaults to <config dir>/logs/mcp.jsonl')
+    .action(async (opts) => {
+      // stdout is reserved for mcp protocol messages, so any other output (forager logs, migration messages) is sent to stderr
+      console.log = console.error
+      console.info = console.error
+      console.debug = console.error
+
+      // prompting would read from stdin, which is also reserved for the mcp protocol
+      const forager_helpers = new ForagerHelpers({...opts, prompt: false})
+      const forager = await forager_helpers.launch_forager()
+      const mcp_config = forager_helpers.config.mcp
+      const default_log_filepath = path.join(path.dirname(path.resolve(forager_helpers.config_filepath)), 'logs', 'mcp.jsonl')
+      const server = new ForagerMcpServer({
+        forager,
+        version: deno_json.version,
+        config: {
+          ...mcp_config,
+          editor: opts.editor ?? mcp_config?.editor,
+          tools: opts.tools?.split(',') as ToolName[] | undefined ?? mcp_config?.tools,
+          log: {filepath: opts.logFile ?? mcp_config?.log.filepath ?? default_log_filepath},
+        },
+      })
+
+      const shutdown = async () => {
+        await server.close()
+        forager.close()
+        Deno.exit(0)
+      }
+      process.stdin.on('end', shutdown)
+      Deno.addSignalListener('SIGINT', shutdown)
+      if (Deno.build.os !== 'windows') {
+        Deno.addSignalListener('SIGTERM', shutdown)
+      }
+
       await server.start()
     })
 

@@ -5,6 +5,8 @@ import { Config } from '../src/inputs.ts'
 import { errors, Forager } from '@forager/core'
 import * as yaml from '@std/yaml'
 import { test } from 'forager-test'
+import { Client } from '@modelcontextprotocol/sdk/client/index.js'
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 
 import '../src/cli.ts'
 
@@ -146,4 +148,59 @@ test('cli filesystem discover subcommand', async ctx => {
       total: 6,
     })
   }, {ignore: true}) // NOTE that we skip this for now, because we need to wire up a `forager ingest` command
+})
+
+test('cli mcp subcommand', async ctx => {
+  const forager_config: z.input<typeof Config> = {
+    core: {
+      database: {
+        folder: ctx.create_fixture_path('database'),
+      },
+      thumbnails: {
+        folder: ctx.create_fixture_path('thumbnails'),
+      },
+      logger: {level: 'INFO'},
+    },
+    web: {
+      asset_folder: ctx.create_fixture_path('assets'),
+      logger: {level: 'ERROR'},
+    },
+    mcp: {
+      editor: 'config-editor',
+      tools: ['search_media'],
+      tags: {allowed: ['animal:*']},
+    },
+  }
+  const config_path = ctx.create_fixture_path('forager.yml')
+  await Deno.writeTextFile(config_path, yaml.stringify(forager_config))
+
+  const cli_entrypoint = path.join(path.resolve(import.meta.dirname!, '..'), 'src/cli.ts')
+  const transport = new StdioClientTransport({
+    command: Deno.execPath(),
+    args: ['run', '-A', '--unstable-raw-imports', cli_entrypoint, '--config', config_path, 'mcp', '--editor', 'claude', '--tools', 'search_media,create_media'],
+    stderr: 'ignore',
+  })
+  const client = new Client({name: 'forager-cli-test', version: '0.0.0'})
+  await client.connect(transport)
+
+  const { tools } = await client.listTools()
+  ctx.assert.equals(tools.map((tool: {name: string}) => tool.name), ['search_media', 'create_media'])
+
+  // forager logs at INFO level during create, which must not corrupt the mcp protocol on stdout
+  const created = await client.callTool({name: 'create_media', arguments: {filepath: ctx.resources.media_files['cat_doodle.jpg'], tags: ['animal:cat']}})
+  ctx.assert.equals(created.isError, undefined)
+  const disallowed = await client.callTool({name: 'create_media', arguments: {filepath: ctx.resources.media_files['koch.tif'], tags: ['math']}})
+  ctx.assert.equals(disallowed.isError, true)
+
+  const searched = await client.callTool({name: 'search_media', arguments: {}})
+  const search_result = JSON.parse((searched.content as {text: string}[])[0].text)
+  ctx.assert.equals(search_result.total, 1)
+  ctx.assert.equals(search_result.results[0].editors, ['claude'])
+
+  await client.close()
+
+  const log_filepath = ctx.create_fixture_path('logs/mcp.jsonl')
+  const log = (await Deno.readTextFile(log_filepath)).trim().split('\n').map(line => JSON.parse(line))
+  ctx.assert.equals(log.map(entry => entry.event), ['server_start', 'initialize', 'list_tools', 'tool_call', 'tool_call', 'tool_call', 'server_stop'])
+  ctx.assert.equals(log.every(entry => entry.editor === 'claude'), true)
 })

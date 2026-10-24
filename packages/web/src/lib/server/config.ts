@@ -98,6 +98,9 @@ export const PackagesConfig = z.object({
       Star5: Keybind('Digit5'),
     }).strict().prefault({}),
   }).strict(),
+
+  // the mcp section is validated by @forager/mcp when launched through the cli
+  mcp: z.unknown().optional(),
 }).strict()
 
 export type Config = z.infer<typeof PackagesConfig>

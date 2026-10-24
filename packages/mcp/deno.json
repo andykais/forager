@@ -1,0 +1,39 @@
+{
+  "name": "@forager/mcp",
+  "version": "0.0.1",
+
+  "tasks": {
+    "lint": "deno lint",
+    "test": "deno test -P=test --check --trace-leaks test"
+  },
+
+  "imports": {
+    "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@1.32.1"
+  },
+
+  "exports": "./src/mod.ts",
+
+  "permissions": {
+    "test": {
+      "run": ["ffprobe", "ffmpeg"],
+      "read": true,
+      "write": true,
+      "env": true
+    }
+  },
+
+  "lint": {
+    "include": [
+      "./src/",
+      "./test/"
+    ],
+    "rules": {
+      "tags": [],
+      "include": [
+        "no-unused-vars"
+      ]
+    }
+  },
+
+  "license": "MIT"
+}

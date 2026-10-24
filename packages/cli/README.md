@@ -16,6 +16,8 @@ forager init
 forager discover ~/Downloads
 # launch the web app to view and edit media
 forager gui
+# launch an mcp server so an agent can search and tag media (see packages/mcp/README.md)
+forager mcp --editor claude
 ```
 
 
@@ -47,4 +49,5 @@ Commands:
   create    <filepath>  - add a file to the forager database
   delete                - delete a file from the forager database
   gui                   - launch the forager graphical web interface
+  mcp                   - launch a model context protocol (mcp) server over stdio
 ```
