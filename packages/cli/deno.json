@@ -25,7 +25,7 @@
       "run": ["ffmpeg", "ffprobe"],
       "write": true,
       "read": true,
-      "env": ["HOME", "NODE_ENV", "FORAGER_CONFIG"],
+      "env": ["HOME", "NODE_ENV", "FORAGER_CONFIG", "FORAGER_SUPERVISED"],
       "net": ["127.0.0.1:8000"]
     },
     "test": {

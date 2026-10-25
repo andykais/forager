@@ -29,8 +29,13 @@ export const ForagerConfig = z.object({
     /** How long (in milliseconds) to wait when the database is locked by another process before throwing an error. Relevant when running multiple processes (e.g. web GUI and CLI ingest) against the same database. Set to 0 to fail immediately. */
     busy_timeout: z.number().int().min(0).default(5000),
 
-    /** How long (in milliseconds) a single database query may run before a QueryTimeoutError is thrown. Queries returning many rows are aborted as soon as the timeout is reached. Queries that execute in a single sqlite step (e.g. aggregates, writes) cannot be interrupted, and will throw once they complete. */
-    query_timeout: z.number().int().min(1).default(5000),
+    query_timeout: z.object({
+      /** How long (in milliseconds) a single database query may run. Without `kill_process`, a QueryTimeoutError is thrown once the slow query completes (a running sqlite query cannot be interrupted) */
+      milliseconds: z.number().int().min(1).default(5000),
+
+      /** Kill the whole process (SIGKILL) while a query is still running past its timeout, after printing every in-flight query and transaction (sql + params) to stderr. sqlite rolls back the uncommitted transaction the next time the database is opened. Intended for long running apps under a supervisor (e.g. `forager gui`, which restarts itself) */
+      kill_process: z.boolean().default(false),
+    }).strict().prefault({}),
   }).strict(),
 
   logger: z.object({

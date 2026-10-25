@@ -3,6 +3,8 @@ import type { Context } from '../context.ts'
 import * as forager_models from '../models/mod.ts'
 import {migrations} from '~/db/migrations/mod.ts'
 import path from "node:path";
+import { QueryWatchdog } from '~/lib/query_watchdog.ts'
+import type { QueryTimeoutSettings } from '~/models/lib/timed_statement.ts'
 
 export type Constructor<T = any> = new (...args: any[]) => T;
 export type Class<T = any> = InstanceType<Constructor<T>>;
@@ -17,7 +19,7 @@ export interface DatabaseInfo {
 class ForagerTorm extends torm.Torm {
   models: ModelsBuilder<typeof forager_models>
 
-  public constructor(database_path: string, public query_timeout: number) {
+  public constructor(database_path: string, public query_timeout: QueryTimeoutSettings) {
     super(database_path, {migrations})
 
     this.models = Object.fromEntries(Object.entries(forager_models).map(entry => {
@@ -29,6 +31,7 @@ class ForagerTorm extends torm.Torm {
 class Database {
   #ctx: Context
   #torm: ForagerTorm
+  #query_watchdog: QueryWatchdog | undefined
 
   public sqlite_path: string
   public sqlite_backups_folder: string
@@ -37,7 +40,7 @@ class Database {
     this.#ctx = ctx
     this.sqlite_path = path.join(ctx.config.database.folder, ctx.config.database.filename)
     this.sqlite_backups_folder = path.join(ctx.config.database.folder, 'backups')
-    this.#torm = new ForagerTorm(this.sqlite_path, ctx.config.database.query_timeout)
+    this.#torm = new ForagerTorm(this.sqlite_path, { timeout_ms: ctx.config.database.query_timeout.milliseconds })
   }
 
   public init(): torm.InitInfo {
@@ -53,6 +56,10 @@ class Database {
       init_options.migrate!.backup = true
     }
     Deno.mkdirSync(this.#ctx.config.database.folder, { recursive: true })
+    if (this.#ctx.config.database.query_timeout.kill_process && !this.#query_watchdog) {
+      this.#query_watchdog = QueryWatchdog.acquire()
+      this.#torm.query_timeout.watchdog = this.#query_watchdog
+    }
     const init_info = this.#torm.init(init_options)
     if (this.#torm.migrations.application_version() !== init_info.current_version) {
       throw new Error(`Version mismatch: Forager app version is ${this.#torm.migrations.application_version()}, while the database version is currently ${init_info.current_version}. Consider turning on automatic migrations, or manually migrating the database`)
@@ -72,31 +79,55 @@ class Database {
   }
 
   public transaction_sync = <T>(fn: () => T) => (): T => {
+    const end_tracking = this.#query_watchdog?.track_transaction()
     try {
-      this.#torm.driver.exec('BEGIN IMMEDIATE')
+      this.#exec_tracked('BEGIN IMMEDIATE')
       const result = fn()
-      this.#torm.driver.exec('COMMIT')
+      this.#exec_tracked('COMMIT')
       return result
     } catch(e) {
-      this.#torm.driver.exec('ROLLBACK')
+      this.#exec_tracked('ROLLBACK')
       throw e
+    } finally {
+      end_tracking?.()
     }
   }
 
   public transaction_async = <T>(fn: () => Promise<T>) => async (): Promise<T> => {
+    const end_tracking = this.#query_watchdog?.track_transaction()
     try {
-      this.#torm.driver.exec('BEGIN IMMEDIATE')
+      this.#exec_tracked('BEGIN IMMEDIATE')
       const result = await fn()
-      this.#torm.driver.exec('COMMIT')
+      this.#exec_tracked('COMMIT')
       return result
     } catch(e) {
-      this.#torm.driver.exec('ROLLBACK')
+      this.#exec_tracked('ROLLBACK')
       throw e
+    } finally {
+      end_tracking?.()
     }
   }
 
   public close() {
-    this.#torm.close()
+    try {
+      this.#torm.close()
+    } finally {
+      if (this.#query_watchdog) {
+        QueryWatchdog.release(this.#query_watchdog)
+        this.#query_watchdog = undefined
+        this.#torm.query_timeout.watchdog = undefined
+      }
+    }
+  }
+
+  // transaction statements are subject to the query timeout too, BEGIN IMMEDIATE is where we wait on database locks
+  #exec_tracked(sql: string) {
+    const { timeout_ms, watchdog } = this.#torm.query_timeout
+    if (watchdog) {
+      watchdog.track_query(timeout_ms, sql, undefined, () => this.#torm.driver.exec(sql))
+    } else {
+      this.#torm.driver.exec(sql)
+    }
   }
 }
 

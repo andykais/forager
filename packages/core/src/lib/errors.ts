@@ -98,7 +98,7 @@ export class QueryTimeoutError extends ForagerError {
   override name = 'QueryTimeoutError'
 
   constructor(public sql: string, public params: unknown, public timeout_ms: number, public elapsed_ms: number) {
-    super(`query exceeded timeout of ${timeout_ms}ms (ran for ${Math.round(elapsed_ms)}ms):\n${sql}`)
+    super(`query exceeded timeout of ${timeout_ms}ms (ran for ${Math.round(elapsed_ms)}ms):\n${sql}\nparams: ${Deno.inspect(params, { depth: 4 })}`)
   }
 }
 

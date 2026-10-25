@@ -21,7 +21,7 @@
 
   "permissions": {
     "test": {
-      "run": ["ffprobe", "ffmpeg"],
+      "run": ["ffprobe", "ffmpeg", "deno"],
       "read": true,
       "write": true
     }

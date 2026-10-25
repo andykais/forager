@@ -1,5 +1,5 @@
 import { Vars, schema, field, Model as DriverModel, type Statement, type Fields } from '@torm/sqlite'
-import { TimedStatement } from './timed_statement.ts'
+import { TimedStatement, type QueryTimeoutSettings } from './timed_statement.ts'
 import { NotFoundError } from '~/lib/errors.ts'
 import { errors } from "~/mod.ts";
 export type { PaginatedResult } from './result_types.ts'
@@ -39,7 +39,7 @@ interface SelectOneFnOverrides<P, R> {
 }
 
 interface QueryTimeoutTorm {
-  query_timeout: number
+  query_timeout: QueryTimeoutSettings
 }
 
 abstract class Model extends DriverModel {
