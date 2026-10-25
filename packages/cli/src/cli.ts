@@ -2,6 +2,7 @@ import * as cliffy from '@cliffy/command'
 import * as web from '@forager/web'
 import deno_json from '../deno.json' with { type: "json" };
 import { ForagerHelpers } from './helpers.ts'
+import { supervise, is_supervised_process, resolve_supervised_command } from './supervisor.ts'
 
 const LOG_LEVEL_TYPE = new cliffy.EnumType(["DEBUG", "INFO", "ERROR", 'SILENT']);
 const MEDIA_TYPE_TYPE = new cliffy.EnumType(['image', 'video', 'audio']);
@@ -26,6 +27,7 @@ const cli = new cliffy.Command()
   .option('-l, --log-level <level:log-level>', 'The log level forager will output.', { global: true })
   .option('--json', 'Silence logs and print structured json after a command completes', { global: true })
   .option('-q, --quiet', 'Shorthand for --log-level=SILENT', { global: true })
+  .option('--kill-on-query-timeout', 'Kill the process when a database query runs past core.database.query_timeout.milliseconds, printing the in-flight queries. The gui command restarts itself afterwards. Same as setting core.database.query_timeout.kill_process', { global: true })
 
   .command('init', 'set up a forager config file and initialize a the database')
     .option('--no-prompt', 'Initialize confg file with default values, ignoring prompts')
@@ -116,6 +118,17 @@ const cli = new cliffy.Command()
     .option('--port=<port:number>', 'The port the web app will be hosted from')
     .action(async (opts) => {
       const forager_helpers = new ForagerHelpers(opts)
+      await forager_helpers.ensure_config()
+      if (forager_helpers.config.core.database.query_timeout.kill_process && !is_supervised_process()) {
+        // the query watchdog kills the process on a stuck query, so run the gui in a child process that we restart
+        const supervised_command = resolve_supervised_command()
+        if ('unsupported' in supervised_command) {
+          console.error(`[forager supervisor] the gui will not be restarted after a query timeout: ${supervised_command.unsupported}`)
+        } else {
+          const result = await supervise(supervised_command)
+          Deno.exit(result.code)
+        }
+      }
       const forager = await forager_helpers.launch_forager()
       const server = new web.Server({
         asset_folder: forager_helpers.config.web.asset_folder,

@@ -67,6 +67,7 @@ class Assertions {
   greater_than = asserts.assertGreater
   rejects = asserts.assertRejects
   throws = asserts.assertThrows
+  match = asserts.assertMatch
   object_match = asserts.assertObjectMatch
   list_includes = asserts.assertArrayIncludes
   tag_search_result(search_result: ForagerTagSearchResult, assertions: TagSearchResultAssertions) {

@@ -15,6 +15,7 @@ interface ForagerHelpersOptions {
   json?: boolean
   logLevel?: LogLevel | undefined
   quiet?: boolean
+  killOnQueryTimeout?: boolean
 }
 
 class ForagerHelpers {
@@ -118,6 +119,9 @@ class ForagerHelpers {
     if (this.options.logLevel) {
       this.#config.core.logger.level = this.#log_level
       this.#config.web.logger.level = this.#log_level
+    }
+    if (this.options.killOnQueryTimeout) {
+      this.#config.core.database.query_timeout.kill_process = true
     }
   }
 
