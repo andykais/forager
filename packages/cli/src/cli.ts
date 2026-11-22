@@ -14,29 +14,6 @@ const MEDIA_TYPE_TO_CORE = {
 } as const;
 
 
-interface MediaQueryOptions {
-  tags?: string
-  filepath?: string
-  mediaReferenceId?: number
-  mediaType?: keyof typeof MEDIA_TYPE_TO_CORE
-}
-
-function validate_limit(limit: number | undefined) {
-  if (limit !== undefined && limit < 1) {
-    throw new cliffy.ValidationError(`--limit must be a positive integer, received ${limit}`)
-  }
-}
-
-function build_media_query(opts: MediaQueryOptions) {
-  return {
-    media_reference_id: opts.mediaReferenceId,
-    filepath: opts.filepath,
-    tags: opts.tags?.split(','),
-    media_type: opts.mediaType ? MEDIA_TYPE_TO_CORE[opts.mediaType] : undefined,
-  }
-}
-
-
 const cli = new cliffy.Command()
   .name("forager")
   .action(async function() {
@@ -78,11 +55,15 @@ const cli = new cliffy.Command()
     .option('--media-type=<media_type:media-type>', 'Restrict to a single media file kind (image, video, audio)')
     .option('--limit=<limit:integer>', 'The maximum number of results to return')
     .action(async opts => {
-      validate_limit(opts.limit)
       const forager_helpers = new ForagerHelpers(opts)
       const forager = await forager_helpers.launch_forager()
       const result = forager.media.search({
-        query: build_media_query(opts),
+        query: {
+          media_reference_id: opts.mediaReferenceId,
+          filepath: opts.filepath,
+          tags: opts.tags?.split(','),
+          media_type: opts.mediaType ? MEDIA_TYPE_TO_CORE[opts.mediaType] : undefined,
+        },
         limit: opts.limit,
       })
       forager_helpers.print_output(result)
@@ -134,12 +115,17 @@ const cli = new cliffy.Command()
       if (!opts.tags && !opts.filepath && opts.mediaReferenceId === undefined && !opts.mediaType) {
         throw new cliffy.ValidationError('At least one of --tags, --filepath, --media-reference-id or --media-type is required')
       }
-      validate_limit(opts.limit)
       const forager_helpers = new ForagerHelpers(opts)
       const forager = await forager_helpers.launch_forager()
       const search_result = forager.media.search({
-        query: build_media_query(opts),
-        limit: opts.limit,
+        query: {
+          media_reference_id: opts.mediaReferenceId,
+          filepath: opts.filepath,
+          tags: opts.tags?.split(','),
+          media_type: opts.mediaType ? MEDIA_TYPE_TO_CORE[opts.mediaType] : undefined,
+        },
+        // search has a default limit, so we explicitly ask for every match unless --limit is given
+        limit: opts.limit ?? -1,
         thumbnail_limit: 0,
       })
 
