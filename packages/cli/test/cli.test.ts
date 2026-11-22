@@ -119,6 +119,88 @@ test('cli basics', async ctx => {
   })
 })
 
+test('cli delete subcommand', async ctx => {
+  const forager_config: z.input<typeof Config> = {
+    core: {
+      database: {
+        folder: ctx.create_fixture_path('database'),
+      },
+      thumbnails: {
+        folder: ctx.create_fixture_path('thumbnails'),
+      },
+      logger: {level: 'ERROR'},
+    },
+    web: {
+      asset_folder: ctx.create_fixture_path('assets'),
+      logger: {level: 'ERROR'},
+    }
+  }
+  const config_path = ctx.create_fixture_path('forager.yml')
+  await Deno.writeTextFile(config_path, yaml.stringify(forager_config))
+
+  await forager_cli`--config ${config_path} create ${ctx.resources.media_files['cat_doodle.jpg']} --tags cat,drawing`
+  await forager_cli`--config ${config_path} create ${ctx.resources.media_files['cat_cronch.mp4']} --tags cat`
+  await forager_cli`--config ${config_path} create ${ctx.resources.media_files['koch.tif']} --tags drawing`
+  await forager_cli`--config ${config_path} create ${ctx.resources.media_files['ed-edd-eddy.png']} --tags cartoon`
+
+  const forager = new Forager(forager_config.core)
+  forager.init()
+  const media_doodle = forager.media.get({filepath: ctx.resources.media_files['cat_doodle.jpg']})
+  // edit logs and views both reference the media_reference table
+  forager.media.update(media_doodle.media_reference.id, {title: 'Doodle'}, undefined, {editor: 'cli-test'})
+  forager.views.start({media_reference_id: media_doodle.media_reference.id})
+
+  await ctx.subtest('search --limit', async () => {
+    const search_result = await forager_cli`--json --config ${config_path} search --tags cat --limit 1`.json()
+    ctx.assert.equals(search_result.total, 2)
+    ctx.assert.equals(search_result.results.length, 1)
+  })
+
+  await ctx.subtest('delete requires a filter', async () => {
+    const result = await forager_cli`--config ${config_path} delete`.stderr('piped').noThrow()
+    ctx.assert.equals(result.code !== 0, true)
+    ctx.assert.search_result(forager.media.search(), {total: 4})
+  })
+
+  await ctx.subtest('delete with no matches errors', async () => {
+    const result = await forager_cli`--config ${config_path} delete --filepath ${'/does/not/exist.jpg'}`.stderr('piped').noThrow()
+    ctx.assert.equals(result.code !== 0, true)
+  })
+
+  await ctx.subtest('delete media with edit logs and views by filepath', async () => {
+    const output = await forager_cli`--json --config ${config_path} delete --filepath ${ctx.resources.media_files['cat_doodle.jpg']}`.json()
+    ctx.assert.equals(output, {
+      total: 1,
+      deleted: [{media_reference_id: media_doodle.media_reference.id, filepath: ctx.resources.media_files['cat_doodle.jpg']}],
+    })
+    ctx.assert.throws(() => forager.media.get({filepath: ctx.resources.media_files['cat_doodle.jpg']}), errors.NotFoundError)
+  })
+
+  await ctx.subtest('delete multiple media aborts without confirmation', async () => {
+    await forager_cli`--config ${config_path} create ${ctx.resources.media_files['cat_doodle.jpg']} --tags cat`
+    const result = await forager_cli`--config ${config_path} delete --tags cat`.stdin(new Uint8Array()).stderr('piped').noThrow()
+    ctx.assert.equals(result.code !== 0, true)
+    ctx.assert.search_result(forager.media.search({query: {tags: ['cat']}}), {total: 2})
+  })
+
+  await ctx.subtest('delete --tags --limit', async () => {
+    const output = await forager_cli`--json --config ${config_path} delete --tags cat --limit 1 --yes`.json()
+    ctx.assert.equals(output.total, 1)
+    ctx.assert.search_result(forager.media.search({query: {tags: ['cat']}}), {total: 1})
+  })
+
+  await ctx.subtest('delete --tags', async () => {
+    const output = await forager_cli`--json --config ${config_path} delete --tags drawing --yes`.json()
+    ctx.assert.equals(output, {
+      total: 1,
+      deleted: [{media_reference_id: output.deleted[0].media_reference_id, filepath: ctx.resources.media_files['koch.tif']}],
+    })
+    ctx.assert.search_result(forager.media.search(), {total: 2})
+  })
+
+  forager.close()
+})
+
 test('cli filesystem discover subcommand', async ctx => {
   const forager_config: z.input<typeof Config> = {
     core: {

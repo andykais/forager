@@ -1529,3 +1529,40 @@ test('forager class', async ctx => {
   // assert that we error out when passing bad data to the forager class
   ctx.assert.throws(() => new Forager({foo: 'bar'} as any))
 })
+
+test('media delete removes all related records', async ctx => {
+  using forager = new Forager(ctx.get_test_config())
+  forager.init()
+
+  const media_cronch = await forager.media.create(ctx.resources.media_files['cat_cronch.mp4'], {title: 'Cronch'}, ['cat'], {editor: 'test-editor'})
+  forager.media.update(media_cronch.media_reference.id, {stars: 3}, {add: ['funny']}, {editor: 'test-editor'})
+  await forager.keypoints.create({media_reference_id: media_cronch.media_reference.id, tag: 'bite', start_timestamp: 1})
+  forager.views.start({media_reference_id: media_cronch.media_reference.id})
+  const series = forager.series.create({title: 'test series'})
+  forager.series.add({series_id: series.media_reference.id, media_reference_id: media_cronch.media_reference.id})
+
+  await forager.media.delete({filepath: ctx.resources.media_files['cat_cronch.mp4']})
+
+  ctx.assert.search_result(forager.media.search({query: {media_type: 'VIDEO'}}), {total: 0})
+  ctx.assert.throws(() => forager.media.get({media_reference_id: media_cronch.media_reference.id}), errors.NotFoundError)
+  ctx.assert.equals(forager.series.get({series_id: series.media_reference.id}).media_reference.media_series_length, 0)
+  ctx.assert.equals(await fs.exists(media_cronch.media_file.thumbnail_directory_path), false)
+  // the series still holds the tags merged in from its item, so they are only decremented
+  ctx.assert.tag_search_result(forager.tag.search(), {
+    total: 3,
+    results: [
+      {name: 'bite', media_reference_count: 1},
+      {name: 'funny', media_reference_count: 1},
+      {name: 'cat', media_reference_count: 1},
+    ]
+  })
+
+  // tags.auto_cleanup removes tags that are no longer referenced by anything
+  const media_doodle = await forager.media.create(ctx.resources.media_files['cat_doodle.jpg'], {}, ['doodle'])
+  await forager.media.delete({media_reference_id: media_doodle.media_reference.id})
+  ctx.assert.tag_search_result(forager.tag.search(), {total: 3})
+
+  // the file can be re-added after it is deleted
+  const recreated = await forager.media.create(ctx.resources.media_files['cat_cronch.mp4'])
+  ctx.assert.equals(recreated.edit_log?.length, 0)
+})

@@ -38,7 +38,13 @@ class EditLog extends Model {
     WHERE media_reference_id = ${EditLog.params.media_reference_id}
     ORDER BY created_at DESC, id DESC`
 
+  #delete_by_media_reference_id = this.query.exec`
+    DELETE FROM edit_log
+    WHERE media_reference_id = ${EditLog.params.media_reference_id}`
+
   public create = this.create_fn(this.#create)
+
+  public delete = this.delete_fn(this.#delete_by_media_reference_id)
 
   public select_many(params: {
     media_reference_id: number

@@ -30,32 +30,53 @@ class MediaActions extends Actions {
     }
   }
 
+  /**
+   * Delete a single media file (and all of its associated records) from the database.
+   * Thumbnails generated for the media file are removed from disk as well. The original media file is left untouched.
+   */
   delete = async (params: inputs.MediaReferenceGet) => {
     const parsed = parsers.MediaReferenceGet.parse(params)
     const transaction = this.ctx.db.transaction_async(async () => {
       const result = this.media_get({...parsed, thumbnail_limit: 0})
-      if (result.media_type === 'media_file') {
-        this.models.MediaReferenceTag.delete({media_reference_id: result.media_reference.id}, {expected_deletes: result.tags.length})
-        this.models.MediaThumbnail.delete({media_file_id: result.media_file.id}, {expected_deletes: result.thumbnails.total})
-        this.models.MediaFile.delete({id: result.media_file.id}, {expected_deletes: 1})
-        this.models.MediaKeypoint.delete({media_reference_id: result.media_reference.id})
-        this.models.MediaSeriesItem.delete({media_reference_id: result.media_reference.id})
-        this.models.MediaReference.delete({id: result.media_reference.id}, {expected_deletes: 1})
-        // TODO return views in media_get and add an expected_deletes for them here
-        this.models.View.delete({media_reference_id: result.media_reference.id})
-        await Deno.remove(result.media_file.thumbnail_directory_path, {recursive: true})
-        this.ctx.logger.info(`Removed ${result.media_file.filepath} media with media reference id ${result.media_reference.id}`)
-      } else {
-        throw new Error('unimplemented')
+      if (result.media_type !== 'media_file') {
+        throw new errors.BadInputError(`media reference ${result.media_reference.id} is a media series. Deleting media series is not supported yet.`)
       }
+      const media_reference_id = result.media_reference.id
+      // every table with a foreign key to media_reference or media_file must be cleared before deleting the parent rows
+      this.models.MediaReferenceTag.delete({media_reference_id}, {expected_deletes: result.tags.length})
+      this.models.MediaKeypoint.delete({media_reference_id})
+      this.models.MediaSeriesItem.delete({media_reference_id})
+      this.models.View.delete({media_reference_id})
+      this.models.EditLog.delete({media_reference_id}, {expected_deletes: result.edit_log?.length ?? 0})
+      this.models.MediaThumbnail.delete({media_file_id: result.media_file.id}, {expected_deletes: result.thumbnails.total})
+      this.models.MediaFile.delete({id: result.media_file.id}, {expected_deletes: 1})
+      this.models.MediaReference.delete({id: media_reference_id}, {expected_deletes: 1})
+      if (this.ctx.config.tags.auto_cleanup) {
+        this.models.Tag.delete_unreferenced()
+      }
+      return result
     })
 
+    let result: MediaFileResponse
     try {
-      await transaction()
+      result = await transaction()
     } catch (e) {
       this.ctx.logger.error(`Error "${e}" during media delete for ${JSON.stringify(params)}, delete aborted.`)
       throw e
     }
+
+    // thumbnails are only removed once the database transaction has committed, so an aborted delete leaves them intact
+    try {
+      await Deno.remove(result.media_file.thumbnail_directory_path, {recursive: true})
+    } catch (e) {
+      if (e instanceof Deno.errors.NotFound) {
+        this.ctx.logger.warn(`Thumbnail directory ${result.media_file.thumbnail_directory_path} was already missing`)
+      } else {
+        throw e
+      }
+    }
+    this.ctx.logger.info(`Removed ${result.media_file.filepath} media with media reference id ${result.media_reference.id}`)
+    return result
   }
 
   search = (params?: inputs.PaginatedSearch): result_types.PaginatedResult<MediaResponse> => {

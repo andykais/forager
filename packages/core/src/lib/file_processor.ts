@@ -232,7 +232,6 @@ class FileProcessor {
   @throw_contextually()
   public async get_info(): Promise<FileInfo> {
     const filepath_exists = await fs.exists(this.#filepath) 
-    console.log({filepath: this.#filepath})
     if (!filepath_exists) {
       throw new errors.FileNotFound(`Cannot process file because it does not exist`)
     }
