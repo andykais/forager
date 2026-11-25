@@ -1,6 +1,7 @@
 import * as cliffy from '@cliffy/command'
 import * as web from '@forager/web'
 import deno_json from '../deno.json' with { type: "json" };
+import { errors, type MediaFileResponse } from '@forager/core'
 import { ForagerHelpers } from './helpers.ts'
 
 const LOG_LEVEL_TYPE = new cliffy.EnumType(["DEBUG", "INFO", "ERROR", 'SILENT']);
@@ -52,6 +53,7 @@ const cli = new cliffy.Command()
     .option('--filepath=<filepath>', 'A globpath to search for media files in the file system')
     .option('--media-reference-id=<media_reference_id:number>', 'A forager database media reference id')
     .option('--media-type=<media_type:media-type>', 'Restrict to a single media file kind (image, video, audio)')
+    .option('--limit=<limit:integer>', 'The maximum number of results to return')
     .action(async opts => {
       const forager_helpers = new ForagerHelpers(opts)
       const forager = await forager_helpers.launch_forager()
@@ -61,7 +63,8 @@ const cli = new cliffy.Command()
           filepath: opts.filepath,
           tags: opts.tags?.split(','),
           media_type: opts.mediaType ? MEDIA_TYPE_TO_CORE[opts.mediaType] : undefined,
-        }
+        },
+        limit: opts.limit,
       })
       forager_helpers.print_output(result)
     })
@@ -100,16 +103,59 @@ const cli = new cliffy.Command()
       forager_helpers.print_output(result)
     })
 
-  .command('delete', 'delete a file from the forager database')
-    .option('--filepath=<filepath>', 'Match media based on a filepath')
+  .command('delete', 'delete media from the forager database. Accepts the same filters as the search command.')
+    .type('media-type', MEDIA_TYPE_TYPE)
+    .option('--tags=<tags>', 'A comma separated list of tags. Matches media that have all of these tags')
+    .option('--filepath=<filepath>', 'A globpath to match media files in the file system')
     .option('--media-reference-id=<media_reference_id:number>', 'Match media based on a MediaReference::id')
+    .option('--media-type=<media_type:media-type>', 'Restrict to a single media file kind (image, video, audio)')
+    .option('--limit=<limit:integer>', 'The maximum number of media to delete')
+    .option('-y, --yes', 'Skip the confirmation prompt when deleting more than one media file')
     .action(async (opts) => {
+      if (!opts.tags && !opts.filepath && opts.mediaReferenceId === undefined && !opts.mediaType) {
+        throw new cliffy.ValidationError('At least one of --tags, --filepath, --media-reference-id or --media-type is required')
+      }
       const forager_helpers = new ForagerHelpers(opts)
       const forager = await forager_helpers.launch_forager()
-      await forager.media.delete({
-        filepath: opts.filepath,
-        media_reference_id: opts.mediaReferenceId,
+      const search_result = forager.media.search({
+        query: {
+          media_reference_id: opts.mediaReferenceId,
+          filepath: opts.filepath,
+          tags: opts.tags?.split(','),
+          media_type: opts.mediaType ? MEDIA_TYPE_TO_CORE[opts.mediaType] : undefined,
+        },
+        // search has a default limit, so we explicitly ask for every match unless --limit is given
+        limit: opts.limit ?? -1,
+        thumbnail_limit: 0,
       })
+
+      if (search_result.results.length === 0) {
+        throw new errors.BadInputError('No media matched the delete filters')
+      }
+
+      const media_files: MediaFileResponse[] = []
+      for (const result of search_result.results) {
+        if (result.media_type !== 'media_file') {
+          throw new errors.BadInputError(`Media series "${result.media_reference.media_series_name}" (media reference id ${result.media_reference.id}) matched the delete filters, but deleting media series is not supported. Use --media-type to restrict the delete to media files.`)
+        }
+        media_files.push(result)
+      }
+
+      if (media_files.length > 1 && !opts.yes) {
+        const preview = media_files.map(media => `  ${media.media_file.filepath}`).join('\n')
+        const confirmed = confirm(`${preview}\nDelete these ${media_files.length} media files from the forager database?`)
+        if (!confirmed) {
+          console.error('Aborting.')
+          Deno.exit(1)
+        }
+      }
+
+      const deleted: {media_reference_id: number; filepath: string}[] = []
+      for (const media of media_files) {
+        await forager.media.delete({media_reference_id: media.media_reference.id})
+        deleted.push({media_reference_id: media.media_reference.id, filepath: media.media_file.filepath})
+      }
+      forager_helpers.print_output({total: deleted.length, deleted})
     })
 
   .command('gui', 'launch the forager graphical web interface')
