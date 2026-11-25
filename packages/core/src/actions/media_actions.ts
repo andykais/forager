@@ -57,26 +57,25 @@ class MediaActions extends Actions {
       return result
     })
 
-    let result: MediaFileResponse
     try {
-      result = await transaction()
+      const result = await transaction()
+
+      // thumbnails are only removed once the database transaction has committed, so an aborted delete leaves them intact
+      try {
+        await Deno.remove(result.media_file.thumbnail_directory_path, {recursive: true})
+      } catch (e) {
+        if (e instanceof Deno.errors.NotFound) {
+          this.ctx.logger.warn(`Thumbnail directory ${result.media_file.thumbnail_directory_path} was already missing`)
+        } else {
+          throw e
+        }
+      }
+      this.ctx.logger.info(`Removed ${result.media_file.filepath} media with media reference id ${result.media_reference.id}`)
+      return result
     } catch (e) {
       this.ctx.logger.error(`Error "${e}" during media delete for ${JSON.stringify(params)}, delete aborted.`)
       throw e
     }
-
-    // thumbnails are only removed once the database transaction has committed, so an aborted delete leaves them intact
-    try {
-      await Deno.remove(result.media_file.thumbnail_directory_path, {recursive: true})
-    } catch (e) {
-      if (e instanceof Deno.errors.NotFound) {
-        this.ctx.logger.warn(`Thumbnail directory ${result.media_file.thumbnail_directory_path} was already missing`)
-      } else {
-        throw e
-      }
-    }
-    this.ctx.logger.info(`Removed ${result.media_file.filepath} media with media reference id ${result.media_reference.id}`)
-    return result
   }
 
   search = (params?: inputs.PaginatedSearch): result_types.PaginatedResult<MediaResponse> => {
